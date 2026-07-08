@@ -4,7 +4,8 @@
     "references": [
         "Unity.Netcode.Runtime",
         "Unity.Netcode.Components",
-        "Unity.Networking.Transport"
+        "Unity.Networking.Transport",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

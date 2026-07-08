@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CTC.Runtime.Player
 {
@@ -24,8 +25,14 @@ namespace CTC.Runtime.Player
         {
             if (!IsOwner) return;
 
-            float h = Input.GetAxisRaw("Horizontal");
-            float v = Input.GetAxisRaw("Vertical");
+            // 프로젝트가 신형 Input System 전용(activeInputHandler=1)이라 레거시 Input 사용 불가
+            var kb = Keyboard.current;
+            if (kb == null) return;
+
+            float h = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
+                    - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
+            float v = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
+                    - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f);
             Vector3 dir = MovementInput.ToDirection(h, v);
 
             _controller.Move(dir * (moveSpeed * Time.deltaTime));
