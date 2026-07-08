@@ -4,7 +4,8 @@
     "references": [
         "CTC.Runtime",
         "Unity.Netcode.Runtime",
-        "Unity.Networking.Transport"
+        "Unity.Networking.Transport",
+        "UnityEditor.TestRunner"
     ],
     "includePlatforms": [
         "Editor"
