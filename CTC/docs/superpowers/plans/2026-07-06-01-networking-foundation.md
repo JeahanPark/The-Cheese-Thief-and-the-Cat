@@ -382,7 +382,7 @@ namespace CTC.Runtime.Networking
 {
     /// <summary>
     /// 개발용 접속 UI. 접속 전에는 Host/Client/Server 버튼을 IMGUI로 그린다.
-    /// 로컬호스트(127.0.0.1) 기준. Steam 로비는 Plan 2에서 대체한다.
+    /// 로컬호스트(127.0.0.1) 기준. UGS Relay+Lobby는 Plan 2에서 대체한다.
     /// </summary>
     public class ConnectionUI : MonoBehaviour
     {
@@ -478,4 +478,4 @@ git commit -m "docs: mark networking foundation plan verified via MPPM"
 
 ## 다음 계획
 
-Plan 2(Steam 매치메이킹): Steamworks.NET 설치, Steam 로비 생성/참가, UnityTransport → Steam 트랜스포트 교체, 개발용 App ID(480/Spacewar)로 친구 접속 검증.
+Plan 2(UGS 매치메이킹): UGS Multiplayer Services(Relay+Lobby) 설치·프로젝트 연결, 참가코드 방 생성/참가, UnityTransport를 Relay 할당에 연결. 연결 층은 인터페이스로 감싸 **출시 시 Steam 트랜스포트로 교체 가능**하게 설계(개발=UGS 무료 티어, 출시=Steam).

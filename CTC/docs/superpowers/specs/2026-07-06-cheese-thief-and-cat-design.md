@@ -2,8 +2,8 @@
 
 **작성일:** 2026-07-06
 **상태:** 승인됨 (브레인스토밍 완료)
-**플랫폼:** PC (Steam) 우선 · Unity URP
-**엔진/기술:** Unity, Netcode for GameObjects (NGO), Steam 매치메이킹
+**플랫폼:** PC 우선 · Unity URP (스토어 독립)
+**엔진/기술:** Unity, Netcode for GameObjects (NGO), UGS Multiplayer Services (Relay + Lobby)
 
 ---
 
@@ -137,7 +137,9 @@
 | 레이어 | 선택 |
 |--------|------|
 | 네트워크 | **Netcode for GameObjects**, **호스트(리슨 서버) 권위** — 이동·포획·자원 판정을 서버가 결정(치팅 방지) |
-| 매치메이킹 | **Steam 로비**(친구 초대 / 공개방) + **SteamNetworkingSockets 트랜스포트** |
+| 매치메이킹 (개발/테스트) | **UGS Multiplayer Services (Relay + Lobby)** — 스토어 독립, 무료 티어(동시 50인)로 인터넷 테스트. 참가코드로 방 참가 |
+| 매치메이킹 (출시) | **Steam 로비 + SteamNetworkingSockets 트랜스포트**로 교체 예정 |
+| 트랜스포트 추상화 | 연결 층을 인터페이스로 감싸 **UGS Relay ↔ Steam ↔ Direct IP** 를 최소 코드 변경으로 교체 가능하게 설계 |
 | 동기화 | 위치 = NetworkTransform(보간) · 자원/상점/변장 상태 = NetworkVariable / RPC |
 | 범위 밖(MVP) | 데디케이티드 서버, 호스트 마이그레이션, 랭크 시스템 |
 
@@ -151,7 +153,7 @@
 | 쥐·고양이 각 1종 | 캐릭터 스킨·다양화 |
 | 코어 루프(먹기·구매·덮치기·생존 승패) | 감염/추가 모드 |
 | 아이템 분류당 1~2개 | 아이템 풀 전체 |
-| Steam 로비 4~6인 + 관전 | 데디서버 · 랭크 · 호스트 마이그레이션 |
+| UGS Relay+Lobby 4~6인 + 관전 | Steam 로비 전환 · 데디서버 · 랭크 · 호스트 마이그레이션 |
 | 호스트 권위 서버 판정 | 밸런싱 · 시즌 |
 
 ---
@@ -160,7 +162,7 @@
 
 - **3D 스타일라이즈드** (귀엽고 코믹한 쥐 vs 고양이)
 - 3인칭 시점
-- **PC (Steam) 우선** — 모바일 렌더러는 보류(프로젝트에 존재하나 MVP 대상 아님)
+- **PC 우선, 출시 스토어는 Steam 지향** — 단 개발/테스트는 스토어 독립(UGS)이라 Steam 클라이언트 없이도 붙는다. 모바일 렌더러는 보류(프로젝트에 존재하나 MVP 대상 아님)
 
 ---
 
