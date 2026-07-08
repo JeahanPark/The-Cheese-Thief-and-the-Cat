@@ -39,11 +39,11 @@
 
 ```json
     "com.unity.multiplayer.playmode": "1.4.0",
-    "com.unity.netcode.gameobjects": "2.1.1",
-    "com.unity.transport": "2.4.0",
+    "com.unity.netcode.gameobjects": "2.12.0",
 ```
 
-> 버전이 프로젝트 Unity 버전과 안 맞으면 Package Manager가 호환 버전을 제안한다. 그 경우 제안 버전으로 맞춘다.
+> **버전 주의(중요):** Unity 6000.5에서는 NGO **2.7.0 이상**이어야 한다. 2.0.x는 폐기 API(GetEntityId·SceneHandle.GetRawData)를 써서 CS0619 컴파일 에러(패키지 코드라 억제 불가)가 난다. 최신 2.x(작성 시점 2.12.0)를 쓴다.
+> `com.unity.transport`는 NGO의 의존성으로 **자동 해결**되므로 manifest에 따로 명시하지 않는다. PM이 제안하는 최신 2.x가 2.12.0과 다르면 그 번호로 맞춘다.
 
 - [ ] **Step 2: Unity가 패키지를 복원하도록 에디터를 포커스**
 
