@@ -1,0 +1,18 @@
+{
+    "name": "CTC.Runtime",
+    "rootNamespace": "CTC.Runtime",
+    "references": [
+        "Unity.Netcode.Runtime",
+        "Unity.Netcode.Components",
+        "Unity.Networking.Transport"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
