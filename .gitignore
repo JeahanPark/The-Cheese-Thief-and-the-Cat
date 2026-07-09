@@ -1,0 +1,6 @@
+# OS / editor junk (Unity-specific rules live in CTC/.gitignore)
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
