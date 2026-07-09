@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
+using CTC.Runtime.Lobby;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -89,6 +90,12 @@ namespace CTC.Runtime.Networking
                 case "TestMpNudgeLocalPlayer":
                     NudgeLocalPlayer();
                     break;
+                case "TestMpSelectRoleMouse":
+                    SelectRole(RoleId.Mouse);
+                    break;
+                case "TestMpSelectRoleCat":
+                    SelectRole(RoleId.Cat);
+                    break;
                 default:
                     Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
                     break;
@@ -112,6 +119,19 @@ namespace CTC.Runtime.Networking
             if (cc != null) cc.Move(new Vector3(2f, 0f, 3f));
             else local.transform.position += new Vector3(2f, 0f, 3f);
             Debug.Log($"[MultiplayerQaProbe] TestMpNudgeLocalPlayer 실행 → {local.transform.position}");
+        }
+
+        // 클론 로컬에서 로비 역할 선택 — MPPM 로비 자동화용.
+        private void SelectRole(RoleId role)
+        {
+            var lobby = FindFirstObjectByType<LobbyManager>();
+            if (lobby == null || !lobby.IsSpawned)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] SelectRole — LobbyManager 없음/미스폰");
+                return;
+            }
+            lobby.SelectRole(role);
+            Debug.Log($"[MultiplayerQaProbe] SelectRole({role}) 요청");
         }
 
         private void OnDestroy()
@@ -168,6 +188,7 @@ namespace CTC.Runtime.Networking
                     s.objects.Add(new ProbeObject
                     {
                         id = (long)no.NetworkObjectId,
+                        objectName = no.gameObject.name,
                         ownerClientId = (long)no.OwnerClientId,
                         isLocalOwner = no.IsOwner,
                         posX = p.x,
@@ -205,6 +226,7 @@ namespace CTC.Runtime.Networking
     public class ProbeObject
     {
         public long id;
+        public string objectName;
         public long ownerClientId;
         public bool isLocalOwner;
         public float posX;
