@@ -1,0 +1,400 @@
+{
+ "name": "Root",
+ "payload": {
+  "name": "Root",
+  "type": "Root",
+  "visible": true
+ },
+ "children": [
+  {
+   "name": "Canvas",
+   "payload": {
+    "name": "Canvas",
+    "type": "Node",
+    "visible": true,
+    "text": null,
+    "_instanceId": 56560,
+    "clickable": false,
+    "pos": [
+     0.5,
+     0.50000006
+    ],
+    "size": [
+     1.0,
+     0.9999999
+    ],
+    "anchorPoint": [
+     0.5,
+     0.5
+    ],
+    "scale": [
+     0.106916718,
+     0.106916718
+    ],
+    "zOrders": {
+     "global": 0,
+     "local": 4
+    }
+   },
+   "children": [
+    {
+     "name": "Popup",
+     "payload": {
+      "name": "Popup",
+      "type": "Node",
+      "visible": true,
+      "text": null,
+      "_instanceId": -11718,
+      "clickable": false,
+      "pos": [
+       0.5,
+       0.50000006
+      ],
+      "size": [
+       1.0,
+       0.9999999
+      ],
+      "anchorPoint": [
+       0.5,
+       0.5
+      ],
+      "scale": [
+       1.0,
+       1.0
+      ],
+      "zOrders": {
+       "global": 0,
+       "local": 0
+      }
+     },
+     "children": [
+      {
+       "name": "LoginPopup",
+       "payload": {
+        "name": "LoginPopup",
+        "type": "Node",
+        "visible": true,
+        "text": null,
+        "_instanceId": -12244,
+        "clickable": false,
+        "pos": [
+         0.5,
+         0.50000006
+        ],
+        "size": [
+         1.0,
+         0.9999999
+        ],
+        "anchorPoint": [
+         0.5,
+         0.5
+        ],
+        "scale": [
+         1.0,
+         1.0
+        ],
+        "zOrders": {
+         "global": 0,
+         "local": 0
+        }
+       },
+       "children": [
+        {
+         "name": "DimBackdrop",
+         "payload": {
+          "name": "DimBackdrop",
+          "type": "Image",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12326,
+          "clickable": false,
+          "pos": [
+           0.5,
+           0.50000006
+          ],
+          "size": [
+           1.0,
+           0.9999999
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 0
+          }
+         },
+         "children": null
+        },
+        {
+         "name": "BG",
+         "payload": {
+          "name": "BG",
+          "type": "Image",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12250,
+          "clickable": false,
+          "pos": [
+           0.5,
+           0.50000006
+          ],
+          "size": [
+           1.0,
+           0.9999999
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 1
+          }
+         },
+         "children": null
+        },
+        {
+         "name": "Logo",
+         "payload": {
+          "name": "Logo",
+          "type": "Image",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12258,
+          "clickable": false,
+          "pos": [
+           0.5,
+           0.25
+          ],
+          "size": [
+           0.46875,
+           0.277777672
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 2
+          }
+         },
+         "children": null
+        },
+        {
+         "name": "StartButton",
+         "payload": {
+          "name": "StartButton",
+          "type": "Button",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12266,
+          "clickable": true,
+          "pos": [
+           0.4999999,
+           0.3981483
+          ],
+          "size": [
+           0.114583269,
+           0.07777783
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 3
+          }
+         },
+         "children": [
+          {
+           "name": "Text (TMP)",
+           "payload": {
+            "name": "Text (TMP)",
+            "type": "Node",
+            "visible": true,
+            "text": null,
+            "_instanceId": -12276,
+            "clickable": false,
+            "pos": [
+             0.4999999,
+             0.3981483
+            ],
+            "size": [
+             0.114583269,
+             0.07777783
+            ],
+            "anchorPoint": [
+             0.5,
+             0.5
+            ],
+            "scale": [
+             1.0,
+             1.0
+            ],
+            "zOrders": {
+             "global": 0,
+             "local": 0
+            }
+           },
+           "children": null
+          }
+         ]
+        },
+        {
+         "name": "OptionButton",
+         "payload": {
+          "name": "OptionButton",
+          "type": "Button",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12284,
+          "clickable": true,
+          "pos": [
+           0.4999999,
+           0.50000006
+          ],
+          "size": [
+           0.114583269,
+           0.07777789
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 4
+          }
+         },
+         "children": [
+          {
+           "name": "Text (TMP)",
+           "payload": {
+            "name": "Text (TMP)",
+            "type": "Node",
+            "visible": true,
+            "text": null,
+            "_instanceId": -12294,
+            "clickable": false,
+            "pos": [
+             0.4999999,
+             0.50000006
+            ],
+            "size": [
+             0.114583269,
+             0.07777789
+            ],
+            "anchorPoint": [
+             0.5,
+             0.5
+            ],
+            "scale": [
+             1.0,
+             1.0
+            ],
+            "zOrders": {
+             "global": 0,
+             "local": 0
+            }
+           },
+           "children": null
+          }
+         ]
+        },
+        {
+         "name": "ExitButton",
+         "payload": {
+          "name": "ExitButton",
+          "type": "Button",
+          "visible": true,
+          "text": null,
+          "_instanceId": -12302,
+          "clickable": true,
+          "pos": [
+           0.4999999,
+           0.6018519
+          ],
+          "size": [
+           0.114583269,
+           0.07777786
+          ],
+          "anchorPoint": [
+           0.5,
+           0.5
+          ],
+          "scale": [
+           1.0,
+           1.0
+          ],
+          "zOrders": {
+           "global": 0,
+           "local": 5
+          }
+         },
+         "children": [
+          {
+           "name": "Text (TMP)",
+           "payload": {
+            "name": "Text (TMP)",
+            "type": "Node",
+            "visible": true,
+            "text": null,
+            "_instanceId": -12312,
+            "clickable": false,
+            "pos": [
+             0.4999999,
+             0.6018519
+            ],
+            "size": [
+             0.114583269,
+             0.07777786
+            ],
+            "anchorPoint": [
+             0.5,
+             0.5
+            ],
+            "scale": [
+             1.0,
+             1.0
+            ],
+            "zOrders": {
+             "global": 0,
+             "local": 0
+            }
+           },
+           "children": null
+          }
+         ]
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# bench 임시 산출물
+bench/_*
+bench/demo_report.html
+bench/*_report.html
+bench/_verify_*
