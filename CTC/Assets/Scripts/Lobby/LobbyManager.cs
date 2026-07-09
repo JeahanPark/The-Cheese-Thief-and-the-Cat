@@ -77,6 +77,14 @@ namespace CTC.Runtime.Lobby
             return -1;
         }
 
+        /// <summary>소유 클라이언트가 스폰 시 자기 자리를 계산할 때 사용(서버 스폰 공식과 동일).</summary>
+        public int IndexOfClient(ulong clientId) => IndexOf(clientId);
+
+        public static Vector3 SpawnPosition(int index, int playerCount)
+        {
+            return new Vector3(index * 2f - (playerCount - 1), 0.1f, 0f);
+        }
+
         private List<RoleId> SnapshotRoles()
         {
             var roles = new List<RoleId>(_players.Count);
@@ -120,7 +128,7 @@ namespace CTC.Runtime.Lobby
             {
                 LobbyPlayerState p = _players[i];
                 GameObject prefab = p.Role == RoleId.Cat ? catPrefab : mousePrefab;
-                Vector3 pos = new Vector3(i * 2f - (_players.Count - 1), 0.1f, 0f);
+                Vector3 pos = SpawnPosition(i, _players.Count);
                 GameObject go = Instantiate(prefab, pos, Quaternion.identity);
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);
             }

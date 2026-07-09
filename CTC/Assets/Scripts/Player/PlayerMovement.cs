@@ -23,6 +23,26 @@ namespace CTC.Runtime.Player
             _controller = GetComponent<CharacterController>();
         }
 
+        /// <summary>
+        /// 소유자 권위 ClientNetworkTransform은 소유 클라이언트의 로컬 초기 위치로
+        /// 서버 스폰 위치를 덮어쓴다. 그래서 소유자가 스폰 시점에 로비 목록으로
+        /// 자기 자리(서버와 동일한 결정적 공식)를 직접 계산해 텔레포트한다.
+        /// </summary>
+        public override void OnNetworkSpawn()
+        {
+            if (!IsOwner) return;
+
+            var lobby = FindFirstObjectByType<Lobby.LobbyManager>();
+            if (lobby == null) return;
+
+            int idx = lobby.IndexOfClient(OwnerClientId);
+            if (idx < 0) return;
+
+            _controller.enabled = false;
+            transform.position = Lobby.LobbyManager.SpawnPosition(idx, lobby.PlayerCount);
+            _controller.enabled = true;
+        }
+
         private void Update()
         {
             if (!IsOwner) return;

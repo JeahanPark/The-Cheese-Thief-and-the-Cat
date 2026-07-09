@@ -177,7 +177,8 @@ namespace CTC.Runtime.Networking
             s.localClientId = nm != null ? (long)nm.LocalClientId : -1;
             s.connectedClientCount = nm != null && nm.IsServer ? nm.ConnectedClients.Count : -1;
 
-            if (nm != null && nm.SpawnManager != null)
+            // 종료(teardown) 중엔 SpawnManager 내부가 해체되며 NRE 스팸 — 접속 상태에서만 순회
+            if (s.connected && nm.SpawnManager != null)
             {
                 foreach (var kv in nm.SpawnManager.SpawnedObjects)
                 {
