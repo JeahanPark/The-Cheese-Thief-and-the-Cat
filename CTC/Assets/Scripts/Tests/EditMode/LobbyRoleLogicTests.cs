@@ -69,7 +69,8 @@ namespace CTC.Tests
         [Test]
         public void CanStart_NoMouse_False()
         {
-            Assert.IsFalse(LobbyRoleLogic.CanStart(new[] { RoleId.Cat }));
+            // 2명 이상이어도 쥐가 없으면 시작 불가 — mice >= 1 분기 검증
+            Assert.IsFalse(LobbyRoleLogic.CanStart(new[] { RoleId.Cat, RoleId.Cat }));
         }
 
         [Test]
