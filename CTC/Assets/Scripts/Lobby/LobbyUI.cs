@@ -1,21 +1,39 @@
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CTC.Runtime.Lobby
 {
     /// <summary>
-    /// 개발용 로비 UI(IMGUI, ConnectionUI 패턴). 접속 후~시작 전까지 역할 선택/시작 버튼을 그린다.
-    /// 커서: 로비 중 해제, 게임 시작 시 잠금(궤도 카메라가 잠금 상태에서만 회전).
+    /// 로비 UGUI 컨트롤러(Modern UI Pack 위젯은 SetupNetworkingScene이 배선).
+    /// 접속 후~시작 전 패널 표시, 역할 선택/시작 버튼, 커서 관리.
     /// </summary>
     public class LobbyUI : MonoBehaviour
     {
         [SerializeField] private LobbyManager lobby;
+        [SerializeField] private GameObject panel;
+        [SerializeField] private TMP_Text playerListText;
+        [SerializeField] private Button mouseButton;
+        [SerializeField] private Button catButton;
+        [SerializeField] private Button startButton;
+
+        private void Awake()
+        {
+            mouseButton.onClick.AddListener(() => lobby.SelectRole(RoleId.Mouse));
+            catButton.onClick.AddListener(() => lobby.SelectRole(RoleId.Cat));
+            startButton.onClick.AddListener(() => lobby.RequestStartGame());
+        }
 
         private void Update()
         {
-            if (lobby == null || !lobby.IsSpawned) return;
+            NetworkManager nm = NetworkManager.Singleton;
+            bool connected = nm != null && (nm.IsClient || nm.IsServer);
+            bool inLobby = connected && lobby != null && lobby.IsSpawned && !lobby.GameStarted;
 
-            if (lobby.GameStarted)
+            panel.SetActive(inLobby);
+
+            if (lobby != null && lobby.IsSpawned && lobby.GameStarted)
             {
                 if (Cursor.lockState != CursorLockMode.Locked)
                 {
@@ -28,37 +46,21 @@ namespace CTC.Runtime.Lobby
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
-        }
 
-        private void OnGUI()
-        {
-            NetworkManager nm = NetworkManager.Singleton;
-            if (nm == null || (!nm.IsClient && !nm.IsServer)) return; // 접속 전엔 ConnectionUI 담당
-            if (lobby == null || !lobby.IsSpawned || lobby.GameStarted) return;
+            if (!inLobby) return;
 
-            GUILayout.BeginArea(new Rect(220, 10, 280, 320), GUI.skin.box);
-            GUILayout.Label("로비 — 역할 선택");
-
+            var sb = new System.Text.StringBuilder();
             for (int i = 0; i < lobby.PlayerCount; i++)
             {
                 LobbyPlayerState p = lobby.GetPlayer(i);
-                string self = p.ClientId == nm.LocalClientId ? " (나)" : "";
-                GUILayout.Label($"Client {p.ClientId}{self}: {p.Role}");
+                string self = p.ClientId == nm.LocalClientId ? " (You)" : "";
+                sb.AppendLine($"Client {p.ClientId}{self}: {p.Role}");
             }
+            playerListText.text = sb.ToString();
 
-            GUILayout.Space(8);
-            if (GUILayout.Button("쥐로 플레이")) lobby.SelectRole(RoleId.Mouse);
-            if (GUILayout.Button("고양이로 플레이")) lobby.SelectRole(RoleId.Cat);
-
-            if (nm.IsHost)
-            {
-                GUILayout.Space(8);
-                GUI.enabled = lobby.CanStart;
-                if (GUILayout.Button("게임 시작")) lobby.RequestStartGame();
-                GUI.enabled = true;
-            }
-
-            GUILayout.EndArea();
+            bool isHost = nm.IsHost;
+            startButton.gameObject.SetActive(isHost);
+            startButton.interactable = isHost && lobby.CanStart;
         }
     }
 }

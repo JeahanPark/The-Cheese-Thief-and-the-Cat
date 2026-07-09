@@ -6,7 +6,10 @@
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
         "Unity.Cinemachine",
-        "UnityEditor.TestRunner"
+        "UnityEditor.TestRunner",
+        "Unity.InputSystem",
+        "UnityEngine.UI",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

@@ -7,7 +7,9 @@
         "Unity.Networking.Transport",
         "Unity.InputSystem",
         "Unity.Multiplayer.Playmode",
-        "Unity.Cinemachine"
+        "Unity.Cinemachine",
+        "UnityEngine.UI",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

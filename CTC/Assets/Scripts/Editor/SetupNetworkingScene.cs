@@ -3,12 +3,16 @@ using CTC.Runtime.Cameras;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Networking;
 using CTC.Runtime.Player;
+using TMPro;
 using Unity.Cinemachine;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.UI;
 
 namespace CTC.Editor
 {
@@ -32,6 +36,10 @@ namespace CTC.Editor
         private const string MouseSourceMatPath = QuirkyRoot + "/Materials/M_Mouse.mat";
         private const string UrpShaderPath =
             "Assets/Quirky Series/_Shader/URP (Unity 2019.3.0f3 and above)/SoftSurfaceGraph.shadergraph";
+
+        private const string GridboxUrpDir =
+            "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP";
+        private const string MuipButtonPrefabPath = "Assets/Modern UI Pack/Prefabs/Button/Basic/White.prefab";
 
         [MenuItem("Tools/CTC/Setup Networking Scene")]
         public static void Run()
@@ -130,6 +138,7 @@ namespace CTC.Editor
             var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
             floor.name = "Floor";
             floor.transform.localScale = new Vector3(3f, 1f, 3f);
+            floor.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Grey1");
 
             BuildGreyboxMap();
 
@@ -154,8 +163,7 @@ namespace CTC.Editor
             var lobby = lobbyGo.AddComponent<LobbyManager>();
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
-            var lobbyUi = lobbyGo.AddComponent<LobbyUI>();
-            SetRef(lobbyUi, "lobby", lobby);
+            BuildLobbyCanvas(lobby);
 
             // 카메라 — Main Camera에 Brain, 별도 오브젝트에 궤도 vcam
             var mainCam = Camera.main;
@@ -184,26 +192,37 @@ namespace CTC.Editor
             }
         }
 
-        // 그레이박스 맵 — Plan 9 아트 패스 전 블록아웃. 프리미티브 큐브 + 회색 머티리얼.
+        // 그레이박스 맵 — Plan 9 아트 패스 전 블록아웃. 프리미티브 큐브 + Gridbox 프로토타입 머티리얼.
         // 바닥 Plane(scale 3 = 30x30)에 맞춰 외벽은 ±15.
+        // 큐브 스케일에 따른 텍스처 타일링 왜곡은 프로토타입 단계라 허용.
         private static void BuildGreyboxMap()
         {
-            Material gray = CreateGreyboxMaterial();
+            Material wall = GridboxMaterial("Grey2");
+            Material counter = GridboxMaterial("Grey4");
             var root = new GameObject("GreyboxMap");
 
-            AddBox(root, gray, "Wall_N", new Vector3(0f, 1.5f, 15f), new Vector3(30f, 3f, 0.5f));
-            AddBox(root, gray, "Wall_S", new Vector3(0f, 1.5f, -15f), new Vector3(30f, 3f, 0.5f));
-            AddBox(root, gray, "Wall_E", new Vector3(15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
-            AddBox(root, gray, "Wall_W", new Vector3(-15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
+            AddBox(root, wall, "Wall_N", new Vector3(0f, 1.5f, 15f), new Vector3(30f, 3f, 0.5f));
+            AddBox(root, wall, "Wall_S", new Vector3(0f, 1.5f, -15f), new Vector3(30f, 3f, 0.5f));
+            AddBox(root, wall, "Wall_E", new Vector3(15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
+            AddBox(root, wall, "Wall_W", new Vector3(-15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
 
             // 부엌 블록아웃: ㄱ자 카운터 + 중앙 아일랜드 + 가전/가구 블록
-            AddBox(root, gray, "Counter_N", new Vector3(-5f, 0.6f, 13.5f), new Vector3(14f, 1.2f, 2f));
-            AddBox(root, gray, "Counter_W", new Vector3(-13.5f, 0.6f, 6f), new Vector3(2f, 1.2f, 13f));
-            AddBox(root, gray, "Island", new Vector3(0f, 0.6f, 3f), new Vector3(6f, 1.2f, 3f));
-            AddBox(root, gray, "Fridge", new Vector3(13f, 1.25f, 12f), new Vector3(2f, 2.5f, 2f));
-            AddBox(root, gray, "Table", new Vector3(8f, 0.5f, -6f), new Vector3(4f, 1f, 4f));
-            AddBox(root, gray, "Crate_A", new Vector3(-8f, 0.5f, -9f), new Vector3(2f, 1f, 2f));
-            AddBox(root, gray, "Crate_B", new Vector3(-5.5f, 0.4f, -10.5f), new Vector3(1.2f, 0.8f, 1.2f));
+            AddBox(root, counter, "Counter_N", new Vector3(-5f, 0.6f, 13.5f), new Vector3(14f, 1.2f, 2f));
+            AddBox(root, counter, "Counter_W", new Vector3(-13.5f, 0.6f, 6f), new Vector3(2f, 1.2f, 13f));
+            AddBox(root, counter, "Island", new Vector3(0f, 0.6f, 3f), new Vector3(6f, 1.2f, 3f));
+            AddBox(root, GridboxMaterial("White"), "Fridge", new Vector3(13f, 1.25f, 12f), new Vector3(2f, 2.5f, 2f));
+            AddBox(root, GridboxMaterial("Brown"), "Table", new Vector3(8f, 0.5f, -6f), new Vector3(4f, 1f, 4f));
+            Material crate = GridboxMaterial("Orange");
+            AddBox(root, crate, "Crate_A", new Vector3(-8f, 0.5f, -9f), new Vector3(2f, 1f, 2f));
+            AddBox(root, crate, "Crate_B", new Vector3(-5.5f, 0.4f, -10.5f), new Vector3(1.2f, 0.8f, 1.2f));
+        }
+
+        private static Material GridboxMaterial(string name)
+        {
+            string path = $"{GridboxUrpDir}/Prototype_512x512_{name}.mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null) Debug.LogError($"[SetupNetworkingScene] Gridbox 머티리얼 없음: {path}");
+            return mat;
         }
 
         private static void AddBox(GameObject parent, Material material, string name, Vector3 center, Vector3 size)
@@ -216,18 +235,114 @@ namespace CTC.Editor
             box.GetComponent<Renderer>().sharedMaterial = material;
         }
 
-        private static Material CreateGreyboxMaterial()
+        // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + MUIP 버튼 3개.
+        // MUIP는 asmdef 없이 Assembly-CSharp 소속이라 타입 직접 참조 불가 →
+        // GetComponent("ButtonManager") + SerializedObject로 배선하고, LobbyUI는 표준 Button 경유.
+        private static void BuildLobbyCanvas(LobbyManager lobby)
         {
-            if (!AssetDatabase.IsValidFolder(MaterialsDir))
-                AssetDatabase.CreateFolder("Assets", "Materials");
+            var canvasGo = new GameObject("LobbyCanvas");
+            var canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            canvasGo.AddComponent<GraphicRaycaster>();
 
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "M_Greybox" };
-            mat.SetColor("_BaseColor", new Color(0.55f, 0.55f, 0.58f));
+            var eventSystemGo = new GameObject("EventSystem");
+            eventSystemGo.AddComponent<EventSystem>();
+            eventSystemGo.AddComponent<InputSystemUIInputModule>(); // 레거시 StandaloneInputModule 금지
 
-            string path = MaterialsDir + "/M_Greybox.mat";
-            AssetDatabase.DeleteAsset(path);
-            AssetDatabase.CreateAsset(mat, path);
-            return mat;
+            // 중앙 패널 (반투명 다크)
+            var panel = new GameObject("LobbyPanel", typeof(RectTransform));
+            panel.transform.SetParent(canvasGo.transform, false);
+            var panelRt = (RectTransform)panel.transform;
+            panelRt.anchorMin = panelRt.anchorMax = new Vector2(0.5f, 0.5f);
+            panelRt.pivot = new Vector2(0.5f, 0.5f);
+            panelRt.sizeDelta = new Vector2(480f, 520f);
+            var panelImage = panel.AddComponent<Image>();
+            panelImage.color = new Color(0.08f, 0.09f, 0.12f, 0.85f);
+
+            TMP_Text title = CreateTmpText("Title", panel.transform, "Cheese Thief Lobby",
+                32f, TextAlignmentOptions.Center, new Vector2(0f, -20f), new Vector2(440f, 50f));
+            title.fontStyle = FontStyles.Bold;
+
+            TMP_Text playerList = CreateTmpText("PlayerList", panel.transform, string.Empty,
+                22f, TextAlignmentOptions.TopLeft, new Vector2(0f, -90f), new Vector2(420f, 180f));
+
+            Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "Play as Mouse", new Vector2(0f, -300f));
+            Button catButton = CreateMuipButton(panel.transform, "CatButton", "Play as Cat", new Vector2(0f, -370f));
+            Button startButton = CreateMuipButton(panel.transform, "StartButton", "Start Game", new Vector2(0f, -450f));
+
+            var ui = canvasGo.AddComponent<LobbyUI>();
+            SetRef(ui, "lobby", lobby);
+            SetRef(ui, "panel", panel);
+            SetRef(ui, "playerListText", playerList);
+            SetRef(ui, "mouseButton", mouseButton);
+            SetRef(ui, "catButton", catButton);
+            SetRef(ui, "startButton", startButton);
+        }
+
+        private static TMP_Text CreateTmpText(
+            string name, Transform parent, string text,
+            float fontSize, TextAlignmentOptions alignment, Vector2 anchoredPos, Vector2 size)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = size;
+
+            var tmp = go.AddComponent<TextMeshProUGUI>();
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = alignment;
+            tmp.color = Color.white;
+            tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        // MUIP 버튼 프리팹 인스턴스 + 라벨 설정. 프리팹 루트에 표준 Button이 없어서 추가한다
+        // (ButtonManager.Initialize가 런타임에 기존 Button을 재사용하므로 중복 생성 없음).
+        private static Button CreateMuipButton(Transform parent, string name, string label, Vector2 anchoredPos)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MuipButtonPrefabPath);
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = anchoredPos;
+            rt.sizeDelta = new Vector2(380f, 56f);
+
+            var buttonManager = go.GetComponent("ButtonManager");
+            if (buttonManager != null)
+            {
+                var so = new SerializedObject(buttonManager);
+                so.FindProperty("buttonText").stringValue = label;
+                SerializedProperty autoFit = so.FindProperty("autoFitContent");
+                if (autoFit != null) autoFit.boolValue = false; // 명시 크기 사용
+                SerializedProperty icon = so.FindProperty("enableIcon");
+                if (icon != null) icon.boolValue = false; // 텍스트 전용 버튼
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // enableIcon=false는 런타임 UpdateUI에서 반영되지만 에디터 뷰에도 즉시 적용
+            foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                if (t.name == "Icon Parent") t.gameObject.SetActive(false);
+
+            // ButtonManager.UpdateUI는 런타임 OnEnable에서 라벨을 재적용하지만,
+            // 에디터/씬 뷰에서도 바로 보이도록 자식 TMP 텍스트를 직접 갱신
+            foreach (var tmp in go.GetComponentsInChildren<TMP_Text>(true))
+                tmp.text = label;
+
+            var button = go.GetComponent<Button>();
+            if (button == null) button = go.AddComponent<Button>();
+            button.transition = Selectable.Transition.None; // 시각 전환은 ButtonManager 담당
+            return button;
         }
 
         // 직렬화 private 필드 세팅 유틸 (프리팹 저장 전 인스턴스에 적용)
