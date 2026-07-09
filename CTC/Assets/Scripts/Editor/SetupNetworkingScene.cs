@@ -69,7 +69,7 @@ namespace CTC.Editor
             var nmGo = new GameObject("NetworkManager");
             var nm = nmGo.AddComponent<NetworkManager>();
             var transport = nmGo.AddComponent<UnityTransport>();
-            transport.SetConnectionData("127.0.0.1", 7777);
+            transport.SetConnectionData("127.0.0.1", 7788);
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = playerPrefab;

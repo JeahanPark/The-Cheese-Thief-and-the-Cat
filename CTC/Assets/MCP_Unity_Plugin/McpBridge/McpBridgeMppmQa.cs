@@ -9,7 +9,9 @@ using System.Text;
 
 public static partial class McpBridge
 {
-    private const string MPPM_QA_DIR = "Temp/mppm-qa";
+    // 시스템 temp 하위 공유 폴더 — 클론 에디터와 작업 디렉터리가 달라도 동일 절대경로로 해석된다.
+    // MultiplayerQaProbe.ProbeDir(ctc-mppm-qa)와 반드시 일치해야 한다.
+    private static readonly string MPPM_QA_DIR = Path.Combine(Path.GetTempPath(), "ctc-mppm-qa");
     private const string MPPM_QA_HOST_FILE = "probe_host.json";
     private const string MPPM_QA_CLONE_FILE = "probe_clone.json";
 
