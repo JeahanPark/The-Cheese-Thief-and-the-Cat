@@ -5,6 +5,7 @@
         "CTC.Runtime",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
+        "Unity.Cinemachine",
         "UnityEditor.TestRunner"
     ],
     "includePlatforms": [
