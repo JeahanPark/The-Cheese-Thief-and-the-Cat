@@ -40,6 +40,7 @@ namespace CTC.Editor
         private const string GridboxUrpDir =
             "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP";
         private const string MuipButtonPrefabPath = "Assets/Modern UI Pack/Prefabs/Button/Basic/White.prefab";
+        private const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
 
         [MenuItem("Tools/CTC/Setup Networking Scene")]
         public static void Run()
@@ -150,8 +151,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = catPrefab });
-            nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = mousePrefab });
+            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab);
 
             nmGo.AddComponent<ConnectionUI>();
             nmGo.AddComponent<MppmAutoConnect>();
@@ -190,6 +190,40 @@ namespace CTC.Editor
                     .Append(new EditorBuildSettingsScene(GameScenePath, true))
                     .ToArray();
             }
+        }
+
+        // NGO의 NetworkConfig.Prefabs.Add()는 [NonSerialized] 런타임 리스트(m_Prefabs /
+        // m_RuntimeAddedPrefabs)에만 기록되어 씬에 직렬화되지 않는다. 직렬화되는 경로는
+        // NetworkPrefabs.NetworkPrefabsLists([SerializeField]) → NetworkPrefabsList 에셋뿐이므로
+        // DefaultNetworkPrefabs.asset에 프리팹을 등록하고 그 리스트를 명시적으로 연결한다.
+        private static void RegisterNetworkPrefabs(NetworkManager nm, params GameObject[] prefabs)
+        {
+            var list = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
+            if (list == null)
+            {
+                list = ScriptableObject.CreateInstance<NetworkPrefabsList>();
+                var so = new SerializedObject(list);
+                SerializedProperty isDefault = so.FindProperty("IsDefault");
+                if (isDefault != null) isDefault.boolValue = true; // NGO 자동생성 에셋과 동일 취급
+                so.ApplyModifiedPropertiesWithoutUndo();
+                AssetDatabase.CreateAsset(list, DefaultNetworkPrefabsPath);
+            }
+
+            bool dirty = false;
+            foreach (GameObject prefab in prefabs)
+            {
+                if (list.Contains(prefab)) continue;
+                list.Add(new NetworkPrefab { Prefab = prefab });
+                dirty = true;
+            }
+            if (dirty)
+            {
+                EditorUtility.SetDirty(list);
+                AssetDatabase.SaveAssets();
+            }
+
+            if (!nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Contains(list))
+                nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
         }
 
         // 그레이박스 맵 — Plan 9 아트 패스 전 블록아웃. 프리미티브 큐브 + Gridbox 프로토타입 머티리얼.
