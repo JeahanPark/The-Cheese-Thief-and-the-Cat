@@ -18,6 +18,7 @@ namespace CTC.Runtime.Networking
         public const string PROBE_DIR_NAME = "ctc-mppm-qa";
         public const string HOST_FILE = "probe_host.json";
         public const string CLONE_FILE = "probe_clone.json";
+        public const string CLONE_CMD_FILE = "cmd_clone.json";
 
         public static string ProbeDir => Path.Combine(Path.GetTempPath(), PROBE_DIR_NAME);
 
@@ -25,7 +26,9 @@ namespace CTC.Runtime.Networking
 
         private float m_Timer;
         private string m_FilePath;
+        private string m_CmdFilePath;
         private bool m_IsMain;
+        private int m_LastCmdSeq = -1;
 
         private void Start()
         {
@@ -33,6 +36,7 @@ namespace CTC.Runtime.Networking
 
             Directory.CreateDirectory(ProbeDir);
             m_FilePath = Path.Combine(ProbeDir, m_IsMain ? HOST_FILE : CLONE_FILE);
+            m_CmdFilePath = Path.Combine(ProbeDir, CLONE_CMD_FILE);
             Debug.Log($"[MultiplayerQaProbe] role={(m_IsMain ? "host" : "clone")} probeFile={m_FilePath}");
 
             WriteSnapshot();
@@ -40,11 +44,74 @@ namespace CTC.Runtime.Networking
 
         private void Update()
         {
+            // 클론 한정 역방향 커맨드 채널(파이프가 없어 파일 경유가 유일 경로).
+            if (!m_IsMain) PollCloneCommand();
+
             m_Timer += Time.unscaledDeltaTime;
             if (m_Timer < m_SnapshotIntervalSeconds) return;
 
             m_Timer = 0f;
             WriteSnapshot();
+        }
+
+        // cmd_clone.json { seq, method } 폴링. 새 seq만 1회 실행, TestMp* 화이트리스트.
+        private void PollCloneCommand()
+        {
+            try
+            {
+                if (!File.Exists(m_CmdFilePath)) return;
+
+                string json = File.ReadAllText(m_CmdFilePath);
+                if (string.IsNullOrWhiteSpace(json)) return;
+
+                CloneCommand cmd = JsonUtility.FromJson<CloneCommand>(json);
+                if (cmd == null || cmd.seq <= m_LastCmdSeq) return;
+
+                m_LastCmdSeq = cmd.seq;
+                ExecuteCloneCommand(cmd.method);
+            }
+            catch (IOException)
+            {
+                // QA가 쓰는 중일 수 있음. 다음 주기 재시도.
+            }
+        }
+
+        private void ExecuteCloneCommand(string method)
+        {
+            if (string.IsNullOrEmpty(method) || !method.StartsWith("TestMp"))
+            {
+                Debug.LogWarning($"[MultiplayerQaProbe] 클론 커맨드 거부(화이트리스트 위반): '{method}'");
+                return;
+            }
+
+            switch (method)
+            {
+                case "TestMpNudgeLocalPlayer":
+                    NudgeLocalPlayer();
+                    break;
+                default:
+                    Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
+                    break;
+            }
+        }
+
+        // 자기 소유 플레이어를 (+2, 0, +3) 이동 — 클론→호스트 동기화 검증용.
+        private void NudgeLocalPlayer()
+        {
+            NetworkObject local = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
+                : null;
+            if (local == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] NudgeLocalPlayer — 로컬 플레이어 없음");
+                return;
+            }
+
+            // transform 직접 세팅은 CharacterController 내부 위치와 충돌해 되돌아간다 — CC.Move 사용.
+            var cc = local.GetComponent<CharacterController>();
+            if (cc != null) cc.Move(new Vector3(2f, 0f, 3f));
+            else local.transform.position += new Vector3(2f, 0f, 3f);
+            Debug.Log($"[MultiplayerQaProbe] TestMpNudgeLocalPlayer 실행 → {local.transform.position}");
         }
 
         private void OnDestroy()
@@ -124,6 +191,14 @@ namespace CTC.Runtime.Networking
         public int connectedClientCount;
         public float timestamp;
         public List<ProbeObject> objects;
+    }
+
+    // 클론 역방향 커맨드 DTO. QA가 cmd_clone.json에 기록 → 클론 프로브가 폴링.
+    [System.Serializable]
+    public class CloneCommand
+    {
+        public int seq;
+        public string method;
     }
 
     [System.Serializable]

@@ -94,25 +94,16 @@ public static partial class McpBridge
         }
     }
 
-    // MPPM(Multiplayer Play Mode) 가상 플레이어(클론) 여부를 리플렉션으로 판정한다.
-    // MPPM 패키지에 직접 의존하지 않기 위해(미설치 프로젝트 호환) 리플렉션으로 접근한다.
-    // MPPM 2.x는 CurrentPlayer.IsMainEditor(네임스페이스 PlayMode, 대문자 M), 1.x는 VirtualProjectsEditor.IsClone.
+    // MPPM(Multiplayer Play Mode) 가상 플레이어(클론) 여부를 판정한다.
+    // 1차: 프로젝트 경로 — 클론은 항상 <원본>/Library/VP/ 하위 복제 프로젝트에서 실행된다 (MPPM 1.x/2.x 공통, 에디터 타임 안전).
+    // 2차: MPPM 1.x 내부 타입 리플렉션 fallback.
     private static bool IsCloneEditor()
     {
         try
         {
-            // MPPM 2.x: Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor
-            foreach (System.Reflection.Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type cp = asm.GetType("Unity.Multiplayer.PlayMode.CurrentPlayer")
-                          ?? asm.GetType("Unity.Multiplayer.Playmode.CurrentPlayer");
-                if (cp == null) continue;
+            string dataPath = UnityEngine.Application.dataPath.Replace('\\', '/');
+            if (dataPath.Contains("/Library/VP/")) return true;
 
-                PropertyInfo main = cp.GetProperty("IsMainEditor", BindingFlags.Public | BindingFlags.Static);
-                if (main != null) return !(bool)main.GetValue(null);
-            }
-
-            // MPPM 1.x fallback
             Type t = Type.GetType("Unity.Multiplayer.Playmode.VirtualProjects.Editor.VirtualProjectsEditor, Unity.Multiplayer.Playmode.VirtualProjects.Editor");
             if (t == null) return false; // MPPM 미설치 → 클론 개념 없음
 

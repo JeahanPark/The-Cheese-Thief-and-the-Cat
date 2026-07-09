@@ -76,6 +76,8 @@ namespace CTC.Editor
             nm.NetworkConfig.Prefabs.Add(new NetworkPrefab { Prefab = playerPrefab });
 
             nmGo.AddComponent<ConnectionUI>();
+            nmGo.AddComponent<MppmAutoConnect>();
+            nmGo.AddComponent<MultiplayerQaProbe>();
 
             EditorSceneManager.SaveScene(scene, GameScenePath);
 
