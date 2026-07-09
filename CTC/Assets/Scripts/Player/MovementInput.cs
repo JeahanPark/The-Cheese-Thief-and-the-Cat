@@ -14,5 +14,11 @@ namespace CTC.Runtime.Player
             var v = new Vector3(horizontal, 0f, vertical);
             return v.sqrMagnitude > 1f ? v.normalized : v;
         }
+
+        /// <summary>카메라 yaw(도) 기준으로 회전된 월드 이동 방향을 반환한다.</summary>
+        public static Vector3 ToWorldDirection(float horizontal, float vertical, float cameraYawDegrees)
+        {
+            return Quaternion.Euler(0f, cameraYawDegrees, 0f) * ToDirection(horizontal, vertical);
+        }
     }
 }
