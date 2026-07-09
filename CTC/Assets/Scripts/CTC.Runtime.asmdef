@@ -6,7 +6,8 @@
         "Unity.Netcode.Components",
         "Unity.Networking.Transport",
         "Unity.InputSystem",
-        "Unity.Multiplayer.Playmode"
+        "Unity.Multiplayer.Playmode",
+        "Unity.Cinemachine"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
