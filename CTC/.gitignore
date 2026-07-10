@@ -123,3 +123,6 @@ screenshot_*.png
 *.sln
 *.slnx
 *.csproj
+
+# MCP screenshot output
+/screenshot.png

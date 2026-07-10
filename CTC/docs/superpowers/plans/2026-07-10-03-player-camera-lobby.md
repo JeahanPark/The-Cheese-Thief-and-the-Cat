@@ -1445,6 +1445,13 @@ git commit -m "docs: mark Plan 3 player-camera-lobby complete"
 
 ---
 
+## 변경 이력 (실행 중 수정)
+
+- **Cinemachine 3.1.4 → 3.1.7**: 3.1.4의 `CinemachineStoryboard`가 Unity 6000.5에서 CS0619(obsolete-as-error)로 컴파일 불가. 본문의 "3.1.4"는 3.1.7로 읽을 것.
+- **Task 12에 그레이박스 맵 추가** (사용자 요청): 씬 생성 시 평면 바닥만이 아니라 부엌 블록아웃(외벽 4 + 카운터·아일랜드·가전 블록)을 프리미티브 큐브 + 회색 URP Lit 머티리얼로 배치한다. Plan 9(아트 패스) 전까지의 플레이테스트용 지형.
+- **로비 UI는 IMGUI** (Task 7에 명시) — 스펙의 "UGUI 오버레이" 표현을 대체. → **재변경(사용자 지시): Modern UI Pack(UGUI)으로 재작성** (`Assets/Modern UI Pack/`). EventSystem은 InputSystemUIInputModule 필수(레거시 Input 금지).
+- **그레이박스 머티리얼**: 자체 생성 M_Greybox 대신 **Gridbox Prototype Materials** 사용 (`Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP/`, 사용자 지시).
+
 ## 검증 요약 (완료 기준)
 
 | # | 확인 | 기대 |
