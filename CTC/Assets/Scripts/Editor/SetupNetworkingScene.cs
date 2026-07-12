@@ -411,24 +411,39 @@ namespace CTC.Editor
             Material crate = GridboxMaterial("Orange");
             AddBox(root, crate, "Crate_A", new Vector3(-8f, 0.5f, -9f), new Vector3(2f, 1f, 2f));
             AddBox(root, crate, "Crate_B", new Vector3(-5.5f, 0.4f, -10.5f), new Vector3(1.2f, 0.8f, 1.2f));
+
+            // 밸런스 패스(Plan 8): 조밀화 — 동쪽 골목·시야 차단물·구석 엄폐
+            AddBox(root, counter, "Counter_E", new Vector3(13.5f, 0.6f, -1f), new Vector3(2f, 1.2f, 12f));
+            Material wood = GridboxMaterial("Brown");
+            AddBox(root, wood, "Table_B", new Vector3(-9f, 0.5f, -4f), new Vector3(4f, 1f, 4f));
+            AddBox(root, wood, "Chair_A", new Vector3(5.5f, 0.5f, -6f), new Vector3(1f, 1f, 1f));
+            AddBox(root, wood, "Chair_B", new Vector3(8f, 0.5f, -3f), new Vector3(1f, 1f, 1f));
+            AddBox(root, crate, "Crate_C", new Vector3(12f, 0.5f, -8f), new Vector3(1.5f, 1f, 1.5f));
+            AddBox(root, GridboxMaterial("White"), "Pantry", new Vector3(-13.5f, 1.25f, -13.5f), new Vector3(2f, 2.5f, 2f));
         }
 
-        // 치즈 지점(원작 돈줄) — 구석=저등급, 개활지=고등급. G1 (3,1)은 QA용
-        // (클론 넛지 TestMpNudgeLocalPlayer가 스폰(1,0,0)에서 도달하는 지점).
+        // 치즈 지점(원작 돈줄) — 구석=저등급(G2~5), 중앙 개활지=고등급(G6·7, 고양이 순찰 한복판).
+        // G1 (3,1) r2는 QA 고정 (클론 넛지 TestMpNudgeLocalPlayer가 스폰(1,0,0)에서 도달하는 지점).
         private static readonly (Vector3 pos, int grade)[] CHEESE_SPOT_DEFS =
         {
-            (new Vector3(-11f, 0f, -11f), 1),
-            (new Vector3(3f, 0f, 1f), 1),
-            (new Vector3(11f, 0f, -12f), 2),
-            (new Vector3(-9f, 0f, 9f), 2),
-            (new Vector3(11.5f, 0f, 8f), 3),
-            (new Vector3(0f, 0f, -6f), 3),
+            (new Vector3(3f, 0f, 1f), 1),          // QA — 아일랜드 동쪽
+            (new Vector3(-11.5f, 0f, -11.5f), 2),  // 서남 구석(찬장 옆)
+            (new Vector3(12f, 0f, -13f), 3),       // 동남 구석
+            (new Vector3(-11f, 0f, 11f), 4),       // 북서 카운터 코너 안쪽
+            (new Vector3(12f, 0f, 9f), 5),         // 냉장고 남쪽
+            (new Vector3(-4f, 0f, -2f), 6),        // 중앙 서쪽 개활지
+            (new Vector3(0f, 0f, -3f), 7),         // 아일랜드 남쪽 정중앙 — 최고 위험
         };
+
+        // 등급별 디스크 색 — 위험도 가독성 (1~3 노랑 / 4~5 주황 / 6~7 빨강)
+        private static Material GradeDiscMaterial(int grade)
+        {
+            string name = grade >= 6 ? "Red" : grade >= 4 ? "Orange" : "Yellow";
+            return GridboxMaterial(name);
+        }
 
         private static void BuildCheeseSpots()
         {
-            var yellow = AssetDatabase.LoadAssetAtPath<Material>(
-                "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP/Prototype_512x512_Yellow.mat");
             var root = new GameObject("CheeseSpots");
 
             foreach ((Vector3 pos, int grade) in CHEESE_SPOT_DEFS)
@@ -447,7 +462,8 @@ namespace CTC.Editor
                 disc.transform.SetParent(spotGo.transform, false);
                 disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
                 disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
-                if (yellow != null) disc.GetComponent<Renderer>().sharedMaterial = yellow;
+                Material discMat = GradeDiscMaterial(grade);
+                if (discMat != null) disc.GetComponent<Renderer>().sharedMaterial = discMat;
 
                 var labelGo = new GameObject("GradeLabel");
                 labelGo.transform.SetParent(spotGo.transform, false);
