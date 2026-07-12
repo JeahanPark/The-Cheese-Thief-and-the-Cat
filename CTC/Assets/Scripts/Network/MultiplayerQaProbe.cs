@@ -5,6 +5,7 @@ using System.IO;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
+using CTC.Runtime.Match;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -224,6 +225,9 @@ namespace CTC.Runtime.Networking
             s.localClientId = nm != null ? (long)nm.LocalClientId : -1;
             s.connectedClientCount = nm != null && nm.IsServer ? nm.ConnectedClients.Count : -1;
 
+            MatchManager match = FindFirstObjectByType<MatchManager>();
+            s.matchResult = match != null && match.IsSpawned ? (int)match.Result : -1;
+
             // 종료(teardown) 중엔 SpawnManager 내부가 해체되며 NRE 스팸 — 접속 상태에서만 순회
             if (s.connected && nm.SpawnManager != null)
             {
@@ -264,6 +268,7 @@ namespace CTC.Runtime.Networking
         public long localClientId;
         public bool connected;
         public int connectedClientCount;
+        public int matchResult;
         public float timestamp;
         public List<ProbeObject> objects;
     }

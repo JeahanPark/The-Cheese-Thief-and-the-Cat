@@ -7,6 +7,7 @@ using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
+using CTC.Runtime.Match;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -157,6 +158,34 @@ namespace CTC.Runtime.Testing
                 wallet.AddCheese(1000);
             }
             GameDebug.Log("[TestManager] TestGrantCheeseAll → 전 지갑 +1000");
+        }
+
+        /// <summary>서버(호스트) 전용: 고양이 즉사 — 쥐 승리 판정 QA.</summary>
+        public void TestKillCat()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer)
+            {
+                GameDebug.LogWarning("[TestManager] TestKillCat — 서버 아님");
+                return;
+            }
+
+            foreach (var health in FindObjectsByType<Health>())
+            {
+                var tag = health.GetComponent<RoleTag>();
+                if (tag == null || tag.Role != RoleId.Cat) continue;
+                health.TakeDamage(999999);
+                GameDebug.Log("[TestManager] TestKillCat → 고양이 처치");
+                return;
+            }
+        }
+
+        /// <summary>서버(호스트) 전용: 매치 재시작 — 결과 화면 QA.</summary>
+        public void TestRestartMatch()
+        {
+            var match = FindFirstObjectByType<MatchManager>();
+            if (match == null) { GameDebug.LogWarning("[TestManager] MatchManager 없음"); return; }
+            match.RequestRestart();
         }
 
         /// <summary>로컬 플레이어 구매 — QA용 파라미터리스 래퍼.</summary>

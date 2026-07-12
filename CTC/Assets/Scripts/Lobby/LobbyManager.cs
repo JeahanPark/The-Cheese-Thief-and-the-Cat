@@ -122,6 +122,13 @@ namespace CTC.Runtime.Lobby
             SpawnPlayers();
         }
 
+        /// <summary>매치 종료 후 로비 복귀(MatchManager 재시작 스윕 뒤 호출). 역할은 유지.</summary>
+        public void ResetToLobby()
+        {
+            if (!IsServer) return;
+            _gameStarted.Value = false;
+        }
+
         private void SpawnPlayers()
         {
             for (int i = 0; i < _players.Count; i++)

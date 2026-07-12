@@ -5,6 +5,7 @@ using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Managers;
+using CTC.Runtime.Match;
 using CTC.Runtime.Networking;
 using CTC.Runtime.Player;
 using TMPro;
@@ -254,7 +255,9 @@ namespace CTC.Editor
             var lobby = lobbyGo.AddComponent<LobbyManager>();
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
-            BuildLobbyCanvas(lobby);
+            var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
+            SetRef(match, "m_Lobby", lobby);
+            BuildLobbyCanvas(lobby, match);
 
             // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
             var chatGo = new GameObject("ChatManager");
@@ -478,7 +481,7 @@ namespace CTC.Editor
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + MUIP 버튼 3개.
         // MUIP는 asmdef 없이 Assembly-CSharp 소속이라 타입 직접 참조 불가 →
         // GetComponent("ButtonManager") + SerializedObject로 배선하고, LobbyUI는 표준 Button 경유.
-        private static void BuildLobbyCanvas(LobbyManager lobby)
+        private static void BuildLobbyCanvas(LobbyManager lobby, MatchManager match)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -592,6 +595,30 @@ namespace CTC.Editor
             SetRef(shopHud, "m_Panel", shopPanel);
             SetRef(shopHud, "m_BalanceText", shopBalance);
             SetRefArray(shopHud, "m_Buttons", shopButtons);
+
+            // 결과 패널 (매치 종료 시 ResultHud가 표시)
+            var resultPanel = new GameObject("ResultPanel", typeof(RectTransform));
+            resultPanel.transform.SetParent(canvasGo.transform, false);
+            var resultRt = (RectTransform)resultPanel.transform;
+            resultRt.anchorMin = resultRt.anchorMax = new Vector2(0.5f, 0.5f);
+            resultRt.pivot = new Vector2(0.5f, 0.5f);
+            resultRt.sizeDelta = new Vector2(520f, 260f);
+            var resultBg = resultPanel.AddComponent<Image>();
+            resultBg.color = new Color(0.08f, 0.09f, 0.12f, 0.95f);
+
+            TMP_Text resultText = CreateTmpText("ResultText", resultPanel.transform, "-",
+                44f, TextAlignmentOptions.Center, new Vector2(0f, -40f), new Vector2(480f, 70f));
+            resultText.fontStyle = FontStyles.Bold;
+
+            Button restartButton = CreateMuipButton(resultPanel.transform, "RestartButton", "Restart",
+                new Vector2(0f, -170f));
+            resultPanel.SetActive(false);
+
+            var resultHud = canvasGo.AddComponent<ResultHud>();
+            SetRef(resultHud, "m_Match", match);
+            SetRef(resultHud, "m_Panel", resultPanel);
+            SetRef(resultHud, "m_Text", resultText);
+            SetRef(resultHud, "m_RestartButton", restartButton);
         }
 
         private static TMP_Text CreateTmpText(
