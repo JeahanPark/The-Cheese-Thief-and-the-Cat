@@ -31,7 +31,11 @@ namespace CTC.Runtime.Cameras
 
             NetworkManager nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return;
-            if (nm.SpawnManager.GetLocalPlayerObject() != null) return; // 아직 살아 있음
+            if (nm.SpawnManager.GetLocalPlayerObject() != null)
+            {
+                m_Current = null; // 살아 있는 동안 래치 해제 — 일시 null 창에서 굳는 것 방지(리뷰 I-2)
+                return;
+            }
 
             if (m_Current != null) return; // 이미 관전 대상 추적 중
 

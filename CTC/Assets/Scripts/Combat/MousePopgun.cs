@@ -58,19 +58,29 @@ namespace CTC.Runtime.Combat
             if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, m_CooldownSeconds)) return;
             m_LastUseTime = now;
 
+            // 원점을 전진시키면 밀착한 고양이 콜라이더 '내부'에서 시작해 빗나간다(리뷰 I-1).
+            // 자기 위치에서 RaycastAll 후 자기 자신만 스킵하고 최근접 유효 히트를 취한다.
             Vector3 origin = transform.position + Vector3.up * MUZZLE_HEIGHT;
-            // 자기 CC에 막히지 않도록 반경 밖에서 시작
-            origin += _direction * 0.4f;
+            RaycastHit[] hits = Physics.RaycastAll(origin, _direction, m_Range);
+            System.Array.Sort(hits, (_a, _b) => _a.distance.CompareTo(_b.distance));
 
-            if (!Physics.Raycast(origin, _direction, out RaycastHit hit, m_Range)) return;
+            foreach (RaycastHit hit in hits)
+            {
+                if (hit.collider.transform.root == transform.root) continue; // 자기 몸 스킵
 
-            Health target = hit.collider.GetComponentInParent<Health>();
-            if (target == null || target.IsDead) return;
+                Health target = hit.collider.GetComponentInParent<Health>();
+                if (target == null)
+                {
+                    return; // 벽/가구가 먼저 막음
+                }
+                if (target.IsDead) continue;
 
-            RoleTag tag = target.GetComponent<RoleTag>();
-            if (tag == null || tag.Role != RoleId.Cat) return;
+                RoleTag tag = target.GetComponent<RoleTag>();
+                if (tag == null || tag.Role != RoleId.Cat) return; // 쥐 등 비대상이 막음
 
-            target.TakeDamage(m_Damage);
+                target.TakeDamage(m_Damage);
+                return;
+            }
         }
     }
 }
