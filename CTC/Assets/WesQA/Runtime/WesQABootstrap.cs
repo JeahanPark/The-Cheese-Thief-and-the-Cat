@@ -17,7 +17,9 @@ namespace WesQA
         }
 
         // M4: MPPM 가상 플레이어 태그 `wes<N>`(예 wes1, wes2)에서 N을 파싱해 인덱스로 사용.
-        // 메인 에디터(태그 없음/미매칭)·예외·미사용 = 0. 항상 안전하게 0 폴백.
+        // [CTC 이식 수정] 태그 미설정 폴백 — 메인 에디터 = 0, 태그 없는 클론 = 1.
+        // (기존엔 클론도 0 폴백이라 메인 에디터와 포트 5001 바인드 충돌 → SocketException)
+        // 클론 판별은 CTC 기존 패턴(MppmAutoConnect.cs): dataPath에 "/Library/VP/" 포함.
         private static int ResolveInstanceIndex()
         {
             try
@@ -27,6 +29,13 @@ namespace WesQA
                     if (!string.IsNullOrEmpty(tag) && tag.StartsWith("wes") &&
                         int.TryParse(tag.Substring(3), out int n))
                         return n;
+                }
+
+                bool isClone = Application.dataPath.Replace('\\', '/').Contains("/Library/VP/");
+                if (isClone)
+                {
+                    Debug.LogWarning("[WesQA] MPPM 태그 wes<N> 미설정 — instance 1로 폴백. 클론 2개 이상이면 태그 필요");
+                    return 1;
                 }
             }
             catch { }
