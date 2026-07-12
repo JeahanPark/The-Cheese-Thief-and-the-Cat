@@ -1,6 +1,7 @@
 using System.Linq;
 using CTC.Runtime.Cameras;
 using CTC.Runtime.Lobby;
+using CTC.Runtime.Managers;
 using CTC.Runtime.Networking;
 using CTC.Runtime.Player;
 using TMPro;
@@ -164,6 +165,11 @@ namespace CTC.Editor
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
             BuildLobbyCanvas(lobby);
+
+            // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
+            var chatGo = new GameObject("ChatManager");
+            chatGo.AddComponent<NetworkObject>();
+            chatGo.AddComponent<ChatManager>();
 
             // 카메라 — Main Camera에 Brain, 별도 오브젝트에 궤도 vcam
             var mainCam = Camera.main;

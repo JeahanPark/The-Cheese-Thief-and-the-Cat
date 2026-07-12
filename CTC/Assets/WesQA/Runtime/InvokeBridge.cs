@@ -22,6 +22,8 @@ namespace WesQA
         private static Type ResolveTargetType()
         {
             if (s_TargetType != null) return s_TargetType;
+
+            // 1차: 풀네임 매칭 (TARGET_TYPE_NAME에 네임스페이스가 포함된 경우)
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type t;
@@ -29,6 +31,22 @@ namespace WesQA
                 catch { t = null; }
                 if (t != null) { s_TargetType = t; return t; }
             }
+
+            // [CTC 이식 수정] 2차: 네임스페이스 무관 타입명 매칭 —
+            // CTC TestManager는 CTC.Runtime.Testing 네임스페이스 소속이라 GetType("TestManager")로는 못 찾는다.
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type[] types;
+                try { types = asm.GetTypes(); }
+                catch (ReflectionTypeLoadException e) { types = e.Types; }
+                catch { continue; }
+
+                foreach (var t in types)
+                {
+                    if (t != null && t.Name == TARGET_TYPE_NAME) { s_TargetType = t; return t; }
+                }
+            }
+
             // [CTC 이식 수정] 타입 미존재 시 명확한 안내 — CTC는 TestManager 미이식 상태가 정상 경로일 수 있다.
             throw new Exception(
                 $"'{TARGET_TYPE_NAME}' type not found in any loaded assembly. " +
