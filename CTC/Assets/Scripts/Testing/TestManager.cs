@@ -57,6 +57,20 @@ namespace CTC.Runtime.Testing
 
         // ===== CTC 시나리오 (기존 public 메서드 조합만 — 신규 게임 로직 없음) =====
 
+        /// <summary>
+        /// HostPortFallback 경유 호스트 시작 — 선택 포트를 공유 파일에 기록해 클론이 따라온다.
+        /// QA에서 NetworkManager.StartHost를 직접 호출하면 파일이 스테일로 남아
+        /// 클론이 죽은 포트로 UTP 타임아웃(60초+)에 빠진다.
+        /// </summary>
+        public void TestStartHost()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null) { GameDebug.LogError("[TestManager] NetworkManager 없음"); return; }
+
+            bool started = Networking.HostPortFallback.StartHost(nm);
+            GameDebug.Log($"[TestManager] TestStartHost → {started}");
+        }
+
         public void TestSelectRoleCat()
         {
             LobbyManager lobby = FindLobby();
