@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
+using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
 using UnityEngine;
@@ -186,6 +187,7 @@ namespace CTC.Runtime.Networking
                     if (no == null) continue;
 
                     Vector3 p = no.transform.position;
+                    CheeseWallet wallet = no.GetComponent<CheeseWallet>();
                     s.objects.Add(new ProbeObject
                     {
                         id = (long)no.NetworkObjectId,
@@ -194,7 +196,8 @@ namespace CTC.Runtime.Networking
                         isLocalOwner = no.IsOwner,
                         posX = p.x,
                         posY = p.y,
-                        posZ = p.z
+                        posZ = p.z,
+                        cheese = wallet != null ? wallet.Cheese : -1
                     });
                 }
             }
@@ -233,6 +236,7 @@ namespace CTC.Runtime.Networking
         public float posX;
         public float posY;
         public float posZ;
+        public int cheese;
     }
 }
 #endif
