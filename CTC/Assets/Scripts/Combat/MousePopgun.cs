@@ -61,6 +61,7 @@ namespace CTC.Runtime.Combat
             // 원점을 전진시키면 밀착한 고양이 콜라이더 '내부'에서 시작해 빗나간다(리뷰 I-1).
             // 자기 위치에서 RaycastAll 후 자기 자신만 스킵하고 최근접 유효 히트를 취한다.
             Vector3 origin = transform.position + Vector3.up * MUZZLE_HEIGHT;
+            Vector3 end = origin + _direction * m_Range;
             RaycastHit[] hits = Physics.RaycastAll(origin, _direction, m_Range);
             System.Array.Sort(hits, (_a, _b) => _a.distance.CompareTo(_b.distance));
 
@@ -71,16 +72,38 @@ namespace CTC.Runtime.Combat
                 Health target = hit.collider.GetComponentInParent<Health>();
                 if (target == null)
                 {
-                    return; // 벽/가구가 먼저 막음
+                    end = hit.point; // 벽/가구가 먼저 막음
+                    break;
                 }
                 if (target.IsDead) continue;
 
+                end = hit.point;
+
                 RoleTag tag = target.GetComponent<RoleTag>();
-                if (tag == null || tag.Role != RoleId.Cat) return; // 쥐 등 비대상이 막음
+                if (tag == null || tag.Role != RoleId.Cat) break; // 쥐 등 비대상이 막음
 
                 target.TakeDamage(m_Damage);
-                return;
+                break;
             }
+
+            TracerRpc(origin, end);
+        }
+
+        // 발사 피드백 — 전 클라이언트에 짧은 궤적 선을 그린다.
+        [Rpc(SendTo.Everyone)]
+        private void TracerRpc(Vector3 _start, Vector3 _end)
+        {
+            var go = new GameObject("PopgunTracer");
+            LineRenderer line = go.AddComponent<LineRenderer>();
+            line.positionCount = 2;
+            line.SetPosition(0, _start);
+            line.SetPosition(1, _end);
+            line.startWidth = 0.05f;
+            line.endWidth = 0.02f;
+            line.material = new Material(Shader.Find("Sprites/Default"));
+            line.startColor = Color.yellow;
+            line.endColor = new Color(1f, 0.9f, 0.2f, 0.2f);
+            Destroy(go, 0.12f);
         }
     }
 }
