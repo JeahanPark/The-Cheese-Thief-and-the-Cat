@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 
+using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -188,6 +189,7 @@ namespace CTC.Runtime.Networking
 
                     Vector3 p = no.transform.position;
                     CheeseWallet wallet = no.GetComponent<CheeseWallet>();
+                    Health health = no.GetComponent<Health>();
                     s.objects.Add(new ProbeObject
                     {
                         id = (long)no.NetworkObjectId,
@@ -197,7 +199,8 @@ namespace CTC.Runtime.Networking
                         posX = p.x,
                         posY = p.y,
                         posZ = p.z,
-                        cheese = wallet != null ? wallet.Cheese : -1
+                        cheese = wallet != null ? wallet.Cheese : -1,
+                        hp = health != null ? health.Hp : -1
                     });
                 }
             }
@@ -237,6 +240,7 @@ namespace CTC.Runtime.Networking
         public float posY;
         public float posZ;
         public int cheese;
+        public int hp;
     }
 }
 #endif
