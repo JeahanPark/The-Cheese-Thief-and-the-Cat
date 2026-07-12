@@ -580,13 +580,10 @@ namespace CTC.Editor
 
             int catalogCount = ShopLogic.CATALOG.Length;
             var shopButtons = new Button[catalogCount];
-            var shopLabels = new TMP_Text[catalogCount];
             for (int i = 0; i < catalogCount; i++)
             {
-                Button b = CreateMuipButton(shopPanel.transform, $"ShopButton{i}", "-",
+                shopButtons[i] = CreateMuipButton(shopPanel.transform, $"ShopButton{i}", "-",
                     new Vector2(0f, -120f - i * 60f));
-                shopButtons[i] = b;
-                shopLabels[i] = b.GetComponentInChildren<TMP_Text>(true);
             }
             shopPanel.SetActive(false);
 
@@ -595,7 +592,6 @@ namespace CTC.Editor
             SetRef(shopHud, "m_Panel", shopPanel);
             SetRef(shopHud, "m_BalanceText", shopBalance);
             SetRefArray(shopHud, "m_Buttons", shopButtons);
-            SetRefArray(shopHud, "m_ButtonLabels", shopLabels);
         }
 
         private static TMP_Text CreateTmpText(

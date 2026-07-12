@@ -21,12 +21,12 @@ namespace CTC.Runtime.Economy
         [SerializeField] private LobbyManager m_Lobby;
         [SerializeField] private GameObject m_Panel;
         [SerializeField] private TMP_Text m_BalanceText;
-        [SerializeField] private Button[] m_Buttons;        // ShopLogic.CATALOG 순서
-        [SerializeField] private TMP_Text[] m_ButtonLabels; // 버튼과 같은 순서
+        [SerializeField] private Button[] m_Buttons; // ShopLogic.CATALOG 순서
 
+        // MUIP 기본 TMP 폰트가 한글 글리프 미포함 — 영문 라벨 사용 (한글화는 폰트 에셋 도입 시)
         private static readonly string[] ITEM_LABELS =
         {
-            "새총", "기관총", "대시", "미끼", "쥐 요새", "공격 강화", "이속 강화",
+            "Slingshot", "Machine Gun", "Dash", "Decoy", "Fortress", "ATK Up", "SPD Up",
         };
 
         private void Awake()
@@ -98,7 +98,11 @@ namespace CTC.Runtime.Economy
                 m_Buttons[i].gameObject.SetActive(forMyRole);
                 if (!forMyRole) continue;
 
-                m_ButtonLabels[i].text = $"{ITEM_LABELS[i]} {item.Cost}";
+                // MUIP 버튼은 상태별 TMP 라벨이 여러 개(normal/highlighted) — 전부 갱신
+                foreach (TMP_Text label in m_Buttons[i].GetComponentsInChildren<TMP_Text>(true))
+                {
+                    label.text = $"{ITEM_LABELS[i]} {item.Cost}";
+                }
                 m_Buttons[i].interactable = ShopLogic.CanBuy(cheese, item.Cost) && shop.CanApply(item.Id);
             }
         }

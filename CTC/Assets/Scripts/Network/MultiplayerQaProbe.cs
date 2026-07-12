@@ -110,6 +110,9 @@ namespace CTC.Runtime.Networking
                 case "TestMpBuyDash":
                     BuyLocal(ShopItemId.Dash);
                     break;
+                case "TestMpBuyDecoy":
+                    BuyLocal(ShopItemId.Decoy);
+                    break;
                 default:
                     Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
                     break;

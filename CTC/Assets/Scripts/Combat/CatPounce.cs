@@ -65,9 +65,13 @@ namespace CTC.Runtime.Combat
                         transform.position, transform.forward, target.transform.position,
                         m_Range, m_HalfAngleDeg)) continue;
 
+                // 보상 대상 여부는 데미지 전에 캡처 — 사망 시 PlayerDeath가 Died 이벤트에서
+                // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
+                bool isPlayerKill = target.NetworkObject.IsPlayerObject;
+
                 target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
                 // 보상은 플레이어 처치만 — 요새/미끼(RoleTag.Mouse 구조물) 파괴가 돈줄이 되면 안 됨
-                if (target.IsDead && myWallet != null && target.NetworkObject.IsPlayerObject)
+                if (target.IsDead && myWallet != null && isPlayerKill)
                 {
                     myWallet.AddCheese(m_KillReward);
                 }
