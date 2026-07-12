@@ -1,3 +1,4 @@
+using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -18,8 +19,20 @@ namespace CTC.Runtime.Player
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float turnSpeedDegPerSec = 720f;
 
+        // 이속 강화 스택(상점, 고양이). 서버 기록·소유자 적용.
+        private readonly NetworkVariable<int> _speedStacks = new NetworkVariable<int>();
+
         private CharacterController _controller;
         private float _verticalVelocity;
+
+        public int SpeedStacks => _speedStacks.Value;
+
+        /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
+        public void ServerAddSpeedStack()
+        {
+            if (!IsServer || !ShopLogic.CanAddStack(_speedStacks.Value)) return;
+            _speedStacks.Value++;
+        }
 
         private void Awake()
         {
@@ -66,7 +79,7 @@ namespace CTC.Runtime.Player
             if (_controller.isGrounded && _verticalVelocity < 0f) _verticalVelocity = -1f;
             _verticalVelocity += GRAVITY * Time.deltaTime;
 
-            Vector3 motion = dir * moveSpeed;
+            Vector3 motion = dir * ShopLogic.MoveSpeed(moveSpeed, _speedStacks.Value);
             motion.y = _verticalVelocity;
             _controller.Move(motion * Time.deltaTime);
 

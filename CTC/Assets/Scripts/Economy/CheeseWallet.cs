@@ -12,11 +12,20 @@ namespace CTC.Runtime.Economy
 
         public int Cheese => m_Cheese.Value;
 
-        /// <summary>서버 전용. 상점 차감은 Plan 6에서 TrySpend로 확장.</summary>
+        /// <summary>서버 전용.</summary>
         public void AddCheese(int _amount)
         {
             if (!IsServer || _amount <= 0) return;
             m_Cheese.Value += _amount;
+        }
+
+        /// <summary>서버 전용. 잔액이 충분할 때만 차감하고 성공 여부를 돌려준다(상점 구매).</summary>
+        public bool TrySpend(int _amount)
+        {
+            if (!IsServer || _amount <= 0 || m_Cheese.Value < _amount) return false;
+
+            m_Cheese.Value -= _amount;
+            return true;
         }
     }
 }

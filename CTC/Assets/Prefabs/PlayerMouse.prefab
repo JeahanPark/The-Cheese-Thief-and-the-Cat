@@ -19,7 +19,9 @@ GameObject:
   - component: {fileID: 3429349997210667258}
   - component: {fileID: 5266508621866913705}
   - component: {fileID: 2888748911153239412}
+  - component: {fileID: 7969670973942088240}
   - component: {fileID: 3194180182503786071}
+  - component: {fileID: 2258780326856655791}
   m_Layer: 0
   m_Name: PlayerMouse
   m_TagString: Untagged
@@ -238,6 +240,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.PlayerDeath
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7969670973942088240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 422ec76e88cd9884faf3b6d680fbbe9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.ShopController
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_DecoyPrefab: {fileID: 6274109959196663774, guid: 450f58df589791f4d909a7da8f9933dc, type: 3}
+  m_FortressPrefab: {fileID: 6801997145415905212, guid: 2193c73b777264a47a5667ba954f3196, type: 3}
 --- !u!114 &3194180182503786071
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -251,9 +268,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.MousePopgun
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Range: 8
-  m_Damage: 5
-  m_CooldownSeconds: 0.8
+--- !u!114 &2258780326856655791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe827404ff13eff4d8b56356f7c11050, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.MouseDash
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &3590425873836912933
 PrefabInstance:
   m_ObjectHideFlags: 0

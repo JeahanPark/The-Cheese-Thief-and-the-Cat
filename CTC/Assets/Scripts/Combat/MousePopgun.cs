@@ -1,3 +1,4 @@
+using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,11 +14,19 @@ namespace CTC.Runtime.Combat
     {
         private const float MUZZLE_HEIGHT = 0.3f;
 
-        [SerializeField] private float m_Range = 8f;
-        [SerializeField] private int m_Damage = 5;
-        [SerializeField] private float m_CooldownSeconds = 0.8f;
+        // 무기 티어(0 딱총/1 새총/2 기관총급). 서버 기록(상점 구매), 전원 읽기(HUD·QA).
+        private readonly NetworkVariable<int> m_Tier = new NetworkVariable<int>();
 
         private double m_LastUseTime = -999.0;
+
+        public int Tier => m_Tier.Value;
+
+        /// <summary>서버 전용(ShopController). 단방향 상승만.</summary>
+        public void ServerSetTier(int _tier)
+        {
+            if (!IsServer || _tier <= m_Tier.Value) return;
+            m_Tier.Value = _tier;
+        }
 
         private void Update()
         {
@@ -54,15 +63,17 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Server)]
         private void FireRpc(Vector3 _direction)
         {
+            WeaponStats stats = ShopLogic.WeaponStatsForTier(m_Tier.Value);
+
             double now = NetworkManager.ServerTime.Time;
-            if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, m_CooldownSeconds)) return;
+            if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, stats.CooldownSeconds)) return;
             m_LastUseTime = now;
 
             // 원점을 전진시키면 밀착한 고양이 콜라이더 '내부'에서 시작해 빗나간다(리뷰 I-1).
             // 자기 위치에서 RaycastAll 후 자기 자신만 스킵하고 최근접 유효 히트를 취한다.
             Vector3 origin = transform.position + Vector3.up * MUZZLE_HEIGHT;
-            Vector3 end = origin + _direction * m_Range;
-            RaycastHit[] hits = Physics.RaycastAll(origin, _direction, m_Range);
+            Vector3 end = origin + _direction * stats.Range;
+            RaycastHit[] hits = Physics.RaycastAll(origin, _direction, stats.Range);
             System.Array.Sort(hits, (_a, _b) => _a.distance.CompareTo(_b.distance));
 
             foreach (RaycastHit hit in hits)
@@ -82,7 +93,7 @@ namespace CTC.Runtime.Combat
                 RoleTag tag = target.GetComponent<RoleTag>();
                 if (tag == null || tag.Role != RoleId.Cat) break; // 쥐 등 비대상이 막음
 
-                target.TakeDamage(m_Damage);
+                target.TakeDamage(stats.Damage);
                 break;
             }
 

@@ -19,6 +19,8 @@ namespace CTC.Tests
             "Assets/Scenes/Game.unity",
             "Assets/Prefabs/PlayerCat.prefab",
             "Assets/Prefabs/PlayerMouse.prefab",
+            "Assets/Prefabs/CheeseFortress.prefab",
+            "Assets/Prefabs/MouseDecoy.prefab",
         };
 
         private static readonly Regex HASH_PATTERN =

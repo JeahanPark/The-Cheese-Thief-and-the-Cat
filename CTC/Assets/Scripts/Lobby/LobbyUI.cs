@@ -35,7 +35,8 @@ namespace CTC.Runtime.Lobby
 
             if (lobby != null && lobby.IsSpawned && lobby.GameStarted)
             {
-                if (Cursor.lockState != CursorLockMode.Locked)
+                // 상점이 열려 있으면 커서 점유를 양보 (ShopHud가 해제/복구 관리)
+                if (!Economy.ShopHud.IsOpen && Cursor.lockState != CursorLockMode.Locked)
                 {
                     Cursor.lockState = CursorLockMode.Locked;
                     Cursor.visible = false;

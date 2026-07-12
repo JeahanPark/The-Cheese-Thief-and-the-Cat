@@ -5,6 +5,7 @@
 using System.Collections;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
+using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -139,6 +140,42 @@ namespace CTC.Runtime.Testing
             var gun = local != null ? local.GetComponent<MousePopgun>() : null;
             if (gun == null) { GameDebug.LogWarning("[TestManager] MousePopgun 없음"); return; }
             gun.DevShootAtNearestCat();
+        }
+
+        /// <summary>서버(호스트) 전용: 모든 지갑에 치즈 지급 — 상점 QA 부트스트랩.</summary>
+        public void TestGrantCheeseAll()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer)
+            {
+                GameDebug.LogWarning("[TestManager] TestGrantCheeseAll — 서버 아님");
+                return;
+            }
+
+            foreach (var wallet in FindObjectsByType<CheeseWallet>())
+            {
+                wallet.AddCheese(1000);
+            }
+            GameDebug.Log("[TestManager] TestGrantCheeseAll → 전 지갑 +1000");
+        }
+
+        /// <summary>로컬 플레이어 구매 — QA용 파라미터리스 래퍼.</summary>
+        public void TestBuySlingshot() => BuyLocal(ShopItemId.Slingshot);
+        public void TestBuyMachineGun() => BuyLocal(ShopItemId.MachineGun);
+        public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
+        public void TestBuyDecoy() => BuyLocal(ShopItemId.Decoy);
+        public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
+        public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
+        public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
+
+        private static void BuyLocal(ShopItemId _itemId)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var shop = local != null ? local.GetComponent<ShopController>() : null;
+            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
+            shop.Buy(_itemId);
+            GameDebug.Log($"[TestManager] BuyLocal({_itemId}) 요청");
         }
 
         private static LobbyManager FindLobby()

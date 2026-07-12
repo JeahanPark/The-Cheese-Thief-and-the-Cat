@@ -101,6 +101,15 @@ namespace CTC.Runtime.Networking
                 case "TestMpShootAtCat":
                     ShootAtCat();
                     break;
+                case "TestMpBuySlingshot":
+                    BuyLocal(ShopItemId.Slingshot);
+                    break;
+                case "TestMpBuyFortress":
+                    BuyLocal(ShopItemId.Fortress);
+                    break;
+                case "TestMpBuyDash":
+                    BuyLocal(ShopItemId.Dash);
+                    break;
                 default:
                     Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
                     break;
@@ -152,6 +161,21 @@ namespace CTC.Runtime.Networking
                 return;
             }
             gun.DevShootAtNearestCat();
+        }
+
+        // 클론 로컬 플레이어의 상점 구매 — 상점 QA용.
+        private void BuyLocal(ShopItemId itemId)
+        {
+            NetworkObject local = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
+                : null;
+            var shop = local != null ? local.GetComponent<ShopController>() : null;
+            if (shop == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] BuyLocal — ShopController 없음");
+                return;
+            }
+            shop.Buy(itemId);
         }
 
         private void OnDestroy()
@@ -208,6 +232,7 @@ namespace CTC.Runtime.Networking
                     Vector3 p = no.transform.position;
                     CheeseWallet wallet = no.GetComponent<CheeseWallet>();
                     Health health = no.GetComponent<Health>();
+                    MousePopgun popgun = no.GetComponent<MousePopgun>();
                     s.objects.Add(new ProbeObject
                     {
                         id = (long)no.NetworkObjectId,
@@ -218,7 +243,8 @@ namespace CTC.Runtime.Networking
                         posY = p.y,
                         posZ = p.z,
                         cheese = wallet != null ? wallet.Cheese : -1,
-                        hp = health != null ? health.Hp : -1
+                        hp = health != null ? health.Hp : -1,
+                        weaponTier = popgun != null ? popgun.Tier : -1
                     });
                 }
             }
@@ -259,6 +285,7 @@ namespace CTC.Runtime.Networking
         public float posZ;
         public int cheese;
         public int hp;
+        public int weaponTier;
     }
 }
 #endif

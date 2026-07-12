@@ -31,6 +31,8 @@ namespace CTC.Editor
         private const string MaterialsDir = "Assets/Materials";
         private const string CatPrefabPath = PrefabDir + "/PlayerCat.prefab";
         private const string MousePrefabPath = PrefabDir + "/PlayerMouse.prefab";
+        private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
+        private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
         private const string QuirkyRoot = "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1";
@@ -52,20 +54,35 @@ namespace CTC.Editor
             Material catMat = CreateUrpMaterial("M_Cat_URP", CatSourceMatPath);
             Material mouseMat = CreateUrpMaterial("M_Mouse_URP", MouseSourceMatPath);
 
+            // 설치형 프리팹을 먼저 생성 — 플레이어 프리팹(ShopController)이 참조한다
+            GameObject fortressPrefab = CreateStructurePrefab(
+                "CheeseFortress", FortressPrefabPath, PrimitiveType.Cylinder,
+                GridboxMaterial("Yellow"), maxHp: 300,
+                scale: new Vector3(2f, 0.6f, 2f),
+                addExtras: _root => _root.AddComponent<FortressHealZone>());
+
+            GameObject decoyPrefab = CreateStructurePrefab(
+                "MouseDecoy", DecoyPrefabPath, PrimitiveType.Capsule,
+                mouseMat, maxHp: 1,
+                scale: new Vector3(0.4f, 0.25f, 0.4f),
+                addExtras: _root => _root.AddComponent<DecoyLifetime>());
+
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
                 moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f,
-                role: RoleId.Cat, maxHp: 1000);
+                role: RoleId.Cat, maxHp: 1000,
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
                 ccHeight: 0.5f, ccRadius: 0.22f,
                 moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
-                role: RoleId.Mouse, maxHp: 100);
+                role: RoleId.Mouse, maxHp: 100,
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
-            CreateGameScene(catPrefab, mousePrefab);
-            Debug.Log("[SetupNetworkingScene] 완료 — PlayerCat/PlayerMouse 프리팹 + Game.unity 재생성");
+            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
+            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
@@ -92,11 +109,50 @@ namespace CTC.Editor
             return mat;
         }
 
+        // 설치형 NetworkObject 프리팹(요새·미끼). 프리미티브 + Health/RoleTag(Mouse)/PlayerDeath.
+        // RoleTag.Mouse라 고양이 덮치기 판정을 그대로 받는다(파괴 가능, 보상은 플레이어 한정).
+        private static GameObject CreateStructurePrefab(
+            string name, string prefabPath, PrimitiveType primitive, Material material,
+            int maxHp, Vector3 scale, System.Action<GameObject> addExtras)
+        {
+            var root = new GameObject(name);
+            try
+            {
+                root.AddComponent<NetworkObject>();
+
+                var health = root.AddComponent<Health>();
+                SetInt(health, "m_MaxHp", maxHp);
+
+                var roleTag = root.AddComponent<RoleTag>();
+                SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
+
+                root.AddComponent<PlayerDeath>();
+                addExtras(root);
+
+                var body = GameObject.CreatePrimitive(primitive);
+                body.name = "Body";
+                body.transform.SetParent(root.transform, false);
+                body.transform.localPosition = new Vector3(0f, scale.y, 0f);
+                body.transform.localScale = scale;
+                if (material != null) body.GetComponent<Renderer>().sharedMaterial = material;
+
+                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
+                AssetDatabase.SaveAssets();
+                return asset;
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
         private static GameObject CreatePlayerPrefab(
             string name, string prefabPath, string modelPath, Material material,
             float ccHeight, float ccRadius,
             float moveSpeed, float runThreshold, float fov, float camDistance,
-            RoleId role, int maxHp)
+            RoleId role, int maxHp,
+            GameObject decoyPrefab, GameObject fortressPrefab)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -132,8 +188,16 @@ namespace CTC.Editor
 
                 root.AddComponent<PlayerDeath>();
 
+                var shop = root.AddComponent<ShopController>();
+                SetRef(shop, "m_DecoyPrefab", decoyPrefab);
+                SetRef(shop, "m_FortressPrefab", fortressPrefab);
+
                 if (role == RoleId.Cat) root.AddComponent<CatPounce>();
-                else root.AddComponent<MousePopgun>();
+                else
+                {
+                    root.AddComponent<MousePopgun>();
+                    root.AddComponent<MouseDash>();
+                }
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
@@ -157,7 +221,8 @@ namespace CTC.Editor
             }
         }
 
-        private static void CreateGameScene(GameObject catPrefab, GameObject mousePrefab)
+        private static void CreateGameScene(
+            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -177,7 +242,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab);
+            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
 
             nmGo.AddComponent<ConnectionUI>();
             nmGo.AddComponent<MppmAutoConnect>();
@@ -240,6 +305,8 @@ namespace CTC.Editor
             VerifyUniqueHashes(sceneObjects
                 .Append(catPrefab.GetComponent<NetworkObject>())
                 .Append(mousePrefab.GetComponent<NetworkObject>())
+                .Append(fortressPrefab.GetComponent<NetworkObject>())
+                .Append(decoyPrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }
 
@@ -493,6 +560,42 @@ namespace CTC.Editor
             var combatHud = canvasGo.AddComponent<CombatHud>();
             SetRef(combatHud, "m_Lobby", lobby);
             SetRef(combatHud, "m_Text", combatText);
+
+            // 상점 패널 (B키 토글, ShopHud가 제어)
+            var shopPanel = new GameObject("ShopPanel", typeof(RectTransform));
+            shopPanel.transform.SetParent(canvasGo.transform, false);
+            var shopRt = (RectTransform)shopPanel.transform;
+            shopRt.anchorMin = shopRt.anchorMax = new Vector2(0.5f, 0.5f);
+            shopRt.pivot = new Vector2(0.5f, 0.5f);
+            shopRt.sizeDelta = new Vector2(420f, 560f);
+            var shopBg = shopPanel.AddComponent<Image>();
+            shopBg.color = new Color(0.08f, 0.09f, 0.12f, 0.9f);
+
+            TMP_Text shopTitle = CreateTmpText("ShopTitle", shopPanel.transform, "SHOP (B)",
+                30f, TextAlignmentOptions.Center, new Vector2(0f, -16f), new Vector2(380f, 44f));
+            shopTitle.fontStyle = FontStyles.Bold;
+
+            TMP_Text shopBalance = CreateTmpText("ShopBalance", shopPanel.transform, "Cheese: 0",
+                24f, TextAlignmentOptions.Center, new Vector2(0f, -64f), new Vector2(380f, 36f));
+
+            int catalogCount = ShopLogic.CATALOG.Length;
+            var shopButtons = new Button[catalogCount];
+            var shopLabels = new TMP_Text[catalogCount];
+            for (int i = 0; i < catalogCount; i++)
+            {
+                Button b = CreateMuipButton(shopPanel.transform, $"ShopButton{i}", "-",
+                    new Vector2(0f, -120f - i * 60f));
+                shopButtons[i] = b;
+                shopLabels[i] = b.GetComponentInChildren<TMP_Text>(true);
+            }
+            shopPanel.SetActive(false);
+
+            var shopHud = canvasGo.AddComponent<ShopHud>();
+            SetRef(shopHud, "m_Lobby", lobby);
+            SetRef(shopHud, "m_Panel", shopPanel);
+            SetRef(shopHud, "m_BalanceText", shopBalance);
+            SetRefArray(shopHud, "m_Buttons", shopButtons);
+            SetRefArray(shopHud, "m_ButtonLabels", shopLabels);
         }
 
         private static TMP_Text CreateTmpText(
@@ -577,6 +680,18 @@ namespace CTC.Editor
         {
             var so = new SerializedObject(c);
             so.FindProperty(field).objectReferenceValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetRefArray(Component c, string field, Object[] values)
+        {
+            var so = new SerializedObject(c);
+            SerializedProperty prop = so.FindProperty(field);
+            prop.arraySize = values.Length;
+            for (int i = 0; i < values.Length; i++)
+            {
+                prop.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            }
             so.ApplyModifiedPropertiesWithoutUndo();
         }
     }

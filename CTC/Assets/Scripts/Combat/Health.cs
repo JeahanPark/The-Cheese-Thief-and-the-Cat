@@ -29,5 +29,13 @@ namespace CTC.Runtime.Combat
             m_Hp.Value = CombatLogic.ApplyDamage(m_Hp.Value, _damage);
             if (IsDead) Died?.Invoke(this);
         }
+
+        /// <summary>서버 전용 회복(요새 거점). 죽은 대상은 회복 불가 — 부활 없음(원작 동일).</summary>
+        public void Heal(int _amount)
+        {
+            if (!IsServer || IsDead || _amount <= 0) return;
+
+            m_Hp.Value = UnityEngine.Mathf.Min(m_MaxHp, m_Hp.Value + _amount);
+        }
     }
 }
