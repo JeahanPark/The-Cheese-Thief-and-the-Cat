@@ -391,11 +391,13 @@ namespace CTC.Editor
                 nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
         }
 
-        // v2 그레이박스: 외벽 + 쥐 터널 링(내벽·쥐구멍·인방) + 중앙 차단 블록.
-        // 사물 조형 없음 — 아트 패스(8-B)에서 교체. 구멍 치수는 SPEC §12-A (0.6×0.6).
+        // v2 그레이박스: 외벽 + 쥐 터널 링(내벽·쥐구멍·인방). 사물 조형 없음 — 아트 패스(8-B)에서 교체.
+        // 구멍 치수는 CC skinWidth(0.08) 포함 실효 크기 기준 (SPEC §12-A):
+        //   쥐   실효 폭 0.60 · 키 0.63 → 통과 (여유 폭 0.4 / 높이 0.12)
+        //   고양이 실효 폭 0.86 · 키 1.03 → 인방(0.75)에 차단
         private const float TUNNEL_WALL_POS = 13.2f;   // 내벽 중심 좌표
-        private const float HOLE_WIDTH = 0.6f;
-        private const float HOLE_HEIGHT = 0.6f;
+        private const float HOLE_WIDTH = 1.0f;
+        private const float HOLE_HEIGHT = 0.75f;
         private const float TUNNEL_WALL_HEIGHT = 1.2f;
 
         // 변마다 쥐구멍 위치(해당 축 좌표) — 총 9개
