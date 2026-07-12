@@ -15,7 +15,7 @@ namespace CTC.Runtime.Networking
     public static class HostPortFallback
     {
         public const int BASE_PORT = 7788;
-        public const int MAX_ATTEMPTS = 10;
+        public const int MAX_ATTEMPTS = 20;
         private const string PORT_DIR_NAME = "ctc-mppm-qa";
         private const string PORT_FILE_NAME = "host_port.txt";
 

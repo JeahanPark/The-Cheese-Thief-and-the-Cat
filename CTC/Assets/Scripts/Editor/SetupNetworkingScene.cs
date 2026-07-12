@@ -1,4 +1,5 @@
 using System.Linq;
+using System.Reflection;
 using CTC.Runtime.Cameras;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
@@ -143,7 +144,12 @@ namespace CTC.Editor
                 foreach (var r in model.GetComponentsInChildren<Renderer>(true))
                     r.sharedMaterials = Enumerable.Repeat(material, r.sharedMaterials.Length).ToArray();
 
-                return PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                // 저장 전 임시 씬 오브젝트에서 OnValidate가 구운 해시는 무효(두 프리팹이 동일값).
+                // 영속화된 에셋에서 다시 구워야 에셋 GUID 기반의 유일한 해시가 나온다.
+                BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
+                AssetDatabase.SaveAssets();
+                return asset;
             }
             finally
             {
@@ -216,6 +222,65 @@ namespace CTC.Editor
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes
                     .Append(new EditorBuildSettingsScene(GameScenePath, true))
                     .ToArray();
+            }
+
+            // in-scene NetworkObject 해시 베이크 — 첫 저장 전에는 GlobalObjectId가 무효
+            // (identifierType=0)라 OnValidate가 스킵되어 해시가 0으로 직렬화된다.
+            // 저장으로 씬 GUID/fileID가 생긴 뒤 다시 굽고 재저장한다.
+            // (빌드 세팅 등록 후여야 CheckForInScenePlaced가 in-scene으로 판정)
+            NetworkObject[] sceneObjects = Object.FindObjectsByType<NetworkObject>(FindObjectsInactive.Include);
+            foreach (NetworkObject no in sceneObjects)
+            {
+                BakeGlobalObjectIdHash(no);
+            }
+            // 직접 필드 수정은 씬을 dirty로 안 만들어 SaveScene이 no-op될 수 있음 → 명시 dirty
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, GameScenePath);
+
+            VerifyUniqueHashes(sceneObjects
+                .Append(catPrefab.GetComponent<NetworkObject>())
+                .Append(mousePrefab.GetComponent<NetworkObject>())
+                .ToArray());
+        }
+
+        // NGO는 에디터 OnValidate에서 GlobalObjectIdHash = GlobalObjectId 문자열의 XXHash32로
+        // 굽지만, 저장 전 임시 오브젝트에서는 무효한 id(targetObjectId=0)로 구워져 충돌한다.
+        // 저장(영속화) 후 동일 계산을 직접 수행해 SerializedObject로 쓴다 — OnValidate 재실행 시에도
+        // 같은 값이 나오므로 이후 에디터 churn이 없다. (필드·XXHash 모두 internal → 리플렉션)
+        private static void BakeGlobalObjectIdHash(NetworkObject networkObject)
+        {
+            GlobalObjectId globalId = GlobalObjectId.GetGlobalObjectIdSlow(networkObject);
+            if (globalId.identifierType == 0 || globalId.targetObjectId == 0)
+            {
+                Debug.LogError($"[SetupNetworkingScene] {networkObject.name} GlobalObjectId 무효({globalId}) — 해시 베이크 불가");
+                return;
+            }
+
+            System.Type xxHash = typeof(NetworkObject).Assembly.GetType("Unity.Netcode.XXHash");
+            MethodInfo hash32 = xxHash.GetMethod("Hash32", new[] { typeof(string) });
+            uint hash = (uint)hash32.Invoke(null, new object[] { globalId.ToString() });
+
+            var so = new SerializedObject(networkObject);
+            so.FindProperty("GlobalObjectIdHash").uintValue = hash;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            // 로드 시 OnValidate가 메모리만 교정(dirty 없음)하는 경우 위 Apply가 no-op이 되어
+            // 디스크의 스테일/충돌 값이 영영 안 고쳐진다 → 무조건 dirty로 재직렬화 강제
+            EditorUtility.SetDirty(networkObject);
+        }
+
+        // 베이크 결과 최종 검증 — 0이거나 충돌하면 NGO ScenePlacedObjects 등록이 깨진다.
+        private static void VerifyUniqueHashes(params NetworkObject[] networkObjects)
+        {
+            var seen = new System.Collections.Generic.Dictionary<uint, string>();
+            foreach (NetworkObject no in networkObjects)
+            {
+                uint hash = new SerializedObject(no).FindProperty("GlobalObjectIdHash").uintValue;
+                if (hash == 0)
+                    Debug.LogError($"[SetupNetworkingScene] {no.name} GlobalObjectIdHash=0");
+                else if (seen.TryGetValue(hash, out string other))
+                    Debug.LogError($"[SetupNetworkingScene] GlobalObjectIdHash 충돌: {no.name} == {other} ({hash})");
+                else
+                    seen.Add(hash, no.name);
             }
         }
 
