@@ -3,6 +3,7 @@
 // WesQA InvokeBridge가 리플렉션으로 Instance.<method>(kwargs)를 호출하는 QA 진입점 싱글턴.
 #if UNITY_EDITOR
 using System.Collections;
+using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
 using UnityEngine;
@@ -81,6 +82,49 @@ namespace CTC.Runtime.Testing
 
             lobby.DevStartGame();
             GameDebug.Log("[TestManager] TestStartGame → LobbyManager.DevStartGame");
+        }
+
+        /// <summary>로컬 플레이어를 다른 플레이어 바로 앞으로 순간이동(전투 QA용, CC 토글).</summary>
+        public void TestTeleportToOtherPlayer()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) { GameDebug.LogWarning("[TestManager] 로컬 플레이어 없음"); return; }
+
+            foreach (var kv in nm.SpawnManager.SpawnedObjects)
+            {
+                var other = kv.Value;
+                if (other == null || other == local || other.GetComponent<CTC.Runtime.Player.PlayerMovement>() == null) continue;
+
+                var cc = local.GetComponent<UnityEngine.CharacterController>();
+                UnityEngine.Vector3 pos = other.transform.position - other.transform.forward * 1.2f;
+                if (cc != null) cc.enabled = false;
+                local.transform.position = pos;
+                local.transform.LookAt(other.transform.position);
+                if (cc != null) cc.enabled = true;
+                GameDebug.Log($"[TestManager] TeleportToOtherPlayer → {pos}");
+                return;
+            }
+        }
+
+        /// <summary>로컬 플레이어(고양이)의 덮치기 실행.</summary>
+        public void TestPounce()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var pounce = local != null ? local.GetComponent<CatPounce>() : null;
+            if (pounce == null) { GameDebug.LogWarning("[TestManager] CatPounce 없음"); return; }
+            pounce.DevPounce();
+        }
+
+        /// <summary>로컬 플레이어(쥐)가 가장 가까운 고양이에게 딱총 발사.</summary>
+        public void TestShootAtCat()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var gun = local != null ? local.GetComponent<MousePopgun>() : null;
+            if (gun == null) { GameDebug.LogWarning("[TestManager] MousePopgun 없음"); return; }
+            gun.DevShootAtNearestCat();
         }
 
         private static LobbyManager FindLobby()

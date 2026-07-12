@@ -98,6 +98,9 @@ namespace CTC.Runtime.Networking
                 case "TestMpSelectRoleCat":
                     SelectRole(RoleId.Cat);
                     break;
+                case "TestMpShootAtCat":
+                    ShootAtCat();
+                    break;
                 default:
                     Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
                     break;
@@ -134,6 +137,21 @@ namespace CTC.Runtime.Networking
             }
             lobby.SelectRole(role);
             Debug.Log($"[MultiplayerQaProbe] SelectRole({role}) 요청");
+        }
+
+        // 클론 쥐가 가장 가까운 고양이에게 딱총 발사 — 전투 QA용.
+        private void ShootAtCat()
+        {
+            NetworkObject local = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
+                : null;
+            var gun = local != null ? local.GetComponent<MousePopgun>() : null;
+            if (gun == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] ShootAtCat — MousePopgun 없음");
+                return;
+            }
+            gun.DevShootAtNearestCat();
         }
 
         private void OnDestroy()
