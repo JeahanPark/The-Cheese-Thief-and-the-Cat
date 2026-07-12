@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7032344563014613173}
   - component: {fileID: 2931861370349972259}
   - component: {fileID: 2949772959274618968}
+  - component: {fileID: 4598405987156818162}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Untagged
@@ -75,7 +76,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1075423190
+  GlobalObjectIdHash: 2489601027
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -180,6 +181,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   cameraFov: 70
   cameraDistance: 5
+--- !u!114 &4598405987156818162
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63864b5a2e7921b4a968538902e7707a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.CheeseWallet
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0

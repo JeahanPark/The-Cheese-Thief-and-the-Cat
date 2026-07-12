@@ -1,5 +1,6 @@
 using System.Linq;
 using CTC.Runtime.Cameras;
+using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Managers;
 using CTC.Runtime.Networking;
@@ -116,6 +117,8 @@ namespace CTC.Editor
                 SetFloat(binder, "cameraFov", fov);
                 SetFloat(binder, "cameraDistance", camDistance);
 
+                root.AddComponent<CheeseWallet>();
+
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
                 model.name = "Model";
@@ -143,6 +146,7 @@ namespace CTC.Editor
             floor.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Grey1");
 
             BuildGreyboxMap();
+            BuildCheeseSpots();
 
             // NetworkManager — 자동 플레이어 스폰 없음(로비가 역할별로 스폰)
             var nmGo = new GameObject("NetworkManager");
@@ -257,6 +261,53 @@ namespace CTC.Editor
             AddBox(root, crate, "Crate_B", new Vector3(-5.5f, 0.4f, -10.5f), new Vector3(1.2f, 0.8f, 1.2f));
         }
 
+        // 치즈 지점(원작 돈줄) — 구석=저등급, 개활지=고등급. G1 (3,1)은 QA용
+        // (클론 넛지 TestMpNudgeLocalPlayer가 스폰(1,0,0)에서 도달하는 지점).
+        private static readonly (Vector3 pos, int grade)[] CHEESE_SPOT_DEFS =
+        {
+            (new Vector3(-11f, 0f, -11f), 1),
+            (new Vector3(3f, 0f, 1f), 1),
+            (new Vector3(11f, 0f, -12f), 2),
+            (new Vector3(-9f, 0f, 9f), 2),
+            (new Vector3(11.5f, 0f, 8f), 3),
+            (new Vector3(0f, 0f, -6f), 3),
+        };
+
+        private static void BuildCheeseSpots()
+        {
+            var yellow = AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP/Prototype_512x512_Yellow.mat");
+            var root = new GameObject("CheeseSpots");
+
+            foreach ((Vector3 pos, int grade) in CHEESE_SPOT_DEFS)
+            {
+                var spotGo = new GameObject($"CheeseSpot_G{grade}");
+                spotGo.transform.SetParent(root.transform, false);
+                spotGo.transform.localPosition = pos;
+
+                var spot = spotGo.AddComponent<CheeseSpot>();
+                SetInt(spot, "m_Grade", grade);
+                SetFloat(spot, "m_Radius", grade == 1 && pos.x == 3f ? 2f : 1.5f); // QA 지점만 넉넉히
+
+                var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                disc.name = "Disc";
+                Object.DestroyImmediate(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
+                disc.transform.SetParent(spotGo.transform, false);
+                disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+                disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
+                if (yellow != null) disc.GetComponent<Renderer>().sharedMaterial = yellow;
+
+                var labelGo = new GameObject("GradeLabel");
+                labelGo.transform.SetParent(spotGo.transform, false);
+                labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+                var tmp = labelGo.AddComponent<TextMeshPro>();
+                tmp.text = grade.ToString();
+                tmp.fontSize = 6f;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.color = Color.yellow;
+            }
+        }
+
         private static Material GridboxMaterial(string name)
         {
             string path = $"{GridboxUrpDir}/Prototype_512x512_{name}.mat";
@@ -320,6 +371,25 @@ namespace CTC.Editor
             SetRef(ui, "mouseButton", mouseButton);
             SetRef(ui, "catButton", catButton);
             SetRef(ui, "startButton", startButton);
+
+            // 치즈 잔액 HUD (우상단, 게임 시작 후 WalletHud가 표시 제어)
+            var hudTextGo = new GameObject("WalletText");
+            hudTextGo.transform.SetParent(canvasGo.transform, false);
+            var hudText = hudTextGo.AddComponent<TextMeshProUGUI>();
+            hudText.text = "Cheese: 0";
+            hudText.fontSize = 32f;
+            hudText.alignment = TextAlignmentOptions.TopRight;
+            var hudRect = hudTextGo.GetComponent<RectTransform>();
+            hudRect.anchorMin = new Vector2(1f, 1f);
+            hudRect.anchorMax = new Vector2(1f, 1f);
+            hudRect.pivot = new Vector2(1f, 1f);
+            hudRect.anchoredPosition = new Vector2(-24f, -24f);
+            hudRect.sizeDelta = new Vector2(320f, 48f);
+            hudTextGo.SetActive(false); // WalletHud가 게임 시작 시 켬
+
+            var walletHud = canvasGo.AddComponent<WalletHud>();
+            SetRef(walletHud, "m_Lobby", lobby);
+            SetRef(walletHud, "m_Text", hudText);
         }
 
         private static TMP_Text CreateTmpText(
@@ -390,6 +460,13 @@ namespace CTC.Editor
         {
             var so = new SerializedObject(c);
             so.FindProperty(field).floatValue = value;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetInt(Component c, string field, int value)
+        {
+            var so = new SerializedObject(c);
+            so.FindProperty(field).intValue = value;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
