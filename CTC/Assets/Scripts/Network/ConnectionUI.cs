@@ -18,8 +18,12 @@ namespace CTC.Runtime.Networking
 
             if (!nm.IsClient && !nm.IsServer)
             {
-                if (GUILayout.Button("Host")) nm.StartHost();
-                if (GUILayout.Button("Client")) nm.StartClient();
+                if (GUILayout.Button("Host")) HostPortFallback.StartHost(nm);
+                if (GUILayout.Button("Client"))
+                {
+                    HostPortFallback.ApplyHostPortToTransport(nm);
+                    nm.StartClient();
+                }
                 if (GUILayout.Button("Server")) nm.StartServer();
             }
             else

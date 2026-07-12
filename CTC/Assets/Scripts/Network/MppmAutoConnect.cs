@@ -27,6 +27,8 @@ namespace CTC.Runtime.Networking
                 var nm = NetworkManager.Singleton;
                 if (nm != null && !nm.IsClient && !nm.IsServer)
                 {
+                    // 호스트가 포트 폴백으로 다른 포트를 쓸 수 있어 공유 파일에서 읽는다
+                    HostPortFallback.ApplyHostPortToTransport(nm);
                     nm.StartClient();
                 }
                 yield return new WaitForSeconds(RetryInterval);
