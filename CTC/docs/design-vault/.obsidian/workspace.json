@@ -11,10 +11,17 @@
             "id": "7104b799cc7605ae",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "그래프 뷰"
+              "type": "canvas",
+              "state": {
+                "file": "기획 커플링.canvas",
+                "viewState": {
+                  "x": 1140,
+                  "y": 741.1254585473221,
+                  "zoom": -0.8797517859968293
+                }
+              },
+              "icon": "lucide-layout-dashboard",
+              "title": "기획 커플링"
             }
           }
         ]
@@ -90,6 +97,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "기획 커플링.canvas",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -99,7 +107,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "백링크"
+              "title": "기획 커플링 의 백링크"
             }
           },
           {
@@ -108,11 +116,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
+                "file": "기획 커플링.canvas",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "나가는 링크"
+              "title": "기획 커플링 의 나가는 링크"
             }
           },
           {
@@ -150,12 +159,13 @@
             "state": {
               "type": "outline",
               "state": {
+                "file": "기획 커플링.canvas",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "개요"
+              "title": "기획 커플링 의 개요"
             }
           }
         ]
@@ -178,6 +188,10 @@
   },
   "active": "7104b799cc7605ae",
   "lastOpenFiles": [
+    "맵 레벨디자인.md",
+    "맵 레벨디자인.md.tmp.9192.7112f3dc1e6e",
+    "맵 시안 v1.svg",
+    "00 기획 그래프 안내.md",
     "00 기획 그래프 안내.md.tmp.9192.b49ba5bbf539",
     "기획 커플링.canvas",
     "임시 피난처.md",
