@@ -354,6 +354,8 @@ namespace CTC.Editor
             var scaler = canvasGo.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
+            // Expand: 기준 해상도 레이아웃이 어떤 종횡비에서도 화면 밖으로 안 나가게 축소 매칭
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             canvasGo.AddComponent<GraphicRaycaster>();
 
             var eventSystemGo = new GameObject("EventSystem");
