@@ -1,5 +1,6 @@
 using System.Linq;
 using CTC.Runtime.Cameras;
+using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Managers;
@@ -53,12 +54,14 @@ namespace CTC.Editor
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
-                moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f);
+                moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f,
+                role: RoleId.Cat, maxHp: 1000);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
                 ccHeight: 0.5f, ccRadius: 0.22f,
-                moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f);
+                moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
+                role: RoleId.Mouse, maxHp: 100);
 
             CreateGameScene(catPrefab, mousePrefab);
             Debug.Log("[SetupNetworkingScene] 완료 — PlayerCat/PlayerMouse 프리팹 + Game.unity 재생성");
@@ -91,7 +94,8 @@ namespace CTC.Editor
         private static GameObject CreatePlayerPrefab(
             string name, string prefabPath, string modelPath, Material material,
             float ccHeight, float ccRadius,
-            float moveSpeed, float runThreshold, float fov, float camDistance)
+            float moveSpeed, float runThreshold, float fov, float camDistance,
+            RoleId role, int maxHp)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -118,6 +122,17 @@ namespace CTC.Editor
                 SetFloat(binder, "cameraDistance", camDistance);
 
                 root.AddComponent<CheeseWallet>();
+
+                var health = root.AddComponent<Health>();
+                SetInt(health, "m_MaxHp", maxHp);
+
+                var roleTag = root.AddComponent<RoleTag>();
+                SetInt(roleTag, "m_Role", (int)role); // enum은 intValue로
+
+                root.AddComponent<PlayerDeath>();
+
+                if (role == RoleId.Cat) root.AddComponent<CatPounce>();
+                else root.AddComponent<MousePopgun>();
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
@@ -191,6 +206,8 @@ namespace CTC.Editor
             orbital.VerticalAxis.Value = 20f;
             camGo.AddComponent<CinemachineRotationComposer>();
             camGo.AddComponent<OrbitCameraController>();
+            var spectator = camGo.AddComponent<SpectatorFallback>();
+            SetRef(spectator, "m_Lobby", lobby);
 
             EditorSceneManager.SaveScene(scene, GameScenePath);
 
@@ -390,6 +407,25 @@ namespace CTC.Editor
             var walletHud = canvasGo.AddComponent<WalletHud>();
             SetRef(walletHud, "m_Lobby", lobby);
             SetRef(walletHud, "m_Text", hudText);
+
+            // 전투 HUD (좌상단 아래쪽, CombatHud가 게임 시작 시 켬)
+            var combatTextGo = new GameObject("CombatText");
+            combatTextGo.transform.SetParent(canvasGo.transform, false);
+            var combatText = combatTextGo.AddComponent<TextMeshProUGUI>();
+            combatText.text = "HP -   CAT -";
+            combatText.fontSize = 32f;
+            combatText.alignment = TextAlignmentOptions.TopLeft;
+            var combatRect = combatTextGo.GetComponent<RectTransform>();
+            combatRect.anchorMin = new Vector2(0f, 1f);
+            combatRect.anchorMax = new Vector2(0f, 1f);
+            combatRect.pivot = new Vector2(0f, 1f);
+            combatRect.anchoredPosition = new Vector2(24f, -110f); // ConnectionUI(IMGUI) 아래
+            combatRect.sizeDelta = new Vector2(480f, 48f);
+            combatTextGo.SetActive(false);
+
+            var combatHud = canvasGo.AddComponent<CombatHud>();
+            SetRef(combatHud, "m_Lobby", lobby);
+            SetRef(combatHud, "m_Text", combatText);
         }
 
         private static TMP_Text CreateTmpText(

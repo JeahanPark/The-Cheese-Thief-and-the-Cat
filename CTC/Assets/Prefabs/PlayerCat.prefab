@@ -16,6 +16,10 @@ GameObject:
   - component: {fileID: 2931861370349972259}
   - component: {fileID: 2949772959274618968}
   - component: {fileID: 4598405987156818162}
+  - component: {fileID: 3332337896690605887}
+  - component: {fileID: 414784259355758427}
+  - component: {fileID: 5587227467782674030}
+  - component: {fileID: 1825586617100723517}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Untagged
@@ -76,7 +80,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2489601027
+  GlobalObjectIdHash: 4112646193
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -194,6 +198,64 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.CheeseWallet
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3332337896690605887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 609eafc4a92fd184d82f721a269de7b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Health
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_MaxHp: 1000
+--- !u!114 &414784259355758427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bbb68449325bd14f811137d056ccb31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.RoleTag
+  m_Role: 2
+--- !u!114 &5587227467782674030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b293edc99a00d4a9e19ec9fdd82a3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.PlayerDeath
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1825586617100723517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2cbe66c80d2dfb048b76f9f98faf5a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.CatPounce
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_Range: 2.2
+  m_HalfAngleDeg: 60
+  m_Damage: 60
+  m_CooldownSeconds: 2.5
+  m_KillReward: 50
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0

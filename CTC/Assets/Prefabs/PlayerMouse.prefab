@@ -16,6 +16,10 @@ GameObject:
   - component: {fileID: 1405390907534316074}
   - component: {fileID: 2142563471225990552}
   - component: {fileID: 6084903213492360589}
+  - component: {fileID: 3429349997210667258}
+  - component: {fileID: 5266508621866913705}
+  - component: {fileID: 2888748911153239412}
+  - component: {fileID: 3194180182503786071}
   m_Layer: 0
   m_Name: PlayerMouse
   m_TagString: Untagged
@@ -76,7 +80,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2489601027
+  GlobalObjectIdHash: 1893765842
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -194,6 +198,62 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.CheeseWallet
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3429349997210667258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 609eafc4a92fd184d82f721a269de7b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Health
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_MaxHp: 100
+--- !u!114 &5266508621866913705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bbb68449325bd14f811137d056ccb31, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.RoleTag
+  m_Role: 1
+--- !u!114 &2888748911153239412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b293edc99a00d4a9e19ec9fdd82a3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.PlayerDeath
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3194180182503786071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73a834d4777dbce44bcdb1aec02784f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.MousePopgun
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_Range: 8
+  m_Damage: 5
+  m_CooldownSeconds: 0.8
 --- !u!1001 &3590425873836912933
 PrefabInstance:
   m_ObjectHideFlags: 0
