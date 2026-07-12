@@ -10,10 +10,25 @@ namespace WesQA
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Boot()
         {
+            // 이전 세션 좀비 리스너 정리 — teardown 없이 플레이가 끝나면(예외/도메인 리로드 꺼짐)
+            // 정적 서버가 포트를 쥔 채 남아 다음 부트가 SocketException으로 죽는다
+            StopServer();
+
             int instance = ResolveInstanceIndex();
             _server = new WesPocoServer(5001 + instance);
             _server.Start();
             Debug.Log($"[WesQA] server starting on port {5001 + instance}");
+
+            Application.quitting -= StopServer; // 에디터에선 플레이 종료 시에도 발화
+            Application.quitting += StopServer;
+        }
+
+        private static void StopServer()
+        {
+            if (_server == null) return;
+            _server.Stop();
+            _server = null;
+            Debug.Log("[WesQA] server stopped");
         }
 
         // M4: MPPM 가상 플레이어 태그 `wes<N>`(예 wes1, wes2)에서 N을 파싱해 인덱스로 사용.

@@ -1,5 +1,7 @@
 # Plan 9: v2 생존 개정 (타이머·유지비·쥐 터널·요새 삭제) — 구현 계획
 
+> **상태: ✅ 구현 완료** (2026-07-12, EditMode 80/80 · MPPM 검증: 타이머/유지비/굶주림/생존승/CatWin 회귀. 터널은 치수 보장(구멍 0.6 < 고양이 Ø0.7)+구멍 강제배치 밀림 확인 — 이동 실증은 플레이테스트 항목. 부수 수정: WesQABootstrap 서버 teardown 누락으로 인한 5001 좀비 리스너 해결)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 스펙 v2 반영 — 5분 타이머(쥐 생존승), 치즈 유지비/굶주림, 쥐 전용 터널 맵, 요새 삭제.
