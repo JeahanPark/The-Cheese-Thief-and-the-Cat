@@ -1,5 +1,7 @@
 # 네트워킹 기반 (Plan 1) 구현 계획
 
+> **상태: ✅ 구현 완료** (MPPM 2인 검증 — [로드맵](2026-07-06-mvp-roadmap.md))
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** NGO(Netcode for GameObjects)를 설치하고, 로컬호스트로 2인이 접속해 네트워크 동기화되는 플레이어 이동을 Multiplayer Play Mode에서 확인한다.

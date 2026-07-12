@@ -1,5 +1,7 @@
 # UGS 매치메이킹 (Plan 2) 구현 계획
 
+> **상태: ⏸ 대기** — Unity Dashboard 프로젝트 연결(사용자 결정) 필요. 착수 시 이 계획을 현행 코드 기준으로 재검토할 것(작성 시점 이후 Plan 4~8이 진행됨 — HostPortFallback·MppmAutoConnect 로컬 직결 경로를 Relay로 대체)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** UGS Multiplayer Services(Relay+Lobby 통합 Sessions API)로 참가코드 기반 방 생성/참가를 붙이고, 연결 계층을 인터페이스로 추상화해 출시 시 Steam으로 교체 가능하게 만든다.

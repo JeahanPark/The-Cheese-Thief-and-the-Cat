@@ -11,12 +11,12 @@ description: This project's specifics. gamedev-team agents and orchestration ski
 
 ## game
 - **name**: The Cheese Thief and the Cat (치즈 도둑과 고양이)
-- **genre**: 3D 3인칭 비대칭 멀티플레이 스텔스 숨바꼭질 (고양이 술래 1~2 vs 쥐 3~6 각자도생)
-- **tone**: 귀엽고 코믹한 스타일라이즈드 — 몰래 훔쳐먹기(스텔스) × 아슬하게 약올리기(밀당) × 생존
-- **references**: [약올리기 DX (SC UMS), MECCHA CHAMELEON]
+- **genre**: 3D 3인칭 비대칭 멀티 경제전 — 원작 '약올리기 DX' 규칙의 3D 번안 (고양이 1~2 vs 쥐 3~6, 쥐는 개인 경제·고양이 처치는 공동 목표, 시간제한 없음)
+- **tone**: 귀엽고 코믹한 스타일라이즈드 — 위험한 돈줄에서 벌고 빠지기(약올리기) × 무장해서 보스 고양이 말려 죽이기(소모전)
+- **references**: [약올리기 DX (SC UMS) — 규칙 전체, MECCHA CHAMELEON — 3인칭·자유 카메라·관전 연출만]
 
 ## engine
-- **stack**: Unity URP (3D) / Netcode for GameObjects (호스트 권위) / Steam 로비 · PC(Steam) 우선
+- **stack**: Unity URP (3D) / Netcode for GameObjects 2.12 (호스트 권위) / 개발 UGS Relay+Lobby 예정 → 출시 Steam 전환 · PC 우선
 
 ## repos
 > commit-push 스킬이 순회하며 커밋·푸시할 레포 목록 (절대경로 또는 프로젝트 상대)

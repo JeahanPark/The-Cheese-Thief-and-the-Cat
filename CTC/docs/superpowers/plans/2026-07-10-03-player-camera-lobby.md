@@ -1,5 +1,7 @@
 # Plan 3: 플레이어 & 카메라 & 로비 역할 선택 — 구현 계획
 
+> **상태: ✅ 구현 완료** (2026-07-10 구현, 2026-07-12 MPPM 2인 전체 검증 — [로드맵](2026-07-06-mvp-roadmap.md))
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** NGO 접속 후 로비에서 역할(쥐/고양이)을 선택하고, 시작 시 역할별 프리팹(Quirky 모델+애니메이션)이 스폰되어 3인칭 자유 궤도 카메라(Cinemachine)로 플레이한다.

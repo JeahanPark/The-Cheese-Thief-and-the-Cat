@@ -1,5 +1,7 @@
 # Plan 5: 전투 & 탈락 — 구현 계획
 
+> **상태: ✅ 구현 완료** (2026-07-12, MPPM 검증 통과 — [로드맵](2026-07-06-mvp-roadmap.md). Plan 6에서 무기 스탯은 ShopLogic 티어 테이블로 이동, 처치 보상은 플레이어 한정으로 변경)
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 고양이 덮치기(부채꼴 근접, 쿨다운)로 쥐를 처치→탈락·관전 전환, 쥐 기본 무기(딱총 히트스캔)로 고양이 HP를 깎음, 처치 보상은 지갑으로.

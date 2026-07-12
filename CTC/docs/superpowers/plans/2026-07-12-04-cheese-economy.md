@@ -1,5 +1,7 @@
 # Plan 4: 치즈 경제 (등급제 점유 수입) — 구현 계획
 
+> **상태: ✅ 구현 완료** (2026-07-12, MPPM 검증 통과 — [로드맵](2026-07-06-mvp-roadmap.md))
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 원작 약올리기 돈줄 구조 — 등급별 치즈 지점에 **머무는 동안 초당 수입**(지점당 1마리), 개인 지갑 네트워크 동기화, 잔액 HUD.
