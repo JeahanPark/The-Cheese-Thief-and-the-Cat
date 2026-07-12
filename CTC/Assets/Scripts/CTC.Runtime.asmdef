@@ -9,7 +9,9 @@
         "Unity.Multiplayer.Playmode",
         "Unity.Cinemachine",
         "UnityEngine.UI",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
