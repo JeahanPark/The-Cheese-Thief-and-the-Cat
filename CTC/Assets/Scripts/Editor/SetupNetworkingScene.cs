@@ -32,7 +32,6 @@ namespace CTC.Editor
         private const string MaterialsDir = "Assets/Materials";
         private const string CatPrefabPath = PrefabDir + "/PlayerCat.prefab";
         private const string MousePrefabPath = PrefabDir + "/PlayerMouse.prefab";
-        private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
         private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
@@ -56,12 +55,6 @@ namespace CTC.Editor
             Material mouseMat = CreateUrpMaterial("M_Mouse_URP", MouseSourceMatPath);
 
             // 설치형 프리팹을 먼저 생성 — 플레이어 프리팹(ShopController)이 참조한다
-            GameObject fortressPrefab = CreateStructurePrefab(
-                "CheeseFortress", FortressPrefabPath, PrimitiveType.Cylinder,
-                GridboxMaterial("Yellow"), maxHp: 300,
-                scale: new Vector3(2f, 0.6f, 2f),
-                addExtras: _root => _root.AddComponent<FortressHealZone>());
-
             GameObject decoyPrefab = CreateStructurePrefab(
                 "MouseDecoy", DecoyPrefabPath, PrimitiveType.Capsule,
                 mouseMat, maxHp: 1,
@@ -73,17 +66,17 @@ namespace CTC.Editor
                 ccHeight: 0.9f, ccRadius: 0.35f,
                 moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f,
                 role: RoleId.Cat, maxHp: 1000,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
+                decoyPrefab: decoyPrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
                 ccHeight: 0.5f, ccRadius: 0.22f,
                 moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
                 role: RoleId.Mouse, maxHp: 100,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
+                decoyPrefab: decoyPrefab);
 
-            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
-            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성");
+            CreateGameScene(catPrefab, mousePrefab, decoyPrefab);
+            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 3종 + Game.unity 재생성 (v2 터널 맵)");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
@@ -153,7 +146,7 @@ namespace CTC.Editor
             float ccHeight, float ccRadius,
             float moveSpeed, float runThreshold, float fov, float camDistance,
             RoleId role, int maxHp,
-            GameObject decoyPrefab, GameObject fortressPrefab)
+            GameObject decoyPrefab)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -191,13 +184,13 @@ namespace CTC.Editor
 
                 var shop = root.AddComponent<ShopController>();
                 SetRef(shop, "m_DecoyPrefab", decoyPrefab);
-                SetRef(shop, "m_FortressPrefab", fortressPrefab);
 
                 if (role == RoleId.Cat) root.AddComponent<CatPounce>();
                 else
                 {
                     root.AddComponent<MousePopgun>();
                     root.AddComponent<MouseDash>();
+                    root.AddComponent<CheeseUpkeep>(); // v2 유지비 — 쥐만
                 }
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
@@ -223,7 +216,7 @@ namespace CTC.Editor
         }
 
         private static void CreateGameScene(
-            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab)
+            GameObject catPrefab, GameObject mousePrefab, GameObject decoyPrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -243,7 +236,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
+            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, decoyPrefab);
 
             nmGo.AddComponent<ConnectionUI>();
             nmGo.AddComponent<MppmAutoConnect>();
@@ -308,7 +301,6 @@ namespace CTC.Editor
             VerifyUniqueHashes(sceneObjects
                 .Append(catPrefab.GetComponent<NetworkObject>())
                 .Append(mousePrefab.GetComponent<NetworkObject>())
-                .Append(fortressPrefab.GetComponent<NetworkObject>())
                 .Append(decoyPrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }
@@ -372,6 +364,17 @@ namespace CTC.Editor
             }
 
             bool dirty = false;
+
+            // 삭제된 프리팹(예: v2 요새 제거)의 null/missing 항목 정리
+            for (int i = list.PrefabList.Count - 1; i >= 0; i--)
+            {
+                if (list.PrefabList[i] == null || list.PrefabList[i].Prefab == null)
+                {
+                    list.Remove(list.PrefabList[i]);
+                    dirty = true;
+                }
+            }
+
             foreach (GameObject prefab in prefabs)
             {
                 if (list.Contains(prefab)) continue;
@@ -388,13 +391,23 @@ namespace CTC.Editor
                 nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
         }
 
-        // 그레이박스 맵 — Plan 9 아트 패스 전 블록아웃. 프리미티브 큐브 + Gridbox 프로토타입 머티리얼.
-        // 바닥 Plane(scale 3 = 30x30)에 맞춰 외벽은 ±15.
-        // 큐브 스케일에 따른 텍스처 타일링 왜곡은 프로토타입 단계라 허용.
+        // v2 그레이박스: 외벽 + 쥐 터널 링(내벽·쥐구멍·인방) + 중앙 차단 블록.
+        // 사물 조형 없음 — 아트 패스(8-B)에서 교체. 구멍 치수는 SPEC §12-A (0.6×0.6).
+        private const float TUNNEL_WALL_POS = 13.2f;   // 내벽 중심 좌표
+        private const float HOLE_WIDTH = 0.6f;
+        private const float HOLE_HEIGHT = 0.6f;
+        private const float TUNNEL_WALL_HEIGHT = 1.2f;
+
+        // 변마다 쥐구멍 위치(해당 축 좌표) — 총 9개
+        private static readonly float[] HOLES_NORTH = { -7f, 0f, 7f };
+        private static readonly float[] HOLES_SOUTH = { -5f, 7f };
+        private static readonly float[] HOLES_WEST = { -6f, 6f };
+        private static readonly float[] HOLES_EAST = { -6f, 6f };
+
         private static void BuildGreyboxMap()
         {
             Material wall = GridboxMaterial("Grey2");
-            Material counter = GridboxMaterial("Grey4");
+            Material tunnelWall = GridboxMaterial("Brown");
             var root = new GameObject("GreyboxMap");
 
             AddBox(root, wall, "Wall_N", new Vector3(0f, 1.5f, 15f), new Vector3(30f, 3f, 0.5f));
@@ -402,37 +415,61 @@ namespace CTC.Editor
             AddBox(root, wall, "Wall_E", new Vector3(15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
             AddBox(root, wall, "Wall_W", new Vector3(-15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
 
-            // 부엌 블록아웃: ㄱ자 카운터 + 중앙 아일랜드 + 가전/가구 블록
-            AddBox(root, counter, "Counter_N", new Vector3(-5f, 0.6f, 13.5f), new Vector3(14f, 1.2f, 2f));
-            AddBox(root, counter, "Counter_W", new Vector3(-13.5f, 0.6f, 6f), new Vector3(2f, 1.2f, 13f));
-            AddBox(root, counter, "Island", new Vector3(0f, 0.6f, 3f), new Vector3(6f, 1.2f, 3f));
-            AddBox(root, GridboxMaterial("White"), "Fridge", new Vector3(13f, 1.25f, 12f), new Vector3(2f, 2.5f, 2f));
-            AddBox(root, GridboxMaterial("Brown"), "Table", new Vector3(8f, 0.5f, -6f), new Vector3(4f, 1f, 4f));
-            Material crate = GridboxMaterial("Orange");
-            AddBox(root, crate, "Crate_A", new Vector3(-8f, 0.5f, -9f), new Vector3(2f, 1f, 2f));
-            AddBox(root, crate, "Crate_B", new Vector3(-5.5f, 0.4f, -10.5f), new Vector3(1.2f, 0.8f, 1.2f));
-
-            // 밸런스 패스(Plan 8): 조밀화 — 동쪽 골목·시야 차단물·구석 엄폐
-            AddBox(root, counter, "Counter_E", new Vector3(13.5f, 0.6f, -1f), new Vector3(2f, 1.2f, 12f));
-            Material wood = GridboxMaterial("Brown");
-            AddBox(root, wood, "Table_B", new Vector3(-9f, 0.5f, -4f), new Vector3(4f, 1f, 4f));
-            AddBox(root, wood, "Chair_A", new Vector3(5.5f, 0.5f, -6f), new Vector3(1f, 1f, 1f));
-            AddBox(root, wood, "Chair_B", new Vector3(8f, 0.5f, -3f), new Vector3(1f, 1f, 1f));
-            AddBox(root, crate, "Crate_C", new Vector3(12f, 0.5f, -8f), new Vector3(1.5f, 1f, 1.5f));
-            AddBox(root, GridboxMaterial("White"), "Pantry", new Vector3(-13.5f, 1.25f, -13.5f), new Vector3(2f, 2.5f, 2f));
+            // 쥐 터널 내벽 4변 (구멍 뚫린 세그먼트) — 기획서 §8 v2: 맵 = 외벽·터널·치즈존만
+            BuildTunnelWall(root, tunnelWall, "N", true, TUNNEL_WALL_POS, HOLES_NORTH);
+            BuildTunnelWall(root, tunnelWall, "S", true, -TUNNEL_WALL_POS, HOLES_SOUTH);
+            BuildTunnelWall(root, tunnelWall, "E", false, TUNNEL_WALL_POS, HOLES_EAST);
+            BuildTunnelWall(root, tunnelWall, "W", false, -TUNNEL_WALL_POS, HOLES_WEST);
         }
 
-        // 치즈 지점(원작 돈줄) — 구석=저등급(G2~5), 중앙 개활지=고등급(G6·7, 고양이 순찰 한복판).
+        // 내벽 한 변: 구멍(폭 0.6)마다 벽을 끊고 인방(y 0.6~1.2)을 얹는다.
+        // 쥐 CC(높이 0.5·Ø0.44)만 구멍 통과 — 고양이(0.9·Ø0.7)는 위·옆 다 걸림. 별도 로직 없음.
+        private static void BuildTunnelWall(
+            GameObject parent, Material material, string side, bool horizontal, float fixedCoord, float[] holes)
+        {
+            const float EXTENT = 13.2f; // 변 길이 절반 (모서리에서 만나 링이 닫힘)
+            System.Array.Sort(holes);
+
+            float cursor = -EXTENT;
+            for (int i = 0; i <= holes.Length; i++)
+            {
+                float segEnd = i < holes.Length ? holes[i] - HOLE_WIDTH * 0.5f : EXTENT;
+                float length = segEnd - cursor;
+                if (length > 0.01f)
+                {
+                    float center = (cursor + segEnd) * 0.5f;
+                    AddBox(parent, material, $"Tunnel_{side}_Seg{i}",
+                        horizontal ? new Vector3(center, TUNNEL_WALL_HEIGHT * 0.5f, fixedCoord)
+                                   : new Vector3(fixedCoord, TUNNEL_WALL_HEIGHT * 0.5f, center),
+                        horizontal ? new Vector3(length, TUNNEL_WALL_HEIGHT, 0.4f)
+                                   : new Vector3(0.4f, TUNNEL_WALL_HEIGHT, length));
+                }
+
+                if (i < holes.Length)
+                {
+                    // 인방 — 구멍 위(y 0.6~1.2)를 막아 고양이 통과 차단
+                    float lintelHeight = TUNNEL_WALL_HEIGHT - HOLE_HEIGHT;
+                    AddBox(parent, material, $"Tunnel_{side}_Lintel{i}",
+                        horizontal ? new Vector3(holes[i], HOLE_HEIGHT + lintelHeight * 0.5f, fixedCoord)
+                                   : new Vector3(fixedCoord, HOLE_HEIGHT + lintelHeight * 0.5f, holes[i]),
+                        horizontal ? new Vector3(HOLE_WIDTH, lintelHeight, 0.4f)
+                                   : new Vector3(0.4f, lintelHeight, HOLE_WIDTH));
+                    cursor = holes[i] + HOLE_WIDTH * 0.5f;
+                }
+            }
+        }
+
+        // 치즈 지점(v2) — 등급 = 가장 가까운 쥐구멍까지의 거리. 터널 내부(±13.2~15)에는 두지 않음(수입 0 원칙).
         // G1 (3,1) r2는 QA 고정 (클론 넛지 TestMpNudgeLocalPlayer가 스폰(1,0,0)에서 도달하는 지점).
         private static readonly (Vector3 pos, int grade)[] CHEESE_SPOT_DEFS =
         {
-            (new Vector3(3f, 0f, 1f), 1),          // QA — 아일랜드 동쪽
-            (new Vector3(-11.5f, 0f, -11.5f), 2),  // 서남 구석(찬장 옆)
-            (new Vector3(12f, 0f, -13f), 3),       // 동남 구석
-            (new Vector3(-11f, 0f, 11f), 4),       // 북서 카운터 코너 안쪽
-            (new Vector3(12f, 0f, 9f), 5),         // 냉장고 남쪽
-            (new Vector3(-4f, 0f, -2f), 6),        // 중앙 서쪽 개활지
-            (new Vector3(0f, 0f, -3f), 7),         // 아일랜드 남쪽 정중앙 — 최고 위험
+            (new Vector3(3f, 0f, 1f), 1),        // QA — 중앙이지만 r2 (기존 절차 유지)
+            (new Vector3(-5f, 0f, -12f), 2),     // 남쪽 구멍(-5) 코앞
+            (new Vector3(7f, 0f, -12f), 3),      // 남쪽 구멍(7) 코앞
+            (new Vector3(-12f, 0f, 6f), 4),      // 서쪽 구멍(6) 옆
+            (new Vector3(12f, 0f, -6f), 5),      // 동쪽 구멍(-6) 옆
+            (new Vector3(-5f, 0f, 5f), 6),       // 중앙 서쪽 — 구멍까지 ~8m
+            (new Vector3(0f, 0f, -3f), 7),       // 정중앙 — 최고 위험
         };
 
         // 등급별 디스크 색 — 위험도 가독성 (1~3 노랑 / 4~5 주황 / 6~7 빨강)
@@ -635,6 +672,26 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Panel", resultPanel);
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
+
+            // 매치 타이머 (상단 중앙, v2)
+            var timerTextGo = new GameObject("TimerText");
+            timerTextGo.transform.SetParent(canvasGo.transform, false);
+            var timerText = timerTextGo.AddComponent<TextMeshProUGUI>();
+            timerText.text = "5:00";
+            timerText.fontSize = 40f;
+            timerText.alignment = TextAlignmentOptions.Top;
+            var timerRect = timerTextGo.GetComponent<RectTransform>();
+            timerRect.anchorMin = new Vector2(0.5f, 1f);
+            timerRect.anchorMax = new Vector2(0.5f, 1f);
+            timerRect.pivot = new Vector2(0.5f, 1f);
+            timerRect.anchoredPosition = new Vector2(0f, -16f);
+            timerRect.sizeDelta = new Vector2(200f, 52f);
+            timerTextGo.SetActive(false);
+
+            var timerHud = canvasGo.AddComponent<TimerHud>();
+            SetRef(timerHud, "m_Lobby", lobby);
+            SetRef(timerHud, "m_Match", match);
+            SetRef(timerHud, "m_Text", timerText);
         }
 
         private static TMP_Text CreateTmpText(

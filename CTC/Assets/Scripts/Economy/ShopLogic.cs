@@ -9,6 +9,7 @@ namespace CTC.Runtime.Economy
         MachineGun = 2,
         Dash = 3,
         Decoy = 4,
+        // Fortress = 5 → v2 삭제
         Fortress = 5,
         CatAttack = 6,
         CatSpeed = 7,
@@ -62,7 +63,6 @@ namespace CTC.Runtime.Economy
             new ShopItem(ShopItemId.MachineGun, RoleId.Mouse, 600),
             new ShopItem(ShopItemId.Dash, RoleId.Mouse, 100),
             new ShopItem(ShopItemId.Decoy, RoleId.Mouse, 50),
-            new ShopItem(ShopItemId.Fortress, RoleId.Mouse, 220),
             new ShopItem(ShopItemId.CatAttack, RoleId.Cat, 200),
             new ShopItem(ShopItemId.CatSpeed, RoleId.Cat, 150),
         };

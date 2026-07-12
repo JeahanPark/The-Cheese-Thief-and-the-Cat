@@ -188,12 +188,19 @@ namespace CTC.Runtime.Testing
             match.RequestRestart();
         }
 
+        /// <summary>서버 전용: 타이머를 3초로 — 생존승 판정 QA.</summary>
+        public void TestExpireTimer()
+        {
+            var match = FindFirstObjectByType<MatchManager>();
+            if (match == null) { GameDebug.LogWarning("[TestManager] MatchManager 없음"); return; }
+            match.DevSetRemaining(3f);
+        }
+
         /// <summary>로컬 플레이어 구매 — QA용 파라미터리스 래퍼.</summary>
         public void TestBuySlingshot() => BuyLocal(ShopItemId.Slingshot);
         public void TestBuyMachineGun() => BuyLocal(ShopItemId.MachineGun);
         public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
         public void TestBuyDecoy() => BuyLocal(ShopItemId.Decoy);
-        public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
         public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
         public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
 

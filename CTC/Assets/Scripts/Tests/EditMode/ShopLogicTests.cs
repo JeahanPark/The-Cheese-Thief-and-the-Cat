@@ -15,12 +15,6 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void Find_Fortress_MatchesOriginalBunker()
-        {
-            Assert.AreEqual(220, ShopLogic.Find(ShopItemId.Fortress).Cost);
-        }
-
-        [Test]
         public void Find_CatItems_AreCatRole()
         {
             Assert.AreEqual(RoleId.Cat, ShopLogic.Find(ShopItemId.CatAttack).Role);

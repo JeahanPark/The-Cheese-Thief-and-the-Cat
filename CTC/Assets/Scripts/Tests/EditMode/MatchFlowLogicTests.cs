@@ -65,5 +65,17 @@ namespace CTC.Tests
         {
             Assert.AreEqual(MatchResult.None, MatchFlowLogic.Evaluate(_armed: true, _aliveCats: 2, _aliveMice: 4));
         }
+
+        [Test]
+        public void EvaluateAtTimeUp_MiceAlive_MouseWin()
+        {
+            Assert.AreEqual(MatchResult.MouseWin, MatchFlowLogic.EvaluateAtTimeUp(_aliveMice: 1));
+        }
+
+        [Test]
+        public void EvaluateAtTimeUp_NoMice_CatWin()
+        {
+            Assert.AreEqual(MatchResult.CatWin, MatchFlowLogic.EvaluateAtTimeUp(_aliveMice: 0));
+        }
     }
 }

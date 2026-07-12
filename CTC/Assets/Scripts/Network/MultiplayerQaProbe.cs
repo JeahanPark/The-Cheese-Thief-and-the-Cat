@@ -105,9 +105,6 @@ namespace CTC.Runtime.Networking
                 case "TestMpBuySlingshot":
                     BuyLocal(ShopItemId.Slingshot);
                     break;
-                case "TestMpBuyFortress":
-                    BuyLocal(ShopItemId.Fortress);
-                    break;
                 case "TestMpBuyDash":
                     BuyLocal(ShopItemId.Dash);
                     break;
@@ -227,6 +224,7 @@ namespace CTC.Runtime.Networking
 
             MatchManager match = FindFirstObjectByType<MatchManager>();
             s.matchResult = match != null && match.IsSpawned ? (int)match.Result : -1;
+            s.matchRemaining = match != null && match.IsSpawned ? Mathf.CeilToInt(match.RemainingSeconds) : -1;
 
             // 종료(teardown) 중엔 SpawnManager 내부가 해체되며 NRE 스팸 — 접속 상태에서만 순회
             if (s.connected && nm.SpawnManager != null)
@@ -269,6 +267,7 @@ namespace CTC.Runtime.Networking
         public bool connected;
         public int connectedClientCount;
         public int matchResult;
+        public int matchRemaining;
         public float timestamp;
         public List<ProbeObject> objects;
     }

@@ -14,7 +14,6 @@ namespace CTC.Runtime.Economy
         private const float PLACE_FORWARD_METERS = 1.5f;
 
         [SerializeField] private GameObject m_DecoyPrefab;
-        [SerializeField] private GameObject m_FortressPrefab;
 
         /// <summary>로컬 UI/QA 진입점.</summary>
         public void Buy(ShopItemId _itemId)
@@ -38,8 +37,6 @@ namespace CTC.Runtime.Economy
                     return dash != null && !dash.Owned;
                 case ShopItemId.Decoy:
                     return m_DecoyPrefab != null;
-                case ShopItemId.Fortress:
-                    return m_FortressPrefab != null;
                 case ShopItemId.CatAttack:
                     CatPounce pounce = GetComponent<CatPounce>();
                     return pounce != null && ShopLogic.CanAddStack(pounce.DamageStacks);
@@ -85,9 +82,6 @@ namespace CTC.Runtime.Economy
                     break;
                 case ShopItemId.Decoy:
                     SpawnStructure(m_DecoyPrefab);
-                    break;
-                case ShopItemId.Fortress:
-                    SpawnStructure(m_FortressPrefab);
                     break;
                 case ShopItemId.CatAttack:
                     GetComponent<CatPounce>().ServerAddDamageStack();

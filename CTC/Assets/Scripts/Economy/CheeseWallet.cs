@@ -1,4 +1,5 @@
 using Unity.Netcode;
+using UnityEngine;
 
 namespace CTC.Runtime.Economy
 {
@@ -26,6 +27,13 @@ namespace CTC.Runtime.Economy
 
             m_Cheese.Value -= _amount;
             return true;
+        }
+
+        /// <summary>서버 전용. 잔액 한도 내에서 있는 만큼 차감(유지비 — 부족해도 남은 걸 다 먹음).</summary>
+        public void SpendUpTo(int _amount)
+        {
+            if (!IsServer || _amount <= 0) return;
+            m_Cheese.Value -= Mathf.Min(m_Cheese.Value, _amount);
         }
     }
 }

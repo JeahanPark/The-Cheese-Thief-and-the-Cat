@@ -10,7 +10,7 @@ namespace CTC.Runtime.Match
     /// <summary>
     /// 승패 판정 상태기계(순수). armed = 시작 후 양측이 실제 스폰된 것을 관측한 뒤에만
     /// 판정 활성 — 스폰 지연 중 0/0으로 즉시 종료되는 오판 방지.
-    /// 시간제한 없음(원작 동일): 판정 조건은 전멸뿐.
+    /// v2: 전멸 판정 + 타이머 만료 판정(생존 쥐 있으면 쥐 생존승).
     /// </summary>
     public static class MatchFlowLogic
     {
@@ -25,6 +25,12 @@ namespace CTC.Runtime.Match
             if (_aliveMice == 0) return MatchResult.CatWin;   // 동시 전멸도 고양이 승(원작 우선순위)
             if (_aliveCats == 0) return MatchResult.MouseWin;
             return MatchResult.None;
+        }
+
+        /// <summary>타이머 만료 시(v2): 생존 쥐가 있으면 쥐 생존승, 없으면 고양이 승.</summary>
+        public static MatchResult EvaluateAtTimeUp(int _aliveMice)
+        {
+            return _aliveMice > 0 ? MatchResult.MouseWin : MatchResult.CatWin;
         }
     }
 }

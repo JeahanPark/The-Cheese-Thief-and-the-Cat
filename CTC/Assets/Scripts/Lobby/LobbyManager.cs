@@ -138,6 +138,10 @@ namespace CTC.Runtime.Lobby
                 Vector3 pos = SpawnPosition(i, _players.Count);
                 GameObject go = Instantiate(prefab, pos, Quaternion.identity);
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);
+                if (p.Role == RoleId.Mouse)
+                {
+                    go.GetComponent<Economy.CheeseWallet>().AddCheese(Economy.SurvivalLogic.STARTING_CHEESE);
+                }
             }
         }
 

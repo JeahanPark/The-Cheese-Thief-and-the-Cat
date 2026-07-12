@@ -20,29 +20,47 @@ namespace CTC.Runtime.Match
         // MatchResult. 서버 기록, 전원 읽기(ResultHud).
         private readonly NetworkVariable<int> m_Result = new NetworkVariable<int>();
 
+        // 남은 시간(초). 서버 기록, 전원 읽기(TimerHud). 시작 전/재시작 후엔 음수(-1)로 비활성.
+        private readonly NetworkVariable<float> m_RemainingSeconds = new NetworkVariable<float>(-1f);
+
         private bool m_Armed;
         private float m_Timer;
+        private bool m_WasStarted;
 
         public MatchResult Result => (MatchResult)m_Result.Value;
+
+        public float RemainingSeconds => m_RemainingSeconds.Value;
 
         private void Update()
         {
             if (!IsSpawned || !IsServer) return;
-            if (m_Lobby == null || !m_Lobby.GameStarted) return;
-            if (Result != MatchResult.None) return; // 판정 완료 — 재시작 대기
+
+            bool started = m_Lobby != null && m_Lobby.GameStarted;
+            if (started && !m_WasStarted)
+            {
+                m_RemainingSeconds.Value = Economy.SurvivalLogic.MATCH_DURATION_SECONDS;
+            }
+            m_WasStarted = started;
+
+            if (!started || Result != MatchResult.None) return;
+
+            // 타이머
+            m_RemainingSeconds.Value = Mathf.Max(0f, m_RemainingSeconds.Value - Time.deltaTime);
 
             m_Timer += Time.deltaTime;
-            if (m_Timer < POLL_INTERVAL_SECONDS) return;
+            if (m_Timer < POLL_INTERVAL_SECONDS && m_RemainingSeconds.Value > 0f) return;
             m_Timer = 0f;
 
             CountAlive(out int cats, out int mice);
-            if (MatchFlowLogic.ShouldArm(m_Lobby.GameStarted, m_Armed, cats, mice)) m_Armed = true;
+            if (MatchFlowLogic.ShouldArm(started, m_Armed, cats, mice)) m_Armed = true;
 
-            MatchResult result = MatchFlowLogic.Evaluate(m_Armed, cats, mice);
+            MatchResult result = m_RemainingSeconds.Value <= 0f && m_Armed
+                ? MatchFlowLogic.EvaluateAtTimeUp(mice)
+                : MatchFlowLogic.Evaluate(m_Armed, cats, mice);
             if (result == MatchResult.None) return;
 
             m_Result.Value = (int)result;
-            Debug.Log($"[MatchManager] 매치 종료: {result} (cats={cats}, mice={mice})");
+            Debug.Log($"[MatchManager] 매치 종료: {result} (cats={cats}, mice={mice}, 남은시간={m_RemainingSeconds.Value:F0}s)");
         }
 
         // 쥐 = 스폰된 플레이어 오브젝트 존재(탈락=despawn). 고양이 = hp>0 (사망해도 despawn 안 함).
@@ -83,8 +101,15 @@ namespace CTC.Runtime.Match
 
             m_Armed = false;
             m_Result.Value = (int)MatchResult.None;
+            m_RemainingSeconds.Value = -1f;
             m_Lobby.ResetToLobby();
             Debug.Log($"[MatchManager] 재시작 — 로비 복귀 (동적 오브젝트 {toDespawn.Count}개 정리)");
+        }
+
+        /// <summary>QA: 타이머 강제 설정(서버 전용) — 만료 판정 검증용.</summary>
+        public void DevSetRemaining(float _seconds)
+        {
+            if (IsServer) m_RemainingSeconds.Value = _seconds;
         }
     }
 }
