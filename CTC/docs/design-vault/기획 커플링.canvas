@@ -2,13 +2,13 @@
 	"nodes":[
 		{"id":"g-match","type":"group","x":0,"y":0,"width":1440,"height":240,"label":"매치 흐름"},
 		{"id":"g-combat","type":"group","x":0,"y":300,"width":1440,"height":240,"label":"전투"},
-		{"id":"g-econ","type":"group","x":0,"y":600,"width":1780,"height":240,"label":"경제 (원작 돈줄 구조)"},
-		{"id":"g-space","type":"group","x":0,"y":900,"width":760,"height":240,"label":"공간"},
-		{"id":"g-issue","type":"group","x":1860,"y":0,"width":420,"height":1140,"label":"🔥 지금 논의중"},
+		{"id":"g-econ","type":"group","x":0,"y":600,"width":1780,"height":240,"label":"경제 (치즈 = 식량+화폐)"},
+		{"id":"g-space","type":"group","x":0,"y":900,"width":1110,"height":240,"label":"공간 (v2 핵심: 레벨디자인)"},
+		{"id":"g-issue","type":"group","x":1860,"y":0,"width":420,"height":1140,"label":"✅ v2 개정 확정"},
 
 		{"id":"n-victory","type":"file","file":"승패.md","x":40,"y":50,"width":300,"height":150},
 		{"id":"n-restart","type":"file","file":"매치 재시작.md","x":390,"y":50,"width":300,"height":150},
-		{"id":"n-notime","type":"file","file":"시간제한 없음.md","x":740,"y":50,"width":300,"height":150},
+		{"id":"n-timer","type":"file","file":"매치 타이머.md","x":740,"y":50,"width":300,"height":150},
 		{"id":"n-spectate","type":"file","file":"탈락과 관전.md","x":1090,"y":50,"width":300,"height":150},
 
 		{"id":"n-pounce","type":"file","file":"덮치기.md","x":40,"y":350,"width":300,"height":150},
@@ -22,34 +22,36 @@
 		{"id":"n-dash","type":"file","file":"대시.md","x":1090,"y":650,"width":300,"height":150},
 		{"id":"n-decoy","type":"file","file":"미끼.md","x":1440,"y":650,"width":300,"height":150},
 
-		{"id":"n-map","type":"file","file":"맵.md","x":40,"y":950,"width":300,"height":150},
-		{"id":"n-lobby","type":"file","file":"로비 역할선택.md","x":390,"y":950,"width":300,"height":150},
+		{"id":"n-map","type":"file","file":"맵 레벨디자인.md","x":40,"y":950,"width":300,"height":150},
+		{"id":"n-mapold","type":"file","file":"맵.md","x":390,"y":950,"width":300,"height":150},
+		{"id":"n-lobby","type":"file","file":"로비 역할선택.md","x":740,"y":950,"width":300,"height":150},
 
-		{"id":"n-fortress","type":"file","file":"요새.md","x":1920,"y":50,"width":300,"height":220,"color":"1"},
-		{"id":"n-heal","type":"file","file":"회복.md","x":1920,"y":330,"width":300,"height":220,"color":"3"},
-		{"id":"n-refuge","type":"file","file":"임시 피난처.md","x":1920,"y":610,"width":300,"height":220,"color":"3"},
-		{"id":"n-stale","type":"file","file":"루즈함 리스크.md","x":1920,"y":890,"width":300,"height":220,"color":"3"}
+		{"id":"n-upkeep","type":"file","file":"치즈 유지비.md","x":1920,"y":50,"width":300,"height":220,"color":"4"},
+		{"id":"n-heal","type":"file","file":"회복.md","x":1920,"y":330,"width":300,"height":220,"color":"4"},
+		{"id":"n-stale","type":"file","file":"루즈함 리스크.md","x":1920,"y":610,"width":300,"height":220,"color":"4"},
+		{"id":"n-fortress","type":"file","file":"요새.md","x":1920,"y":890,"width":300,"height":220,"color":"1"}
 	],
 	"edges":[
 		{"id":"e1","fromNode":"n-spot","fromSide":"right","toNode":"n-wallet","toSide":"left","label":"점유 수입"},
 		{"id":"e2","fromNode":"n-wallet","fromSide":"right","toNode":"n-shop","toSide":"left","label":"구매"},
 		{"id":"e3","fromNode":"n-shop","fromSide":"top","toNode":"n-weapon","toSide":"bottom","label":"해금 150/600"},
-		{"id":"e4","fromNode":"n-weapon","fromSide":"top","toNode":"n-victory","toSide":"bottom","label":"고양이 HP 갉기 → 쥐 승"},
+		{"id":"e4","fromNode":"n-weapon","fromSide":"top","toNode":"n-victory","toSide":"bottom","label":"고양이 HP 갉기 → 쥐 승①"},
 		{"id":"e5","fromNode":"n-pounce","fromSide":"right","toNode":"n-hp","toSide":"left","label":"60dmg ×2방"},
 		{"id":"e6","fromNode":"n-hp","fromSide":"top","toNode":"n-spectate","toSide":"bottom","label":"쥐 사망=탈락"},
-		{"id":"e7","fromNode":"n-spectate","fromSide":"left","toNode":"n-victory","toSide":"right","label":"전멸 → 고양이 승"},
+		{"id":"e7","fromNode":"n-spectate","fromSide":"left","toNode":"n-victory","toSide":"right","label":"시간 내 전멸 → 고양이 승"},
 		{"id":"e8","fromNode":"n-pounce","fromSide":"bottom","toNode":"n-reward","toSide":"left","label":"처치 +50"},
 		{"id":"e9","fromNode":"n-reward","fromSide":"bottom","toNode":"n-wallet","toSide":"top","label":"고양이도 경제 주체"},
 		{"id":"e10","fromNode":"n-victory","fromSide":"right","toNode":"n-restart","toSide":"left","label":"결과→로비"},
-		{"id":"e11","fromNode":"n-map","fromSide":"top","toNode":"n-spot","toSide":"bottom","label":"위험=수입 지형"},
-		{"id":"e12","fromNode":"n-decoy","fromSide":"top","toNode":"n-pounce","toSide":"right","label":"덮치기 낭비 유도"},
-		{"id":"e13","fromNode":"n-fortress","fromSide":"bottom","toNode":"n-heal","toSide":"top","label":"제거 → 회복 공백","color":"1"},
-		{"id":"e14","fromNode":"n-fortress","fromSide":"left","toNode":"n-refuge","toSide":"top","label":"대체","color":"1"},
-		{"id":"e15","fromNode":"n-refuge","fromSide":"bottom","toNode":"n-stale","toSide":"top","label":"숨으면 루즈?","color":"3"},
-		{"id":"e16","fromNode":"n-notime","fromSide":"right","toNode":"n-stale","toSide":"left","label":"타이머 없음 → 증폭","color":"3"},
-		{"id":"e17","fromNode":"n-heal","fromSide":"left","toNode":"n-hp","toSide":"right","label":"2방 밸런스 좌우","color":"3"},
-		{"id":"e18","fromNode":"n-map","fromSide":"right","toNode":"n-refuge","toSide":"left","label":"3~4개 배치 예정","color":"3"},
-		{"id":"e19","fromNode":"n-shop","fromSide":"right","toNode":"n-dash","toSide":"left","label":"100"},
-		{"id":"e20","fromNode":"n-dash","fromSide":"right","toNode":"n-decoy","toSide":"left","label":"50"}
+		{"id":"e11","fromNode":"n-timer","fromSide":"left","toNode":"n-victory","toSide":"top","label":"종료 시 생존 → 쥐 승②"},
+		{"id":"e12","fromNode":"n-map","fromSide":"top","toNode":"n-spot","toSide":"bottom","label":"등급 = 쥐구멍까지 거리"},
+		{"id":"e13","fromNode":"n-decoy","fromSide":"top","toNode":"n-pounce","toSide":"right","label":"덮치기 낭비 유도"},
+		{"id":"e14","fromNode":"n-upkeep","fromSide":"left","toNode":"n-wallet","toSide":"top","label":"10초 −10 자동 소모","color":"4"},
+		{"id":"e15","fromNode":"n-upkeep","fromSide":"bottom","toNode":"n-heal","toSide":"top","label":"치즈 부족 → HP 대신","color":"4"},
+		{"id":"e16","fromNode":"n-timer","fromSide":"right","toNode":"n-stale","toSide":"left","label":"타이머가 교착 종결","color":"4"},
+		{"id":"e17","fromNode":"n-upkeep","fromSide":"right","toNode":"n-stale","toSide":"right","label":"숨으면 굶음 → 존버 차단","color":"4"},
+		{"id":"e18","fromNode":"n-fortress","fromSide":"top","toNode":"n-stale","toSide":"bottom","label":"삭제 — 안전은 터널로","color":"1"},
+		{"id":"e19","fromNode":"n-map","fromSide":"bottom","toNode":"n-dash","toSide":"bottom","label":"중앙 도박의 보험"},
+		{"id":"e20","fromNode":"n-shop","fromSide":"right","toNode":"n-dash","toSide":"left","label":"100"},
+		{"id":"e21","fromNode":"n-dash","fromSide":"right","toNode":"n-decoy","toSide":"left","label":"50"}
 	]
 }

@@ -11,17 +11,12 @@
             "id": "7104b799cc7605ae",
             "type": "leaf",
             "state": {
-              "type": "canvas",
+              "type": "image",
               "state": {
-                "file": "기획 커플링.canvas",
-                "viewState": {
-                  "x": 1140,
-                  "y": 741.1254585473221,
-                  "zoom": -0.8797517859968293
-                }
+                "file": "맵 시안 v1.svg"
               },
-              "icon": "lucide-layout-dashboard",
-              "title": "기획 커플링"
+              "icon": "lucide-image",
+              "title": "맵 시안 v1"
             }
           }
         ]
@@ -97,7 +92,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "기획 커플링.canvas",
+                "file": "맵 시안 v1.svg",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -107,7 +102,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "기획 커플링 의 백링크"
+              "title": "맵 시안 v1 의 백링크"
             }
           },
           {
@@ -116,12 +111,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "기획 커플링.canvas",
+                "file": "맵 시안 v1.svg",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "기획 커플링 의 나가는 링크"
+              "title": "맵 시안 v1 의 나가는 링크"
             }
           },
           {
@@ -159,13 +154,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "기획 커플링.canvas",
+                "file": "맵 시안 v1.svg",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "기획 커플링 의 개요"
+              "title": "맵 시안 v1 의 개요"
             }
           }
         ]
@@ -188,12 +183,23 @@
   },
   "active": "7104b799cc7605ae",
   "lastOpenFiles": [
+    "기획 커플링.canvas.tmp.9192.5142aa1fe93f",
+    "00 기획 그래프 안내.md.tmp.9192.8597292d1fa5",
+    "요새.md.tmp.9192.432b38b3c4c7",
+    "치즈 지갑.md.tmp.9192.301500b1e368",
+    "코어 루프.md.tmp.9192.aedeb9520867",
+    "루즈함 리스크.md.tmp.9192.134919ad3a68",
+    "회복.md.tmp.9192.4a95e760d4fd",
+    "치즈 유지비.md",
+    "매치 타이머.md",
+    "매치 타이머.md.tmp.9192.b6b9b8d0ea0d",
+    "승패.md.tmp.9192.687ee098a035",
     "맵 레벨디자인.md",
+    "기획 커플링.canvas",
     "맵 레벨디자인.md.tmp.9192.7112f3dc1e6e",
     "맵 시안 v1.svg",
     "00 기획 그래프 안내.md",
     "00 기획 그래프 안내.md.tmp.9192.b49ba5bbf539",
-    "기획 커플링.canvas",
     "임시 피난처.md",
     "회복.md",
     "처치 보상.md",
