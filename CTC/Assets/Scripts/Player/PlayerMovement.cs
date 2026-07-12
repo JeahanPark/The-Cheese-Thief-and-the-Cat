@@ -13,10 +13,13 @@ namespace CTC.Runtime.Player
     [RequireComponent(typeof(CharacterController))]
     public class PlayerMovement : NetworkBehaviour
     {
+        private const float GRAVITY = -20f;
+
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float turnSpeedDegPerSec = 720f;
 
         private CharacterController _controller;
+        private float _verticalVelocity;
 
         private void Awake()
         {
@@ -59,7 +62,13 @@ namespace CTC.Runtime.Player
             float camYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : 0f;
             Vector3 dir = MovementInput.ToWorldDirection(h, v, camYaw);
 
-            _controller.Move(dir * (moveSpeed * Time.deltaTime));
+            // 중력 — 접지 중엔 살짝 눌러 붙이고, 공중에선 가속 낙하
+            if (_controller.isGrounded && _verticalVelocity < 0f) _verticalVelocity = -1f;
+            _verticalVelocity += GRAVITY * Time.deltaTime;
+
+            Vector3 motion = dir * moveSpeed;
+            motion.y = _verticalVelocity;
+            _controller.Move(motion * Time.deltaTime);
 
             if (dir.sqrMagnitude > 0.0001f)
             {
