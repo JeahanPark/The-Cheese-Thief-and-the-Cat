@@ -45,7 +45,6 @@ namespace CTC.Editor
 
         private const string GridboxUrpDir =
             "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP";
-        private const string MuipButtonPrefabPath = "Assets/Modern UI Pack/Prefabs/Button/Basic/White.prefab";
         private const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
 
         [MenuItem("Tools/CTC/Setup Networking Scene")]
@@ -533,9 +532,7 @@ namespace CTC.Editor
             box.GetComponent<Renderer>().sharedMaterial = material;
         }
 
-        // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + MUIP 버튼 3개.
-        // MUIP는 asmdef 없이 Assembly-CSharp 소속이라 타입 직접 참조 불가 →
-        // GetComponent("ButtonManager") + SerializedObject로 배선하고, LobbyUI는 표준 Button 경유.
+        // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
         private static void BuildLobbyCanvas(LobbyManager lobby, MatchManager match)
         {
             var canvasGo = new GameObject("LobbyCanvas");
@@ -717,45 +714,39 @@ namespace CTC.Editor
             return tmp;
         }
 
-        // MUIP 버튼 프리팹 인스턴스 + 라벨 설정. 프리팹 루트에 표준 Button이 없어서 추가한다
-        // (ButtonManager.Initialize가 런타임에 기존 Button을 재사용하므로 중복 생성 없음).
+        // 표준 UGUI 버튼(흰 배경 + TMP 라벨). MUIP 버튼은 런타임 상태 초기화가 세션에 따라
+        // 깨지는 문제(비가시 버튼)와 한글 글리프·다중 라벨 이슈가 반복돼 그레이박스 단계에선
+        // 플레인 UGUI로 통일 — 본 UI 패스에서 디자인 버튼으로 교체 전제.
         private static Button CreateMuipButton(Transform parent, string name, string label, Vector2 anchoredPos)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MuipButtonPrefabPath);
-            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-            go.name = name;
+            var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
 
-            var rt = go.GetComponent<RectTransform>();
+            var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = anchoredPos;
             rt.sizeDelta = new Vector2(380f, 56f);
 
-            var buttonManager = go.GetComponent("ButtonManager");
-            if (buttonManager != null)
-            {
-                var so = new SerializedObject(buttonManager);
-                so.FindProperty("buttonText").stringValue = label;
-                SerializedProperty autoFit = so.FindProperty("autoFitContent");
-                if (autoFit != null) autoFit.boolValue = false; // 명시 크기 사용
-                SerializedProperty icon = so.FindProperty("enableIcon");
-                if (icon != null) icon.boolValue = false; // 텍스트 전용 버튼
-                so.ApplyModifiedPropertiesWithoutUndo();
-            }
+            var bg = go.AddComponent<Image>();
+            bg.color = Color.white;
 
-            // enableIcon=false는 런타임 UpdateUI에서 반영되지만 에디터 뷰에도 즉시 적용
-            foreach (var t in go.GetComponentsInChildren<Transform>(true))
-                if (t.name == "Icon Parent") t.gameObject.SetActive(false);
+            var labelGo = new GameObject("Label", typeof(RectTransform));
+            labelGo.transform.SetParent(go.transform, false);
+            var labelRt = (RectTransform)labelGo.transform;
+            labelRt.anchorMin = Vector2.zero;
+            labelRt.anchorMax = Vector2.one;
+            labelRt.offsetMin = labelRt.offsetMax = Vector2.zero;
 
-            // ButtonManager.UpdateUI는 런타임 OnEnable에서 라벨을 재적용하지만,
-            // 에디터/씬 뷰에서도 바로 보이도록 자식 TMP 텍스트를 직접 갱신
-            foreach (var tmp in go.GetComponentsInChildren<TMP_Text>(true))
-                tmp.text = label;
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.fontSize = 24f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = new Color(0.12f, 0.13f, 0.16f);
+            tmp.raycastTarget = false;
 
-            var button = go.GetComponent<Button>();
-            if (button == null) button = go.AddComponent<Button>();
-            button.transition = Selectable.Transition.None; // 시각 전환은 ButtonManager 담당
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = bg; // 기본 ColorTint 전환 사용
             return button;
         }
 
