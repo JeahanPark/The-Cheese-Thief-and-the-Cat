@@ -189,7 +189,6 @@ namespace CTC.Editor
                 {
                     root.AddComponent<MousePopgun>();
                     root.AddComponent<MouseDash>();
-                    root.AddComponent<CheeseUpkeep>(); // v2 유지비 — 쥐만
                 }
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);

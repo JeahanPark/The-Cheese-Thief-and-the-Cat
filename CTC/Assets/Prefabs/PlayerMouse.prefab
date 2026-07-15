@@ -22,7 +22,6 @@ GameObject:
   - component: {fileID: 7969670973942088240}
   - component: {fileID: 3194180182503786071}
   - component: {fileID: 2258780326856655791}
-  - component: {fileID: 4610136538441238120}
   m_Layer: 0
   m_Name: PlayerMouse
   m_TagString: Untagged
@@ -280,19 +279,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe827404ff13eff4d8b56356f7c11050, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.MouseDash
-  ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &4610136538441238120
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 618008594229528120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 85a21b1dd9feb294a8018bae8b72a08b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.CheeseUpkeep
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &3590425873836912933
 PrefabInstance:

@@ -38,7 +38,7 @@ namespace CTC.Runtime.Match
             bool started = m_Lobby != null && m_Lobby.GameStarted;
             if (started && !m_WasStarted)
             {
-                m_RemainingSeconds.Value = Economy.SurvivalLogic.MATCH_DURATION_SECONDS;
+                m_RemainingSeconds.Value = MatchFlowLogic.MATCH_DURATION_SECONDS;
             }
             m_WasStarted = started;
 

@@ -10,10 +10,13 @@ namespace CTC.Runtime.Match
     /// <summary>
     /// 승패 판정 상태기계(순수). armed = 시작 후 양측이 실제 스폰된 것을 관측한 뒤에만
     /// 판정 활성 — 스폰 지연 중 0/0으로 즉시 종료되는 오판 방지.
-    /// v2: 전멸 판정 + 타이머 만료 판정(생존 쥐 있으면 쥐 생존승).
+    /// v3: 전멸 판정 + 안전 타이머 만료 판정(생존 쥐 있으면 쥐 생존승).
     /// </summary>
     public static class MatchFlowLogic
     {
+        /// <summary>v3: 안전 타이머(원작 66:40 대응 축소) — 만료 시 생존 쥐가 있으면 쥐 승.</summary>
+        public const float MATCH_DURATION_SECONDS = 600f;
+
         public static bool ShouldArm(bool _gameStarted, bool _armed, int _aliveCats, int _aliveMice)
         {
             return _gameStarted && !_armed && _aliveCats > 0 && _aliveMice > 0;
