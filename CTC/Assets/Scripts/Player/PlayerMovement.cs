@@ -55,7 +55,7 @@ namespace CTC.Runtime.Player
             if (idx < 0) return;
 
             _controller.enabled = false;
-            transform.position = Lobby.LobbyManager.SpawnPosition(idx, lobby.PlayerCount);
+            transform.position = lobby.SpawnPositionOf(idx);
             _controller.enabled = true;
         }
 

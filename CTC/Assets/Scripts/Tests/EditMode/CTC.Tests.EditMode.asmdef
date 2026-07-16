@@ -3,6 +3,7 @@
     "rootNamespace": "CTC.Tests",
     "references": [
         "CTC.Runtime",
+        "Unity.Netcode.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

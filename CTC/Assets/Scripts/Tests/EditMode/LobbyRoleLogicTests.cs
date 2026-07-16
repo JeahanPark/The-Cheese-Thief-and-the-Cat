@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using CTC.Runtime.Lobby;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CTC.Tests
 {
@@ -77,6 +79,33 @@ namespace CTC.Tests
         public void CanStart_SinglePlayer_False()
         {
             Assert.IsFalse(LobbyRoleLogic.CanStart(new[] { RoleId.Cat }));
+        }
+
+        // Vector3 정확 비교(Assert.AreEqual)는 float 오차(-12f+1.8f ≠ -10.2f 리터럴,
+        // yaw 회전 epsilon)로 깨진다 — 거리 허용오차 비교 사용.
+        private static void AssertPos(Vector3 _expected, Vector3 _actual)
+        {
+            Assert.Less(Vector3.Distance(_expected, _actual), 1e-4f,
+                $"expected {_expected} but was {_actual}");
+        }
+
+        [Test]
+        public void SpawnPosition_Cat_CenterLine()
+        {
+            var roles = new List<RoleId> { RoleId.Cat, RoleId.Mouse, RoleId.Cat };
+            // 0번째 고양이 (0,0.1,0), 1번째 고양이 (2,0.1,0)
+            AssertPos(new Vector3(0f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 0));
+            AssertPos(new Vector3(2f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 2));
+        }
+
+        [Test]
+        public void SpawnPosition_Mouse_AtOwnFortressEntrance()
+        {
+            var roles = new List<RoleId> { RoleId.Cat, RoleId.Mouse, RoleId.Mouse };
+            // 0번째 쥐 = FORTRESS_SPOTS[0] 입구 앞 1.8m — (-11,0,-12)+yaw0 전방(+Z)*1.8, y 0.1
+            AssertPos(new Vector3(-11f, 0.1f, -10.2f), LobbyManager.SpawnPosition(roles, 1));
+            // 1번째 쥐 = FORTRESS_SPOTS[1] — (9,0,-12.5)+yaw0 전방*1.8
+            AssertPos(new Vector3(9f, 0.1f, -10.7f), LobbyManager.SpawnPosition(roles, 2));
         }
     }
 }
