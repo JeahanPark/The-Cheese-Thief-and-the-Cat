@@ -14,6 +14,7 @@ namespace CTC.Runtime.Economy
         private const float PLACE_FORWARD_METERS = 1.5f;
 
         [SerializeField] private GameObject m_DecoyPrefab;
+        [SerializeField] private GameObject m_FortressPrefab;
 
         /// <summary>로컬 UI/QA 진입점.</summary>
         public void Buy(ShopItemId _itemId)
@@ -37,6 +38,8 @@ namespace CTC.Runtime.Economy
                     return dash != null && !dash.Owned;
                 case ShopItemId.Decoy:
                     return m_DecoyPrefab != null;
+                case ShopItemId.Fortress:
+                    return m_FortressPrefab != null;
                 case ShopItemId.CatAttack:
                     CatPounce pounce = GetComponent<CatPounce>();
                     return pounce != null && ShopLogic.CanAddStack(pounce.DamageStacks);
@@ -83,6 +86,10 @@ namespace CTC.Runtime.Economy
                 case ShopItemId.Decoy:
                     SpawnStructure(m_DecoyPrefab);
                     break;
+                case ShopItemId.Fortress:
+                    // 입구(로컬 +Z)가 구매자를 향하게 — 쫓기며 지어도 바로 들어갈 수 있다
+                    SpawnStructure(m_FortressPrefab, Quaternion.LookRotation(-FlatForward()));
+                    break;
                 case ShopItemId.CatAttack:
                     GetComponent<CatPounce>().ServerAddDamageStack();
                     break;
@@ -94,10 +101,19 @@ namespace CTC.Runtime.Economy
 
         private void SpawnStructure(GameObject _prefab)
         {
-            Vector3 forward = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
-            Vector3 pos = transform.position + forward * PLACE_FORWARD_METERS;
-            GameObject go = Instantiate(_prefab, pos, Quaternion.identity);
+            SpawnStructure(_prefab, Quaternion.identity);
+        }
+
+        private void SpawnStructure(GameObject _prefab, Quaternion _rotation)
+        {
+            Vector3 pos = transform.position + FlatForward() * PLACE_FORWARD_METERS;
+            GameObject go = Instantiate(_prefab, pos, _rotation);
             go.GetComponent<NetworkObject>().Spawn(true);
+        }
+
+        private Vector3 FlatForward()
+        {
+            return new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
         }
     }
 }

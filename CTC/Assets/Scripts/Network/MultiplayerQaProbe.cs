@@ -111,6 +111,12 @@ namespace CTC.Runtime.Networking
                 case "TestMpBuyDecoy":
                     BuyLocal(ShopItemId.Decoy);
                     break;
+                case "TestMpBuyFortress":
+                    BuyLocal(ShopItemId.Fortress);
+                    break;
+                case "TestMpEnterNearestFortress":
+                    EnterNearestFortress();
+                    break;
                 default:
                     Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
                     break;
@@ -177,6 +183,39 @@ namespace CTC.Runtime.Networking
                 return;
             }
             shop.Buy(itemId);
+        }
+
+        // 클론 쥐를 가장 가까운 요새 중심으로 순간이동(CC 토글) — 내부 회복/차폐 QA용.
+        private void EnterNearestFortress()
+        {
+            NetworkObject local = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
+                : null;
+            if (local == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] EnterNearestFortress — 로컬 플레이어 없음");
+                return;
+            }
+
+            FortressHealZone nearest = null;
+            float best = float.MaxValue;
+            foreach (var zone in FindObjectsByType<FortressHealZone>(FindObjectsSortMode.None))
+            {
+                float d = (zone.transform.position - local.transform.position).sqrMagnitude;
+                if (d < best) { best = d; nearest = zone; }
+            }
+            if (nearest == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] EnterNearestFortress — 요새 없음");
+                return;
+            }
+
+            var cc = local.GetComponent<CharacterController>();
+            Vector3 pos = nearest.transform.position + Vector3.up * 0.1f;
+            if (cc != null) cc.enabled = false;
+            local.transform.position = pos;
+            if (cc != null) cc.enabled = true;
+            Debug.Log($"[MultiplayerQaProbe] EnterNearestFortress → {pos}");
         }
 
         private void OnDestroy()

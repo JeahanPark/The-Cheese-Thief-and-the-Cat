@@ -65,6 +65,9 @@ namespace CTC.Runtime.Combat
                         transform.position, transform.forward, target.transform.position,
                         m_Range, m_HalfAngleDeg)) continue;
 
+                // v3 진입형 요새: 벽 너머 타격 금지 — 요새 안 쥐는 요새(외벽)부터 부숴야 한다
+                if (IsOccluded(target)) continue;
+
                 // 보상 대상 여부는 데미지 전에 캡처 — 사망 시 PlayerDeath가 Died 이벤트에서
                 // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
                 bool isPlayerKill = target.NetworkObject.IsPlayerObject;
@@ -76,6 +79,24 @@ namespace CTC.Runtime.Combat
                     myWallet.AddCheese(m_KillReward);
                 }
             }
+        }
+
+        // 시전자→대상 가슴 높이 레이 — 둘 자신의 콜라이더는 차단으로 안 친다
+        // (요새 자체를 때릴 때 그 요새의 외벽에 막히면 안 됨). 트리거 무시.
+        private bool IsOccluded(Health _target)
+        {
+            Vector3 from = transform.position + Vector3.up * 0.45f;
+            Vector3 to = _target.transform.position + Vector3.up * 0.4f;
+            Vector3 dir = to - from;
+
+            foreach (RaycastHit hit in Physics.RaycastAll(
+                         from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            {
+                Transform hitRoot = hit.transform.root;
+                if (hitRoot == transform.root || hitRoot == _target.transform.root) continue;
+                return true;
+            }
+            return false;
         }
     }
 }

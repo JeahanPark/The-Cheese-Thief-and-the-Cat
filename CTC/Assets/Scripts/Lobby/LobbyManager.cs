@@ -15,6 +15,7 @@ namespace CTC.Runtime.Lobby
 
         [SerializeField] private GameObject catPrefab;
         [SerializeField] private GameObject mousePrefab;
+        [SerializeField] private GameObject fortressPrefab;
 
         private NetworkList<LobbyPlayerState> _players;
         private readonly NetworkVariable<bool> _gameStarted = new NetworkVariable<bool>();
@@ -172,7 +173,32 @@ namespace CTC.Runtime.Lobby
                 Vector3 pos = SpawnPosition(roles, i);
                 GameObject go = Instantiate(prefab, pos, Quaternion.identity);
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);
+                if (p.Role == RoleId.Mouse)
+                {
+                    SpawnInitialFortress(MouseOrderOf(roles, i));
+                }
             }
+        }
+
+        // index 앞까지의 쥐 수 = 이 쥐의 요새 순번 (SpawnPosition의 nth와 동일 공식)
+        private static int MouseOrderOf(List<RoleId> roles, int index)
+        {
+            int nth = 0;
+            for (int i = 0; i < index; i++)
+            {
+                if (roles[i] == RoleId.Mouse) nth++;
+            }
+            return nth;
+        }
+
+        // v3 초기 벙커: 쥐마다 자기 요새를 서버가 동적 스폰 — 재시작 스윕이 자동 정리.
+        private void SpawnInitialFortress(int mouseOrder)
+        {
+            if (fortressPrefab == null) return;
+
+            (Vector3 pos, float yawDeg) = FORTRESS_SPOTS[mouseOrder % FORTRESS_SPOTS.Length];
+            GameObject go = Instantiate(fortressPrefab, pos, Quaternion.Euler(0f, yawDeg, 0f));
+            go.GetComponent<NetworkObject>().Spawn(true);
         }
 
         // ---- MCP/QA 자동화용 진입점 (u_play invoke, 클론 커맨드에서 사용) ----

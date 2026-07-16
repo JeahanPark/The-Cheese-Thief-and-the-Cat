@@ -123,6 +123,20 @@ namespace CTC.Runtime.Testing
             }
         }
 
+        /// <summary>로컬 플레이어를 지정 좌표로 순간이동(CC 토글) — 요새 차폐/진입 QA용.</summary>
+        public void TestTeleportLocalPlayer(float _x, float _z)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) { GameDebug.LogWarning("[TestManager] 로컬 플레이어 없음"); return; }
+
+            var cc = local.GetComponent<UnityEngine.CharacterController>();
+            if (cc != null) cc.enabled = false;
+            local.transform.position = new UnityEngine.Vector3(_x, 0.1f, _z);
+            if (cc != null) cc.enabled = true;
+            GameDebug.Log($"[TestManager] TeleportLocalPlayer → ({_x}, {_z})");
+        }
+
         /// <summary>로컬 플레이어(고양이)의 덮치기 실행.</summary>
         public void TestPounce()
         {
@@ -201,6 +215,7 @@ namespace CTC.Runtime.Testing
         public void TestBuyMachineGun() => BuyLocal(ShopItemId.MachineGun);
         public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
         public void TestBuyDecoy() => BuyLocal(ShopItemId.Decoy);
+        public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
         public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
         public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
 
