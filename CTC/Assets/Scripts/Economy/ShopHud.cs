@@ -26,7 +26,7 @@ namespace CTC.Runtime.Economy
         // MUIP 기본 TMP 폰트가 한글 글리프 미포함 — 영문 라벨 사용 (한글화는 폰트 에셋 도입 시)
         private static readonly string[] ITEM_LABELS =
         {
-            "Slingshot", "Machine Gun", "Dash", "Decoy", "ATK Up", "SPD Up",
+            "Slingshot", "Machine Gun", "Dash", "Decoy", "Fortress", "ATK Up", "SPD Up",
         };
 
         private void Awake()

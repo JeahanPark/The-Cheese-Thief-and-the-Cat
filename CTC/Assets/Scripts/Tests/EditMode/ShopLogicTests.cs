@@ -22,6 +22,13 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void Find_Fortress_MatchesOriginalBunker()
+        {
+            Assert.AreEqual(220, ShopLogic.Find(ShopItemId.Fortress).Cost);
+            Assert.AreEqual(RoleId.Mouse, ShopLogic.Find(ShopItemId.Fortress).Role);
+        }
+
+        [Test]
         public void Find_Unknown_ReturnsNone()
         {
             Assert.AreEqual(ShopItemId.None, ShopLogic.Find((ShopItemId)999).Id);

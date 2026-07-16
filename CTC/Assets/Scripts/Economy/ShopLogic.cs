@@ -9,7 +9,6 @@ namespace CTC.Runtime.Economy
         MachineGun = 2,
         Dash = 3,
         Decoy = 4,
-        // Fortress = 5 → v2 삭제
         Fortress = 5,
         CatAttack = 6,
         CatSpeed = 7,
@@ -54,7 +53,7 @@ namespace CTC.Runtime.Economy
         public const int POUNCE_DAMAGE_PER_STACK = 10;
         public const float SPEED_PER_STACK = 0.4f;
         public const int FORTRESS_HEAL_PER_TICK = 10;
-        public const float FORTRESS_HEAL_RADIUS = 3f;
+        public const float FORTRESS_HEAL_RADIUS = 1.0f; // 요새 내부(입구 밖 미적용)
         public const float DECOY_LIFETIME_SECONDS = 30f;
 
         public static readonly ShopItem[] CATALOG =
@@ -63,6 +62,7 @@ namespace CTC.Runtime.Economy
             new ShopItem(ShopItemId.MachineGun, RoleId.Mouse, 600),
             new ShopItem(ShopItemId.Dash, RoleId.Mouse, 100),
             new ShopItem(ShopItemId.Decoy, RoleId.Mouse, 50),
+            new ShopItem(ShopItemId.Fortress, RoleId.Mouse, 220),
             new ShopItem(ShopItemId.CatAttack, RoleId.Cat, 200),
             new ShopItem(ShopItemId.CatSpeed, RoleId.Cat, 150),
         };
