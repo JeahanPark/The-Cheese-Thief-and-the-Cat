@@ -33,6 +33,7 @@ namespace CTC.Editor
         private const string CatPrefabPath = PrefabDir + "/PlayerCat.prefab";
         private const string MousePrefabPath = PrefabDir + "/PlayerMouse.prefab";
         private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
+        private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
         private const string QuirkyRoot = "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1";
@@ -60,22 +61,24 @@ namespace CTC.Editor
                 scale: new Vector3(0.4f, 0.25f, 0.4f),
                 addExtras: _root => _root.AddComponent<DecoyLifetime>());
 
+            GameObject fortressPrefab = CreateFortressPrefab();
+
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
                 moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f,
                 role: RoleId.Cat, maxHp: 1000,
-                decoyPrefab: decoyPrefab);
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
                 ccHeight: 0.5f, ccRadius: 0.22f,
                 moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
                 role: RoleId.Mouse, maxHp: 100,
-                decoyPrefab: decoyPrefab);
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
-            CreateGameScene(catPrefab, mousePrefab, decoyPrefab);
-            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 3종 + Game.unity 재생성 (v2 터널 맵)");
+            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
+            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성 (요새 배선; 맵은 Plan 11이 교체 예정)");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
@@ -140,12 +143,75 @@ namespace CTC.Editor
             }
         }
 
+        // v3 진입형 요새(원작 벙커): 외벽 4면 + 쥐 전용 입구(1.0×0.75 — v2 쥐구멍 실효치수).
+        // 쥐 CC(0.44Ø/0.5h, skinWidth 포함 실효 0.60/0.63)만 통과, 고양이(0.86/1.03)는 차단.
+        // 지붕 없음 — 점프가 없어 벽 1.2로 충분. 내부 회복은 FortressHealZone(반경 1.0).
+        // 입구 방향 = 루트 로컬 +Z (스폰 시 yaw 회전으로 지정).
+        private const float FORTRESS_WALL_HEIGHT = 1.2f;
+        private const float FORTRESS_HALF = 1.2f;          // 풋프린트 2.4×2.4
+        private const float FORTRESS_DOOR_WIDTH = 1.0f;
+        private const float FORTRESS_DOOR_HEIGHT = 0.75f;
+        private const float FORTRESS_WALL_THICKNESS = 0.2f;
+
+        private static GameObject CreateFortressPrefab()
+        {
+            Material wallMat = GridboxMaterial("Brown");
+            var root = new GameObject("CheeseFortress");
+            try
+            {
+                root.AddComponent<NetworkObject>();
+
+                var health = root.AddComponent<Health>();
+                SetInt(health, "m_MaxHp", 300);
+
+                var roleTag = root.AddComponent<RoleTag>();
+                SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
+
+                root.AddComponent<PlayerDeath>();
+                root.AddComponent<FortressHealZone>();
+
+                float h = FORTRESS_WALL_HEIGHT;
+                float half = FORTRESS_HALF;
+                float t = FORTRESS_WALL_THICKNESS;
+
+                // 뒷벽·좌우벽 (입구는 로컬 +Z면)
+                AddBox(root, wallMat, "Wall_Back", new Vector3(0f, h * 0.5f, -half + t * 0.5f),
+                    new Vector3(half * 2f, h, t));
+                AddBox(root, wallMat, "Wall_Left", new Vector3(-half + t * 0.5f, h * 0.5f, 0f),
+                    new Vector3(t, h, half * 2f - t * 2f));
+                AddBox(root, wallMat, "Wall_Right", new Vector3(half - t * 0.5f, h * 0.5f, 0f),
+                    new Vector3(t, h, half * 2f - t * 2f));
+
+                // 앞벽: 입구(폭 1.0) 좌우 세그먼트 + 인방(입구 위 y 0.75~1.2)
+                float sideWidth = half - FORTRESS_DOOR_WIDTH * 0.5f;
+                float sideCenterX = FORTRESS_DOOR_WIDTH * 0.5f + sideWidth * 0.5f;
+                float frontZ = half - t * 0.5f;
+                AddBox(root, wallMat, "Wall_Front_L", new Vector3(-sideCenterX, h * 0.5f, frontZ),
+                    new Vector3(sideWidth, h, t));
+                AddBox(root, wallMat, "Wall_Front_R", new Vector3(sideCenterX, h * 0.5f, frontZ),
+                    new Vector3(sideWidth, h, t));
+                float lintelHeight = h - FORTRESS_DOOR_HEIGHT;
+                AddBox(root, wallMat, "Wall_Lintel",
+                    new Vector3(0f, FORTRESS_DOOR_HEIGHT + lintelHeight * 0.5f, frontZ),
+                    new Vector3(FORTRESS_DOOR_WIDTH, lintelHeight, t));
+
+                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, FortressPrefabPath);
+                BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
+                AssetDatabase.SaveAssets();
+                return asset;
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
         private static GameObject CreatePlayerPrefab(
             string name, string prefabPath, string modelPath, Material material,
             float ccHeight, float ccRadius,
             float moveSpeed, float runThreshold, float fov, float camDistance,
             RoleId role, int maxHp,
-            GameObject decoyPrefab)
+            GameObject decoyPrefab, GameObject fortressPrefab)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -183,6 +249,7 @@ namespace CTC.Editor
 
                 var shop = root.AddComponent<ShopController>();
                 SetRef(shop, "m_DecoyPrefab", decoyPrefab);
+                SetRef(shop, "m_FortressPrefab", fortressPrefab);
 
                 if (role == RoleId.Cat) root.AddComponent<CatPounce>();
                 else
@@ -214,7 +281,7 @@ namespace CTC.Editor
         }
 
         private static void CreateGameScene(
-            GameObject catPrefab, GameObject mousePrefab, GameObject decoyPrefab)
+            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -234,7 +301,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, decoyPrefab);
+            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
 
             nmGo.AddComponent<ConnectionUI>();
             nmGo.AddComponent<MppmAutoConnect>();
@@ -246,6 +313,7 @@ namespace CTC.Editor
             var lobby = lobbyGo.AddComponent<LobbyManager>();
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
+            SetRef(lobby, "fortressPrefab", fortressPrefab);
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
             BuildLobbyCanvas(lobby, match);
@@ -299,6 +367,7 @@ namespace CTC.Editor
             VerifyUniqueHashes(sceneObjects
                 .Append(catPrefab.GetComponent<NetworkObject>())
                 .Append(mousePrefab.GetComponent<NetworkObject>())
+                .Append(fortressPrefab.GetComponent<NetworkObject>())
                 .Append(decoyPrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }
@@ -671,11 +740,11 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
 
-            // 매치 타이머 (상단 중앙, v2)
+            // 매치 타이머 (상단 중앙 — v3 안전 타이머)
             var timerTextGo = new GameObject("TimerText");
             timerTextGo.transform.SetParent(canvasGo.transform, false);
             var timerText = timerTextGo.AddComponent<TextMeshProUGUI>();
-            timerText.text = "5:00";
+            timerText.text = "10:00";
             timerText.fontSize = 40f;
             timerText.alignment = TextAlignmentOptions.Top;
             var timerRect = timerTextGo.GetComponent<RectTransform>();

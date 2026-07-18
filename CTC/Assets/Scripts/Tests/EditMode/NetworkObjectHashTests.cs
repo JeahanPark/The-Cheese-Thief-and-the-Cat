@@ -20,6 +20,7 @@ namespace CTC.Tests
             "Assets/Prefabs/PlayerCat.prefab",
             "Assets/Prefabs/PlayerMouse.prefab",
             "Assets/Prefabs/MouseDecoy.prefab",
+            "Assets/Prefabs/CheeseFortress.prefab",
         };
 
         private static readonly Regex HASH_PATTERN =

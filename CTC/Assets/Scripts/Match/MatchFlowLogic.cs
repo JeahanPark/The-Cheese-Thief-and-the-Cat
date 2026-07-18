@@ -30,7 +30,7 @@ namespace CTC.Runtime.Match
             return MatchResult.None;
         }
 
-        /// <summary>타이머 만료 시(v2): 생존 쥐가 있으면 쥐 생존승, 없으면 고양이 승.</summary>
+        /// <summary>안전 타이머 만료 시(v3): 생존 쥐가 있으면 쥐 생존승, 없으면 고양이 승.</summary>
         public static MatchResult EvaluateAtTimeUp(int _aliveMice)
         {
             return _aliveMice > 0 ? MatchResult.MouseWin : MatchResult.CatWin;

@@ -254,6 +254,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.ShopController
   ShowTopMostFoldoutHeaderGroup: 1
   m_DecoyPrefab: {fileID: 6274109959196663774, guid: 450f58df589791f4d909a7da8f9933dc, type: 3}
+  m_FortressPrefab: {fileID: 3525953091307173698, guid: 77dfa9cb7fe111c47b7456c5fcfceab1, type: 3}
 --- !u!114 &3194180182503786071
 MonoBehaviour:
   m_ObjectHideFlags: 0
