@@ -16,6 +16,7 @@ namespace CTC.Runtime.Lobby
         [SerializeField] private GameObject catPrefab;
         [SerializeField] private GameObject mousePrefab;
         [SerializeField] private GameObject fortressPrefab;
+        [SerializeField] private CTC.Runtime.Map.MapLayout m_ActiveLayout; // 씬 굽기(Setup)가 배선
 
         private NetworkList<LobbyPlayerState> _players;
         private readonly NetworkVariable<bool> _gameStarted = new NetworkVariable<bool>();
@@ -80,26 +81,25 @@ namespace CTC.Runtime.Lobby
 
         public int IndexOfClient(ulong clientId) => IndexOf(clientId);
 
-        // v3 초기 요새 자리(외곽 6곳) — pos + 입구가 맵 중앙을 향하는 yaw.
-        // 가구(BuildGreyboxMap)·치즈 지점과 풋프린트(2.4×2.4)가 안 겹치게 선정.
-        // 임시 v1 부엌 맵 기준 — 맵 생성 툴(Plan 11) 도입 시 MapLayout 참조로 교체 예정.
-        public static readonly (Vector3 pos, float yawDeg)[] FORTRESS_SPOTS =
-        {
-            (new Vector3(-11f, 0f, -12f), 0f),    // 남서 — 쥐0 (QA: 넛지(2,3)→G1)
-            (new Vector3(9f, 0f, -12.5f), 0f),    // 남
-            (new Vector3(-10f, 0f, 9f), 180f),    // 북서
-            (new Vector3(10f, 0f, 9f), 180f),     // 북동
-            (new Vector3(0f, 0f, -12.5f), 0f),    // 남 중앙
-            (new Vector3(-12.5f, 0f, -3f), 90f),  // 서
-        };
-
         public const float FORTRESS_ENTRANCE_OFFSET_METERS = 1.8f;
+
+        // 활성 MapLayout의 요새자리를 (pos, yaw) 리스트로 — 미배선이면 빈 리스트.
+        private List<(Vector3 pos, float yaw)> FortressSpots()
+        {
+            var list = new List<(Vector3, float)>();
+            if (m_ActiveLayout == null) return list;
+            foreach (var f in m_ActiveLayout.Fortresses)
+                list.Add((new Vector3(f.Pos.x, 0f, f.Pos.y), f.YawDeg));
+            return list;
+        }
 
         /// <summary>
         /// 결정적 스폰 공식(서버 스폰·소유자 초기 텔레포트 공용) —
         /// k번째 고양이는 중앙 라인, m번째 쥐는 자기 요새 입구 앞.
+        /// 요새자리는 MapLayout 주입(Plan 11) — 순수 공식이라 테스트는 리스트를 직접 전달.
         /// </summary>
-        public static Vector3 SpawnPosition(IReadOnlyList<RoleId> roles, int index)
+        public static Vector3 SpawnPosition(
+            IReadOnlyList<RoleId> roles, int index, IReadOnlyList<(Vector3 pos, float yaw)> fortresses)
         {
             int nth = 0; // 같은 역할 내 순번
             for (int i = 0; i < index; i++)
@@ -109,15 +109,16 @@ namespace CTC.Runtime.Lobby
 
             if (roles[index] == RoleId.Cat) return new Vector3(nth * 2f, 0.1f, 0f);
 
-            (Vector3 pos, float yawDeg) = FORTRESS_SPOTS[nth % FORTRESS_SPOTS.Length];
-            Vector3 entranceDir = Quaternion.Euler(0f, yawDeg, 0f) * Vector3.forward;
+            if (fortresses.Count == 0) return new Vector3(0f, 0.1f, 0f); // 방어 — layout 미배선
+            (Vector3 pos, float yaw) = fortresses[nth % fortresses.Count];
+            Vector3 entranceDir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
             Vector3 spawn = pos + entranceDir * FORTRESS_ENTRANCE_OFFSET_METERS;
             spawn.y = 0.1f;
             return spawn;
         }
 
         /// <summary>소유 클라이언트가 스폰 시 자기 자리를 계산할 때 사용(서버 공식과 동일).</summary>
-        public Vector3 SpawnPositionOf(int index) => SpawnPosition(SnapshotRoles(), index);
+        public Vector3 SpawnPositionOf(int index) => SpawnPosition(SnapshotRoles(), index, FortressSpots());
 
         private List<RoleId> SnapshotRoles()
         {
@@ -166,16 +167,17 @@ namespace CTC.Runtime.Lobby
         private void SpawnPlayers()
         {
             List<RoleId> roles = SnapshotRoles();
+            var forts = FortressSpots();
             for (int i = 0; i < _players.Count; i++)
             {
                 LobbyPlayerState p = _players[i];
                 GameObject prefab = p.Role == RoleId.Cat ? catPrefab : mousePrefab;
-                Vector3 pos = SpawnPosition(roles, i);
+                Vector3 pos = SpawnPosition(roles, i, forts);
                 GameObject go = Instantiate(prefab, pos, Quaternion.identity);
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);
                 if (p.Role == RoleId.Mouse)
                 {
-                    SpawnInitialFortress(MouseOrderOf(roles, i));
+                    SpawnInitialFortress(MouseOrderOf(roles, i), forts);
                 }
             }
         }
@@ -192,12 +194,12 @@ namespace CTC.Runtime.Lobby
         }
 
         // v3 초기 벙커: 쥐마다 자기 요새를 서버가 동적 스폰 — 재시작 스윕이 자동 정리.
-        private void SpawnInitialFortress(int mouseOrder)
+        private void SpawnInitialFortress(int mouseOrder, List<(Vector3 pos, float yaw)> forts)
         {
-            if (fortressPrefab == null) return;
+            if (fortressPrefab == null || forts.Count == 0) return;
 
-            (Vector3 pos, float yawDeg) = FORTRESS_SPOTS[mouseOrder % FORTRESS_SPOTS.Length];
-            GameObject go = Instantiate(fortressPrefab, pos, Quaternion.Euler(0f, yawDeg, 0f));
+            (Vector3 pos, float yaw) = forts[mouseOrder % forts.Count];
+            GameObject go = Instantiate(fortressPrefab, pos, Quaternion.Euler(0f, yaw, 0f));
             go.GetComponent<NetworkObject>().Spawn(true);
         }
 

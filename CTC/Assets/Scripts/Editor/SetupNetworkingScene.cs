@@ -5,6 +5,7 @@ using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Managers;
+using CTC.Runtime.Map;
 using CTC.Runtime.Match;
 using CTC.Runtime.Networking;
 using CTC.Runtime.Player;
@@ -35,6 +36,7 @@ namespace CTC.Editor
         private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
         private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
         private const string GameScenePath = "Assets/Scenes/Game.unity";
+        private const string ActiveLayoutPath = "Assets/Prefabs/Maps/Layout_Sketch01.asset";
 
         private const string QuirkyRoot = "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1";
         private const string CatModelPath = QuirkyRoot + "/Prefabs/Cat.prefab";
@@ -78,7 +80,7 @@ namespace CTC.Editor
                 decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
             CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
-            Debug.Log("[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성 (요새 배선; 맵은 Plan 11이 교체 예정)");
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성 (맵: {ActiveLayoutPath})");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
@@ -290,8 +292,9 @@ namespace CTC.Editor
             floor.transform.localScale = new Vector3(3f, 1f, 3f);
             floor.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Grey1");
 
-            BuildGreyboxMap();
-            BuildCheeseSpots();
+            MapLayout layout = LoadActiveLayout();
+            BuildFromLayout(layout);
+            BuildCheeseSpots(layout);
 
             // NetworkManager — 자동 플레이어 스폰 없음(로비가 역할별로 스폰)
             var nmGo = new GameObject("NetworkManager");
@@ -314,6 +317,7 @@ namespace CTC.Editor
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
             SetRef(lobby, "fortressPrefab", fortressPrefab);
+            SetRef(lobby, "m_ActiveLayout", layout); // 요새자리·스폰 공식이 layout 참조
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
             BuildLobbyCanvas(lobby, match);
@@ -458,88 +462,113 @@ namespace CTC.Editor
                 nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
         }
 
-        // v2 그레이박스: 외벽 + 쥐 터널 링(내벽·쥐구멍·인방). 사물 조형 없음 — 아트 패스(8-B)에서 교체.
-        // 구멍 치수는 CC skinWidth(0.08) 포함 실효 크기 기준 (SPEC §12-A):
-        //   쥐   실효 폭 0.60 · 키 0.63 → 통과 (여유 폭 0.4 / 높이 0.12)
-        //   고양이 실효 폭 0.86 · 키 1.03 → 인방(0.75)에 차단
-        private const float TUNNEL_WALL_POS = 13.2f;   // 내벽 중심 좌표
-        private const float HOLE_WIDTH = 1.0f;
-        private const float HOLE_HEIGHT = 0.75f;
-        private const float TUNNEL_WALL_HEIGHT = 1.2f;
+        // MapLayout(생성 툴 산출, Plan 11) 하나를 읽어 방·통로 지오메트리와 치즈 지점을 굽는다.
+        // 요새는 런타임(LobbyManager)이 layout.Fortresses로 스폰 — 여기선 지오메트리만.
+        private const float ROOM_WALL_HEIGHT = 3f;
+        private const float ROOM_WALL_THICK = 0.5f;
+        private const float CORRIDOR_WALL_HEIGHT = 1.6f;
 
-        // 변마다 쥐구멍 위치(해당 축 좌표) — 총 9개
-        private static readonly float[] HOLES_NORTH = { -7f, 0f, 7f };
-        private static readonly float[] HOLES_SOUTH = { -5f, 7f };
-        private static readonly float[] HOLES_WEST = { -6f, 6f };
-        private static readonly float[] HOLES_EAST = { -6f, 6f };
-
-        private static void BuildGreyboxMap()
+        private static MapLayout LoadActiveLayout()
         {
-            Material wall = GridboxMaterial("Grey2");
-            Material tunnelWall = GridboxMaterial("Brown");
-            var root = new GameObject("GreyboxMap");
-
-            AddBox(root, wall, "Wall_N", new Vector3(0f, 1.5f, 15f), new Vector3(30f, 3f, 0.5f));
-            AddBox(root, wall, "Wall_S", new Vector3(0f, 1.5f, -15f), new Vector3(30f, 3f, 0.5f));
-            AddBox(root, wall, "Wall_E", new Vector3(15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
-            AddBox(root, wall, "Wall_W", new Vector3(-15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30f));
-
-            // 쥐 터널 내벽 4변 (구멍 뚫린 세그먼트) — 기획서 §8 v2: 맵 = 외벽·터널·치즈존만
-            BuildTunnelWall(root, tunnelWall, "N", true, TUNNEL_WALL_POS, HOLES_NORTH);
-            BuildTunnelWall(root, tunnelWall, "S", true, -TUNNEL_WALL_POS, HOLES_SOUTH);
-            BuildTunnelWall(root, tunnelWall, "E", false, TUNNEL_WALL_POS, HOLES_EAST);
-            BuildTunnelWall(root, tunnelWall, "W", false, -TUNNEL_WALL_POS, HOLES_WEST);
+            var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(ActiveLayoutPath);
+            if (layout == null)
+                Debug.LogError($"[SetupNetworkingScene] MapLayout 없음: {ActiveLayoutPath} — 먼저 Generate Map Layout");
+            return layout;
         }
 
-        // 내벽 한 변: 구멍(폭 0.6)마다 벽을 끊고 인방(y 0.6~1.2)을 얹는다.
-        // 쥐 CC(높이 0.5·Ø0.44)만 구멍 통과 — 고양이(0.9·Ø0.7)는 위·옆 다 걸림. 별도 로직 없음.
-        private static void BuildTunnelWall(
-            GameObject parent, Material material, string side, bool horizontal, float fixedCoord, float[] holes)
+        private static void BuildFromLayout(MapLayout layout)
         {
-            const float EXTENT = 13.2f; // 변 길이 절반 (모서리에서 만나 링이 닫힘)
-            System.Array.Sort(holes);
+            if (layout == null) return;
+            Material wall = GridboxMaterial("Grey2");
+            Material floorMat = GridboxMaterial("Grey4");
+            var root = new GameObject("GeneratedMap");
 
-            float cursor = -EXTENT;
-            for (int i = 0; i <= holes.Length; i++)
+            // 방: 바닥 + 통로 접점만 개방한 4면 벽
+            foreach (RoomRect r in layout.Rooms)
+                BuildRoomWalls(root, wall, floorMat, r, layout.Corridors);
+
+            // 통로(미로 포함): 중심선 세그먼트마다 폭만큼 바닥 + 양측 낮은 벽
+            foreach (CorridorSeg c in layout.Corridors)
+                BuildCorridor(root, wall, floorMat, c);
+        }
+
+        private static void BuildRoomWalls(
+            GameObject root, Material wall, Material floorMat, RoomRect r, System.Collections.Generic.IReadOnlyList<CorridorSeg> corridors)
+        {
+            AddBox(root, floorMat, $"Floor_{r.Id}",
+                new Vector3(r.Center.x, 0.02f, r.Center.y), new Vector3(r.Size.x, 0.04f, r.Size.y));
+
+            for (int side = 0; side < 4; side++)
+                BuildWallWithGaps(root, wall, r, corridors, side);
+        }
+
+        // 방 한 변을 통로 접점(개구부)만 남기고 벽 세그먼트로 깐다 — 구 BuildTunnelWall과 동형.
+        // side: 0=N(+z) 1=S(-z) 2=E(+x) 3=W(-x)
+        private static void BuildWallWithGaps(
+            GameObject root, Material wall, RoomRect r, System.Collections.Generic.IReadOnlyList<CorridorSeg> corridors, int side)
+        {
+            bool horizontal = side <= 1; // N/S 변은 x축 방향으로 뻗음
+            float fixedCoord = side == 0 ? r.Max.y : side == 1 ? r.Min.y : side == 2 ? r.Max.x : r.Min.x;
+            float min = horizontal ? r.Min.x : r.Min.y;
+            float max = horizontal ? r.Max.x : r.Max.y;
+
+            // 이 변에 닿는 통로 끝점 → 개구부(변 축 좌표, 반폭)
+            var gaps = new System.Collections.Generic.List<(float center, float half)>();
+            foreach (CorridorSeg c in corridors)
             {
-                float segEnd = i < holes.Length ? holes[i] - HOLE_WIDTH * 0.5f : EXTENT;
+                foreach (Vector2 p in new[] { c.From, c.To })
+                {
+                    float perp = horizontal ? p.y : p.x;
+                    float along = horizontal ? p.x : p.y;
+                    if (Mathf.Abs(perp - fixedCoord) > c.Width * 0.5f + 0.6f) continue;
+                    if (along < min - 0.5f || along > max + 0.5f) continue;
+                    gaps.Add((along, c.Width * 0.5f + 0.25f));
+                }
+            }
+            gaps.Sort((a, b) => a.center.CompareTo(b.center));
+
+            string sideName = side == 0 ? "N" : side == 1 ? "S" : side == 2 ? "E" : "W";
+            float cursor = min;
+            int seg = 0;
+            for (int i = 0; i <= gaps.Count; i++)
+            {
+                float segEnd = i < gaps.Count ? gaps[i].center - gaps[i].half : max;
                 float length = segEnd - cursor;
-                if (length > 0.01f)
+                if (length > 0.05f)
                 {
                     float center = (cursor + segEnd) * 0.5f;
-                    AddBox(parent, material, $"Tunnel_{side}_Seg{i}",
-                        horizontal ? new Vector3(center, TUNNEL_WALL_HEIGHT * 0.5f, fixedCoord)
-                                   : new Vector3(fixedCoord, TUNNEL_WALL_HEIGHT * 0.5f, center),
-                        horizontal ? new Vector3(length, TUNNEL_WALL_HEIGHT, 0.4f)
-                                   : new Vector3(0.4f, TUNNEL_WALL_HEIGHT, length));
+                    AddBox(root, wall, $"Wall_{r.Id}_{sideName}{seg++}",
+                        horizontal ? new Vector3(center, ROOM_WALL_HEIGHT * 0.5f, fixedCoord)
+                                   : new Vector3(fixedCoord, ROOM_WALL_HEIGHT * 0.5f, center),
+                        horizontal ? new Vector3(length, ROOM_WALL_HEIGHT, ROOM_WALL_THICK)
+                                   : new Vector3(ROOM_WALL_THICK, ROOM_WALL_HEIGHT, length));
                 }
-
-                if (i < holes.Length)
-                {
-                    // 인방 — 구멍 위(y 0.6~1.2)를 막아 고양이 통과 차단
-                    float lintelHeight = TUNNEL_WALL_HEIGHT - HOLE_HEIGHT;
-                    AddBox(parent, material, $"Tunnel_{side}_Lintel{i}",
-                        horizontal ? new Vector3(holes[i], HOLE_HEIGHT + lintelHeight * 0.5f, fixedCoord)
-                                   : new Vector3(fixedCoord, HOLE_HEIGHT + lintelHeight * 0.5f, holes[i]),
-                        horizontal ? new Vector3(HOLE_WIDTH, lintelHeight, 0.4f)
-                                   : new Vector3(0.4f, lintelHeight, HOLE_WIDTH));
-                    cursor = holes[i] + HOLE_WIDTH * 0.5f;
-                }
+                if (i < gaps.Count) cursor = Mathf.Max(cursor, gaps[i].center + gaps[i].half);
             }
         }
 
-        // 치즈 지점(v2) — 등급 = 가장 가까운 쥐구멍까지의 거리. 터널 내부(±13.2~15)에는 두지 않음(수입 0 원칙).
-        // G1 (3,1) r2는 QA 고정 (클론 넛지 TestMpNudgeLocalPlayer가 스폰(1,0,0)에서 도달하는 지점).
-        private static readonly (Vector3 pos, int grade)[] CHEESE_SPOT_DEFS =
+        // 통로 세그먼트: 바닥 + 양측 낮은 벽(고양이도 통과 — 폭이 이동을 제약, 벽은 이탈 차단).
+        // 대각 세그먼트(미로·사선 통로) 지원을 위해 회전 박스로 깐다.
+        private static void BuildCorridor(GameObject root, Material wall, Material floorMat, CorridorSeg c)
         {
-            (new Vector3(3f, 0f, 1f), 1),        // QA — 중앙이지만 r2 (기존 절차 유지)
-            (new Vector3(-5f, 0f, -12f), 2),     // 남쪽 구멍(-5) 코앞
-            (new Vector3(7f, 0f, -12f), 3),      // 남쪽 구멍(7) 코앞
-            (new Vector3(-12f, 0f, 6f), 4),      // 서쪽 구멍(6) 옆
-            (new Vector3(12f, 0f, -6f), 5),      // 동쪽 구멍(-6) 옆
-            (new Vector3(-5f, 0f, 5f), 6),       // 중앙 서쪽 — 구멍까지 ~8m
-            (new Vector3(0f, 0f, -3f), 7),       // 정중앙 — 최고 위험
-        };
+            Vector3 a = new Vector3(c.From.x, 0f, c.From.y);
+            Vector3 b = new Vector3(c.To.x, 0f, c.To.y);
+            Vector3 dir = b - a;
+            float len = dir.magnitude;
+            if (len < 0.01f) return;
+
+            Vector3 mid = (a + b) * 0.5f;
+            Quaternion rot = Quaternion.LookRotation(dir / len);
+            AddOrientedBox(root, floorMat, "CorridorFloor",
+                mid + Vector3.up * 0.02f, rot, new Vector3(c.Width, 0.04f, len));
+
+            Vector3 sideOff = rot * Vector3.right * (c.Width * 0.5f + ROOM_WALL_THICK * 0.5f);
+            Vector3 up = Vector3.up * (CORRIDOR_WALL_HEIGHT * 0.5f);
+            AddOrientedBox(root, wall, "CorridorWall_L",
+                mid - sideOff + up, rot, new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, len + ROOM_WALL_THICK));
+            AddOrientedBox(root, wall, "CorridorWall_R",
+                mid + sideOff + up, rot, new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, len + ROOM_WALL_THICK));
+        }
 
         // 등급별 디스크 색 — 위험도 가독성 (1~3 노랑 / 4~5 주황 / 6~7 빨강)
         private static Material GradeDiscMaterial(int grade)
@@ -548,38 +577,43 @@ namespace CTC.Editor
             return GridboxMaterial(name);
         }
 
-        private static void BuildCheeseSpots()
+        private static void BuildCheeseSpots(MapLayout layout)
         {
+            if (layout == null) return;
             var root = new GameObject("CheeseSpots");
 
-            foreach ((Vector3 pos, int grade) in CHEESE_SPOT_DEFS)
+            foreach (CheesePlacement cp in layout.Cheese)
             {
-                var spotGo = new GameObject($"CheeseSpot_G{grade}");
+                var spotGo = new GameObject($"CheeseSpot_G{cp.Grade}");
                 spotGo.transform.SetParent(root.transform, false);
-                spotGo.transform.localPosition = pos;
+                spotGo.transform.localPosition = new Vector3(cp.Pos.x, 0f, cp.Pos.y);
 
                 var spot = spotGo.AddComponent<CheeseSpot>();
-                SetInt(spot, "m_Grade", grade);
-                SetFloat(spot, "m_Radius", grade == 1 && pos.x == 3f ? 2f : 1.5f); // QA 지점만 넉넉히
-
-                var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                disc.name = "Disc";
-                Object.DestroyImmediate(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
-                disc.transform.SetParent(spotGo.transform, false);
-                disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
-                disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
-                Material discMat = GradeDiscMaterial(grade);
-                if (discMat != null) disc.GetComponent<Renderer>().sharedMaterial = discMat;
-
-                var labelGo = new GameObject("GradeLabel");
-                labelGo.transform.SetParent(spotGo.transform, false);
-                labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
-                var tmp = labelGo.AddComponent<TextMeshPro>();
-                tmp.text = grade.ToString();
-                tmp.fontSize = 6f;
-                tmp.alignment = TextAlignmentOptions.Center;
-                tmp.color = Color.yellow;
+                SetInt(spot, "m_Grade", cp.Grade);
+                SetFloat(spot, "m_Radius", cp.Radius);
+                AddCheeseVisual(spotGo, cp.Grade);
             }
+        }
+
+        private static void AddCheeseVisual(GameObject spotGo, int grade)
+        {
+            var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            disc.name = "Disc";
+            Object.DestroyImmediate(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
+            disc.transform.SetParent(spotGo.transform, false);
+            disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
+            Material discMat = GradeDiscMaterial(grade);
+            if (discMat != null) disc.GetComponent<Renderer>().sharedMaterial = discMat;
+
+            var labelGo = new GameObject("GradeLabel");
+            labelGo.transform.SetParent(spotGo.transform, false);
+            labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+            var tmp = labelGo.AddComponent<TextMeshPro>();
+            tmp.text = grade.ToString();
+            tmp.fontSize = 6f;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.yellow;
         }
 
         private static Material GridboxMaterial(string name)
@@ -596,6 +630,19 @@ namespace CTC.Editor
             box.name = name;
             box.transform.SetParent(parent.transform, false);
             box.transform.localPosition = center;
+            box.transform.localScale = size;
+            box.GetComponent<Renderer>().sharedMaterial = material;
+        }
+
+        // 대각 통로용 회전 박스 (AddBox + 회전)
+        private static void AddOrientedBox(
+            GameObject parent, Material material, string name, Vector3 center, Quaternion rotation, Vector3 size)
+        {
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.name = name;
+            box.transform.SetParent(parent.transform, false);
+            box.transform.localPosition = center;
+            box.transform.localRotation = rotation;
             box.transform.localScale = size;
             box.GetComponent<Renderer>().sharedMaterial = material;
         }

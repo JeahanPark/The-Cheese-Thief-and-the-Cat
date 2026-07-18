@@ -93,19 +93,25 @@ namespace CTC.Tests
         public void SpawnPosition_Cat_CenterLine()
         {
             var roles = new List<RoleId> { RoleId.Cat, RoleId.Mouse, RoleId.Cat };
-            // 0번째 고양이 (0,0.1,0), 1번째 고양이 (2,0.1,0)
-            AssertPos(new Vector3(0f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 0));
-            AssertPos(new Vector3(2f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 2));
+            var noForts = new List<(Vector3 pos, float yaw)>();
+            // 0번째 고양이 (0,0.1,0), 1번째 고양이 (2,0.1,0) — 요새 무관
+            AssertPos(new Vector3(0f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 0, noForts));
+            AssertPos(new Vector3(2f, 0.1f, 0f), LobbyManager.SpawnPosition(roles, 2, noForts));
         }
 
         [Test]
         public void SpawnPosition_Mouse_AtOwnFortressEntrance()
         {
             var roles = new List<RoleId> { RoleId.Cat, RoleId.Mouse, RoleId.Mouse };
-            // 0번째 쥐 = FORTRESS_SPOTS[0] 입구 앞 1.8m — (-11,0,-12)+yaw0 전방(+Z)*1.8, y 0.1
-            AssertPos(new Vector3(-11f, 0.1f, -10.2f), LobbyManager.SpawnPosition(roles, 1));
-            // 1번째 쥐 = FORTRESS_SPOTS[1] — (9,0,-12.5)+yaw0 전방*1.8
-            AssertPos(new Vector3(9f, 0.1f, -10.7f), LobbyManager.SpawnPosition(roles, 2));
+            var forts = new List<(Vector3 pos, float yaw)>
+            {
+                (new Vector3(-11f, 0f, -12f), 0f),
+                (new Vector3(9f, 0f, -12.5f), 0f),
+            };
+            // 0번째 쥐 = 요새0 입구 앞 1.8m — (-11,0,-12)+yaw0 전방(+Z)*1.8, y 0.1
+            AssertPos(new Vector3(-11f, 0.1f, -10.2f), LobbyManager.SpawnPosition(roles, 1, forts));
+            // 1번째 쥐 = 요새1 — (9,0,-12.5)+yaw0 전방*1.8
+            AssertPos(new Vector3(9f, 0.1f, -10.7f), LobbyManager.SpawnPosition(roles, 2, forts));
         }
     }
 }
