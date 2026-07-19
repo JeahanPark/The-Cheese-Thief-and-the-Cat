@@ -81,12 +81,18 @@ namespace CTC.Runtime.Combat
             }
         }
 
-        // 시전자→대상 가슴 높이 레이 — 둘 자신의 콜라이더는 차단으로 안 친다
+        // 차폐 레이 높이 — 요새 입구(0.75)보다 높고 요새 벽(1.2)보다 낮게:
+        // 열린 문으로는 절대 안 새고, 외벽이 서 있는 한 내부가 보호된다(원작 벙커).
+        private const float OCCLUSION_RAY_HEIGHT = 1.0f;
+
+        // 시전자→대상 차폐 레이 — 둘 자신의 콜라이더는 차단으로 안 친다
         // (요새 자체를 때릴 때 그 요새의 외벽에 막히면 안 됨). 트리거 무시.
+        // 플레이어 계층(CC 루트 — Quirky 모델 자식 콜라이더 포함)도 차폐물이 아님:
+        // 요새 안 쥐가 몸으로 요새 레이를 가려 요새가 무적이 되는 것 방지. 차폐는 구조물/지형만.
         private bool IsOccluded(Health _target)
         {
-            Vector3 from = transform.position + Vector3.up * 0.45f;
-            Vector3 to = _target.transform.position + Vector3.up * 0.4f;
+            Vector3 from = transform.position + Vector3.up * OCCLUSION_RAY_HEIGHT;
+            Vector3 to = _target.transform.position + Vector3.up * OCCLUSION_RAY_HEIGHT;
             Vector3 dir = to - from;
 
             foreach (RaycastHit hit in Physics.RaycastAll(
@@ -94,6 +100,7 @@ namespace CTC.Runtime.Combat
             {
                 Transform hitRoot = hit.transform.root;
                 if (hitRoot == transform.root || hitRoot == _target.transform.root) continue;
+                if (hitRoot.GetComponent<CharacterController>() != null) continue;
                 return true;
             }
             return false;
