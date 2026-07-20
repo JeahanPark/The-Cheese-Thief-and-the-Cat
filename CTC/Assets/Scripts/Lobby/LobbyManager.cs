@@ -113,6 +113,12 @@ namespace CTC.Runtime.Lobby
             (Vector3 pos, float yaw) = fortresses[nth % fortresses.Count];
             Vector3 entranceDir = Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
             Vector3 spawn = pos + entranceDir * FORTRESS_ENTRANCE_OFFSET_METERS;
+            // 요새보다 쥐가 많아 같은 요새를 공유하면 옆으로 비껴 스폰 — 동일 좌표 CC 중첩 방지
+            int wave = nth / fortresses.Count;
+            if (wave > 0)
+            {
+                spawn += Quaternion.Euler(0f, yaw, 0f) * Vector3.right * (0.7f * wave);
+            }
             spawn.y = 0.1f;
             return spawn;
         }
@@ -194,9 +200,11 @@ namespace CTC.Runtime.Lobby
         }
 
         // v3 초기 벙커: 쥐마다 자기 요새를 서버가 동적 스폰 — 재시작 스윕이 자동 정리.
+        // 쥐가 요새자리보다 많으면 초과분은 기존 요새를 공유(중복 건설 금지 — 리뷰 I1).
         private void SpawnInitialFortress(int mouseOrder, List<(Vector3 pos, float yaw)> forts)
         {
             if (fortressPrefab == null || forts.Count == 0) return;
+            if (mouseOrder >= forts.Count) return;
 
             (Vector3 pos, float yaw) = forts[mouseOrder % forts.Count];
             GameObject go = Instantiate(fortressPrefab, pos, Quaternion.Euler(0f, yaw, 0f));

@@ -59,6 +59,16 @@ namespace CTC.Runtime.Player
             _controller.enabled = true;
         }
 
+        /// <summary>
+        /// 재시작 스윕 시 클라 측 파괴는 프레임 말로 지연된다 — 그 프레임 동안 남은 구 몸체가
+        /// 같은 자리에 스폰되는 새 CC를 밀어내(depenetration) 바닥 밑으로 사출하는 간헐 낙하의
+        /// 원인. despawn 즉시 콜라이더를 꺼서 차단한다.
+        /// </summary>
+        public override void OnNetworkDespawn()
+        {
+            _controller.enabled = false;
+        }
+
         private void Update()
         {
             if (!IsOwner) return;

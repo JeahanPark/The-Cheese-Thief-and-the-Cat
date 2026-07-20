@@ -287,9 +287,12 @@ namespace CTC.Editor
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            // 바닥: 두께 있는 박스(상면 y=0). 단면 Plane은 밑으로 한 번 빠지면 영구 낙하
+            // (재시작 낙하 버그 안전망 — 리뷰 분석 1순위)
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.name = "Floor";
-            floor.transform.localScale = new Vector3(3f, 1f, 3f);
+            floor.transform.position = new Vector3(0f, -0.25f, 0f);
+            floor.transform.localScale = new Vector3(30f, 0.5f, 30f);
             floor.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Grey1");
 
             MapLayout layout = LoadActiveLayout();
@@ -504,9 +507,9 @@ namespace CTC.Editor
             foreach (RoomRect r in layout.Rooms)
                 BuildRoomWalls(root, wall, floorMat, r, layout.Corridors);
 
-            // 통로(미로 포함): 중심선 세그먼트마다 폭만큼 바닥 + 양측 낮은 벽
+            // 통로(미로 포함): 중심선 세그먼트마다 폭만큼 바닥 + 양측 낮은 벽(접합부 개방)
             foreach (CorridorSeg c in layout.Corridors)
-                BuildCorridor(root, wall, floorMat, c);
+                BuildCorridor(root, wall, floorMat, c, layout.Corridors);
         }
 
         private static void BuildRoomWalls(
@@ -566,7 +569,9 @@ namespace CTC.Editor
 
         // 통로 세그먼트: 바닥 + 양측 낮은 벽(고양이도 통과 — 폭이 이동을 제약, 벽은 이탈 차단).
         // 대각 세그먼트(미로·사선 통로) 지원을 위해 회전 박스로 깐다.
-        private static void BuildCorridor(GameObject root, Material wall, Material floorMat, CorridorSeg c)
+        // 측벽은 다른 세그먼트가 가로지르는 지점(T자·꺾임 접합부)을 개구부로 남긴다 — 리뷰 C1.
+        private static void BuildCorridor(GameObject root, Material wall, Material floorMat, CorridorSeg c,
+            System.Collections.Generic.IReadOnlyList<CorridorSeg> all)
         {
             Vector3 a = new Vector3(c.From.x, 0f, c.From.y);
             Vector3 b = new Vector3(c.To.x, 0f, c.To.y);
@@ -579,12 +584,63 @@ namespace CTC.Editor
             AddOrientedBox(root, floorMat, "CorridorFloor",
                 mid + Vector3.up * 0.02f, rot, new Vector3(c.Width, 0.04f, len));
 
-            Vector3 sideOff = rot * Vector3.right * (c.Width * 0.5f + ROOM_WALL_THICK * 0.5f);
-            Vector3 up = Vector3.up * (CORRIDOR_WALL_HEIGHT * 0.5f);
-            AddOrientedBox(root, wall, "CorridorWall_L",
-                mid - sideOff + up, rot, new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, len + ROOM_WALL_THICK));
-            AddOrientedBox(root, wall, "CorridorWall_R",
-                mid + sideOff + up, rot, new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, len + ROOM_WALL_THICK));
+            BuildCorridorSideWall(root, wall, c, all, +1f);
+            BuildCorridorSideWall(root, wall, c, all, -1f);
+        }
+
+        // 통로 한쪽 측벽: 다른 세그먼트 중심선이 이 벽 라인을 실제로 가로지르는 구간만
+        // 개구부로 비우고 나머지를 세그먼트로 깐다. 교차는 2D(x,z) 선분-선분으로 판정 —
+        // 분기가 뻗는 쪽 벽만 열리고(u∈[0,1] 조건) 반대쪽·바깥 코너는 닫힌 채 유지된다.
+        private static void BuildCorridorSideWall(GameObject root, Material wallMat, CorridorSeg c,
+            System.Collections.Generic.IReadOnlyList<CorridorSeg> all, float sideSign)
+        {
+            Vector2 a = c.From;
+            Vector2 d = c.To - c.From;
+            float len = d.magnitude;
+            if (len < 0.01f) return;
+            Vector2 fwd = d / len;
+            Vector2 right = new Vector2(fwd.y, -fwd.x); // (x,z) 평면에서 진행방향의 오른쪽
+            Vector2 wallStart = a + right * (sideSign * (c.Width * 0.5f + ROOM_WALL_THICK * 0.5f));
+
+            var gaps = new System.Collections.Generic.List<(float center, float half)>();
+            foreach (CorridorSeg o in all)
+            {
+                if (o.From == c.From && o.To == c.To) continue; // 자기 자신
+                Vector2 od = o.To - o.From;
+                float denom = od.x * fwd.y - od.y * fwd.x;     // cross(od, fwd)
+                if (Mathf.Abs(denom) < 0.15f) continue;        // 평행/준평행 — 접합 아님
+
+                Vector2 rel = wallStart - o.From;
+                float u = (rel.x * fwd.y - rel.y * fwd.x) / denom;
+                if (u < -0.05f || u > 1.05f) continue;         // 상대 선분 범위 밖
+
+                Vector2 hit = o.From + od * u;
+                float s = Vector2.Dot(hit - wallStart, fwd);
+                if (s < -0.4f || s > len + 0.4f) continue;     // 이 벽 범위 밖
+
+                float sin = Mathf.Abs(denom) / od.magnitude;   // 교차각 보정(사선 분기는 개구부 확대)
+                gaps.Add((s, o.Width * 0.5f / Mathf.Max(sin, 0.4f) + 0.25f));
+            }
+            gaps.Sort((x, y) => x.center.CompareTo(y.center));
+
+            Quaternion rot = Quaternion.LookRotation(new Vector3(fwd.x, 0f, fwd.y));
+            string sideName = sideSign > 0 ? "R" : "L";
+            float cursor = -ROOM_WALL_THICK * 0.5f;
+            float end = len + ROOM_WALL_THICK * 0.5f;
+            int seg = 0;
+            for (int i = 0; i <= gaps.Count; i++)
+            {
+                float segEnd = i < gaps.Count ? gaps[i].center - gaps[i].half : end;
+                float segLen = segEnd - cursor;
+                if (segLen > 0.05f)
+                {
+                    Vector2 center2 = wallStart + fwd * ((cursor + segEnd) * 0.5f);
+                    AddOrientedBox(root, wallMat, $"CorridorWall_{sideName}{seg++}",
+                        new Vector3(center2.x, CORRIDOR_WALL_HEIGHT * 0.5f, center2.y), rot,
+                        new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, segLen));
+                }
+                if (i < gaps.Count) cursor = Mathf.Max(cursor, gaps[i].center + gaps[i].half);
+            }
         }
 
         // 등급별 디스크 색 — 위험도 가독성 (1~3 노랑 / 4~5 주황 / 6~7 빨강)

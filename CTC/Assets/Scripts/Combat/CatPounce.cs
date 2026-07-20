@@ -45,7 +45,7 @@ namespace CTC.Runtime.Combat
         /// <summary>QA 자동화 진입점 (TestManager/wesqa).</summary>
         public void DevPounce() => PounceRpc();
 
-        [Rpc(SendTo.Server)]
+        [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 고양이 쿨다운 강제 소모 차단 — 리뷰 I2
         private void PounceRpc()
         {
             double now = NetworkManager.ServerTime.Time;

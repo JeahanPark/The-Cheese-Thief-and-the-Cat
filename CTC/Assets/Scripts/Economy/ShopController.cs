@@ -51,7 +51,7 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        [Rpc(SendTo.Server)]
+        [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 오브젝트로 대리 구매 차단 — 리뷰 I2
         private void BuyRpc(int _itemId)
         {
             ShopItem item = ShopLogic.Find((ShopItemId)_itemId);
