@@ -9,6 +9,15 @@
 - `m_` 멤버 변수 접두 · `_` 매개변수 접두 · `Co` 코루틴 접두 · public 필드 금지(`[SerializeField]` + 프로퍼티) · 상수 `UPPER_SNAKE_CASE` · Manager/Controller/Worker/Component 아키텍처 — 상세는 `C:/GitFork/WES_Project/WES/.claude/agents/client.md`의 "WES 코딩 규칙" 섹션 참조 (동일 내용: `C:/GitFork/claude-gamedev-kit/gamedev-team/agents/client.md`)
 - **적용 범위**: 신규 코드부터 적용. 기존 `Assets/Scripts/` 파일 다수는 `_camelCase` 필드 컨벤션 — 기존 파일 일괄 리네임은 사용자 승인 필요.
 
+## unity-scanner (에셋 YAML 탐색 — 토큰 절약)
+
+- 프리팹/씬/.asset의 **내용 파악·검색·참조 추적**은 파일을 Read로 통째로 읽지 말고 `unity-scanner`(CLI, `%LOCALAPPDATA%\unity-scanner\unity-scanner.exe`)를 우선 사용한다.
+  - 목록: `unity-scanner list -p <프로젝트경로> Assets/... --depth N`
+  - 요약 읽기: `unity-scanner read -p <프로젝트경로> <에셋경로>` (prefab/scene/asset 계층·컴포넌트 요약)
+  - 검색: `unity-scanner search -p <프로젝트경로> <질의>` (파일명·GameObject·컴포넌트·GUID)
+  - 참조 추적: `unity-scanner refs -p <프로젝트경로> <에셋경로|GUID>`
+- 예외: YAML을 **정확히 수정**해야 하거나 특정 직렬화 값(해시 등)을 원문으로 검증할 때만 Read/Grep 직접 사용.
+
 ## MCP Rules
 
 - Unity 관련 작업(프리팹, 컴포넌트, Inspector 참조 등)은 MCP 도구를 우선 사용한다.
