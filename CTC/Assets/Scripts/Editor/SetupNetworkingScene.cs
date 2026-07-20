@@ -342,6 +342,23 @@ namespace CTC.Editor
             orbital.VerticalAxis.Range = new Vector2(-30f, 70f);
             orbital.VerticalAxis.Value = 20f;
             camGo.AddComponent<CinemachineRotationComposer>();
+
+            // 지형-카메라 충돌: 벽 뒤로 나간 카메라를 장애물 앞으로 당김(v3 방-통로 맵은 벽이 많다).
+            // 스크립트 AddComponent는 Reset이 안 불려 struct가 전부 0(비활성)이 되므로 명시 설정.
+            var deoccluder = camGo.AddComponent<CinemachineDeoccluder>();
+            deoccluder.CollideAgainst = 1; // Default 레이어 — 그레이박스 지형 전부
+            deoccluder.MinimumDistanceFromTarget = 0.3f;
+            deoccluder.AvoidObstacles = new CinemachineDeoccluder.ObstacleAvoidance
+            {
+                Enabled = true,
+                DistanceLimit = 0f,
+                CameraRadius = 0.4f,
+                Strategy = CinemachineDeoccluder.ObstacleAvoidance.ResolutionStrategy.PullCameraForward,
+                SmoothingTime = 0f,
+                Damping = 0.4f,
+                DampingWhenOccluded = 0.2f,
+            };
+
             camGo.AddComponent<OrbitCameraController>();
             var spectator = camGo.AddComponent<SpectatorFallback>();
             SetRef(spectator, "m_Lobby", lobby);
