@@ -528,8 +528,9 @@ namespace CTC.Editor
         private static void BuildRoomWalls(
             GameObject root, Material wall, Material floorMat, RoomRect r, System.Collections.Generic.IReadOnlyList<CorridorSeg> corridors)
         {
+            // 바닥류는 Ignore Raycast — 카메라 Deoccluder가 바닥과 충돌하지 않게 (전역 Floor와 동일)
             AddBox(root, floorMat, $"Floor_{r.Id}",
-                new Vector3(r.Center.x, 0.02f, r.Center.y), new Vector3(r.Size.x, 0.04f, r.Size.y));
+                new Vector3(r.Center.x, 0.02f, r.Center.y), new Vector3(r.Size.x, 0.04f, r.Size.y)).layer = 2;
 
             for (int side = 0; side < 4; side++)
                 BuildWallWithGaps(root, wall, r, corridors, side);
@@ -594,8 +595,9 @@ namespace CTC.Editor
 
             Vector3 mid = (a + b) * 0.5f;
             Quaternion rot = Quaternion.LookRotation(dir / len);
+            // 바닥류는 Ignore Raycast — 카메라 Deoccluder 충돌 제외
             AddOrientedBox(root, floorMat, "CorridorFloor",
-                mid + Vector3.up * 0.02f, rot, new Vector3(c.Width, 0.04f, len));
+                mid + Vector3.up * 0.02f, rot, new Vector3(c.Width, 0.04f, len)).layer = 2;
 
             BuildCorridorSideWall(root, wall, c, all, +1f);
             BuildCorridorSideWall(root, wall, c, all, -1f);
@@ -710,7 +712,7 @@ namespace CTC.Editor
             return mat;
         }
 
-        private static void AddBox(GameObject parent, Material material, string name, Vector3 center, Vector3 size)
+        private static GameObject AddBox(GameObject parent, Material material, string name, Vector3 center, Vector3 size)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
             box.name = name;
@@ -718,10 +720,11 @@ namespace CTC.Editor
             box.transform.localPosition = center;
             box.transform.localScale = size;
             box.GetComponent<Renderer>().sharedMaterial = material;
+            return box;
         }
 
         // 대각 통로용 회전 박스 (AddBox + 회전)
-        private static void AddOrientedBox(
+        private static GameObject AddOrientedBox(
             GameObject parent, Material material, string name, Vector3 center, Quaternion rotation, Vector3 size)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -731,6 +734,7 @@ namespace CTC.Editor
             box.transform.localRotation = rotation;
             box.transform.localScale = size;
             box.GetComponent<Renderer>().sharedMaterial = material;
+            return box;
         }
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
