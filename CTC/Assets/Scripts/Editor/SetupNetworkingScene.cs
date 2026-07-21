@@ -294,6 +294,9 @@ namespace CTC.Editor
             floor.transform.position = new Vector3(0f, -0.25f, 0f);
             floor.transform.localScale = new Vector3(30f, 0.5f, 30f);
             floor.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Grey1");
+            // 카메라 Deoccluder(CollideAgainst=Default)가 바닥과 충돌해 낮은 앵글에서 튀는 것 방지.
+            // Ignore Raycast 레이어는 물리 충돌(CC 접지)에는 영향 없음.
+            floor.layer = 2; // Ignore Raycast
 
             MapLayout layout = LoadActiveLayout();
             BuildFromLayout(layout);
@@ -349,16 +352,18 @@ namespace CTC.Editor
             // 지형-카메라 충돌: 벽 뒤로 나간 카메라를 장애물 앞으로 당김(v3 방-통로 맵은 벽이 많다).
             // 스크립트 AddComponent는 Reset이 안 불려 struct가 전부 0(비활성)이 되므로 명시 설정.
             var deoccluder = camGo.AddComponent<CinemachineDeoccluder>();
-            deoccluder.CollideAgainst = 1; // Default 레이어 — 그레이박스 지형 전부
-            deoccluder.MinimumDistanceFromTarget = 0.3f;
+            deoccluder.CollideAgainst = 1; // Default 레이어 — 지형(바닥은 Ignore Raycast로 제외)
+            // 0.5: 벽에 등을 붙였을 때만 근접 캠 허용(그 안쪽 장애물 무시). 크게 잡으면
+            // 카메라가 벽 안에 남아 회색 화면이 되는 역효과 — 실측으로 확정한 값.
+            deoccluder.MinimumDistanceFromTarget = 0.5f;
             deoccluder.AvoidObstacles = new CinemachineDeoccluder.ObstacleAvoidance
             {
                 Enabled = true,
                 DistanceLimit = 0f,
-                CameraRadius = 0.4f,
+                CameraRadius = 0.25f,
                 Strategy = CinemachineDeoccluder.ObstacleAvoidance.ResolutionStrategy.PullCameraForward,
-                SmoothingTime = 0f,
-                Damping = 0.4f,
+                SmoothingTime = 0.2f,   // 벽 스침에 즉발로 튀지 않게
+                Damping = 0.5f,         // 장애물 벗어난 뒤 부드럽게 복귀
                 DampingWhenOccluded = 0.2f,
             };
 
