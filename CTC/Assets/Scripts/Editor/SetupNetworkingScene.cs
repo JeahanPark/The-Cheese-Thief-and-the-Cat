@@ -269,6 +269,11 @@ namespace CTC.Editor
                 foreach (var r in model.GetComponentsInChildren<Renderer>(true))
                     r.sharedMaterials = Enumerable.Repeat(material, r.sharedMaterials.Length).ToArray();
 
+                // 카메라 Deoccluder IgnoreTag용 — 히트한 '콜라이더의 GO' 태그를 비교하므로
+                // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다
+                foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
+                    tr.gameObject.tag = "Player";
+
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                 // 저장 전 임시 씬 오브젝트에서 OnValidate가 구운 해시는 무효(두 프리팹이 동일값).
                 // 영속화된 에셋에서 다시 구워야 에셋 GUID 기반의 유일한 해시가 나온다.
@@ -341,21 +346,24 @@ namespace CTC.Editor
             camGo.AddComponent<CinemachineCamera>();
             var orbital = camGo.AddComponent<CinemachineOrbitalFollow>();
             orbital.OrbitStyle = CinemachineOrbitalFollow.OrbitStyles.Sphere;
-            orbital.Radius = 4f;
-            orbital.TargetOffset = new Vector3(0f, 0.6f, 0f);
+            // 반경 3 + 타깃 오프셋 0.7: 기본 앵글(20°)에서 카메라 높이 ≈1.7 — 통로벽(1.6) 위로
+            // 넘겨 보게 되어 좁은 통로에서 충돌 자체가 드물다 (맵 스케일: 방 5~9m·통로 1.6m)
+            orbital.Radius = 3f;
+            orbital.TargetOffset = new Vector3(0f, 0.7f, 0f);
             orbital.HorizontalAxis.Range = new Vector2(-180f, 180f);
             orbital.HorizontalAxis.Wrap = true;
             orbital.VerticalAxis.Range = new Vector2(-30f, 70f);
             orbital.VerticalAxis.Value = 20f;
             camGo.AddComponent<CinemachineRotationComposer>();
 
-            // 지형-카메라 충돌: 벽 뒤로 나간 카메라를 장애물 앞으로 당김(v3 방-통로 맵은 벽이 많다).
-            // 스크립트 AddComponent는 Reset이 안 불려 struct가 전부 0(비활성)이 되므로 명시 설정.
+            // 지형-카메라 충돌: Deoccluder(시야 확보) — 실측 비교 결과:
+            //   · Decollider 단독 = 벽 너머에서 플레이어가 아예 안 보임(침투만 막고 시야 방치) → 탈락
+            //   · 구 설정의 멀미 원인은 Deoccluder가 아니라 궤도 반경 4m(좁은 맵에서 상시 차폐) → 반경 3으로 해소
+            // 스크립트 AddComponent는 Reset이 안 불려 struct가 0(비활성)이 되므로 명시 설정.
             var deoccluder = camGo.AddComponent<CinemachineDeoccluder>();
-            deoccluder.CollideAgainst = 1; // Default 레이어 — 지형(바닥은 Ignore Raycast로 제외)
-            // 0.5: 벽에 등을 붙였을 때만 근접 캠 허용(그 안쪽 장애물 무시). 크게 잡으면
-            // 카메라가 벽 안에 남아 회색 화면이 되는 역효과 — 실측으로 확정한 값.
-            deoccluder.MinimumDistanceFromTarget = 0.5f;
+            deoccluder.CollideAgainst = 1; // Default — 지형(바닥은 Ignore Raycast로 제외)
+            deoccluder.IgnoreTag = "Player"; // 플레이어 몸(Quirky 모델 콜라이더 포함) 자기-차폐 방지
+            deoccluder.MinimumDistanceFromTarget = 0.5f; // 벽 밀착 시에만 근접 캠 허용
             deoccluder.AvoidObstacles = new CinemachineDeoccluder.ObstacleAvoidance
             {
                 Enabled = true,
