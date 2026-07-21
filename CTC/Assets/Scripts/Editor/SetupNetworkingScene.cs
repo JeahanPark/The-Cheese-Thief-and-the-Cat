@@ -516,6 +516,12 @@ namespace CTC.Editor
             Material floorMat = GridboxMaterial("Grey4");
             var root = new GameObject("GeneratedMap");
 
+            // 맵 경계 외벽 — 지오메트리 틈으로 새어나가도 바닥(30×30) 밖 낙사 방지
+            AddBox(root, wall, "Boundary_N", new Vector3(0f, 1.5f, 15f), new Vector3(30.5f, 3f, 0.5f));
+            AddBox(root, wall, "Boundary_S", new Vector3(0f, 1.5f, -15f), new Vector3(30.5f, 3f, 0.5f));
+            AddBox(root, wall, "Boundary_E", new Vector3(15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30.5f));
+            AddBox(root, wall, "Boundary_W", new Vector3(-15f, 1.5f, 0f), new Vector3(0.5f, 3f, 30.5f));
+
             // 방: 바닥 + 통로 접점만 개방한 4면 벽
             foreach (RoomRect r in layout.Rooms)
                 BuildRoomWalls(root, wall, floorMat, r, layout.Corridors);
@@ -876,6 +882,26 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Panel", resultPanel);
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
+
+            // 조작키 안내 (좌하단 — 역할별, ControlsHud가 게임 중 표시)
+            var controlsTextGo = new GameObject("ControlsText");
+            controlsTextGo.transform.SetParent(canvasGo.transform, false);
+            var controlsText = controlsTextGo.AddComponent<TextMeshProUGUI>();
+            controlsText.text = string.Empty;
+            controlsText.fontSize = 22f;
+            controlsText.alignment = TextAlignmentOptions.BottomLeft;
+            controlsText.color = new Color(1f, 1f, 1f, 0.75f);
+            var controlsRect = controlsTextGo.GetComponent<RectTransform>();
+            controlsRect.anchorMin = new Vector2(0f, 0f);
+            controlsRect.anchorMax = new Vector2(0f, 0f);
+            controlsRect.pivot = new Vector2(0f, 0f);
+            controlsRect.anchoredPosition = new Vector2(24f, 20f);
+            controlsRect.sizeDelta = new Vector2(640f, 64f);
+            controlsTextGo.SetActive(false);
+
+            var controlsHud = canvasGo.AddComponent<ControlsHud>();
+            SetRef(controlsHud, "m_Lobby", lobby);
+            SetRef(controlsHud, "m_Text", controlsText);
 
             // 매치 타이머 (상단 중앙 — v3 안전 타이머)
             var timerTextGo = new GameObject("TimerText");
