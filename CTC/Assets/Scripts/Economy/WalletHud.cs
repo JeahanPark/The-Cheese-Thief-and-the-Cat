@@ -5,7 +5,10 @@ using UnityEngine;
 
 namespace CTC.Runtime.Economy
 {
-    /// <summary>자기 지갑 잔액 HUD. 게임 시작 후에만 표시(로비 중 숨김).</summary>
+    /// <summary>
+    /// 자기 지갑 잔액 HUD. 게임 시작 후 쥐에게만 표시 —
+    /// 고양이는 치즈 수입이 없으므로 노출 안 함(기획 변경 2026-07-22, 잔액은 상점 패널에서 확인).
+    /// </summary>
     public class WalletHud : MonoBehaviour
     {
         [SerializeField] private LobbyManager m_Lobby;
@@ -16,17 +19,7 @@ namespace CTC.Runtime.Economy
         private void Update()
         {
             bool show = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
-            if (m_Text.gameObject.activeSelf != show)
-            {
-                m_Text.gameObject.SetActive(show);
-            }
-            if (!show)
-            {
-                m_LocalWallet = null;
-                return;
-            }
-
-            if (m_LocalWallet == null)
+            if (show && m_LocalWallet == null)
             {
                 NetworkManager nm = NetworkManager.Singleton;
                 NetworkObject local = nm != null && nm.SpawnManager != null
@@ -34,8 +27,18 @@ namespace CTC.Runtime.Economy
                     : null;
                 m_LocalWallet = local != null ? local.GetComponent<CheeseWallet>() : null;
             }
+            if (!show) m_LocalWallet = null;
 
-            m_Text.text = m_LocalWallet != null ? $"Cheese: {m_LocalWallet.Cheese}" : "Cheese: -";
+            Combat.RoleTag tag = m_LocalWallet != null ? m_LocalWallet.GetComponent<Combat.RoleTag>() : null;
+            show = show && tag != null && tag.Role == RoleId.Mouse;
+
+            if (m_Text.gameObject.activeSelf != show)
+            {
+                m_Text.gameObject.SetActive(show);
+            }
+            if (!show) return;
+
+            m_Text.text = $"Cheese: {m_LocalWallet.Cheese}";
         }
     }
 }

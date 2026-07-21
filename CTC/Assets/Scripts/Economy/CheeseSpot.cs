@@ -61,6 +61,10 @@ namespace CTC.Runtime.Economy
                 CheeseWallet wallet = m_Overlap[i].GetComponentInParent<CheeseWallet>();
                 if (wallet == null || !wallet.IsSpawned) continue;
 
+                // 수입은 쥐 전용 (기획 변경 2026-07-22 — 고양이 재화는 처치 보상만)
+                Combat.RoleTag tag = wallet.GetComponent<Combat.RoleTag>();
+                if (tag == null || tag.Role != RoleId.Mouse) continue;
+
                 ulong owner = wallet.OwnerClientId;
                 if (m_Wallets.ContainsKey(owner)) continue;
 
