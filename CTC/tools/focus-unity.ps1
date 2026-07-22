@@ -27,6 +27,10 @@ if (-not $unity) {
     exit 1
 }
 
+# SetForegroundWindow는 호출자가 포그라운드가 아니면 조용히 실패한다(포그라운드 잠금).
+# Alt 키 입력으로 잠금을 풀어야 실제로 포커스가 넘어간다 (2026-07-23 확인).
+Add-Type -AssemblyName System.Windows.Forms
+[System.Windows.Forms.SendKeys]::SendWait('%')
 [Win32]::ShowWindowAsync($unity.MainWindowHandle, 9) | Out-Null  # SW_RESTORE
 [Win32]::SetForegroundWindow($unity.MainWindowHandle) | Out-Null
 Write-Output "FOCUSED pid=$($unity.Id)"
