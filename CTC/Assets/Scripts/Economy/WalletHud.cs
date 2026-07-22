@@ -6,8 +6,8 @@ using UnityEngine;
 namespace CTC.Runtime.Economy
 {
     /// <summary>
-    /// 자기 지갑 잔액 HUD. 게임 시작 후 쥐에게만 표시 —
-    /// 고양이는 치즈 수입이 없으므로 노출 안 함(기획 변경 2026-07-22, 잔액은 상점 패널에서 확인).
+    /// 자기 지갑 잔액 HUD. 게임 시작 후 표시 — 쥐 `Cheese:` / 고양이 `Fun:`(스펙 v3.2).
+    /// 관전자(로컬 플레이어 없음)는 숨김.
     /// </summary>
     public class WalletHud : MonoBehaviour
     {
@@ -30,7 +30,7 @@ namespace CTC.Runtime.Economy
             if (!show) m_LocalWallet = null;
 
             Combat.RoleTag tag = m_LocalWallet != null ? m_LocalWallet.GetComponent<Combat.RoleTag>() : null;
-            show = show && tag != null && tag.Role == RoleId.Mouse;
+            show = show && tag != null; // 관전자(로컬 플레이어 없음)만 숨김
 
             if (m_Text.gameObject.activeSelf != show)
             {
@@ -38,7 +38,9 @@ namespace CTC.Runtime.Economy
             }
             if (!show) return;
 
-            m_Text.text = $"Cheese: {m_LocalWallet.Cheese}";
+            // 스펙 v3.2: 고양이 재화 = 장난기(Fun) — 같은 지갑, 라벨만 역할별
+            string label = tag.Role == RoleId.Cat ? "Fun" : "Cheese";
+            m_Text.text = $"{label}: {m_LocalWallet.Cheese}";
         }
     }
 }
