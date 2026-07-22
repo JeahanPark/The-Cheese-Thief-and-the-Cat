@@ -8,7 +8,7 @@ namespace CTC.Runtime.Combat
 {
     /// <summary>
     /// 고양이 덮치기. 소유자 좌클릭 → ServerRpc → 서버가 전방 부채꼴 내
-    /// 살아있는 쥐 전원에게 데미지. 처치 시 고양이 지갑에 보상.
+    /// 살아있는 쥐 전원에게 데미지. 실데미지만큼 장난기(Fun) 적립 + 플레이어 킬 보너스(스펙 v3.2).
     /// </summary>
     public class CatPounce : NetworkBehaviour
     {
@@ -16,7 +16,6 @@ namespace CTC.Runtime.Combat
         [SerializeField] private float m_HalfAngleDeg = 60f;
         [SerializeField] private int m_Damage = 60;
         [SerializeField] private float m_CooldownSeconds = 2.5f;
-        [SerializeField] private int m_KillReward = 50;
 
         // 공격 강화 스택(상점). 서버 기록.
         private readonly NetworkVariable<int> m_DamageStacks = new NetworkVariable<int>();
@@ -74,11 +73,11 @@ namespace CTC.Runtime.Combat
                 // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
                 bool isPlayerKill = target.NetworkObject.IsPlayerObject;
 
-                target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
-                // 보상은 플레이어 처치만 — 요새/미끼(RoleTag.Mouse 구조물) 파괴가 돈줄이 되면 안 됨
-                if (target.IsDead && myWallet != null && isPlayerKill)
+                int dealt = target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
+                // 장난기 적립(스펙 v3.2): 실데미지 1:1 — 요새·미끼도 동일. 킬 보너스는 플레이어만
+                if (myWallet != null)
                 {
-                    myWallet.AddCheese(m_KillReward);
+                    myWallet.AddCheese(FunLogic.AccruedFun(dealt, target.IsDead && isPlayerKill));
                 }
             }
         }
