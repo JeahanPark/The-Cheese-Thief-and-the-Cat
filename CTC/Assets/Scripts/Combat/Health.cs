@@ -36,12 +36,16 @@ namespace CTC.Runtime.Combat
             HpChanged?.Invoke(_previous, _current);
         }
 
-        public void TakeDamage(int _damage)
+        /// <summary>서버 전용. 실제 깎인 HP(과잉타격 제외)를 반환 — 장난기 적립용(스펙 v3.2).</summary>
+        public int TakeDamage(int _damage)
         {
-            if (!IsServer || IsDead) return;
+            if (!IsServer || IsDead) return 0;
 
-            m_Hp.Value = CombatLogic.ApplyDamage(m_Hp.Value, _damage);
+            int before = m_Hp.Value;
+            m_Hp.Value = CombatLogic.ApplyDamage(before, _damage);
+            int dealt = before - m_Hp.Value;
             if (IsDead) Died?.Invoke(this);
+            return dealt;
         }
 
         /// <summary>서버 전용 회복(요새 거점). 죽은 대상은 회복 불가 — 부활 없음(원작 동일).</summary>
