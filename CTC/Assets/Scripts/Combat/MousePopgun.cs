@@ -100,10 +100,20 @@ namespace CTC.Runtime.Combat
             TracerRpc(origin, end);
         }
 
-        // 발사 피드백 — 전 클라이언트에 짧은 궤적 선을 그린다.
+        // 발사 모션 지속 — 이동 애니메이션 잠금 시간
+        private const float ATTACK_ANIM_SECONDS = 0.4f;
+
+        // 발사 피드백 — 전 클라이언트에 짧은 궤적 선 + 발사 모션.
+        // 쿨다운 통과한 실제 발사에서만 서버가 보내므로 별도 게이트 불필요.
         [Rpc(SendTo.Everyone)]
         private void TracerRpc(Vector3 _start, Vector3 _end)
         {
+            Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
+            if (driver != null)
+            {
+                driver.PlayOneShot(Player.AnimationStateLogic.Attack, ATTACK_ANIM_SECONDS);
+            }
+
             var go = new GameObject("PopgunTracer");
             LineRenderer line = go.AddComponent<LineRenderer>();
             line.positionCount = 2;

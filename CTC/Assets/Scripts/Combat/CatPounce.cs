@@ -52,6 +52,8 @@ namespace CTC.Runtime.Combat
             if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, m_CooldownSeconds)) return;
             m_LastUseTime = now;
 
+            AttackAnimRpc();
+
             CheeseWallet myWallet = GetComponent<CheeseWallet>();
 
             foreach (Health target in FindObjectsByType<Health>(FindObjectsSortMode.None))
@@ -78,6 +80,19 @@ namespace CTC.Runtime.Combat
                 {
                     myWallet.AddCheese(m_KillReward);
                 }
+            }
+        }
+
+        // 덮치기 모션 지속(이동 애니메이션 잠금 시간). 쿨다운 통과 시에만 전 클라 재생.
+        private const float ATTACK_ANIM_SECONDS = 0.6f;
+
+        [Rpc(SendTo.Everyone)]
+        private void AttackAnimRpc()
+        {
+            Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
+            if (driver != null)
+            {
+                driver.PlayOneShot(Player.AnimationStateLogic.Attack, ATTACK_ANIM_SECONDS);
             }
         }
 

@@ -18,6 +18,7 @@ namespace CTC.Runtime.Player
         private Vector3 _lastPosition;
         private float _smoothedSpeed;
         private string _currentState = "";
+        private float _oneShotUntil;
 
         private void Start()
         {
@@ -39,10 +40,22 @@ namespace CTC.Runtime.Player
             _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, rawSpeed, speedSmoothing);
 
             string state = AnimationStateLogic.FromSpeed(_smoothedSpeed, walkThreshold, runThreshold);
-            if (state == _currentState) return;
+            if (Time.time < _oneShotUntil || state == _currentState) return;
 
             _currentState = state;
             _animator.CrossFadeInFixedTime(state, crossFadeSeconds);
+        }
+
+        /// <summary>
+        /// 원샷 상태(Attack 등) 재생. 지속시간 동안 이동 기반 전이를 잠그고,
+        /// 만료 후엔 속도 상태가 달라진 순간 자연 복귀한다. 전투 RPC(전 클라)에서 호출.
+        /// </summary>
+        public void PlayOneShot(string _state, float _seconds)
+        {
+            if (_animator == null) return;
+            _oneShotUntil = Time.time + _seconds;
+            _currentState = _state;
+            _animator.CrossFadeInFixedTime(_state, crossFadeSeconds);
         }
     }
 }
