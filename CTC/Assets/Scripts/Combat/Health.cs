@@ -17,9 +17,23 @@ namespace CTC.Runtime.Combat
         /// <summary>서버 전용 사망 알림 (1회).</summary>
         public event System.Action<Health> Died;
 
+        /// <summary>HP 변화 알림(이전, 현재). NetworkVariable 동기화로 전 클라에서 발화 — 피격 연출용.</summary>
+        public event System.Action<int, int> HpChanged;
+
         public override void OnNetworkSpawn()
         {
             if (IsServer) m_Hp.Value = m_MaxHp;
+            m_Hp.OnValueChanged += OnHpValueChanged;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            m_Hp.OnValueChanged -= OnHpValueChanged;
+        }
+
+        private void OnHpValueChanged(int _previous, int _current)
+        {
+            HpChanged?.Invoke(_previous, _current);
         }
 
         public void TakeDamage(int _damage)

@@ -125,6 +125,7 @@ namespace CTC.Editor
                 SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
 
                 root.AddComponent<PlayerDeath>();
+                root.AddComponent<HitFeedback>();
                 addExtras(root);
 
                 var body = GameObject.CreatePrimitive(primitive);
@@ -170,6 +171,7 @@ namespace CTC.Editor
                 SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
 
                 root.AddComponent<PlayerDeath>();
+                root.AddComponent<HitFeedback>();
                 root.AddComponent<FortressHealZone>();
 
                 float h = FORTRESS_WALL_HEIGHT;
@@ -248,6 +250,7 @@ namespace CTC.Editor
                 SetInt(roleTag, "m_Role", (int)role); // enum은 intValue로
 
                 root.AddComponent<PlayerDeath>();
+                root.AddComponent<HitFeedback>();
 
                 var shop = root.AddComponent<ShopController>();
                 SetRef(shop, "m_DecoyPrefab", decoyPrefab);
