@@ -925,6 +925,18 @@ namespace CTC.Editor
             SetRef(timerHud, "m_Lobby", lobby);
             SetRef(timerHud, "m_Match", match);
             SetRef(timerHud, "m_Text", timerText);
+
+            // 인게임 BGM (게임 시작 시 루프 재생 — BgmPlayer가 제어)
+            var bgmGo = new GameObject("BgmPlayer");
+            var bgmSource = bgmGo.AddComponent<AudioSource>();
+            bgmSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/BGM/bgm_ingame.ogg");
+            bgmSource.loop = true;
+            bgmSource.playOnAwake = false;
+            bgmSource.volume = 0.35f;
+            bgmSource.spatialBlend = 0f; // 2D — 거리 감쇠 없음
+            var bgm = bgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
+            SetRef(bgm, "m_Lobby", lobby);
+            SetRef(bgm, "m_Source", bgmSource);
         }
 
         private static TMP_Text CreateTmpText(
