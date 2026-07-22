@@ -287,7 +287,6 @@ MonoBehaviour:
   m_HalfAngleDeg: 60
   m_Damage: 60
   m_CooldownSeconds: 2.5
-  m_KillReward: 50
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0
