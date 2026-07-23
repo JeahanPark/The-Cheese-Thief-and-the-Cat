@@ -108,6 +108,11 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Everyone)]
         private void TracerRpc(Vector3 _start, Vector3 _end)
         {
+            // 발사음 — 티어별 무기 소리(3D, 발사 위치). m_Tier는 NetworkVariable이라 전 클라 일치
+            Audio.SfxId fireSfx = m_Tier.Value >= 2 ? Audio.SfxId.MachinegunFire
+                : m_Tier.Value == 1 ? Audio.SfxId.SlingshotFire : Audio.SfxId.PopgunFire;
+            Audio.SfxPlayer.PlayAt(fireSfx, _start);
+
             Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)
             {

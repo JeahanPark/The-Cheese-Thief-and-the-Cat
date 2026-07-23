@@ -126,6 +126,8 @@ namespace CTC.Editor
 
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
+                var placeSfx = root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>();
+                SetInt(placeSfx, "m_Sfx", (int)CTC.Runtime.Audio.SfxId.DecoyPlace);
                 addExtras(root);
 
                 var body = GameObject.CreatePrimitive(primitive);
@@ -172,6 +174,7 @@ namespace CTC.Editor
 
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
+                root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>(); // 기본값 FortressPlace
                 root.AddComponent<FortressHealZone>();
 
                 float h = FORTRESS_WALL_HEIGHT;
@@ -262,6 +265,21 @@ namespace CTC.Editor
                     root.AddComponent<MousePopgun>();
                     root.AddComponent<MouseDash>();
                 }
+
+                // 발소리 — 3D 루프(거리 감쇠), FootstepPlayer가 이동 속도로 재생 제어
+                var stepSource = root.AddComponent<AudioSource>();
+                stepSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(role == RoleId.Cat
+                    ? "Assets/Audio/Movement/sfx_cat_footstep.ogg"
+                    : "Assets/Audio/Movement/sfx_mouse_footstep.ogg");
+                stepSource.loop = true;
+                stepSource.playOnAwake = false;
+                stepSource.volume = 0.6f;
+                stepSource.spatialBlend = 1f;
+                stepSource.rolloffMode = AudioRolloffMode.Linear;
+                stepSource.minDistance = 1.5f;
+                stepSource.maxDistance = 20f;
+                var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
+                SetRef(steps, "m_Source", stepSource);
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
@@ -937,6 +955,39 @@ namespace CTC.Editor
             var bgm = bgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
             SetRef(bgm, "m_Lobby", lobby);
             SetRef(bgm, "m_Source", bgmSource);
+
+            // 효과음 허브 — m_Clips는 SfxId enum 순서와 1:1
+            var sfxGo = new GameObject("SfxPlayer");
+            var sfxPlayer = sfxGo.AddComponent<CTC.Runtime.Audio.SfxPlayer>();
+            SetRefArray(sfxPlayer, "m_Clips", new Object[]
+            {
+                LoadClip("Combat/sfx_popgun_fire"),      // PopgunFire
+                LoadClip("Combat/sfx_slingshot_fire"),   // SlingshotFire
+                LoadClip("Combat/sfx_machinegun_fire"),  // MachinegunFire
+                LoadClip("Combat/sfx_pounce_swing"),     // PounceSwing
+                LoadClip("Combat/sfx_mouse_hurt"),       // MouseHurt
+                LoadClip("Combat/sfx_cat_hurt"),         // CatHurt
+                LoadClip("Combat/sfx_mouse_death"),      // MouseDeath
+                LoadClip("Combat/sfx_cat_death"),        // CatDeath
+                LoadClip("Economy/sfx_fortress_hit"),    // FortressHit
+                LoadClip("Economy/sfx_fortress_break"),  // FortressBreak
+                LoadClip("Economy/sfx_fortress_place"),  // FortressPlace
+                LoadClip("Economy/sfx_decoy_place"),     // DecoyPlace
+                LoadClip("UI/sfx_match_start"),          // MatchStart
+                LoadClip("UI/jingle_mouse_win"),         // MouseWin
+                LoadClip("UI/jingle_cat_win"),           // CatWin
+            });
+
+            var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
+            SetRef(matchSfx, "m_Lobby", lobby);
+            SetRef(matchSfx, "m_Match", match);
+        }
+
+        private static AudioClip LoadClip(string relativePath)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/" + relativePath + ".ogg");
+            if (clip == null) Debug.LogError($"[Setup] AudioClip 없음: Assets/Audio/{relativePath}.ogg");
+            return clip;
         }
 
         private static TMP_Text CreateTmpText(

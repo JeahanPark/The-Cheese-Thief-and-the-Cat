@@ -88,6 +88,8 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Everyone)]
         private void AttackAnimRpc()
         {
+            Audio.SfxPlayer.PlayAt(Audio.SfxId.PounceSwing, transform.position);
+
             Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)
             {

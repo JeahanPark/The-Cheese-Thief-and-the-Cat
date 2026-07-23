@@ -462,6 +462,7 @@ GameObject:
   - component: {fileID: 3947482109565643162}
   - component: {fileID: 5418441732012166932}
   - component: {fileID: 7772771082947741418}
+  - component: {fileID: 4516129377509583716}
   - component: {fileID: 7219538302858564784}
   m_Layer: 0
   m_Name: CheeseFortress
@@ -571,6 +572,20 @@ MonoBehaviour:
   m_FlashSeconds: 0.15
   m_FlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   m_HitAnimSeconds: 0.4
+--- !u!114 &4516129377509583716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3525953091307173698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: be6db2bf2d014e844930c373a920ad7a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.PlaceSfxOnSpawn
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_Sfx: 10
 --- !u!114 &7219538302858564784
 MonoBehaviour:
   m_ObjectHideFlags: 0

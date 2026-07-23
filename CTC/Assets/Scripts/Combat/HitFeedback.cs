@@ -37,8 +37,26 @@ namespace CTC.Runtime.Combat
 
         private void OnHpChanged(int _previous, int _current)
         {
-            // 감소만, 생존 중만 — 스폰 초기화(0→Max)·회복·사망은 연출 없음
-            if (_current >= _previous || _current <= 0) return;
+            if (_current >= _previous) return; // 스폰 초기화(0→Max)·회복은 연출 없음
+
+            bool isPlayer = GetComponent<CharacterController>() != null;
+            RoleTag tag = GetComponent<RoleTag>();
+            bool isCat = tag != null && tag.Role == Lobby.RoleId.Cat;
+
+            // 사망/파괴 — despawn과 무관하게 소리가 남도록 SfxPlayer가 독립 GO로 재생
+            if (_current <= 0)
+            {
+                Audio.SfxPlayer.PlayAt(
+                    !isPlayer ? Audio.SfxId.FortressBreak
+                    : isCat ? Audio.SfxId.CatDeath : Audio.SfxId.MouseDeath,
+                    transform.position);
+                return;
+            }
+
+            Audio.SfxPlayer.PlayAt(
+                !isPlayer ? Audio.SfxId.FortressHit
+                : isCat ? Audio.SfxId.CatHurt : Audio.SfxId.MouseHurt,
+                transform.position);
 
             var driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)
