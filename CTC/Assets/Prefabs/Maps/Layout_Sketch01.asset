@@ -94,6 +94,9 @@ MonoBehaviour:
   - From: {x: 10, y: -13}
     To: {x: 8, y: -13}
     Width: 1.6
+  - From: {x: -4, y: -12.5}
+    To: {x: -7, y: -12.5}
+    Width: 1.6
   m_Cheese:
   - Pos: {x: -9, y: -7}
     Grade: 1
@@ -105,10 +108,10 @@ MonoBehaviour:
     Grade: 6
     Radius: 1.5
   - Pos: {x: 9, y: 1}
-    Grade: 5
+    Grade: 4
     Radius: 1.5
   - Pos: {x: 0, y: 11}
-    Grade: 4
+    Grade: 5
     Radius: 1.5
   - Pos: {x: -11.5, y: 5}
     Grade: 3

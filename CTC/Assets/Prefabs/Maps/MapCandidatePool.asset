@@ -149,6 +149,9 @@ MonoBehaviour:
     - From: {x: 3, y: -12}
       To: {x: 3, y: -13.5}
       Width: 1.6
+    - From: {x: -4, y: -12.5}
+      To: {x: -7, y: -12.5}
+      Width: 1.6
   - Id: MazeB
     ExclusiveRoomId: R8
     Segments:
