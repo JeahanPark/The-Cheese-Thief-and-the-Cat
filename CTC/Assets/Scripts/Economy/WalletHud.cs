@@ -44,7 +44,7 @@ namespace CTC.Runtime.Economy
             if (!show) return;
 
             // 스펙 v3.2: 고양이 재화 = 장난기(Fun) — 같은 지갑, 라벨만 역할별
-            string label = tag.Role == RoleId.Cat ? "Fun" : "Cheese";
+            string label = tag.Role == RoleId.Cat ? "장난기" : "치즈";
             m_Text.text = $"{label}: {m_LocalWallet.Cheese}";
 
             // 치즈 수입 틱(쥐 전용, 은은하게) — 잔액이 늘어난 프레임에만

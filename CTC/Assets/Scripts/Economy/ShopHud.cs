@@ -23,10 +23,10 @@ namespace CTC.Runtime.Economy
         [SerializeField] private TMP_Text m_BalanceText;
         [SerializeField] private Button[] m_Buttons; // ShopLogic.CATALOG 순서
 
-        // MUIP 기본 TMP 폰트가 한글 글리프 미포함 — 영문 라벨 사용 (한글화는 폰트 에셋 도입 시)
+        // 한글 표시는 Pretendard 동적 폰트 전제 (Tools/CTC/Create Korean Font Asset)
         private static readonly string[] ITEM_LABELS =
         {
-            "Slingshot", "Machine Gun", "Dash", "Decoy", "Fortress", "ATK Up", "SPD Up",
+            "새총", "기관총", "대시", "미끼", "요새", "공격 강화", "이속 강화",
         };
 
         private void Awake()
@@ -89,7 +89,7 @@ namespace CTC.Runtime.Economy
             CheeseWallet wallet = shop.GetComponent<CheeseWallet>();
             RoleTag tag = shop.GetComponent<RoleTag>();
             int cheese = wallet != null ? wallet.Cheese : 0;
-            m_BalanceText.text = $"Cheese: {cheese}";
+            m_BalanceText.text = $"잔액: {cheese}";
 
             for (int i = 0; i < m_Buttons.Length && i < ShopLogic.CATALOG.Length; i++)
             {

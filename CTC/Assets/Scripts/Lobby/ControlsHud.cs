@@ -10,11 +10,11 @@ namespace CTC.Runtime.Lobby
     /// </summary>
     public class ControlsHud : MonoBehaviour
     {
-        // 기본 TMP 폰트에 한글 글리프 없음(상점 라벨과 동일 제약) — 폰트 에셋 도입 전까지 영문
+        // 한글 표시는 Pretendard 동적 폰트(Tools/CTC/Create Korean Font Asset) 전제
         private const string MOUSE_CONTROLS =
-            "WASD Move   Mouse Look   LMB Shoot\nB Shop   LShift Dash (after buy)";
+            "WASD 이동   마우스 시점   좌클릭 발사\nB 상점   LShift 대시 (구매 후)";
         private const string CAT_CONTROLS =
-            "WASD Move   Mouse Look   LMB Pounce\nB Shop";
+            "WASD 이동   마우스 시점   좌클릭 덮치기\nB 상점";
 
         [SerializeField] private LobbyManager m_Lobby;
         [SerializeField] private TMP_Text m_Text;
