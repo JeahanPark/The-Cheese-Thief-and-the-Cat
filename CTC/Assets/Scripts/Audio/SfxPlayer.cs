@@ -20,6 +20,13 @@ namespace CTC.Runtime.Audio
         MatchStart = 12,
         MouseWin = 13,
         CatWin = 14,
+        MouseDash = 15,
+        CheeseTick = 16,
+        HealTick = 17,
+        ShopBuy = 18,
+        ShopDeny = 19,
+        UiClick = 20,
+        TimerWarn = 21,
     }
 
     /// <summary>

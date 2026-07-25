@@ -55,18 +55,26 @@ namespace CTC.Runtime.Economy
         private void BuyRpc(int _itemId)
         {
             ShopItem item = ShopLogic.Find((ShopItemId)_itemId);
-            if (item.Id == ShopItemId.None) return;
+            if (item.Id == ShopItemId.None) { BuyResultRpc(false); return; }
 
             RoleTag tag = GetComponent<RoleTag>();
-            if (tag == null || tag.Role != item.Role) return;
+            if (tag == null || tag.Role != item.Role) { BuyResultRpc(false); return; }
 
-            if (!CanApply(item.Id)) return;
+            if (!CanApply(item.Id)) { BuyResultRpc(false); return; }
 
             CheeseWallet wallet = GetComponent<CheeseWallet>();
-            if (wallet == null || !wallet.TrySpend(item.Cost)) return;
+            if (wallet == null || !wallet.TrySpend(item.Cost)) { BuyResultRpc(false); return; }
 
             Apply(item.Id);
             Debug.Log($"[ShopController] {OwnerClientId} 구매: {item.Id} (-{item.Cost})");
+            BuyResultRpc(true);
+        }
+
+        // 구매자에게만 결과음 — 성공 카칭 / 실패 붑
+        [Rpc(SendTo.Owner)]
+        private void BuyResultRpc(bool _success)
+        {
+            Audio.SfxPlayer.PlayUi(_success ? Audio.SfxId.ShopBuy : Audio.SfxId.ShopDeny);
         }
 
         // 서버 전용 — BuyRpc에서 검증·차감 후 호출.

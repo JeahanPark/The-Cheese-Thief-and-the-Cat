@@ -10,8 +10,11 @@ namespace CTC.Runtime.Audio
         [SerializeField] private LobbyManager m_Lobby;
         [SerializeField] private MatchManager m_Match;
 
+        private const float TIMER_WARN_SECONDS = 10f; // 막판 N초 동안 초당 째깍
+
         private bool m_WasStarted;
         private MatchResult m_LastResult = MatchResult.None;
+        private int m_LastWarnSecond = -1;
 
         private void Update()
         {
@@ -28,6 +31,16 @@ namespace CTC.Runtime.Audio
                 SfxPlayer.PlayUi(result == MatchResult.MouseWin ? SfxId.MouseWin : SfxId.CatWin);
             }
             m_LastResult = result;
+
+            // 타이머 경고 — 잔여 10초부터 초가 바뀔 때마다 1회
+            float remaining = started && result == MatchResult.None && m_Match != null
+                ? m_Match.RemainingSeconds : -1f;
+            int second = remaining > 0f && remaining <= TIMER_WARN_SECONDS ? Mathf.CeilToInt(remaining) : -1;
+            if (second != -1 && second != m_LastWarnSecond)
+            {
+                SfxPlayer.PlayUi(SfxId.TimerWarn, 0.8f);
+            }
+            m_LastWarnSecond = second;
         }
     }
 }

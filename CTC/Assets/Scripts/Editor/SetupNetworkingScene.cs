@@ -976,6 +976,13 @@ namespace CTC.Editor
                 LoadClip("UI/sfx_match_start"),          // MatchStart
                 LoadClip("UI/jingle_mouse_win"),         // MouseWin
                 LoadClip("UI/jingle_cat_win"),           // CatWin
+                LoadClip("Movement/sfx_mouse_dash"),     // MouseDash
+                LoadClip("Economy/sfx_cheese_tick"),     // CheeseTick
+                LoadClip("Economy/sfx_heal_tick"),       // HealTick
+                LoadClip("Economy/sfx_shop_buy"),        // ShopBuy
+                LoadClip("Economy/sfx_shop_deny"),       // ShopDeny
+                LoadClip("UI/sfx_ui_click"),             // UiClick
+                LoadClip("UI/sfx_timer_warn"),           // TimerWarn
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
@@ -1044,6 +1051,7 @@ namespace CTC.Editor
 
             var button = go.AddComponent<Button>();
             button.targetGraphic = bg; // 기본 ColorTint 전환 사용
+            go.AddComponent<CTC.Runtime.Audio.UiClickSfx>(); // 공통 클릭음(2D)
             return button;
         }
 

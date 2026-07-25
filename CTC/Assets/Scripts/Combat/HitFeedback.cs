@@ -37,7 +37,15 @@ namespace CTC.Runtime.Combat
 
         private void OnHpChanged(int _previous, int _current)
         {
-            if (_current >= _previous) return; // 스폰 초기화(0→Max)·회복은 연출 없음
+            if (_current >= _previous)
+            {
+                // 회복 틱(요새 거점 +10/s) — 스폰 초기화(0→Max)는 제외
+                if (_previous > 0 && _current > _previous && GetComponent<CharacterController>() != null)
+                {
+                    Audio.SfxPlayer.PlayAt(Audio.SfxId.HealTick, transform.position, 0.5f);
+                }
+                return;
+            }
 
             bool isPlayer = GetComponent<CharacterController>() != null;
             RoleTag tag = GetComponent<RoleTag>();

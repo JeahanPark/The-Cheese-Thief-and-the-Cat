@@ -57,6 +57,14 @@ namespace CTC.Runtime.Player
             m_LastUseTime = Time.timeAsDouble;
             m_DashDirection = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
             m_DashRemainingSeconds = DASH_DURATION_SECONDS;
+            DashSfxRpc();
+        }
+
+        // 대시는 소유자 권위(RPC 없음)라 소리만 전 클라 전파 — 고양이도 들리는 도주 신호
+        [Rpc(SendTo.Everyone)]
+        private void DashSfxRpc()
+        {
+            Audio.SfxPlayer.PlayAt(Audio.SfxId.MouseDash, transform.position);
         }
     }
 }
