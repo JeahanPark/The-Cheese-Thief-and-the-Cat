@@ -956,6 +956,18 @@ namespace CTC.Editor
             SetRef(bgm, "m_Lobby", lobby);
             SetRef(bgm, "m_Source", bgmSource);
 
+            // 부엌 앰비언스 — BGM과 동일 조건(게임 중 루프), 볼륨만 낮게
+            var ambGo = new GameObject("AmbiencePlayer");
+            var ambSource = ambGo.AddComponent<AudioSource>();
+            ambSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/BGM/amb_kitchen.ogg");
+            ambSource.loop = true;
+            ambSource.playOnAwake = false;
+            ambSource.volume = 0.15f;
+            ambSource.spatialBlend = 0f;
+            var amb = ambGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
+            SetRef(amb, "m_Lobby", lobby);
+            SetRef(amb, "m_Source", ambSource);
+
             // 효과음 허브 — m_Clips는 SfxId enum 순서와 1:1
             var sfxGo = new GameObject("SfxPlayer");
             var sfxPlayer = sfxGo.AddComponent<CTC.Runtime.Audio.SfxPlayer>();
