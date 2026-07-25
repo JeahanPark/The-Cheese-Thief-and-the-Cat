@@ -956,6 +956,19 @@ namespace CTC.Editor
             SetRef(bgm, "m_Lobby", lobby);
             SetRef(bgm, "m_Source", bgmSource);
 
+            // 로비 BGM — 게임이 안 도는 동안(접속 전·로비) 루프
+            var lobbyBgmGo = new GameObject("LobbyBgmPlayer");
+            var lobbyBgmSource = lobbyBgmGo.AddComponent<AudioSource>();
+            lobbyBgmSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/BGM/bgm_lobby.ogg");
+            lobbyBgmSource.loop = true;
+            lobbyBgmSource.playOnAwake = false;
+            lobbyBgmSource.volume = 0.35f;
+            lobbyBgmSource.spatialBlend = 0f;
+            var lobbyBgm = lobbyBgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
+            SetRef(lobbyBgm, "m_Lobby", lobby);
+            SetRef(lobbyBgm, "m_Source", lobbyBgmSource);
+            SetInt(lobbyBgm, "m_PlayWhenGameStopped", 1);
+
             // 부엌 앰비언스 — BGM과 동일 조건(게임 중 루프), 볼륨만 낮게
             var ambGo = new GameObject("AmbiencePlayer");
             var ambSource = ambGo.AddComponent<AudioSource>();
