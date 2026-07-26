@@ -4,6 +4,7 @@
     "references": [
         "CTC.Runtime",
         "Unity.Netcode.Runtime",
+        "Facepunch Transport for Netcode for GameObjects",
         "Unity.Networking.Transport",
         "Unity.Cinemachine",
         "UnityEditor.TestRunner",

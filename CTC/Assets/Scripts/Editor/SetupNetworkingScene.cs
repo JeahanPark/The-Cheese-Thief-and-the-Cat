@@ -338,6 +338,10 @@ namespace CTC.Editor
             nm.NetworkConfig.PlayerPrefab = null;
             RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
 
+            // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
+            nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
+            nmGo.AddComponent<SteamBootstrap>();
+
             nmGo.AddComponent<ConnectionUI>();
             nmGo.AddComponent<MppmAutoConnect>();
             nmGo.AddComponent<MultiplayerQaProbe>();

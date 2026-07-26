@@ -4,6 +4,7 @@
     "references": [
         "Unity.Netcode.Runtime",
         "Unity.Netcode.Components",
+        "Facepunch Transport for Netcode for GameObjects",
         "Unity.Networking.Transport",
         "Unity.InputSystem",
         "Unity.Multiplayer.Playmode",
