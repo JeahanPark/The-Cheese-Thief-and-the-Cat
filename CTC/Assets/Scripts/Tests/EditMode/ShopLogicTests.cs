@@ -54,10 +54,10 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void MoveSpeed_StacksAdd04Each()
+        public void MoveSpeed_StacksAdd02Each() // 밸런스 2026-07-26: 기본 6.4 상향 + 스택 0.2 하향 (만렙 7.4)
         {
-            Assert.AreEqual(4.5f, ShopLogic.MoveSpeed(4.5f, 0), 1e-4f);
-            Assert.AreEqual(6.5f, ShopLogic.MoveSpeed(4.5f, 5), 1e-4f);
+            Assert.AreEqual(6.4f, ShopLogic.MoveSpeed(6.4f, 0), 1e-4f);
+            Assert.AreEqual(7.4f, ShopLogic.MoveSpeed(6.4f, 5), 1e-4f);
         }
 
         [Test]

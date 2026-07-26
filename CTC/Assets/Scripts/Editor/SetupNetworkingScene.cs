@@ -68,7 +68,7 @@ namespace CTC.Editor
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
-                moveSpeed: 4.5f, runThreshold: 3.2f, fov: 70f, camDistance: 5f,
+                moveSpeed: 6.4f, runThreshold: 3.2f, fov: 70f, camDistance: 5f, // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26)
                 role: RoleId.Cat, maxHp: 1000,
                 decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
@@ -555,6 +555,48 @@ namespace CTC.Editor
             // 통로(미로 포함): 중심선 세그먼트마다 폭만큼 바닥 + 양측 낮은 벽(접합부 개방)
             foreach (CorridorSeg c in layout.Corridors)
                 BuildCorridor(root, wall, floorMat, c, layout.Corridors);
+
+            // 막다른 통로 끝(방·타 세그먼트 미접촉)은 끝막이 벽 — 맵 외곽 공터로 새는 틈 봉쇄
+            foreach (CorridorSeg c in layout.Corridors)
+            {
+                AddEndCapIfDeadEnd(root, wall, c, c.From, layout.Rooms, layout.Corridors);
+                AddEndCapIfDeadEnd(root, wall, c, c.To, layout.Rooms, layout.Corridors);
+            }
+        }
+
+        // 통로 끝점이 방 경계·다른 세그먼트에 닿지 않으면(진짜 막다른 끝) 폭+여유만큼 캡 벽을 세운다.
+        private static void AddEndCapIfDeadEnd(
+            GameObject root, Material wallMat, CorridorSeg c, Vector2 end,
+            System.Collections.Generic.IReadOnlyList<RoomRect> rooms,
+            System.Collections.Generic.IReadOnlyList<CorridorSeg> all)
+        {
+            const float TOUCH_TOLERANCE = 0.3f;
+
+            foreach (RoomRect r in rooms)
+            {
+                if (end.x >= r.Min.x - TOUCH_TOLERANCE && end.x <= r.Max.x + TOUCH_TOLERANCE &&
+                    end.y >= r.Min.y - TOUCH_TOLERANCE && end.y <= r.Max.y + TOUCH_TOLERANCE) return;
+            }
+            foreach (CorridorSeg o in all)
+            {
+                if (o.From == c.From && o.To == c.To) continue;
+                if (DistancePointToSegment(end, o.From, o.To) < TOUCH_TOLERANCE) return;
+            }
+
+            Vector2 dir = (c.To - c.From).normalized;
+            Quaternion rot = Quaternion.LookRotation(new Vector3(dir.x, 0f, dir.y));
+            AddOrientedBox(root, wallMat, "CorridorEndCap",
+                new Vector3(end.x, CORRIDOR_WALL_HEIGHT * 0.5f, end.y), rot,
+                new Vector3(c.Width + ROOM_WALL_THICK * 2f, CORRIDOR_WALL_HEIGHT, ROOM_WALL_THICK));
+        }
+
+        private static float DistancePointToSegment(Vector2 p, Vector2 a, Vector2 b)
+        {
+            Vector2 ab = b - a;
+            float len2 = ab.sqrMagnitude;
+            if (len2 < 1e-6f) return Vector2.Distance(p, a);
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / len2);
+            return Vector2.Distance(p, a + ab * t);
         }
 
         private static void BuildRoomWalls(

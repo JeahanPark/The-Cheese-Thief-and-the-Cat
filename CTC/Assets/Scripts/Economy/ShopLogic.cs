@@ -51,7 +51,7 @@ namespace CTC.Runtime.Economy
     {
         public const int MAX_UPGRADE_STACKS = 5;
         public const int POUNCE_DAMAGE_PER_STACK = 10;
-        public const float SPEED_PER_STACK = 0.4f;
+        public const float SPEED_PER_STACK = 0.2f; // 기본 이속 6.4 상향과 동반 하향 — 만렙 7.4 (8.5는 도주 무의미)
         public const int FORTRESS_HEAL_PER_TICK = 10;
         public const float FORTRESS_HEAL_RADIUS = 1.0f; // 요새 내부(입구 밖 미적용)
         public const float DECOY_LIFETIME_SECONDS = 30f;
