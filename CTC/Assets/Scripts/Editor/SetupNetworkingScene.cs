@@ -68,7 +68,7 @@ namespace CTC.Editor
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
-                moveSpeed: 6.4f, runThreshold: 3.2f, fov: 70f, camDistance: 5f, // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26)
+                moveSpeed: 6.7f, runThreshold: 3.2f, fov: 70f, camDistance: 5f, // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26 2차)
                 role: RoleId.Cat, maxHp: 1000,
                 decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
 
