@@ -181,26 +181,26 @@ namespace CTC.Editor
                 float half = FORTRESS_HALF;
                 float t = FORTRESS_WALL_THICKNESS;
 
-                // 뒷벽·좌우벽 (입구는 로컬 +Z면)
-                AddBox(root, wallMat, "Wall_Back", new Vector3(0f, h * 0.5f, -half + t * 0.5f),
-                    new Vector3(half * 2f, h, t));
+                // 좌우벽만 통벽 — 앞(+Z)·뒤(-Z) 양면에 쥐 전용 문 (한쪽 문 캠핑을 반대편 탈출로 카운터, 2026-07-26)
                 AddBox(root, wallMat, "Wall_Left", new Vector3(-half + t * 0.5f, h * 0.5f, 0f),
                     new Vector3(t, h, half * 2f - t * 2f));
                 AddBox(root, wallMat, "Wall_Right", new Vector3(half - t * 0.5f, h * 0.5f, 0f),
                     new Vector3(t, h, half * 2f - t * 2f));
 
-                // 앞벽: 입구(폭 1.0) 좌우 세그먼트 + 인방(입구 위 y 0.75~1.2)
+                // 문 있는 벽: 입구(폭 1.0) 좌우 세그먼트 + 인방(입구 위 y 0.75~1.2) — 앞뒤 공용
                 float sideWidth = half - FORTRESS_DOOR_WIDTH * 0.5f;
                 float sideCenterX = FORTRESS_DOOR_WIDTH * 0.5f + sideWidth * 0.5f;
-                float frontZ = half - t * 0.5f;
-                AddBox(root, wallMat, "Wall_Front_L", new Vector3(-sideCenterX, h * 0.5f, frontZ),
-                    new Vector3(sideWidth, h, t));
-                AddBox(root, wallMat, "Wall_Front_R", new Vector3(sideCenterX, h * 0.5f, frontZ),
-                    new Vector3(sideWidth, h, t));
                 float lintelHeight = h - FORTRESS_DOOR_HEIGHT;
-                AddBox(root, wallMat, "Wall_Lintel",
-                    new Vector3(0f, FORTRESS_DOOR_HEIGHT + lintelHeight * 0.5f, frontZ),
-                    new Vector3(FORTRESS_DOOR_WIDTH, lintelHeight, t));
+                foreach ((string tag, float z) in new[] { ("Front", half - t * 0.5f), ("Back", -half + t * 0.5f) })
+                {
+                    AddBox(root, wallMat, $"Wall_{tag}_L", new Vector3(-sideCenterX, h * 0.5f, z),
+                        new Vector3(sideWidth, h, t));
+                    AddBox(root, wallMat, $"Wall_{tag}_R", new Vector3(sideCenterX, h * 0.5f, z),
+                        new Vector3(sideWidth, h, t));
+                    AddBox(root, wallMat, $"Wall_{tag}_Lintel",
+                        new Vector3(0f, FORTRESS_DOOR_HEIGHT + lintelHeight * 0.5f, z),
+                        new Vector3(FORTRESS_DOOR_WIDTH, lintelHeight, t));
+                }
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, FortressPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
@@ -277,7 +277,8 @@ namespace CTC.Editor
                 stepSource.spatialBlend = 1f;
                 stepSource.rolloffMode = AudioRolloffMode.Linear;
                 stepSource.minDistance = 1.5f;
-                stepSource.maxDistance = 20f;
+                // 고양이 15m(위협 경보 반경 — 이속 6.7 기준 도주 성립 거리), 쥐 8m(살금살금 — 고양이도 귀 사냥 가능)
+                stepSource.maxDistance = role == RoleId.Cat ? 15f : 8f;
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
 
