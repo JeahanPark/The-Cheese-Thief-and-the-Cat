@@ -16,7 +16,13 @@ namespace CTC.Runtime.Networking
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);
-            if (Ready) return;
+            TryInit();
+        }
+
+        /// <summary>초기화 재시도 — 게임 실행 후 스팀을 켠 경우 UI '다시 연결' 버튼이 호출.</summary>
+        public static bool TryInit()
+        {
+            if (Ready) return true;
 
             try
             {
@@ -29,6 +35,7 @@ namespace CTC.Runtime.Networking
                 Ready = false;
                 Debug.LogWarning($"[Steam] init 실패(로컬 모드로 동작): {e.Message}");
             }
+            return Ready;
         }
 
         private void OnDestroy()

@@ -68,7 +68,12 @@ namespace CTC.Runtime.Networking
             if (m_Steam == null || !SteamBootstrap.Ready)
             {
                 GUILayout.Space(8f);
-                GUILayout.Label("Steam: 미실행 (로컬 전용)");
+                GUILayout.Label("― Steam 매칭 ―");
+                GUILayout.Label("Steam 연결 안 됨.\n다른 사람과 하려면:\n1) Steam 실행 후 로그인\n2) 아래 버튼으로 재연결");
+                if (GUILayout.Button("Steam 다시 연결"))
+                {
+                    SteamBootstrap.TryInit();
+                }
                 return;
             }
 
