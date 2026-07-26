@@ -1060,6 +1060,12 @@ namespace CTC.Editor
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
             SetRef(matchSfx, "m_Lobby", lobby);
             SetRef(matchSfx, "m_Match", match);
+
+            // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
+            var statsGo = new GameObject("MatchStatsRecorder");
+            var stats = statsGo.AddComponent<MatchStatsRecorder>();
+            SetRef(stats, "m_Lobby", lobby);
+            SetRef(stats, "m_Match", match);
         }
 
         private static AudioClip LoadClip(string relativePath)
