@@ -15,17 +15,40 @@ namespace CTC.Runtime.Networking
     public class SteamLobbyManager : MonoBehaviour
     {
         private SteamLobby? m_CurrentLobby;
+        private bool m_Busy; // 생성/참여 진행 중 — await 도중 재진입 차단(버튼 연타·오버레이 콜백 중복)
 
         public bool InLobby => m_CurrentLobby.HasValue;
 
         private void OnEnable()
         {
             SteamFriends.OnGameLobbyJoinRequested += OnJoinRequested; // 친구 초대/참여 클릭
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm != null) nm.OnClientDisconnectCallback += OnNetworkDisconnected;
         }
 
         private void OnDisable()
         {
             SteamFriends.OnGameLobbyJoinRequested -= OnJoinRequested;
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm != null) nm.OnClientDisconnectCallback -= OnNetworkDisconnected;
+        }
+
+        // 접속 실패·강제 종료 시 로비까지 정리 — 유령 세션으로 재시도가 막히는 것 방지
+        private void OnNetworkDisconnected(ulong _clientId)
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm == null || nm.IsServer || nm.LocalClientId != _clientId) return;
+
+            Debug.LogWarning("[SteamLobby] 연결 종료 감지 — 세션 정리");
+            nm.Shutdown();
+            LeaveLobby();
+        }
+
+        // 이미 NGO 세션이 살아 있으면 새 접속 금지(중복 연결 = 로비 인원 유령 항목 원인)
+        private bool NetworkBusy()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            return nm == null || nm.IsListening || nm.IsClient || nm.IsServer;
         }
 
         private void OnDestroy()
@@ -36,9 +59,11 @@ namespace CTC.Runtime.Networking
         /// <summary>호스트: 로비 생성 → 스팀 트랜스포트로 StartHost.</summary>
         public async void CreateLobby(string _roomName, bool _isPublic)
         {
-            if (!SteamBootstrap.Ready || InLobby) return;
+            if (!SteamBootstrap.Ready || InLobby || m_Busy || NetworkBusy()) return;
+            m_Busy = true;
 
             SteamLobby? created = await Steamworks.SteamMatchmaking.CreateLobbyAsync(SteamLobbyLogic.MAX_PLAYERS);
+            m_Busy = false;
             if (!created.HasValue)
             {
                 Debug.LogError("[SteamLobby] 로비 생성 실패");
@@ -81,18 +106,32 @@ namespace CTC.Runtime.Networking
         /// <summary>클라: 로비 참여 → 방장 SteamId로 StartClient.</summary>
         public async void JoinLobby(SteamLobby _lobby)
         {
-            if (!SteamBootstrap.Ready || InLobby) return;
+            if (!SteamBootstrap.Ready || InLobby || m_Busy || NetworkBusy()) return;
+            m_Busy = true;
 
             RoomEnter result = await _lobby.Join();
+            m_Busy = false;
             if (result != RoomEnter.Success)
             {
                 Debug.LogError($"[SteamLobby] 참여 실패: {result}");
                 return;
             }
+            // await 사이에 다른 경로(오버레이 콜백 등)가 세션을 잡았을 수 있다 — 재확인 후 이탈
+            if (NetworkBusy())
+            {
+                Debug.LogWarning("[SteamLobby] 이미 세션 진행 중 — 중복 참여 취소");
+                _lobby.Leave();
+                return;
+            }
             m_CurrentLobby = _lobby;
 
             UseSteamTransport(_lobby.Owner.Id);
-            NetworkManager.Singleton.StartClient();
+            if (!NetworkManager.Singleton.StartClient())
+            {
+                Debug.LogError("[SteamLobby] StartClient 실패 — 로비 정리");
+                LeaveLobby();
+                return;
+            }
             Debug.Log($"[SteamLobby] 참여: {_lobby.GetData(SteamLobbyLogic.NAME_KEY)} (방장 {_lobby.Owner.Name})");
         }
 

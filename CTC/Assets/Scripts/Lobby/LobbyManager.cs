@@ -56,6 +56,39 @@ namespace CTC.Runtime.Lobby
             EnsureEntry(clientId);
         }
 
+        // 서버 전용: 실제 연결과 목록을 주기적으로 대조해 유령 항목 제거.
+        // 반쯤 실패한 접속(연결 콜백은 왔으나 세션이 끊긴 경우)이 목록에 남아
+        // 인원수 불일치·스폰 어긋남을 만드는 것을 막는다 (2026-07-27 실측 버그).
+        private float m_ReconcileTimer;
+
+        private void Update()
+        {
+            if (!IsSpawned || !IsServer || _gameStarted.Value) return;
+
+            m_ReconcileTimer += Time.deltaTime;
+            if (m_ReconcileTimer < 1f) return;
+            m_ReconcileTimer = 0f;
+
+            for (int i = _players.Count - 1; i >= 0; i--)
+            {
+                ulong id = _players[i].ClientId;
+                if (IsConnected(id)) continue;
+
+                _players.RemoveAt(i);
+                Debug.LogWarning($"[Lobby] 유령 항목 제거 client={id} → 인원 {_players.Count}");
+            }
+        }
+
+        private bool IsConnected(ulong clientId)
+        {
+            IReadOnlyList<ulong> ids = NetworkManager.ConnectedClientsIds;
+            for (int i = 0; i < ids.Count; i++)
+            {
+                if (ids[i] == clientId) return true;
+            }
+            return false;
+        }
+
         private void OnClientDisconnected(ulong clientId)
         {
             int idx = IndexOf(clientId);
