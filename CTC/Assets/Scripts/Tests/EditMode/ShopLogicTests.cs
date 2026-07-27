@@ -54,6 +54,33 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void RoleCatalogIndices_MouseFiveInCatalogOrder()
+        {
+            var idx = ShopLogic.RoleCatalogIndices(RoleId.Mouse);
+            Assert.AreEqual(5, idx.Count);
+            Assert.AreEqual(ShopItemId.Slingshot, ShopLogic.CATALOG[idx[0]].Id);
+            Assert.AreEqual(ShopItemId.Fortress, ShopLogic.CATALOG[idx[4]].Id);
+        }
+
+        [Test]
+        public void RoleCatalogIndices_CatTwo()
+        {
+            var idx = ShopLogic.RoleCatalogIndices(RoleId.Cat);
+            Assert.AreEqual(2, idx.Count);
+            Assert.AreEqual(ShopItemId.CatAttack, ShopLogic.CATALOG[idx[0]].Id);
+            Assert.AreEqual(ShopItemId.CatSpeed, ShopLogic.CATALOG[idx[1]].Id);
+        }
+
+        [Test]
+        public void IsPlaceable_OnlyStructures()
+        {
+            Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Fortress));
+            Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Decoy));
+            Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Slingshot));
+            Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.CatSpeed));
+        }
+
+        [Test]
         public void MoveSpeed_StacksAdd02Each() // 밸런스 2026-07-26: 기본 6.4 상향 + 스택 0.2 하향 (만렙 7.4)
         {
             Assert.AreEqual(6.4f, ShopLogic.MoveSpeed(6.4f, 0), 1e-4f);

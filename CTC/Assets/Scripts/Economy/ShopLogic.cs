@@ -103,6 +103,26 @@ namespace CTC.Runtime.Economy
             return _baseSpeed + SPEED_PER_STACK * _stacks;
         }
 
+        /// <summary>핫바 슬롯 수 — 역할별 카탈로그가 이보다 길면 잘린다(현재 쥐 5/고양이 2).</summary>
+        public const int HOTBAR_SLOTS = 5;
+
+        /// <summary>역할별 카탈로그 인덱스(카탈로그 순서 유지) — 핫바 1~5번 키 매핑.</summary>
+        public static System.Collections.Generic.List<int> RoleCatalogIndices(RoleId _role)
+        {
+            var list = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < CATALOG.Length && list.Count < HOTBAR_SLOTS; i++)
+            {
+                if (CATALOG[i].Role == _role) list.Add(i);
+            }
+            return list;
+        }
+
+        /// <summary>설치형(월드에 스폰) 아이템인가 — 고스트 미리보기 후 위치 지정 구매.</summary>
+        public static bool IsPlaceable(ShopItemId _id)
+        {
+            return _id == ShopItemId.Decoy || _id == ShopItemId.Fortress;
+        }
+
         public static WeaponStats WeaponStatsForTier(int _tier)
         {
             int idx = UnityEngine.Mathf.Clamp(_tier, 0, WEAPON_TIERS.Length - 1);

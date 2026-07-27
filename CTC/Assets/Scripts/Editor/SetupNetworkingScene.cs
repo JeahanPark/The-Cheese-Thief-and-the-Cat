@@ -158,6 +158,11 @@ namespace CTC.Editor
         private const float FORTRESS_DOOR_HEIGHT = 0.75f;
         private const float FORTRESS_WALL_THICKNESS = 0.2f;
 
+        // 상점 핫바 슬롯 치수(하단 중앙)
+        private const float SLOT_WIDTH = 132f;
+        private const float SLOT_HEIGHT = 68f;
+        private const float SLOT_GAP = 8f;
+
         private static GameObject CreateFortressPrefab()
         {
             Material wallMat = GridboxMaterial("Brown");
@@ -897,37 +902,51 @@ namespace CTC.Editor
             SetRef(combatHud, "m_Lobby", lobby);
             SetRef(combatHud, "m_Text", combatText);
 
-            // 상점 패널 (B키 토글, ShopHud가 제어)
-            var shopPanel = new GameObject("ShopPanel", typeof(RectTransform));
-            shopPanel.transform.SetParent(canvasGo.transform, false);
-            var shopRt = (RectTransform)shopPanel.transform;
-            shopRt.anchorMin = shopRt.anchorMax = new Vector2(0.5f, 0.5f);
-            shopRt.pivot = new Vector2(0.5f, 0.5f);
-            shopRt.sizeDelta = new Vector2(420f, 560f);
-            var shopBg = shopPanel.AddComponent<Image>();
-            shopBg.color = new Color(0.08f, 0.09f, 0.12f, 0.9f);
+            // 상점 핫바 (하단 중앙 상시 표시, 숫자키 즉시 구매 — UX 개정 2026-07-27)
+            var hotbarRoot = new GameObject("ShopHotbar", typeof(RectTransform));
+            hotbarRoot.transform.SetParent(canvasGo.transform, false);
+            var hotbarRt = (RectTransform)hotbarRoot.transform;
+            hotbarRt.anchorMin = hotbarRt.anchorMax = new Vector2(0.5f, 0f);
+            hotbarRt.pivot = new Vector2(0.5f, 0f);
+            hotbarRt.anchoredPosition = new Vector2(0f, 28f);
+            hotbarRt.sizeDelta = new Vector2(SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * 4f, SLOT_HEIGHT);
 
-            TMP_Text shopTitle = CreateTmpText("ShopTitle", shopPanel.transform, "SHOP (B)",
-                30f, TextAlignmentOptions.Center, new Vector2(0f, -16f), new Vector2(380f, 44f));
-            shopTitle.fontStyle = FontStyles.Bold;
-
-            TMP_Text shopBalance = CreateTmpText("ShopBalance", shopPanel.transform, "Cheese: 0",
-                24f, TextAlignmentOptions.Center, new Vector2(0f, -64f), new Vector2(380f, 36f));
-
-            int catalogCount = ShopLogic.CATALOG.Length;
-            var shopButtons = new Button[catalogCount];
-            for (int i = 0; i < catalogCount; i++)
+            var slotRoots = new Object[ShopLogic.HOTBAR_SLOTS];
+            var slotLabels = new Object[ShopLogic.HOTBAR_SLOTS];
+            var slotCosts = new Object[ShopLogic.HOTBAR_SLOTS];
+            float totalWidth = SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
+            for (int i = 0; i < ShopLogic.HOTBAR_SLOTS; i++)
             {
-                shopButtons[i] = CreateMuipButton(shopPanel.transform, $"ShopButton{i}", "-",
-                    new Vector2(0f, -120f - i * 60f));
-            }
-            shopPanel.SetActive(false);
+                float x = -totalWidth * 0.5f + SLOT_WIDTH * 0.5f + i * (SLOT_WIDTH + SLOT_GAP);
+                var slot = new GameObject($"Slot{i + 1}", typeof(RectTransform));
+                slot.transform.SetParent(hotbarRoot.transform, false);
+                var slotRt = (RectTransform)slot.transform;
+                slotRt.anchorMin = slotRt.anchorMax = new Vector2(0.5f, 0.5f);
+                slotRt.pivot = new Vector2(0.5f, 0.5f);
+                slotRt.anchoredPosition = new Vector2(x, 0f);
+                slotRt.sizeDelta = new Vector2(SLOT_WIDTH, SLOT_HEIGHT);
+                var slotBg = slot.AddComponent<Image>();
+                slotBg.color = new Color(0.07f, 0.055f, 0.04f, 0.82f);
 
-            var shopHud = canvasGo.AddComponent<ShopHud>();
-            SetRef(shopHud, "m_Lobby", lobby);
-            SetRef(shopHud, "m_Panel", shopPanel);
-            SetRef(shopHud, "m_BalanceText", shopBalance);
-            SetRefArray(shopHud, "m_Buttons", shopButtons);
+                slotLabels[i] = CreateTmpText($"Name{i + 1}", slot.transform, "-",
+                    22f, TextAlignmentOptions.Center, new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 28f));
+                slotCosts[i] = CreateTmpText($"Cost{i + 1}", slot.transform, "-",
+                    20f, TextAlignmentOptions.Center, new Vector2(0f, -34f), new Vector2(SLOT_WIDTH - 8f, 26f));
+                slotRoots[i] = slot;
+            }
+
+            TMP_Text toastText = CreateTmpText("ShopToast", hotbarRoot.transform, "",
+                26f, TextAlignmentOptions.Center, new Vector2(0f, 52f), new Vector2(640f, 36f));
+            toastText.gameObject.SetActive(false);
+            hotbarRoot.SetActive(false); // ShopHotbar가 게임 시작 시 켬
+
+            var hotbar = canvasGo.AddComponent<ShopHotbar>();
+            SetRef(hotbar, "m_Lobby", lobby);
+            SetRef(hotbar, "m_Root", hotbarRoot);
+            SetRefArray(hotbar, "m_Slots", slotRoots);
+            SetRefArray(hotbar, "m_SlotLabels", slotLabels);
+            SetRefArray(hotbar, "m_SlotCosts", slotCosts);
+            SetRef(hotbar, "m_Toast", toastText);
 
             // 결과 패널 (매치 종료 시 ResultHud가 표시)
             var resultPanel = new GameObject("ResultPanel", typeof(RectTransform));

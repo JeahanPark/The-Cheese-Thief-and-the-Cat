@@ -16,10 +16,19 @@ namespace CTC.Runtime.Economy
         [SerializeField] private GameObject m_DecoyPrefab;
         [SerializeField] private GameObject m_FortressPrefab;
 
+        /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프(4m)보다 넉넉히.</summary>
+        public const float MAX_PLACE_DISTANCE = 6f;
+
         /// <summary>로컬 UI/QA 진입점.</summary>
         public void Buy(ShopItemId _itemId)
         {
             BuyRpc((int)_itemId);
+        }
+
+        /// <summary>설치물 위치 지정 구매(고스트 확정). 서버가 거리·겹침을 재검증한다.</summary>
+        public void BuyAt(ShopItemId _itemId, Vector3 _position)
+        {
+            BuyAtRpc((int)_itemId, _position);
         }
 
         /// <summary>구매 가능 여부(로컬 UI 표시용 — 판정 권위는 서버 BuyRpc).</summary>
@@ -68,6 +77,56 @@ namespace CTC.Runtime.Economy
             Apply(item.Id);
             Debug.Log($"[ShopController] {OwnerClientId} 구매: {item.Id} (-{item.Cost})");
             BuyResultRpc(true);
+        }
+
+        // 설치물 전용: 클라가 고스트로 확정한 위치에 스폰. 위치는 서버가 재검증(거리·겹침).
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void BuyAtRpc(int _itemId, Vector3 _position)
+        {
+            ShopItem item = ShopLogic.Find((ShopItemId)_itemId);
+            if (item.Id == ShopItemId.None || !ShopLogic.IsPlaceable(item.Id)) { BuyResultRpc(false); return; }
+
+            RoleTag tag = GetComponent<RoleTag>();
+            if (tag == null || tag.Role != item.Role) { BuyResultRpc(false); return; }
+            if (!CanApply(item.Id)) { BuyResultRpc(false); return; }
+
+            Vector3 flat = _position - transform.position;
+            flat.y = 0f;
+            if (flat.magnitude > MAX_PLACE_DISTANCE) { BuyResultRpc(false); return; }
+
+            GameObject prefab = item.Id == ShopItemId.Fortress ? m_FortressPrefab : m_DecoyPrefab;
+            if (prefab == null || !PlacementFits(item.Id, _position)) { BuyResultRpc(false); return; }
+
+            CheeseWallet wallet = GetComponent<CheeseWallet>();
+            if (wallet == null || !wallet.TrySpend(item.Cost)) { BuyResultRpc(false); return; }
+
+            // 요새 입구(로컬 +Z)가 구매자를 향하게 — 쫓기며 지어도 바로 들어갈 수 있다
+            Quaternion rot = item.Id == ShopItemId.Fortress
+                ? Quaternion.LookRotation(-FlatForward())
+                : Quaternion.identity;
+            GameObject go = Instantiate(prefab, _position, rot);
+            go.GetComponent<NetworkObject>().Spawn(true);
+
+            Debug.Log($"[ShopController] {OwnerClientId} 설치: {item.Id} @ {_position} (-{item.Cost})");
+            BuyResultRpc(true);
+        }
+
+        /// <summary>설치 지점이 비어 있는가 — 클라 고스트와 동일 규칙(서버 권위 검증).</summary>
+        public static bool PlacementFits(ShopItemId _itemId, Vector3 _position)
+        {
+            Vector3 half = HalfExtentsOf(_itemId);
+            Vector3 center = _position + Vector3.up * half.y;
+            // 바닥(Ignore Raycast 레이어 2)은 제외 — 벽·구조물·플레이어만 방해물로 본다
+            return !Physics.CheckBox(center, half * 0.95f, Quaternion.identity, ~(1 << 2),
+                QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>설치물 반경(고스트 표시·겹침 판정 공용).</summary>
+        public static Vector3 HalfExtentsOf(ShopItemId _itemId)
+        {
+            return _itemId == ShopItemId.Fortress
+                ? new Vector3(1.2f, 0.6f, 1.2f)   // 요새 풋프린트 2.4²·벽높이 1.2
+                : new Vector3(0.25f, 0.25f, 0.25f); // 미끼(캡슐 0.4²)
         }
 
         // 구매자에게만 결과음 — 성공 카칭 / 실패 붑
