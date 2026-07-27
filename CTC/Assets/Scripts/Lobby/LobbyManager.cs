@@ -60,6 +60,7 @@ namespace CTC.Runtime.Lobby
         {
             int idx = IndexOf(clientId);
             if (idx >= 0) _players.RemoveAt(idx);
+            Debug.Log($"[Lobby] 접속 해제 client={clientId} → 인원 {_players.Count}");
         }
 
         private void EnsureEntry(ulong clientId)
@@ -67,6 +68,7 @@ namespace CTC.Runtime.Lobby
             if (IndexOf(clientId) < 0)
             {
                 _players.Add(new LobbyPlayerState { ClientId = clientId, Role = RoleId.None });
+                Debug.Log($"[Lobby] 접속 client={clientId} → 인원 {_players.Count}");
             }
         }
 

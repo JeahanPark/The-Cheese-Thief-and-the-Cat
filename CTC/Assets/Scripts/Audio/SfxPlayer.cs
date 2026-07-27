@@ -52,8 +52,8 @@ namespace CTC.Runtime.Audio
             if (s_Instance == this) s_Instance = null;
         }
 
-        /// <summary>월드 위치 3D 원샷 — 리스너(자기 카메라) 거리에 따라 감쇠.</summary>
-        public static void PlayAt(SfxId _id, Vector3 _position, float _volume = 1f)
+        /// <summary>월드 위치 3D 원샷 — 리스너(자기 카메라) 거리에 따라 감쇠. maxDistance로 가청 반경 조절.</summary>
+        public static void PlayAt(SfxId _id, Vector3 _position, float _volume = 1f, float _maxDistance = WORLD_MAX_DISTANCE)
         {
             AudioClip clip = ClipOf(_id);
             if (clip == null) return;
@@ -66,7 +66,7 @@ namespace CTC.Runtime.Audio
             source.spatialBlend = 1f;
             source.rolloffMode = AudioRolloffMode.Linear;
             source.minDistance = WORLD_MIN_DISTANCE;
-            source.maxDistance = WORLD_MAX_DISTANCE;
+            source.maxDistance = _maxDistance;
             source.Play();
             Destroy(go, clip.length + 0.1f);
         }

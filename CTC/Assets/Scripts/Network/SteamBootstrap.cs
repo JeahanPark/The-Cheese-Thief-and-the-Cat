@@ -15,9 +15,7 @@ namespace CTC.Runtime.Networking
 
         private void Awake()
         {
-            // 멀티 필수: 백그라운드 창도 계속 갱신 — 미설정 시 알탭한 클라가 얼어 NGO 타임아웃으로 튕김
-            Application.runInBackground = true;
-
+            // runInBackground는 Core.AppBootstrap이 씬 로드 전에 설정 (여기선 중복 설정 안 함)
             DontDestroyOnLoad(gameObject);
             TryInit();
         }

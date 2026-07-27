@@ -264,6 +264,7 @@ namespace CTC.Editor
                 {
                     root.AddComponent<MousePopgun>();
                     root.AddComponent<MouseDash>();
+                    root.AddComponent<CTC.Runtime.Audio.FarmingSfx>(); // 수입 짤랑 3D 공개음(20m)
                 }
 
                 // 발소리 — 3D 루프(거리 감쇠), FootstepPlayer가 이동 속도로 재생 제어
