@@ -31,6 +31,26 @@ namespace WesQA
             Debug.Log("[WesQA] server stopped");
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// 도메인 리로드·플레이 종료 전에 소켓을 반드시 닫는다 — 리로드는 static 참조만 날려서
+        /// 리스너가 포트를 쥔 채 고아가 되고, 이후 모든 QA가 SocketException으로 막혔다(2026-07-27 원인 규명).
+        /// </summary>
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void HookEditorLifecycle()
+        {
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= StopServer;
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += StopServer;
+            UnityEditor.EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            UnityEditor.EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        private static void OnPlayModeChanged(UnityEditor.PlayModeStateChange _state)
+        {
+            if (_state == UnityEditor.PlayModeStateChange.ExitingPlayMode) StopServer();
+        }
+#endif
+
         // M4: MPPM 가상 플레이어 태그 `wes<N>`(예 wes1, wes2)에서 N을 파싱해 인덱스로 사용.
         // [CTC 이식 수정] 태그 미설정 폴백 — 메인 에디터 = 0, 태그 없는 클론 = 1.
         // (기존엔 클론도 0 폴백이라 메인 에디터와 포트 5001 바인드 충돌 → SocketException)

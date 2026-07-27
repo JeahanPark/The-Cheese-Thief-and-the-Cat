@@ -219,6 +219,23 @@ namespace CTC.Runtime.Testing
         public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
         public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
 
+        /// <summary>위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용.</summary>
+        public void TestPlaceFortressAt(float _x, float _z) => PlaceLocal(ShopItemId.Fortress, _x, _z);
+
+        public void TestPlaceDecoyAt(float _x, float _z) => PlaceLocal(ShopItemId.Decoy, _x, _z);
+
+        private static void PlaceLocal(ShopItemId _itemId, float _x, float _z)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var shop = local != null ? local.GetComponent<ShopController>() : null;
+            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
+
+            var pos = new UnityEngine.Vector3(_x, local.transform.position.y, _z);
+            shop.BuyAt(_itemId, pos);
+            GameDebug.Log($"[TestManager] PlaceLocal({_itemId}) @ {pos} 요청");
+        }
+
         private static void BuyLocal(ShopItemId _itemId)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;

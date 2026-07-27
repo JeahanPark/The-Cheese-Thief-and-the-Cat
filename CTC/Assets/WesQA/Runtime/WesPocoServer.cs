@@ -19,16 +19,53 @@ namespace WesQA
         private Thread _accept;
         private volatile bool _running;
         private readonly ConcurrentQueue<Action> _mainThread = new ConcurrentQueue<Action>();
+        // 수락된 연결 추적 — Stop()에서 강제로 닫아야 포트가 풀린다.
+        // (클라가 비정상 종료하면 ClientLoop이 Read에서 블로킹된 채 남아 소켓이 포트를 계속 점유)
+        private readonly System.Collections.Generic.List<TcpClient> _clients =
+            new System.Collections.Generic.List<TcpClient>();
         private GameObject _pump;
         private WesQAPump _pumpComp;
 
         public WesPocoServer(int port) { _port = port; }
 
+        /// <summary>실제 바인드된 포트(폴백 포함). 클라이언트가 읽는 공유 파일에 기록된다.</summary>
+        public int BoundPort { get; private set; }
+
+        private const int PORT_FALLBACK_ATTEMPTS = 5;
+        private const int PORT_FALLBACK_STRIDE = 10; // 인스턴스 간(±1) 충돌 없이 건너뛰기
+
         public void Start()
         {
             _running = true;
-            _listener = new TcpListener(IPAddress.Loopback, _port);
-            _listener.Start();
+
+            // 고아 리스너(도메인 리로드로 참조를 잃은 소켓)가 기본 포트를 쥐고 있어도 QA가 막히지 않게
+            // 포트를 건너뛰며 바인드하고 실제 포트를 파일로 알린다 — NGO HostPortFallback과 같은 패턴.
+            // (Windows는 살아있는 리스닝 소켓을 SO_REUSEADDR로도 가로챌 수 없어 회수는 불가)
+            for (int attempt = 0; attempt < PORT_FALLBACK_ATTEMPTS; attempt++)
+            {
+                int port = _port + attempt * PORT_FALLBACK_STRIDE;
+                _listener = new TcpListener(IPAddress.Loopback, port);
+                try
+                {
+                    _listener.Start();
+                    BoundPort = port;
+                    if (attempt > 0) Debug.LogWarning($"[WesQA] 포트 {_port} 점유 — {port}로 폴백");
+                    break;
+                }
+                catch (SocketException)
+                {
+                    _listener = null;
+                }
+            }
+
+            if (_listener == null)
+            {
+                _running = false;
+                Debug.LogError($"[WesQA] 포트 {_port}~{_port + (PORT_FALLBACK_ATTEMPTS - 1) * PORT_FALLBACK_STRIDE} " +
+                               "전부 바인드 실패 — Unity 에디터 재시작 필요");
+                return;
+            }
+            WritePortFile();
             _accept = new Thread(AcceptLoop) { IsBackground = true };
             _accept.Start();
 
@@ -41,7 +78,34 @@ namespace WesQA
         public void Stop()
         {
             _running = false;
+            // TcpListener.Stop()만으로는 accept 스레드가 블로킹된 채면 핸들이 남아
+            // 포트가 LISTENING으로 고아가 된다(2026-07-27 실측) — 하부 소켓을 직접 닫는다
+            try { _listener?.Server?.Close(0); } catch { }
             try { _listener?.Stop(); } catch { }
+            _listener = null;
+
+            // 연결된 클라이언트까지 끊어야 로컬 포트가 즉시 해제된다 —
+            // 이걸 빠뜨리면 다음 플레이에서 SocketException(주소 사용 중)으로 QA가 막힌다
+            lock (_clients)
+            {
+                foreach (TcpClient client in _clients)
+                {
+                    try { client.Close(); } catch { }
+                }
+                _clients.Clear();
+            }
+        }
+
+        // 파이썬 클라이언트가 읽는 실제 포트 — %TEMP%/ctc-mppm-qa/wesqa_port_<기본포트>.txt
+        private void WritePortFile()
+        {
+            try
+            {
+                string dir = Path.Combine(Path.GetTempPath(), "ctc-mppm-qa");
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, $"wesqa_port_{_port}.txt"), BoundPort.ToString());
+            }
+            catch (IOException) { }
         }
 
         internal void PumpMainThread()
@@ -56,6 +120,7 @@ namespace WesQA
                 try
                 {
                     var client = _listener.AcceptTcpClient();
+                    lock (_clients) _clients.Add(client);
                     new Thread(() => ClientLoop(client)) { IsBackground = true }.Start();
                 }
                 catch { if (_running) Thread.Sleep(50); }
@@ -63,6 +128,12 @@ namespace WesQA
         }
 
         private void ClientLoop(TcpClient client)
+        {
+            try { ClientLoopInner(client); }
+            finally { lock (_clients) _clients.Remove(client); }
+        }
+
+        private void ClientLoopInner(TcpClient client)
         {
             using (client)
             using (var stream = client.GetStream())

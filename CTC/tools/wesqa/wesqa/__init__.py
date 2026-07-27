@@ -1,4 +1,7 @@
 # coding=utf-8
+import os
+import tempfile
+
 from poco.pocofw import Poco
 from .agent import WesPocoAgent
 
@@ -6,6 +9,17 @@ __all__ = ["WesPoco", "connect_all"]
 
 DEFAULT_HOST = "localhost"
 BASE_PORT = 5001
+
+
+def _resolve_port(base_port):
+    """게임이 기록한 실제 포트를 읽는다. 고아 소켓 때문에 폴백 포트로 떴을 수 있다."""
+    path = os.path.join(tempfile.gettempdir(), "ctc-mppm-qa",
+                        "wesqa_port_%d.txt" % base_port)
+    try:
+        with open(path) as f:
+            return int(f.read().strip())
+    except (IOError, OSError, ValueError):
+        return base_port
 
 
 def connect_all(count, host="localhost", **options):
@@ -17,7 +31,7 @@ class WesPoco(Poco):
     """게임 내 WesPocoServer에 직접 붙는 Poco. 포트 = BASE_PORT + instance."""
 
     def __init__(self, instance=0, host=DEFAULT_HOST, port=None, **options):
-        addr = (host, port if port is not None else BASE_PORT + instance)
+        addr = (host, port if port is not None else _resolve_port(BASE_PORT + instance))
         agent = WesPocoAgent(addr)
         options.setdefault("action_interval", 0.5)
         options["reevaluate_volatile_attributes"] = True
