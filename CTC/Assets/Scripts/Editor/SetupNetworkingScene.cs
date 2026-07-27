@@ -1063,6 +1063,28 @@ namespace CTC.Editor
             SetRef(matchSfx, "m_Lobby", lobby);
             SetRef(matchSfx, "m_Match", match);
 
+            // 인게임 디버그 콘솔(yasirkula, MIT) — 빌드에서 로그 확인용. 기본 최소화, ` 키 토글.
+            // 원격 테스터가 [SteamLobby]/[Lobby] 로그를 화면에서 바로 볼 수 있어야 원인 특정이 된다.
+            var consolePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Packages/com.yasirkula.ingamedebugconsole/Plugins/IngameDebugConsole/IngameDebugConsole.prefab");
+            if (consolePrefab != null)
+            {
+                var console = (GameObject)PrefabUtility.InstantiatePrefab(consolePrefab);
+                console.name = "IngameDebugConsole";
+                foreach (MonoBehaviour mb in console.GetComponentsInChildren<MonoBehaviour>(true))
+                {
+                    if (mb == null || mb.GetType().Name != "DebugLogManager") continue;
+                    var so = new SerializedObject(mb);
+                    SerializedProperty toggle = so.FindProperty("toggleWithKey");
+                    if (toggle != null) toggle.boolValue = true;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[Setup] IngameDebugConsole 프리팹 없음 — 패키지 확인");
+            }
+
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
             var stats = statsGo.AddComponent<MatchStatsRecorder>();
