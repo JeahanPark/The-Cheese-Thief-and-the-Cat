@@ -6,8 +6,9 @@
 
 ## 코딩 규칙
 
-- `m_` 멤버 변수 접두 · `_` 매개변수 접두 · `Co` 코루틴 접두 · public 필드 금지(`[SerializeField]` + 프로퍼티) · 상수 `UPPER_SNAKE_CASE` · Manager/Controller/Worker/Component 아키텍처 — 상세는 `C:/GitFork/WES_Project/WES/.claude/agents/client.md`의 "WES 코딩 규칙" 섹션 참조 (동일 내용: `C:/GitFork/claude-gamedev-kit/gamedev-team/agents/client.md`)
-- **적용 범위**: 신규 코드부터 적용. 기존 `Assets/Scripts/` 파일 다수는 `_camelCase` 필드 컨벤션 — 기존 파일 일괄 리네임은 사용자 승인 필요.
+- `m_` 멤버 변수 접두 · `_` 매개변수 접두 · `Co` 코루틴 접두 · public 필드 금지(`[SerializeField]` + 프로퍼티) · 상수 `UPPER_SNAKE_CASE` · Manager/Controller/Worker/Component 아키텍처 — 상세는 [claude-gamedev-kit/gamedev-team/agents/client.md](C:/GitFork/claude-gamedev-kit/gamedev-team/agents/client.md)의 "코딩 규칙" 섹션 참조.
+  - WES 프로젝트 사본(`C:/GitFork/WES_Project/WES/.claude/agents/client.md`)은 **참조하지 않는다** — WES 전용으로 하드코딩돼 있고 CTC에 없는 경로(`Assets/CSVInfo/`, `document/design/client-spec/`)를 전제한다.
+- **적용 범위**: 신규 코드부터 적용. 기존 파일 일괄 리네임은 **1차 최종본 이후 코드 전면 재편**에서 일괄 처리한다 — [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 2단계. 그 전까지 기존 파일의 컨벤션은 건드리지 않는다.
 
 ## unity-scanner (에셋 YAML 탐색 — 토큰 절약)
 

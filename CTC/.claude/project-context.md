@@ -31,8 +31,8 @@ description: This project's specifics. gamedev-team agents and orchestration ski
 - **usage_report**: <리소스 사용 리포트 (없으면 비움)>
 - **asset_backlog**: <외부 자산 백로그 폴더 (없으면 비움)>
 - **source**: Assets/Scripts/
-- **csv**: Assets/CSVInfo/
-- **gameresource**: Assets/GameResource/
+- **csv**: <CTC는 CSV 데이터 파이프라인을 안 쓴다 — 정적 카탈로그(ShopLogic.CATALOG)와 ScriptableObject(MapCandidatePool)로 관리>
+- **gameresource**: <CTC는 GameResource 폴더가 없다 — 에셋은 Assets/Prefabs·Materials·Audio 아래에 직접 둔다>
 - **vault**: <auto-doc 대상 Obsidian vault (안 쓰면 비움)>
 - **wesqa**: tools/wesqa/
 
