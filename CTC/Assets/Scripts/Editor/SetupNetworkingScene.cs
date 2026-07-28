@@ -623,6 +623,32 @@ namespace CTC.Editor
         }
 
 
+        // 설치 미리보기 머티리얼을 '에셋'으로 만든다.
+        // 런타임 Shader.Find는 빌드에서 셰이더가 스트리핑돼 null을 반환한다 — 에셋이 참조하면 살아남는다.
+        private static Material CreateGhostMaterialAsset()
+        {
+            const string path = MaterialsDir + "/M_PlacementGhost.mat";
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                Debug.LogError("[SetupNetworkingScene] URP Unlit 셰이더를 못 찾음 — 고스트 머티리얼 생성 실패");
+                return null;
+            }
+
+            var mat = new Material(shader) { name = "M_PlacementGhost" };
+            mat.SetFloat("_Surface", 1f); // Transparent
+            mat.SetFloat("_Blend", 0f);   // Alpha
+            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_ZWrite", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
+        }
+
         private static Material GridboxMaterial(string name)
         {
             string path = $"{GridboxUrpDir}/Prototype_512x512_{name}.mat";
@@ -801,6 +827,13 @@ namespace CTC.Editor
             SetRefArray(hotbar, "m_SlotLabels", slotLabels);
             SetRefArray(hotbar, "m_SlotCosts", slotCosts);
             SetRef(hotbar, "m_Toast", toastText);
+            SetRef(hotbar, "m_GhostMaterialSource", CreateGhostMaterialAsset());
+
+            // ESC 종료 — 빌드에는 창을 닫는 것 말고 나가는 방법이 없었다.
+            // 배치 중일 땐 ESC가 배치 취소라 핫바를 참조해 구분한다.
+            var quitGo = new GameObject("QuitOnEscape");
+            var quit = quitGo.AddComponent<CTC.Runtime.Core.QuitOnEscape>();
+            SetRef(quit, "m_Hotbar", hotbar);
 
             // 결과 패널 (매치 종료 시 ResultHud가 표시)
             var resultPanel = new GameObject("ResultPanel", typeof(RectTransform));

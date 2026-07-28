@@ -94,6 +94,12 @@ namespace Netcode.Transports.Facepunch
         {
             connectedClients = new Dictionary<ulong, Client>();
 
+            // [CTC 패치] 이미 초기화됐으면 건너뛴다.
+            // CTC는 게임 시작 시 SteamBootstrap이 SteamClient.Init을 먼저 부른다. 원본은 무조건
+            // 다시 불러서 "already initialized" 예외를 던지고 LogError로 뿜었다 — 동작에는 문제가
+            // 없지만 빌드 로그가 빨갛게 차서 테스터가 진짜 오류로 오인한다.
+            if (SteamClient.IsValid) return;
+
             try
             {
                 SteamClient.Init(steamAppId, false);

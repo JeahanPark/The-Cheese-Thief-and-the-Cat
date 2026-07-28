@@ -34,6 +34,11 @@ namespace CTC.Runtime.Economy
         [SerializeField] private TMP_Text[] m_SlotLabels;  // "1 새총"
         [SerializeField] private TMP_Text[] m_SlotCosts;   // "150" / "보유"
         [SerializeField] private TMP_Text m_Toast;
+        // 설치 미리보기 원본 — 에셋으로 둬야 빌드에서 셰이더가 스트리핑되지 않는다
+        [SerializeField] private Material m_GhostMaterialSource;
+
+        /// <summary>고스트 배치 중인가 — ESC가 종료 대신 배치 취소로 쓰여야 하는지 판단(QuitOnEscape).</summary>
+        public bool IsPlacing => m_PlacingId != ShopItemId.None;
 
         private float m_ToastUntil;
         private ShopItemId m_PlacingId = ShopItemId.None;
@@ -149,6 +154,17 @@ namespace CTC.Runtime.Economy
         private void BeginPlacement(ShopItemId _itemId, string _name)
         {
             CancelPlacement();
+
+            // 머티리얼부터 확보한다 — 실패하면 배치 모드에 들어가지 않는다.
+            // (예전엔 고스트를 만든 뒤 머티리얼에서 터져 m_PlacingId만 남았고,
+            //  다음 프레임부터 UpdatePlacement가 null을 참조해 매 프레임 예외를 뿜었다)
+            if (m_GhostMaterial == null) m_GhostMaterial = CreateGhostMaterial();
+            if (m_GhostMaterial == null)
+            {
+                Say("설치 미리보기를 만들 수 없다");
+                return;
+            }
+
             m_PlacingId = _itemId;
 
             Vector3 half = ShopController.HalfExtentsOf(_itemId);
@@ -156,8 +172,6 @@ namespace CTC.Runtime.Economy
             m_Ghost.name = "PlacementGhost";
             Destroy(m_Ghost.GetComponent<Collider>()); // 고스트는 물리 무간섭
             m_Ghost.transform.localScale = half * 2f;
-
-            if (m_GhostMaterial == null) m_GhostMaterial = CreateGhostMaterial();
             m_Ghost.GetComponent<Renderer>().sharedMaterial = m_GhostMaterial;
 
             Say($"{_name} 배치 — 좌클릭 설치 / 우클릭 취소");
@@ -216,17 +230,19 @@ namespace CTC.Runtime.Economy
         }
 
         // URP Unlit 반투명 — 런타임 생성이라 머티리얼 에셋 없이 쓴다
-        private static Material CreateGhostMaterial()
+        // 원본은 씬 생성기가 만든 에셋(m_GhostMaterialSource)이고, 여기선 색을 바꿔 쓸 사본만 만든다.
+        //
+        // 예전엔 Shader.Find("Universal Render Pipeline/Unlit")로 런타임 생성했는데,
+        // 빌드에서는 그 셰이더를 참조하는 에셋이 없어 스트리핑돼 null이 반환됐다 →
+        // new Material(null)이 터지고 설치가 통째로 막혔다(에디터에서는 재현 안 됨).
+        private Material CreateGhostMaterial()
         {
-            var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-            mat.SetFloat("_Surface", 1f); // Transparent
-            mat.SetFloat("_Blend", 0f);   // Alpha
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_ZWrite", 0f);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-            return mat;
+            if (m_GhostMaterialSource == null)
+            {
+                Debug.LogError("[ShopHotbar] 고스트 머티리얼 미배선 — Setup Networking Scene 재실행 필요");
+                return null;
+            }
+            return new Material(m_GhostMaterialSource);
         }
 
         private void Say(string _message)

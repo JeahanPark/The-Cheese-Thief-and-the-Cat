@@ -13,9 +13,18 @@ namespace CTC.Runtime.Audio
         [SerializeField] private LobbyManager m_Lobby;
         [SerializeField] private AudioSource m_Source;
         [SerializeField] private bool m_PlayWhenGameStopped;
+        // 임시 소등(2026-07-28 요청) — 곡이 확정되기 전까지 배경음을 끈다.
+        // 효과음은 그대로 둔다(위치 정보 설계의 일부라 꺼지면 게임이 달라진다).
+        [SerializeField] private bool m_Muted = true;
 
         private void Update()
         {
+            if (m_Muted)
+            {
+                if (m_Source.isPlaying) m_Source.Stop();
+                return;
+            }
+
             bool gameRunning = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
             bool playing = m_PlayWhenGameStopped ? !gameRunning : gameRunning;
             if (playing && !m_Source.isPlaying)
