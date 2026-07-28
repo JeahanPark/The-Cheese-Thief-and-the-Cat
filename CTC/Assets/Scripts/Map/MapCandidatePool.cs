@@ -65,11 +65,16 @@ namespace CTC.Runtime.Map
         // 바닥·경계벽 반경(m). 30×30이면 15.
         [SerializeField] private float m_HalfExtent = 15f;
         [SerializeField] private string m_DisplayName = "";
+        // 권장 쥐 수 — 넓은 맵에 인원이 적으면 고양이가 못 찾는다. 굽는 레이아웃에 그대로 새긴다.
+        [SerializeField] private int m_RecommendedMiceMin = 2;
+        [SerializeField] private int m_RecommendedMiceMax = 3;
 
         public int MinRooms => m_MinRooms;
         public int MaxRooms => m_MaxRooms;
         public float HalfExtent => m_HalfExtent;
         public string DisplayName => m_DisplayName;
+        public int RecommendedMiceMin => m_RecommendedMiceMin;
+        public int RecommendedMiceMax => m_RecommendedMiceMax;
 
         public IReadOnlyList<RoomCandidate> Rooms => m_Rooms;
         public IReadOnlyList<CorridorCandidate> Corridors => m_Corridors;
@@ -84,13 +89,16 @@ namespace CTC.Runtime.Map
             m_CheeseSlots = cheese; m_FortressSlots = fortress;
         }
 
-        /// <summary>확장 풀 생성 툴이 채우는 값 — 방 수 범위·캔버스 크기·표시 이름.</summary>
-        public void SetShape(int minRooms, int maxRooms, float halfExtent, string displayName)
+        /// <summary>확장 풀 생성 툴이 채우는 값 — 방 수 범위·캔버스 크기·표시 이름·권장 인원.</summary>
+        public void SetShape(int minRooms, int maxRooms, float halfExtent, string displayName,
+            int recommendedMiceMin, int recommendedMiceMax)
         {
             m_MinRooms = minRooms;
             m_MaxRooms = maxRooms;
             m_HalfExtent = halfExtent;
             m_DisplayName = displayName;
+            m_RecommendedMiceMin = recommendedMiceMin;
+            m_RecommendedMiceMax = recommendedMiceMax;
         }
     }
 }

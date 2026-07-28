@@ -82,7 +82,9 @@ namespace CTC.Editor
                 AssetDatabase.CreateAsset(pool, MapGeneratorWindow.ExpandedPoolPath);
             }
             pool.Set(rooms, corridors, mazes, cheese, fortress);
-            pool.SetShape(MIN_ROOMS, MAX_ROOMS, HALF_EXTENT, "확장 맵 (42×42)");
+            // 권장 쥐 4~6 — 면적이 2배라 1v2~1v3이면 고양이가 쥐를 못 찾고 타이머 만료(쥐 승)로 끝난다.
+            // 1인당 면적: 기본 맵 1v3이 225㎡, 확장 맵 1v2면 588㎡로 2.6배 희박해진다.
+            pool.SetShape(MIN_ROOMS, MAX_ROOMS, HALF_EXTENT, "확장 맵 (42×42)", 4, 6);
             EditorUtility.SetDirty(pool);
             AssetDatabase.SaveAssets();
 

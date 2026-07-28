@@ -305,3 +305,5 @@ MonoBehaviour:
   m_MaxRooms: 9
   m_HalfExtent: 21
   m_DisplayName: "\uD655\uC7A5 \uB9F5 (42\xD742)"
+  m_RecommendedMiceMin: 4
+  m_RecommendedMiceMax: 6

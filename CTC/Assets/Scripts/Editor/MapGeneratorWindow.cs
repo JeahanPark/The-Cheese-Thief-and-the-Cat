@@ -51,9 +51,11 @@ namespace CTC.Editor
             {
                 var r = MapGenerator.Generate(dto, s);
                 if (r == null) continue;
-                SaveLayout(layoutPath, s, "sample", r, pool.HalfExtent, displayName);
+                SaveLayout(layoutPath, s, "sample", r, pool.HalfExtent, displayName,
+                    pool.RecommendedMiceMin, pool.RecommendedMiceMax);
                 Debug.Log($"[MapGenerator] {displayName} 저장 (seed {s}) — 방 {r.Rooms.Count}·통로 {r.Corridors.Count}" +
-                          $"·치즈 {r.Cheese.Count}·요새 {r.Fortresses.Count}·반경 {pool.HalfExtent}");
+                          $"·치즈 {r.Cheese.Count}·요새 {r.Fortresses.Count}·반경 {pool.HalfExtent}" +
+                          $"·권장 쥐 {pool.RecommendedMiceMin}~{pool.RecommendedMiceMax}");
                 return;
             }
             Debug.LogError($"[MapGenerator] 5000시드 내 유효 맵 실패 — {poolPath} 점검 필요");
@@ -123,13 +125,15 @@ namespace CTC.Editor
         // 생성 결과(순수) → MapLayout 에셋. 창·시안 빌더 공용.
         // halfExtent·displayName은 풀에서 온다 — 런타임 MapBuilder가 바닥·경계벽을 이걸로 만든다.
         public static void SaveLayout(string path, int seed, string source, MapGenerator.LayoutResult r,
-            float halfExtent = 15f, string displayName = "")
+            float halfExtent = 15f, string displayName = "",
+            int recommendedMiceMin = 2, int recommendedMiceMax = 3)
         {
             if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Maps"))
                 AssetDatabase.CreateFolder("Assets/Prefabs", "Maps");
             var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
             if (layout == null) { layout = ScriptableObject.CreateInstance<MapLayout>(); AssetDatabase.CreateAsset(layout, path); }
-            layout.Set(seed, source, r.Rooms, r.Corridors, r.Cheese, r.Fortresses, halfExtent, displayName);
+            layout.Set(seed, source, r.Rooms, r.Corridors, r.Cheese, r.Fortresses, halfExtent, displayName,
+                recommendedMiceMin, recommendedMiceMax);
             EditorUtility.SetDirty(layout);
             AssetDatabase.SaveAssets();
         }

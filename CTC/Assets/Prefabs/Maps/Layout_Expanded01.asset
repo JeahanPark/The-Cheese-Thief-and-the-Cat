@@ -16,6 +16,8 @@ MonoBehaviour:
   m_Source: sample
   m_HalfExtent: 21
   m_DisplayName: "\uD655\uC7A5 \uB9F5 (42\xD742)"
+  m_RecommendedMiceMin: 4
+  m_RecommendedMiceMax: 6
   m_Rooms:
   - Id: R3
     Center: {x: 0, y: 2.1}

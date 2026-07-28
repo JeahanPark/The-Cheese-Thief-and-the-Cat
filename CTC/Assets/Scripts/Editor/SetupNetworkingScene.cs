@@ -255,7 +255,7 @@ namespace CTC.Editor
                 root.AddComponent<NetworkObject>();
 
                 var health = root.AddComponent<Health>();
-                SetInt(health, "m_MaxHp", 300);
+                SetInt(health, "m_MaxHp", ShopLogic.FORTRESS_HP);
 
                 var roleTag = root.AddComponent<RoleTag>();
                 SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
@@ -826,25 +826,46 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
 
-            // 조작키 안내 (좌하단 — 역할별, ControlsHud가 게임 중 표시)
+            // 조작키 + 핫바 항목 설명 (좌하단 — 역할별, ControlsHud가 게임 중 표시).
+            // 쥐는 6항목이라 세로가 길다 — 높이를 넉넉히 잡는다.
             var controlsTextGo = new GameObject("ControlsText");
             controlsTextGo.transform.SetParent(canvasGo.transform, false);
             var controlsText = controlsTextGo.AddComponent<TextMeshProUGUI>();
             controlsText.text = string.Empty;
-            controlsText.fontSize = 22f;
+            controlsText.fontSize = 19f;
+            controlsText.lineSpacing = 12f;
             controlsText.alignment = TextAlignmentOptions.BottomLeft;
-            controlsText.color = new Color(1f, 1f, 1f, 0.75f);
+            controlsText.color = new Color(1f, 1f, 1f, 0.85f);
             var controlsRect = controlsTextGo.GetComponent<RectTransform>();
             controlsRect.anchorMin = new Vector2(0f, 0f);
             controlsRect.anchorMax = new Vector2(0f, 0f);
             controlsRect.pivot = new Vector2(0f, 0f);
             controlsRect.anchoredPosition = new Vector2(24f, 20f);
-            controlsRect.sizeDelta = new Vector2(640f, 64f);
+            controlsRect.sizeDelta = new Vector2(900f, 220f);
             controlsTextGo.SetActive(false);
 
             var controlsHud = canvasGo.AddComponent<ControlsHud>();
             SetRef(controlsHud, "m_Lobby", lobby);
             SetRef(controlsHud, "m_Text", controlsText);
+
+            // 맵 설명 (좌하단 — 로비에서만. 게임이 시작되면 같은 자리를 조작키가 채운다)
+            var mapInfoGo = new GameObject("MapInfoText");
+            mapInfoGo.transform.SetParent(canvasGo.transform, false);
+            var mapInfoText = mapInfoGo.AddComponent<TextMeshProUGUI>();
+            mapInfoText.text = string.Empty;
+            mapInfoText.fontSize = 20f;
+            mapInfoText.alignment = TextAlignmentOptions.BottomLeft;
+            mapInfoText.lineSpacing = 8f;
+            var mapInfoRect = mapInfoGo.GetComponent<RectTransform>();
+            mapInfoRect.anchorMin = mapInfoRect.anchorMax = new Vector2(0f, 0f);
+            mapInfoRect.pivot = new Vector2(0f, 0f);
+            mapInfoRect.anchoredPosition = new Vector2(24f, 20f);
+            mapInfoRect.sizeDelta = new Vector2(560f, 130f);
+            mapInfoGo.SetActive(false);
+
+            var mapInfoHud = canvasGo.AddComponent<MapInfoHud>();
+            SetRef(mapInfoHud, "m_Lobby", lobby);
+            SetRef(mapInfoHud, "m_Text", mapInfoText);
 
             // 매치 타이머 (상단 중앙 — v3 안전 타이머)
             var timerTextGo = new GameObject("TimerText");

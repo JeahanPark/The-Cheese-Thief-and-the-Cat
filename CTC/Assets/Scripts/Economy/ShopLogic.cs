@@ -54,6 +54,7 @@ namespace CTC.Runtime.Economy
         public const int POUNCE_DAMAGE_PER_STACK = 10;
         public const float SPEED_PER_STACK = 0.2f; // 기본 이속 6.4 상향과 동반 하향 — 만렙 7.4 (8.5는 도주 무의미)
         public const int FORTRESS_HEAL_PER_TICK = 10;
+        public const int FORTRESS_HP = 300; // 씬 생성기가 요새 프리팹에 굽는 값과 같아야 한다
         public const float FORTRESS_HEAL_RADIUS = 1.0f; // 요새 내부(입구 밖 미적용)
         public const float DECOY_LIFETIME_SECONDS = 30f;
 
@@ -92,6 +93,36 @@ namespace CTC.Runtime.Economy
             new WeaponStats(12, 0.8f, 10f),  // 1 새총
             new WeaponStats(5, 0.15f, 10f),  // 2 기관총급
         };
+
+        /// <summary>
+        /// 핫바 항목 한 줄 설명 — 이름·가격만으로는 뭘 사는지 알 수 없다(특히 창고·미끼).
+        /// 수치를 그대로 적는다: 플레이어가 "얼마짜리가 얼마를 해주는가"로 판단하게.
+        /// </summary>
+        public static string DescriptionOf(ShopItemId _id)
+        {
+            switch (_id)
+            {
+                case ShopItemId.Slingshot:
+                    return "딱총을 새총으로 — 5뎀 → 12뎀, 사거리 10m";
+                case ShopItemId.MachineGun:
+                    return "연사 무기 — 초당 33뎀. 2정이 모이면 고양이를 잡을 수 있다";
+                case ShopItemId.Dash:
+                    return "LShift 순간 가속 — 쫓길 때 거리를 벌린다";
+                case ShopItemId.Decoy:
+                    return $"가짜 쥐를 놓는다 — {DECOY_LIFETIME_SECONDS:F0}초 뒤 사라짐";
+                case ShopItemId.Fortress:
+                    return $"쥐만 드나드는 벙커 — 안에서 초당 {FORTRESS_HEAL_PER_TICK} 회복, 외벽 HP {FORTRESS_HP}";
+                case ShopItemId.Warehouse:
+                    return $"{WarehouseTickSeconds:F0}초마다 치즈 {WAREHOUSE_TICK_CHEESE} 생산 — " +
+                           $"자리를 비워도 벌리지만 소리로 위치가 팔린다 (HP {WAREHOUSE_MAX_HP}, 1인 1채)";
+                case ShopItemId.CatAttack:
+                    return $"덮치기 피해 +{POUNCE_DAMAGE_PER_STACK} (최대 {MAX_UPGRADE_STACKS}중첩)";
+                case ShopItemId.CatSpeed:
+                    return $"이동 속도 +{SPEED_PER_STACK:0.0} (최대 {MAX_UPGRADE_STACKS}중첩)";
+                default:
+                    return "";
+            }
+        }
 
         public static ShopItem Find(ShopItemId _id)
         {
