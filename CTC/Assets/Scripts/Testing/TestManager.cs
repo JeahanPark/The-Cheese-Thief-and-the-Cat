@@ -299,6 +299,55 @@ namespace CTC.Runtime.Testing
             GameDebug.Log("[TestManager] 전 치즈 지점 고갈");
         }
 
+        /// <summary>
+        /// QA: 목표 지점을 향해 실제로 걸어간다(지오메트리 통행 검수).
+        /// 텔레포트는 벽을 통과하므로 "길이 뚫려 있는가"는 걸어봐야만 알 수 있다.
+        /// </summary>
+        public void TestWalkTowards(float _x, float _z, float _seconds)
+        {
+            StartCoroutine(CoWalkTowards(new UnityEngine.Vector3(_x, 0f, _z), _seconds));
+        }
+
+        private IEnumerator CoWalkTowards(UnityEngine.Vector3 _target, float _seconds)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var move = local != null ? local.GetComponent<CTC.Runtime.Player.PlayerMovement>() : null;
+            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); yield break; }
+
+            float until = UnityEngine.Time.time + _seconds;
+            while (UnityEngine.Time.time < until)
+            {
+                UnityEngine.Vector3 to = _target - local.transform.position;
+                to.y = 0f;
+                if (to.sqrMagnitude < 1f) break;
+                move.DevSetMoveInput(to.normalized);
+                yield return null;
+            }
+            move.DevSetMoveInput(UnityEngine.Vector3.zero);
+        }
+
+        /// <summary>QA: 로컬 플레이어에서 좌표까지의 평면 거리.</summary>
+        public float TestGetDistanceTo(float _x, float _z)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) return -1f;
+
+            UnityEngine.Vector3 p = local.transform.position;
+            return UnityEngine.Vector2.Distance(new UnityEngine.Vector2(p.x, p.z), new UnityEngine.Vector2(_x, _z));
+        }
+
+        public float TestGetDistanceFromOrigin() => TestGetDistanceTo(0f, 0f);
+
+        /// <summary>QA: 로컬 플레이어의 높이 — 바닥이 없으면 음수로 떨어진다.</summary>
+        public float TestGetLocalY()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            return local != null ? local.transform.position.y : -999f;
+        }
+
         /// <summary>QA: 최고 등급 치즈 지점 위치 "x,z" — 맵마다 좌표가 달라 QA가 물어봐야 한다.</summary>
         public string TestGetBestCheeseSpotPos()
         {

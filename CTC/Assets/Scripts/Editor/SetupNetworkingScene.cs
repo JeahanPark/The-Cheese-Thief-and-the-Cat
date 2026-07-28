@@ -693,12 +693,15 @@ namespace CTC.Editor
             // 맵 선택 — 방장만 조작. 버튼 수는 MapLayoutPaths와 같다(비어 있으면 LobbyUI가 숨긴다)
             TMP_Text mapLabel = CreateTmpText("MapLabel", panel.transform, "맵",
                 22f, TextAlignmentOptions.Center, new Vector2(0f, -286f), new Vector2(420f, 30f));
+            // 라벨은 런타임에 LobbyUI가 MapLayout.DisplayName으로 덮어쓴다 — 여기선 자리만 잡는다.
+            // 폭(186)+간격(8)에 맞춰 배치해야 두 버튼이 겹치지 않는다.
             var mapButtons = new Object[MapLayoutPaths.Length];
+            const float MAP_BUTTON_WIDTH = 186f;
             for (int i = 0; i < MapLayoutPaths.Length; i++)
             {
-                float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * 210f;
+                float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * (MAP_BUTTON_WIDTH + 8f);
                 mapButtons[i] = CreateMuipButton(panel.transform, $"MapButton{i + 1}",
-                    System.IO.Path.GetFileNameWithoutExtension(MapLayoutPaths[i]), new Vector2(x, -330f));
+                    "-", new Vector2(x, -330f), MAP_BUTTON_WIDTH);
             }
 
             Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "Play as Mouse", new Vector2(0f, -400f));
@@ -997,7 +1000,8 @@ namespace CTC.Editor
         // 표준 UGUI 버튼(흰 배경 + TMP 라벨). MUIP 버튼은 런타임 상태 초기화가 세션에 따라
         // 깨지는 문제(비가시 버튼)와 한글 글리프·다중 라벨 이슈가 반복돼 그레이박스 단계에선
         // 플레인 UGUI로 통일 — 본 UI 패스에서 디자인 버튼으로 교체 전제.
-        private static Button CreateMuipButton(Transform parent, string name, string label, Vector2 anchoredPos)
+        private static Button CreateMuipButton(
+            Transform parent, string name, string label, Vector2 anchoredPos, float width = 380f)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -1006,7 +1010,7 @@ namespace CTC.Editor
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(380f, 56f);
+            rt.sizeDelta = new Vector2(width, 56f);
 
             var bg = go.AddComponent<Image>();
             bg.color = Color.white;

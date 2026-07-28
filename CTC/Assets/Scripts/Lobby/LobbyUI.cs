@@ -92,6 +92,11 @@ namespace CTC.Runtime.Lobby
                 mapButtons[i].interactable = isHost && i != selected;
                 var target = mapButtons[i].targetGraphic;
                 if (target != null) target.color = i == selected ? MAP_SELECTED : MAP_NORMAL;
+
+                // 버튼 라벨은 에셋 파일명이 아니라 맵의 표시 이름
+                var text = mapButtons[i].GetComponentInChildren<TMP_Text>();
+                string wanted = lobby.MapNameAt(i);
+                if (text != null && text.text != wanted) text.text = wanted;
             }
         }
     }

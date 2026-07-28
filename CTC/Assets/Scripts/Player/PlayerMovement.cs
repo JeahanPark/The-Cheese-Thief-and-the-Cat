@@ -24,8 +24,15 @@ namespace CTC.Runtime.Player
 
         private CharacterController _controller;
         private float _verticalVelocity;
+        private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
 
         public int SpeedStacks => _speedStacks.Value;
+
+        /// <summary>QA 전용 — 키보드 대신 이 방향으로 걷는다. 영벡터면 해제.</summary>
+        public void DevSetMoveInput(Vector3 _worldDirection)
+        {
+            m_DevMoveInput = _worldDirection;
+        }
 
         /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
         public void ServerAddSpeedStack()
@@ -84,6 +91,10 @@ namespace CTC.Runtime.Player
 
             float camYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : 0f;
             Vector3 dir = MovementInput.ToWorldDirection(h, v, camYaw);
+
+            // QA 자동 이동이 걸려 있으면 그 방향이 우선 — 지오메트리 통행 검수는
+            // 텔레포트가 아니라 실제로 걸어봐야만 알 수 있다(벽을 통과하지 않으므로)
+            if (m_DevMoveInput.sqrMagnitude > 0.0001f) dir = m_DevMoveInput;
 
             // 중력 — 접지 중엔 살짝 눌러 붙이고, 공중에선 가속 낙하
             if (_controller.isGrounded && _verticalVelocity < 0f) _verticalVelocity = -1f;
