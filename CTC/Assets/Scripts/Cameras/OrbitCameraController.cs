@@ -51,5 +51,22 @@ namespace CTC.Runtime.Cameras
             _orbital.HorizontalAxis.Value = _angles.x;
             _orbital.VerticalAxis.Value = _angles.y;
         }
+
+        /// <summary>QA 전용 — 마우스 없이 시점을 지정한다(차폐 페이드 검증).</summary>
+        public void DevSetAngles(float _yawDeg, float _pitchDeg)
+        {
+            _angles = new Vector2(
+                CameraOrbitLogic.WrapYaw(_yawDeg),
+                CameraOrbitLogic.ClampPitch(_pitchDeg, minPitch, maxPitch));
+            _orbital.HorizontalAxis.Value = _angles.x;
+            _orbital.VerticalAxis.Value = _angles.y;
+        }
+
+        /// <summary>QA 전용 — 카메라와 추적 대상의 실제 거리. 페이드 방식은 이 값이 상수여야 한다.</summary>
+        public float DevDistanceToTarget()
+        {
+            if (_cam.Follow == null) return -1f;
+            return Vector3.Distance(transform.position, _cam.Follow.position);
+        }
     }
 }

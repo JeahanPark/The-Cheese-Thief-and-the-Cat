@@ -54,12 +54,56 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void RoleCatalogIndices_MouseFiveInCatalogOrder()
+        public void RoleCatalogIndices_MouseSixInCatalogOrder()
         {
             var idx = ShopLogic.RoleCatalogIndices(RoleId.Mouse);
-            Assert.AreEqual(5, idx.Count);
+            Assert.AreEqual(6, idx.Count);
             Assert.AreEqual(ShopItemId.Slingshot, ShopLogic.CATALOG[idx[0]].Id);
             Assert.AreEqual(ShopItemId.Fortress, ShopLogic.CATALOG[idx[4]].Id);
+            Assert.AreEqual(ShopItemId.Warehouse, ShopLogic.CATALOG[idx[5]].Id);
+        }
+
+        [Test]
+        public void RoleCatalogIndices_FitsHotbar()
+        {
+            // 카탈로그가 슬롯보다 길어지면 조용히 잘린다 — 늘릴 때 HOTBAR_SLOTS도 같이 올려야 한다
+            Assert.LessOrEqual(ShopLogic.RoleCatalogIndices(RoleId.Mouse).Count, ShopLogic.HOTBAR_SLOTS);
+            Assert.LessOrEqual(ShopLogic.RoleCatalogIndices(RoleId.Cat).Count, ShopLogic.HOTBAR_SLOTS);
+        }
+
+        [Test]
+        public void Warehouse_IsMouseItemCosting150()
+        {
+            ShopItem item = ShopLogic.Find(ShopItemId.Warehouse);
+            Assert.AreEqual(RoleId.Mouse, item.Role);
+            Assert.AreEqual(150, item.Cost);
+        }
+
+        [Test]
+        public void Warehouse_PaysBackWithinMatch()
+        {
+            // 회수 = 가격 / 초당 생산. 판 길이(600s)보다 충분히 짧아야 살 이유가 있다.
+            float payback = ShopLogic.Find(ShopItemId.Warehouse).Cost
+                            / (float)ShopLogic.WAREHOUSE_INCOME_PER_SECOND;
+            Assert.AreEqual(75f, payback, 1e-4f);
+            Assert.Less(payback, CTC.Runtime.Match.MatchFlowLogic.MATCH_DURATION_SECONDS * 0.5f);
+        }
+
+        [Test]
+        public void WarehouseTick_DerivesFromIncomeAndChunk()
+        {
+            // 10개씩 초당 2 → 5초마다 1회. 연출이 너무 잦거나 뜸하지 않은 구간이어야 한다.
+            Assert.AreEqual(5f, ShopLogic.WarehouseTickSeconds, 1e-4f);
+            Assert.GreaterOrEqual(ShopLogic.WarehouseTickSeconds, 2f);
+            Assert.LessOrEqual(ShopLogic.WarehouseTickSeconds, 10f);
+        }
+
+        [Test]
+        public void WarehouseTick_KeepsTotalIncomeIntact()
+        {
+            // 덩어리 지급으로 바꿔도 총 수입은 초당 값 그대로여야 한다
+            float perSecond = ShopLogic.WAREHOUSE_TICK_CHEESE / ShopLogic.WarehouseTickSeconds;
+            Assert.AreEqual(ShopLogic.WAREHOUSE_INCOME_PER_SECOND, perSecond, 1e-4f);
         }
 
         [Test]
@@ -76,6 +120,7 @@ namespace CTC.Tests
         {
             Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Fortress));
             Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Decoy));
+            Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Warehouse));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Slingshot));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.CatSpeed));
         }

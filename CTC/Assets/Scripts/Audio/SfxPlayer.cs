@@ -27,6 +27,8 @@ namespace CTC.Runtime.Audio
         ShopDeny = 19,
         UiClick = 20,
         TimerWarn = 21,
+        WarehouseTick = 22,
+        CheeseDepleted = 23,
     }
 
     /// <summary>
@@ -84,6 +86,13 @@ namespace CTC.Runtime.Audio
             source.spatialBlend = 0f;
             source.Play();
             Destroy(go, clip.length + 0.1f);
+        }
+
+        /// <summary>QA용 — 해당 id에 배선된 클립 이름(미배선이면 빈 문자열). 무음 회귀를 잡는다.</summary>
+        public static string ClipNameOf(SfxId _id)
+        {
+            AudioClip clip = ClipOf(_id);
+            return clip != null ? clip.name : string.Empty;
         }
 
         private static AudioClip ClipOf(SfxId _id)

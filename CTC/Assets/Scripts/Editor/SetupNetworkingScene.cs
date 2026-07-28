@@ -35,6 +35,7 @@ namespace CTC.Editor
         private const string MousePrefabPath = PrefabDir + "/PlayerMouse.prefab";
         private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
         private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
+        private const string WarehousePrefabPath = PrefabDir + "/CheeseWarehouse.prefab";
         private const string GameScenePath = "Assets/Scenes/Game.unity";
         private const string ActiveLayoutPath = "Assets/Prefabs/Maps/Layout_Sketch01.asset";
 
@@ -65,22 +66,36 @@ namespace CTC.Editor
 
             GameObject fortressPrefab = CreateFortressPrefab();
 
+            // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
+            GameObject warehousePrefab = CreateStructurePrefab(
+                "CheeseWarehouse", WarehousePrefabPath, PrimitiveType.Cube,
+                GridboxMaterial("Yellow"), maxHp: ShopLogic.WAREHOUSE_MAX_HP,
+                scale: new Vector3(1f, 0.8f, 1f),
+                addExtras: _root =>
+                {
+                    var production = _root.AddComponent<WarehouseProduction>();
+                    SetRef(production, "m_ProduceVfx", CreateProduceVfx(_root));
+                });
+
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
                 ccHeight: 0.9f, ccRadius: 0.35f,
-                moveSpeed: 6.7f, runThreshold: 3.2f, fov: 70f, camDistance: 5f, // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26 2차)
+                // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26 2차)
+                // camDistance는 쥐와 동일한 3 — 5는 좁은 방에서 카메라가 상시 벽 밖이었다(2026-07-28).
+                // 고양이의 넓은 시야는 거리가 아니라 FOV(70)로 표현한다.
+                moveSpeed: 6.7f, runThreshold: 3.2f, fov: 70f, camDistance: 3f,
                 role: RoleId.Cat, maxHp: 1000,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
                 ccHeight: 0.5f, ccRadius: 0.22f,
                 moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
                 role: RoleId.Mouse, maxHp: 100,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab);
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab);
 
-            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
-            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 4종 + Game.unity 재생성 (맵: {ActiveLayoutPath})");
+            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 5종 + Game.unity 재생성 (맵: {ActiveLayoutPath})");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
@@ -133,7 +148,9 @@ namespace CTC.Editor
                 var body = GameObject.CreatePrimitive(primitive);
                 body.name = "Body";
                 body.transform.SetParent(root.transform, false);
-                body.transform.localPosition = new Vector3(0f, scale.y, 0f);
+                // 프리미티브 기본 높이가 캡슐·구·실린더는 2, 큐브는 1 — 밑면을 바닥(y=0)에 맞춘다
+                float unitHalfHeight = primitive == PrimitiveType.Cube ? 0.5f : 1f;
+                body.transform.localPosition = new Vector3(0f, scale.y * unitHalfHeight, 0f);
                 body.transform.localScale = scale;
                 if (material != null) body.GetComponent<Renderer>().sharedMaterial = material;
 
@@ -162,6 +179,53 @@ namespace CTC.Editor
         private const float SLOT_WIDTH = 132f;
         private const float SLOT_HEIGHT = 68f;
         private const float SLOT_GAP = 8f;
+
+        // 창고 생산 연출 — 지붕에서 노란 치즈 조각이 튀어오른다. 서버 지급 순간에 Play()로 1회 분출.
+        // 멀리서도 "저기서 벌고 있다"가 보여야 해서 위로 1m 가까이 솟는다(소리 가청 15m와 짝).
+        private static ParticleSystem CreateProduceVfx(GameObject _root)
+        {
+            var vfxGo = new GameObject("ProduceVfx");
+            vfxGo.transform.SetParent(_root.transform, false);
+            vfxGo.transform.localPosition = new Vector3(0f, 0.85f, 0f); // 큐브(높이 0.8) 지붕 바로 위
+
+            var ps = vfxGo.AddComponent<ParticleSystem>();
+            ParticleSystem.MainModule main = ps.main;
+            main.duration = 0.6f;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.startLifetime = 0.6f;
+            main.startSpeed = 2.2f;
+            main.startSize = 0.12f;
+            main.startColor = new Color(1f, 0.85f, 0.2f);
+            main.gravityModifier = 1.6f;
+            main.maxParticles = 32;
+
+            ParticleSystem.EmissionModule emission = ps.emission;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, 8) });
+
+            ParticleSystem.ShapeModule shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 22f;
+            shape.radius = 0.15f;
+            shape.rotation = new Vector3(-90f, 0f, 0f); // 위로
+
+            var renderer = vfxGo.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = GridboxMaterial("Yellow");
+            renderer.renderMode = ParticleSystemRenderMode.Mesh;
+            renderer.mesh = PrimitiveMesh(PrimitiveType.Cube);
+
+            return ps;
+        }
+
+        // 프리미티브 메시만 필요할 때 — 임시 오브젝트를 만들어 메시만 빼고 버린다.
+        private static Mesh PrimitiveMesh(PrimitiveType _type)
+        {
+            GameObject temp = GameObject.CreatePrimitive(_type);
+            Mesh mesh = temp.GetComponent<MeshFilter>().sharedMesh;
+            Object.DestroyImmediate(temp);
+            return mesh;
+        }
 
         private static GameObject CreateFortressPrefab()
         {
@@ -223,7 +287,7 @@ namespace CTC.Editor
             float ccHeight, float ccRadius,
             float moveSpeed, float runThreshold, float fov, float camDistance,
             RoleId role, int maxHp,
-            GameObject decoyPrefab, GameObject fortressPrefab)
+            GameObject decoyPrefab, GameObject fortressPrefab, GameObject warehousePrefab)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -263,6 +327,7 @@ namespace CTC.Editor
                 var shop = root.AddComponent<ShopController>();
                 SetRef(shop, "m_DecoyPrefab", decoyPrefab);
                 SetRef(shop, "m_FortressPrefab", fortressPrefab);
+                SetRef(shop, "m_WarehousePrefab", warehousePrefab);
 
                 if (role == RoleId.Cat) root.AddComponent<CatPounce>();
                 else
@@ -316,7 +381,8 @@ namespace CTC.Editor
         }
 
         private static void CreateGameScene(
-            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab)
+            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab,
+            GameObject warehousePrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -343,7 +409,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab);
+            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
             nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
@@ -360,10 +426,15 @@ namespace CTC.Editor
             var lobby = lobbyGo.AddComponent<LobbyManager>();
             SetRef(lobby, "catPrefab", catPrefab);
             SetRef(lobby, "mousePrefab", mousePrefab);
-            SetRef(lobby, "fortressPrefab", fortressPrefab);
             SetRef(lobby, "m_ActiveLayout", layout); // 요새자리·스폰 공식이 layout 참조
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
+
+            // 치즈 고갈 감독(서버 전용, 순수 MonoBehaviour) — 매치 시작 시 매장량 복구,
+            // 전 지점 고갈 시 최고 등급 1곳만 부활시켜 후반 결전지를 만든다
+            var cheeseDirector = lobbyGo.AddComponent<CheeseSpotDirector>();
+            SetRef(cheeseDirector, "m_Lobby", lobby);
+            SetRef(cheeseDirector, "m_Match", match);
             BuildLobbyCanvas(lobby, match);
 
             // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
@@ -381,6 +452,7 @@ namespace CTC.Editor
             orbital.OrbitStyle = CinemachineOrbitalFollow.OrbitStyles.Sphere;
             // 반경 3 + 타깃 오프셋 0.7: 기본 앵글(20°)에서 카메라 높이 ≈1.7 — 통로벽(1.6) 위로
             // 넘겨 보게 되어 좁은 통로에서 충돌 자체가 드물다 (맵 스케일: 방 5~9m·통로 1.6m)
+            // 역할별 덮어쓰기는 PlayerCameraBinder — 두 역할 모두 3으로 통일했다(2026-07-28)
             orbital.Radius = 3f;
             orbital.TargetOffset = new Vector3(0f, 0.7f, 0f);
             orbital.HorizontalAxis.Range = new Vector2(-180f, 180f);
@@ -389,25 +461,28 @@ namespace CTC.Editor
             orbital.VerticalAxis.Value = 20f;
             camGo.AddComponent<CinemachineRotationComposer>();
 
-            // 지형-카메라 충돌: Deoccluder(시야 확보) — 실측 비교 결과:
-            //   · Decollider 단독 = 벽 너머에서 플레이어가 아예 안 보임(침투만 막고 시야 방치) → 탈락
-            //   · 구 설정의 멀미 원인은 Deoccluder가 아니라 궤도 반경 4m(좁은 맵에서 상시 차폐) → 반경 3으로 해소
+            // 지형-카메라 처리 (2026-07-28 개정): Deoccluder(당김) → Decollider(침투 방지) + OccluderFader(페이드).
+            //   · 구 Deoccluder는 방(4~7m)·복도(1.6m)에서 차폐가 붙었다 떨어졌다 하며 진동하고,
+            //     MinimumDistanceFromTarget 0.5까지 당겨 화면이 좁아졌다(플레이 피드백).
+            //   · "Decollider 단독은 벽 너머에서 플레이어가 안 보인다"는 과거 결론은 맞다 —
+            //     그 빈틈을 채우는 게 OccluderFader(가리는 벽만 반투명). 둘을 합쳐야 완성형이다.
             // 스크립트 AddComponent는 Reset이 안 불려 struct가 0(비활성)이 되므로 명시 설정.
-            var deoccluder = camGo.AddComponent<CinemachineDeoccluder>();
-            deoccluder.CollideAgainst = 1; // Default — 지형(바닥은 Ignore Raycast로 제외)
-            deoccluder.IgnoreTag = "Player"; // 플레이어 몸(Quirky 모델 콜라이더 포함) 자기-차폐 방지
-            deoccluder.MinimumDistanceFromTarget = 0.5f; // 벽 밀착 시에만 근접 캠 허용
-            deoccluder.AvoidObstacles = new CinemachineDeoccluder.ObstacleAvoidance
+            var decollider = camGo.AddComponent<CinemachineDecollider>();
+            decollider.CameraRadius = 0.2f;
+            decollider.Decollision = new CinemachineDecollider.DecollisionSettings
             {
                 Enabled = true,
-                DistanceLimit = 0f,
-                CameraRadius = 0.25f,
-                Strategy = CinemachineDeoccluder.ObstacleAvoidance.ResolutionStrategy.PullCameraForward,
-                SmoothingTime = 0.2f,   // 벽 스침에 즉발로 튀지 않게
-                Damping = 0.5f,         // 장애물 벗어난 뒤 부드럽게 복귀
-                DampingWhenOccluded = 0.2f,
+                ObstacleLayers = 1, // Default — 바닥은 Ignore Raycast(2)라 제외된다
+                UseFollowTarget = new CinemachineDecollider.DecollisionSettings.FollowTargetSettings
+                {
+                    Enabled = true,
+                    YOffset = 0.7f, // OrbitalFollow.TargetOffset과 동일 — 발밑이 아니라 몸통 기준
+                },
+                Damping = 0.3f,
+                SmoothingTime = 0.2f,
             };
 
+            camGo.AddComponent<OccluderFader>();
             camGo.AddComponent<OrbitCameraController>();
             var spectator = camGo.AddComponent<SpectatorFallback>();
             SetRef(spectator, "m_Lobby", lobby);
@@ -439,6 +514,7 @@ namespace CTC.Editor
                 .Append(mousePrefab.GetComponent<NetworkObject>())
                 .Append(fortressPrefab.GetComponent<NetworkObject>())
                 .Append(decoyPrefab.GetComponent<NetworkObject>())
+                .Append(warehousePrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }
 
@@ -757,15 +833,25 @@ namespace CTC.Editor
                 spotGo.transform.SetParent(root.transform, false);
                 spotGo.transform.localPosition = new Vector3(cp.Pos.x, 0f, cp.Pos.y);
 
+                // 잔량 복제가 필요해 NetworkBehaviour — in-scene NetworkObject 해시는 씬 저장 후 굽는다
+                spotGo.AddComponent<NetworkObject>();
                 var spot = spotGo.AddComponent<CheeseSpot>();
                 SetInt(spot, "m_Grade", cp.Grade);
                 SetFloat(spot, "m_Radius", cp.Radius);
-                AddCheeseVisual(spotGo, cp.Grade);
+                GameObject visual = AddCheeseVisual(spotGo, cp.Grade);
+                SetRef(spot, "m_Visual", visual);
+                SetRef(spot, "m_Label", visual.GetComponentInChildren<TextMeshPro>());
+                SetRef(spot, "m_Disc", visual.transform.Find("Disc").GetComponent<Renderer>());
             }
         }
 
-        private static void AddCheeseVisual(GameObject spotGo, int grade)
+        // 디스크·라벨을 한 루트 밑에 묶는다 — 고갈 시 이 루트만 끄면 지점이 사라진 것으로 보인다.
+        private static GameObject AddCheeseVisual(GameObject spotGo, int grade)
         {
+            var visual = new GameObject("Visual");
+            visual.transform.SetParent(spotGo.transform, false);
+            spotGo = visual;
+
             var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disc.name = "Disc";
             Object.DestroyImmediate(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
@@ -779,10 +865,13 @@ namespace CTC.Editor
             labelGo.transform.SetParent(spotGo.transform, false);
             labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
             var tmp = labelGo.AddComponent<TextMeshPro>();
-            tmp.text = grade.ToString();
+            tmp.text = grade.ToString(); // 런타임엔 CheeseSpot이 "등급 · 잔량"으로 덮어쓴다
             tmp.fontSize = 6f;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.yellow;
+            labelGo.AddComponent<CTC.Runtime.Cameras.FaceCamera>(); // 어느 각도에서도 읽히게
+
+            return visual;
         }
 
         private static Material GridboxMaterial(string name)
@@ -1076,6 +1165,10 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_shop_deny"),       // ShopDeny
                 LoadClip("UI/sfx_ui_click"),             // UiClick
                 LoadClip("UI/sfx_timer_warn"),           // TimerWarn
+                // 파밍 짤랑음과 구분되는 별도 음원 — 나무 쿵 + 짧은 동전 챙(생산 완료감).
+                // 고양이가 소리만 듣고 "쥐가 파밍 중"과 "창고가 돌고 있다"를 구별해야 한다.
+                LoadClip("Economy/sfx_warehouse_tick"),  // WarehouseTick
+                LoadClip("Economy/sfx_cheese_depleted"), // CheeseDepleted
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

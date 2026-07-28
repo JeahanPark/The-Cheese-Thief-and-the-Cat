@@ -15,8 +15,11 @@ namespace CTC.Runtime.Lobby
 
         [SerializeField] private GameObject catPrefab;
         [SerializeField] private GameObject mousePrefab;
-        [SerializeField] private GameObject fortressPrefab;
         [SerializeField] private CTC.Runtime.Map.MapLayout m_ActiveLayout; // 씬 굽기(Setup)가 배선
+
+        // v3.4: 초기 요새 지급 폐지. 시드머니는 미끼 1개(50)분 — 요새(220)는 벌어서 짓는다.
+        // 220을 주면 t=0 요새와 사실상 같고, 기관총(600) 진척을 37% 앞당겨 고양이가 이중 너프된다.
+        [SerializeField] private int m_MouseStartCheese = 50;
 
         private NetworkList<LobbyPlayerState> _players;
         private readonly NetworkVariable<bool> _gameStarted = new NetworkVariable<bool>();
@@ -218,32 +221,11 @@ namespace CTC.Runtime.Lobby
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);
                 if (p.Role == RoleId.Mouse)
                 {
-                    SpawnInitialFortress(MouseOrderOf(roles, i), forts);
+                    // 스폰 직후 서버 권위로 지급 — 요새 1채분. 사는 시점·자리는 쥐의 선택.
+                    var wallet = go.GetComponent<CTC.Runtime.Economy.CheeseWallet>();
+                    if (wallet != null) wallet.AddCheese(m_MouseStartCheese);
                 }
             }
-        }
-
-        // index 앞까지의 쥐 수 = 이 쥐의 요새 순번 (SpawnPosition의 nth와 동일 공식)
-        private static int MouseOrderOf(List<RoleId> roles, int index)
-        {
-            int nth = 0;
-            for (int i = 0; i < index; i++)
-            {
-                if (roles[i] == RoleId.Mouse) nth++;
-            }
-            return nth;
-        }
-
-        // v3 초기 벙커: 쥐마다 자기 요새를 서버가 동적 스폰 — 재시작 스윕이 자동 정리.
-        // 쥐가 요새자리보다 많으면 초과분은 기존 요새를 공유(중복 건설 금지 — 리뷰 I1).
-        private void SpawnInitialFortress(int mouseOrder, List<(Vector3 pos, float yaw)> forts)
-        {
-            if (fortressPrefab == null || forts.Count == 0) return;
-            if (mouseOrder >= forts.Count) return;
-
-            (Vector3 pos, float yaw) = forts[mouseOrder % forts.Count];
-            GameObject go = Instantiate(fortressPrefab, pos, Quaternion.Euler(0f, yaw, 0f));
-            go.GetComponent<NetworkObject>().Spawn(true);
         }
 
         // ---- MCP/QA 자동화용 진입점 (u_play invoke, 클론 커맨드에서 사용) ----

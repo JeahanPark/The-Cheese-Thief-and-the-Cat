@@ -9,8 +9,8 @@ using UnityEngine.UI;
 namespace CTC.Runtime.Economy
 {
     /// <summary>
-    /// 하단 상시 핫바 — 숫자키 1~5로 즉시 구매(커서 잠금 유지, 게임 안 멈춤).
-    /// 설치물(요새·미끼)은 고스트 미리보기 모드로 진입해 좌클릭 확정 / 우클릭·ESC 취소.
+    /// 하단 상시 핫바 — 숫자키 1~6으로 즉시 구매(커서 잠금 유지, 게임 안 멈춤).
+    /// 설치물(요새·미끼·창고)은 고스트 미리보기 모드로 진입해 좌클릭 확정 / 우클릭·ESC 취소.
     /// 구 B키 패널을 대체한다 (UX 개정 2026-07-27 — 쫓기는 중에도 살 수 있어야 한다).
     /// </summary>
     public class ShopHotbar : MonoBehaviour
@@ -21,7 +21,7 @@ namespace CTC.Runtime.Economy
 
         private static readonly string[] ITEM_LABELS =
         {
-            "새총", "기관총", "대시", "미끼", "요새", "공격 강화", "이속 강화",
+            "새총", "기관총", "대시", "미끼", "요새", "창고", "공격 강화", "이속 강화",
         };
 
         private static readonly Color COLOR_READY = Color.white;
@@ -139,7 +139,8 @@ namespace CTC.Runtime.Economy
                 case 1: return Key.Digit2;
                 case 2: return Key.Digit3;
                 case 3: return Key.Digit4;
-                default: return Key.Digit5;
+                case 4: return Key.Digit5;
+                default: return Key.Digit6;
             }
         }
 

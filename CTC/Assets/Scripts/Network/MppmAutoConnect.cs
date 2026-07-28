@@ -33,8 +33,27 @@ namespace CTC.Runtime.Networking
                 }
                 yield return new WaitForSeconds(RetryInterval);
                 nm = NetworkManager.Singleton;
-                if (nm != null && nm.IsConnectedClient) yield break;
+                if (nm != null && nm.IsConnectedClient) break;
             }
+
+            // 클론은 항상 쥐 — 3인 로컬 테스트(메인=고양이, 클론2=쥐)에서 역할 클릭을 없앤다.
+            yield return CoSelectMouse();
+        }
+
+        private static IEnumerator CoSelectMouse()
+        {
+            for (float waited = 0f; waited < 10f; waited += 0.5f)
+            {
+                var lobby = FindFirstObjectByType<CTC.Runtime.Lobby.LobbyManager>();
+                if (lobby != null && lobby.IsSpawned)
+                {
+                    lobby.SelectRole(CTC.Runtime.Lobby.RoleId.Mouse);
+                    Debug.Log("[MppmAutoConnect] 역할 자동 선택 → 쥐");
+                    yield break;
+                }
+                yield return new WaitForSeconds(0.5f);
+            }
+            Debug.LogWarning("[MppmAutoConnect] LobbyManager 스폰 대기 초과 — 역할 수동 선택 필요");
         }
     }
 }

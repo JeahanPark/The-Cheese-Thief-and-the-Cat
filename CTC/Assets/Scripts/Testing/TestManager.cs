@@ -224,6 +224,123 @@ namespace CTC.Runtime.Testing
 
         public void TestPlaceDecoyAt(float _x, float _z) => PlaceLocal(ShopItemId.Decoy, _x, _z);
 
+        public void TestPlaceWarehouseAt(float _x, float _z) => PlaceLocal(ShopItemId.Warehouse, _x, _z);
+
+        /// <summary>QA: 시점 각도 지정 — 벽이 카메라와 캐릭터 사이에 오게 만들어 페이드를 검증한다.</summary>
+        public void TestSetCameraAngles(float _yaw, float _pitch)
+        {
+            var cam = FindFirstObjectByType<CTC.Runtime.Cameras.OrbitCameraController>();
+            if (cam == null) { GameDebug.LogWarning("[TestManager] OrbitCameraController 없음"); return; }
+            cam.DevSetAngles(_yaw, _pitch);
+            GameDebug.Log($"[TestManager] 카메라 각도 → yaw {_yaw}, pitch {_pitch}");
+        }
+
+        /// <summary>QA: 카메라-플레이어 거리. 페이드 방식은 벽에 붙어도 이 값이 변하지 않아야 한다.</summary>
+        public float TestGetCameraDistance()
+        {
+            var cam = FindFirstObjectByType<CTC.Runtime.Cameras.OrbitCameraController>();
+            return cam != null ? cam.DevDistanceToTarget() : -1f;
+        }
+
+        /// <summary>QA: 이 인스턴스의 NGO 클라이언트 ID — MPPM 인스턴스 번호와 다르다.</summary>
+        public long TestGetLocalClientId()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            return nm != null && nm.IsListening ? (long)nm.LocalClientId : -1;
+        }
+
+        /// <summary>QA: 지정 좌표에서 가장 가까운 치즈 지점을 점유한 클라이언트 ID(없으면 -1).</summary>
+        public long TestGetCheeseEarnerNear(float _x, float _z)
+        {
+            var target = new UnityEngine.Vector3(_x, 0f, _z);
+            CheeseSpot nearest = null;
+            float best = float.MaxValue;
+            foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
+            {
+                float d = UnityEngine.Vector3.SqrMagnitude(spot.transform.position - target);
+                if (d >= best) continue;
+                best = d;
+                nearest = spot;
+            }
+            if (nearest == null || nearest.EarnerClientId == CheeseSpotLogic.NO_EARNER) return -1;
+            return (long)nearest.EarnerClientId;
+        }
+
+        /// <summary>QA: 남아 있는(고갈되지 않은) 치즈 지점 수.</summary>
+        public int TestGetLiveCheeseSpotCount()
+        {
+            int live = 0;
+            foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
+            {
+                if (!spot.Depleted) live++;
+            }
+            return live;
+        }
+
+        /// <summary>QA: 맵에 남은 치즈 매장량 총합.</summary>
+        public int TestGetTotalCheeseReserve()
+        {
+            int total = 0;
+            foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
+            {
+                total += spot.Remaining;
+            }
+            return total;
+        }
+
+        /// <summary>QA: 서버 전용 — 모든 지점을 즉시 고갈시켜 후반 부활을 검증한다.</summary>
+        public void TestDrainAllCheeseSpots()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) { GameDebug.LogWarning("[TestManager] 서버 아님"); return; }
+
+            foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
+            {
+                spot.ServerRevive(0);
+            }
+            GameDebug.Log("[TestManager] 전 치즈 지점 고갈");
+        }
+
+        /// <summary>QA: 후반 부활이 일어났는가.</summary>
+        public bool TestGetCheeseRevived()
+        {
+            var director = FindFirstObjectByType<CheeseSpotDirector>();
+            return director != null && director.RevivedThisMatch;
+        }
+
+        /// <summary>QA: 창고 생산음에 실제로 배선된 클립 이름 — 빈 문자열이면 무음이다.</summary>
+        public string TestGetWarehouseSfxClip()
+        {
+            return CTC.Runtime.Audio.SfxPlayer.ClipNameOf(CTC.Runtime.Audio.SfxId.WarehouseTick);
+        }
+
+        /// <summary>QA: 창고가 생산을 몇 번 했는가 — 소리·이펙트가 발화한 횟수와 같다.</summary>
+        public int TestGetWarehouseTicks()
+        {
+            int total = 0;
+            foreach (var w in FindObjectsByType<WarehouseProduction>(FindObjectsSortMode.None))
+            {
+                total += w.TickCount;
+            }
+            return total;
+        }
+
+        /// <summary>QA: 지금 반투명 처리된 벽 수 — 0이면 페이드가 안 걸린 것.</summary>
+        public int TestGetFadedOccluderCount()
+        {
+            var fader = FindFirstObjectByType<CTC.Runtime.Cameras.OccluderFader>();
+            return fader != null ? fader.FadedCount : -1;
+        }
+
+        /// <summary>로컬 플레이어의 현재 치즈 — 창고 생산 검증용(반환값이 wesqa로 나간다).</summary>
+        public int TestGetCheese()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var wallet = local != null ? local.GetComponent<CheeseWallet>() : null;
+            return wallet != null ? wallet.Cheese : -1;
+        }
+
         private static void PlaceLocal(ShopItemId _itemId, float _x, float _z)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;

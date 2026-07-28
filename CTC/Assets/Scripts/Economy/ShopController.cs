@@ -15,6 +15,7 @@ namespace CTC.Runtime.Economy
 
         [SerializeField] private GameObject m_DecoyPrefab;
         [SerializeField] private GameObject m_FortressPrefab;
+        [SerializeField] private GameObject m_WarehousePrefab;
 
         /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프(4m)보다 넉넉히.</summary>
         public const float MAX_PLACE_DISTANCE = 6f;
@@ -49,6 +50,11 @@ namespace CTC.Runtime.Economy
                     return m_DecoyPrefab != null;
                 case ShopItemId.Fortress:
                     return m_FortressPrefab != null;
+                case ShopItemId.Warehouse:
+                    // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
+                    // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
+                    return m_WarehousePrefab != null
+                           && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE;
                 case ShopItemId.CatAttack:
                     CatPounce pounce = GetComponent<CatPounce>();
                     return pounce != null && ShopLogic.CanAddStack(pounce.DamageStacks);
@@ -94,7 +100,7 @@ namespace CTC.Runtime.Economy
             flat.y = 0f;
             if (flat.magnitude > MAX_PLACE_DISTANCE) { BuyResultRpc(false); return; }
 
-            GameObject prefab = item.Id == ShopItemId.Fortress ? m_FortressPrefab : m_DecoyPrefab;
+            GameObject prefab = PrefabOf(item.Id);
             if (prefab == null || !PlacementFits(item.Id, _position)) { BuyResultRpc(false); return; }
 
             CheeseWallet wallet = GetComponent<CheeseWallet>();
@@ -106,6 +112,7 @@ namespace CTC.Runtime.Economy
                 : Quaternion.identity;
             GameObject go = Instantiate(prefab, _position, rot);
             go.GetComponent<NetworkObject>().Spawn(true);
+            BindWarehouseOwner(go);
 
             Debug.Log($"[ShopController] {OwnerClientId} 설치: {item.Id} @ {_position} (-{item.Cost})");
             BuyResultRpc(true);
@@ -124,9 +131,32 @@ namespace CTC.Runtime.Economy
         /// <summary>설치물 반경(고스트 표시·겹침 판정 공용).</summary>
         public static Vector3 HalfExtentsOf(ShopItemId _itemId)
         {
-            return _itemId == ShopItemId.Fortress
-                ? new Vector3(1.2f, 0.6f, 1.2f)   // 요새 풋프린트 2.4²·벽높이 1.2
-                : new Vector3(0.25f, 0.25f, 0.25f); // 미끼(캡슐 0.4²)
+            switch (_itemId)
+            {
+                case ShopItemId.Fortress:
+                    return new Vector3(1.2f, 0.6f, 1.2f);   // 요새 풋프린트 2.4²·벽높이 1.2
+                case ShopItemId.Warehouse:
+                    return new Vector3(0.5f, 0.4f, 0.5f);   // 창고 1.0²×0.8 — 요새보다 작아 구석에 끼워 넣을 수 있다
+                default:
+                    return new Vector3(0.25f, 0.25f, 0.25f); // 미끼(캡슐 0.4²)
+            }
+        }
+
+        private GameObject PrefabOf(ShopItemId _itemId)
+        {
+            switch (_itemId)
+            {
+                case ShopItemId.Fortress: return m_FortressPrefab;
+                case ShopItemId.Warehouse: return m_WarehousePrefab;
+                default: return m_DecoyPrefab;
+            }
+        }
+
+        // 창고는 누가 세웠는지 알아야 수입을 줄 수 있다 — 스폰 직후 서버가 소유자를 새긴다.
+        private void BindWarehouseOwner(GameObject _spawned)
+        {
+            var production = _spawned.GetComponent<WarehouseProduction>();
+            if (production != null) production.ServerSetOwner(OwnerClientId);
         }
 
         // 구매자에게만 결과음 — 성공 카칭 / 실패 붑
@@ -157,6 +187,9 @@ namespace CTC.Runtime.Economy
                     // 입구(로컬 +Z)가 구매자를 향하게 — 쫓기며 지어도 바로 들어갈 수 있다
                     SpawnStructure(m_FortressPrefab, Quaternion.LookRotation(-FlatForward()));
                     break;
+                case ShopItemId.Warehouse:
+                    SpawnStructure(m_WarehousePrefab);
+                    break;
                 case ShopItemId.CatAttack:
                     GetComponent<CatPounce>().ServerAddDamageStack();
                     break;
@@ -176,6 +209,7 @@ namespace CTC.Runtime.Economy
             Vector3 pos = transform.position + FlatForward() * PLACE_FORWARD_METERS;
             GameObject go = Instantiate(_prefab, pos, _rotation);
             go.GetComponent<NetworkObject>().Spawn(true);
+            BindWarehouseOwner(go);
         }
 
         private Vector3 FlatForward()
