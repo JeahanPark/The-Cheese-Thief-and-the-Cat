@@ -81,7 +81,23 @@ namespace CTC.Editor
                 "MouseDecoy", DecoyPrefabPath, PrimitiveType.Capsule,
                 mouseMat, maxHp: 1,
                 scale: new Vector3(0.4f, 0.25f, 0.4f),
-                addExtras: _root => _root.AddComponent<DecoyLifetime>());
+                addExtras: _root =>
+                {
+                    _root.AddComponent<DecoyLifetime>();
+                    // 미끼의 값어치는 생김새가 아니라 소리다 — 진짜 쥐와 같은 발소리를 같은
+                    // 반경(8m)으로 계속 흘려 고양이를 끌어당긴다. 소리 없는 캡슐은 아무도
+                    // 속이지 못했다("미끼가 의미가 없다" 2026-07-28).
+                    var lure = _root.AddComponent<AudioSource>();
+                    lure.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(
+                        "Assets/Audio/Movement/sfx_mouse_footstep.ogg");
+                    lure.loop = true;
+                    lure.playOnAwake = true;
+                    lure.volume = 0.6f;
+                    lure.spatialBlend = 1f;
+                    lure.rolloffMode = AudioRolloffMode.Linear;
+                    lure.minDistance = 1.5f;
+                    lure.maxDistance = 8f;
+                });
 
             GameObject fortressPrefab = CreateFortressPrefab();
 
@@ -348,7 +364,11 @@ namespace CTC.Editor
                 SetRef(shop, "m_FortressPrefab", fortressPrefab);
                 SetRef(shop, "m_WarehousePrefab", warehousePrefab);
 
-                if (role == RoleId.Cat) root.AddComponent<CatPounce>();
+                if (role == RoleId.Cat)
+                {
+                    root.AddComponent<CatPounce>();
+                    root.AddComponent<CatSneak>(); // LCtrl 잠행 — 발소리 소거·이속 절반
+                }
                 else
                 {
                     root.AddComponent<MousePopgun>();
@@ -479,31 +499,21 @@ namespace CTC.Editor
             orbital.VerticalAxis.Value = 20f;
             camGo.AddComponent<CinemachineRotationComposer>();
 
-            // 지형-카메라 처리 (2026-07-28 개정): Deoccluder(당김) → Decollider(침투 방지) + OccluderFader(페이드).
-            //   · 구 Deoccluder는 방(4~7m)·복도(1.6m)에서 차폐가 붙었다 떨어졌다 하며 진동하고,
-            //     MinimumDistanceFromTarget 0.5까지 당겨 화면이 좁아졌다(플레이 피드백).
-            //   · "Decollider 단독은 벽 너머에서 플레이어가 안 보인다"는 과거 결론은 맞다 —
-            //     그 빈틈을 채우는 게 OccluderFader(가리는 벽만 반투명). 둘을 합쳐야 완성형이다.
-            // 스크립트 AddComponent는 Reset이 안 불려 struct가 0(비활성)이 되므로 명시 설정.
-            var decollider = camGo.AddComponent<CinemachineDecollider>();
-            decollider.CameraRadius = 0.2f;
-            decollider.Decollision = new CinemachineDecollider.DecollisionSettings
-            {
-                Enabled = true,
-                ObstacleLayers = 1, // Default — 바닥은 Ignore Raycast(2)라 제외된다
-                UseFollowTarget = new CinemachineDecollider.DecollisionSettings.FollowTargetSettings
-                {
-                    Enabled = true,
-                    YOffset = 0.7f, // OrbitalFollow.TargetOffset과 동일 — 발밑이 아니라 몸통 기준
-                },
-                Damping = 0.3f,
-                SmoothingTime = 0.2f,
-            };
-
+            // 지형-카메라 처리 (2026-07-28 2차 개정): 카메라 충돌 보정을 **전부 뺐다**.
+            //   Deoccluder(당김) → Decollider(침투 방지)로 바꿔도 좁은 방·복도에서는 여전히
+            //   카메라가 밀려 시점이 들쭉날쭉했다("카메라 충돌 빼기, 오히려 불편함" 플레이 피드백).
+            //   이제 카메라는 벽을 그냥 통과하고, 시야는 OccluderFader(가리는 벽 반투명)로만 확보한다.
+            //   거리가 상수라 시점이 절대 흔들리지 않는 대신, 카메라가 벽 속에 들어가는 프레임이 생긴다 —
+            //   페이드가 그 벽을 지우므로 화면에는 드러나지 않는다.
             camGo.AddComponent<OccluderFader>();
             camGo.AddComponent<OrbitCameraController>();
             var spectator = camGo.AddComponent<SpectatorFallback>();
             SetRef(spectator, "m_Lobby", lobby);
+
+            // 따봉 — 관전자가 보고 있는 쥐를 응원한다. 관전 대상은 SpectatorFallback가 안다.
+            var cheer = lobbyGo.AddComponent<CheerDirector>();
+            SetRef(cheer, "m_Lobby", lobby);
+            SetRef(cheer, "m_Spectator", spectator);
 
             EditorSceneManager.SaveScene(scene, GameScenePath);
 

@@ -40,8 +40,7 @@ namespace CTC.Runtime.Economy
 
             // 스펙 v3.2: 고양이 재화 = 장난기(Fun) — 같은 지갑, 라벨만 역할별
             // 수입음은 FarmingSfx(3D 공개음)가 담당 — 자기 위치에서 나므로 본인에게도 들림
-            string label = tag.Role == RoleId.Cat ? "장난기" : "치즈";
-            m_Text.text = $"{label}: {m_LocalWallet.Cheese}";
+            m_Text.text = $"{ShopLogic.CurrencyNameOf(tag.Role)}: {m_LocalWallet.Cheese}";
         }
     }
 }

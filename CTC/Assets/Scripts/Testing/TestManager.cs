@@ -428,6 +428,84 @@ namespace CTC.Runtime.Testing
             return wallet != null ? wallet.Cheese : -1;
         }
 
+        /// <summary>
+        /// QA: 지정 좌표에서 가장 가까운 치즈 지점의 라벨 문자열("등급 · 잔량").
+        /// 호스트에서만 표시가 얼어붙던 회귀(2026-07-28)를 잡는다 — 숫자만 보면 놓친다.
+        /// </summary>
+        public string TestGetCheeseLabelNear(float _x, float _z)
+        {
+            CheeseSpot nearest = NearestSpot(new UnityEngine.Vector3(_x, 0f, _z));
+            return nearest != null ? nearest.LabelText : "";
+        }
+
+        private static CheeseSpot NearestSpot(UnityEngine.Vector3 _target)
+        {
+            CheeseSpot nearest = null;
+            float best = float.MaxValue;
+            foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
+            {
+                float d = UnityEngine.Vector3.SqrMagnitude(spot.transform.position - _target);
+                if (d >= best) continue;
+                best = d;
+                nearest = spot;
+            }
+            return nearest;
+        }
+
+        /// <summary>QA: 고양이 잠행 On/Off — 키 없이 강제한다.</summary>
+        public void TestSetSneak(bool _on)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var sneak = local != null ? local.GetComponent<CTC.Runtime.Player.CatSneak>() : null;
+            if (sneak == null) { GameDebug.LogWarning("[TestManager] CatSneak 없음(고양이 아님)"); return; }
+            sneak.DevSetSneak(_on);
+        }
+
+        /// <summary>QA: 지정 클라이언트의 잠행 상태(복제 확인용). 대상이 없으면 false.</summary>
+        public bool TestGetSneaking(long _clientId)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var player = nm != null && nm.SpawnManager != null
+                ? nm.SpawnManager.GetPlayerNetworkObject((ulong)_clientId) : null;
+            var sneak = player != null ? player.GetComponent<CTC.Runtime.Player.CatSneak>() : null;
+            return sneak != null && sneak.Sneaking;
+        }
+
+        /// <summary>QA: 지정 클라이언트의 발소리가 지금 나고 있는가 — 잠행 무음 검증.</summary>
+        public bool TestGetFootstepAudible(long _clientId)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var player = nm != null && nm.SpawnManager != null
+                ? nm.SpawnManager.GetPlayerNetworkObject((ulong)_clientId) : null;
+            if (player == null) return false;
+
+            foreach (var source in player.GetComponentsInChildren<UnityEngine.AudioSource>())
+            {
+                if (source.loop && source.isPlaying) return true;
+            }
+            return false;
+        }
+
+        /// <summary>QA: 관전 중인 대상에게 따봉 — 대상 클라이언트 ID를 직접 준다.</summary>
+        public void TestCheer(long _targetClientId)
+        {
+            var cheer = FindFirstObjectByType<CTC.Runtime.Match.CheerDirector>();
+            if (cheer == null) { GameDebug.LogWarning("[TestManager] CheerDirector 없음"); return; }
+            cheer.DevCheer((ulong)_targetClientId);
+        }
+
+        /// <summary>QA: 씬에 떠 있는 따봉 마커 수 — 고양이 화면에서는 0이어야 한다.</summary>
+        public int TestGetCheerMarkerCount()
+        {
+            int count = 0;
+            foreach (var tmp in FindObjectsByType<TMPro.TextMeshPro>(FindObjectsSortMode.None))
+            {
+                if (tmp.gameObject.name == "CheerMarker") count++;
+            }
+            return count;
+        }
+
         private static void PlaceLocal(ShopItemId _itemId, float _x, float _z)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;

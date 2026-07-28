@@ -21,7 +21,9 @@ namespace CTC.Runtime.Lobby
         private const string MOUSE_CONTROLS =
             "WASD 이동   마우스 시점   좌클릭 발사   LShift 대시 (구매 후)";
         private const string CAT_CONTROLS =
-            "WASD 이동   마우스 시점   좌클릭 덮치기";
+            "WASD 이동   마우스 시점   좌클릭 덮치기   <b>LCtrl 살금살금</b>(무음·속도 절반)";
+        private const string SPECTATOR_CONTROLS =
+            "관전 중 — <b>G</b> 보고 있는 쥐에게 따봉 (고양이에겐 보이지 않는다)";
 
         private static readonly string[] ITEM_LABELS =
         {
@@ -32,6 +34,7 @@ namespace CTC.Runtime.Lobby
         [SerializeField] private TMP_Text m_Text;
 
         private RoleId m_CachedRole = RoleId.None;
+        private bool m_HasCache; // None도 유효한 상태(관전자)라 값 비교만으로는 초기화를 못 가린다
         private string m_CachedText = "";
 
         private void Update()
@@ -45,7 +48,6 @@ namespace CTC.Runtime.Lobby
                     ? nm.SpawnManager.GetLocalPlayerObject()
                     : null;
                 tag = local != null ? local.GetComponent<RoleTag>() : null;
-                show = tag != null; // 관전자는 표시 안 함
             }
 
             if (m_Text.gameObject.activeSelf != show)
@@ -55,16 +57,21 @@ namespace CTC.Runtime.Lobby
             if (!show) return;
 
             // 역할이 바뀔 때만 문자열을 만든다 — 매 프레임 조립할 이유가 없다
-            if (tag.Role != m_CachedRole)
+            // 탈락하면 RoleId.None으로 돌아가며 관전자 안내로 바뀐다
+            RoleId role = tag != null ? tag.Role : RoleId.None;
+            if (role != m_CachedRole || !m_HasCache)
             {
-                m_CachedRole = tag.Role;
-                m_CachedText = BuildText(tag.Role);
+                m_CachedRole = role;
+                m_HasCache = true;
+                m_CachedText = BuildText(role);
             }
             m_Text.text = m_CachedText;
         }
 
         private static string BuildText(RoleId _role)
         {
+            if (_role == RoleId.None) return SPECTATOR_CONTROLS;
+
             var sb = new StringBuilder();
             sb.AppendLine(_role == RoleId.Cat ? CAT_CONTROLS : MOUSE_CONTROLS);
 

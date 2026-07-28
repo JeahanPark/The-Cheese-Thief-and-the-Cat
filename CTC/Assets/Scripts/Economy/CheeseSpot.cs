@@ -40,6 +40,9 @@ namespace CTC.Runtime.Economy
         public bool Depleted => m_Remaining <= 0;
         public ulong EarnerClientId => m_Earner;
 
+        /// <summary>QA — 지금 화면에 걸린 라벨 문자열. 표시가 갱신되는지 확인하는 유일한 창구다.</summary>
+        public string LabelText => m_Label != null ? m_Label.text : "";
+
         /// <summary>MapBuilder가 지점을 만들 때 1회 설정.</summary>
         public void Configure(int _grade, float _radius, int _reserve,
             GameObject _visual, TMPro.TextMeshPro _label, Renderer _disc)
@@ -72,11 +75,22 @@ namespace CTC.Runtime.Economy
             int prevRemaining = m_Remaining;
             ulong prevEarner = m_Earner;
 
+            Advance(_deltaSeconds, _matchRunning);
+
+            bool changed = prevRemaining != m_Remaining || prevEarner != m_Earner;
+            // 서버(=호스트)는 복제 이벤트를 스스로 받지 않는다(Director가 IsServer면 되먹임을 끊는다).
+            // 그래서 여기서 직접 표시를 갱신하지 않으면 호스트 화면에서만 잔량·점유가 얼어붙는다.
+            if (changed) ServerRefreshVisual(prevRemaining);
+            return changed;
+        }
+
+        private void Advance(float _deltaSeconds, bool _matchRunning)
+        {
             if (!_matchRunning || Depleted)
             {
                 m_Earner = CheeseSpotLogic.NO_EARNER;
                 m_Accumulated = 0f;
-                return prevEarner != m_Earner;
+                return;
             }
 
             CollectPresent();
@@ -86,21 +100,28 @@ namespace CTC.Runtime.Economy
             if (m_Earner == CheeseSpotLogic.NO_EARNER)
             {
                 m_Accumulated = 0f;
-                return prevEarner != m_Earner;
+                return;
             }
 
             m_Accumulated = CheeseSpotLogic.Accumulate(m_Accumulated, m_Grade, _deltaSeconds, out int whole);
-            if (whole > 0)
-            {
-                int granted = CheeseSpotLogic.Extract(m_Remaining, whole);
-                m_Remaining -= granted;
-                if (granted > 0 && m_Wallets.TryGetValue(m_Earner, out CheeseWallet wallet) && wallet != null)
-                {
-                    wallet.AddCheese(granted);
-                }
-            }
+            if (whole <= 0) return;
 
-            return prevRemaining != m_Remaining || prevEarner != m_Earner;
+            int granted = CheeseSpotLogic.Extract(m_Remaining, whole);
+            m_Remaining -= granted;
+            if (granted > 0 && m_Wallets.TryGetValue(m_Earner, out CheeseWallet wallet) && wallet != null)
+            {
+                wallet.AddCheese(granted);
+            }
+        }
+
+        // 서버 전용 — 클라의 ApplyState와 같은 결과(표시 + 고갈음)를 로컬에 낸다.
+        private void ServerRefreshVisual(int _prevRemaining)
+        {
+            ApplyVisual();
+            if (_prevRemaining > 0 && Depleted)
+            {
+                Audio.SfxPlayer.PlayAt(Audio.SfxId.CheeseDepleted, transform.position);
+            }
         }
 
         /// <summary>클라이언트 — 복제된 상태를 받아 표시에 반영한다.</summary>

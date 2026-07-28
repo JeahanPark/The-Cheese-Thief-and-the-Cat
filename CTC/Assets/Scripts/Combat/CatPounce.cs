@@ -71,13 +71,15 @@ namespace CTC.Runtime.Combat
 
                 // 보상 대상 여부는 데미지 전에 캡처 — 사망 시 PlayerDeath가 Died 이벤트에서
                 // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
-                bool isPlayerKill = target.NetworkObject.IsPlayerObject;
+                bool isPlayerTarget = target.NetworkObject.IsPlayerObject;
 
                 int dealt = target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
-                // 장난기 적립(스펙 v3.2): 실데미지 1:1 — 요새·미끼도 동일. 킬 보너스는 플레이어만
+                // 장난기 적립(v3.6): 플레이어 실피해 ×0.5 + 킬 보너스, 구조물은 ×0.25.
+                // 요새 1채 300pt는 벽 때리기를 최고 효율 수입원으로 만들었다.
                 if (myWallet != null)
                 {
-                    myWallet.AddCheese(FunLogic.AccruedFun(dealt, target.IsDead && isPlayerKill));
+                    myWallet.AddCheese(FunLogic.AccruedFun(
+                        dealt, target.IsDead && isPlayerTarget, !isPlayerTarget));
                 }
             }
         }

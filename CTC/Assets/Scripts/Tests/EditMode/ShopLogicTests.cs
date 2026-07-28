@@ -82,20 +82,21 @@ namespace CTC.Tests
         [Test]
         public void Warehouse_PaysBackWithinMatch()
         {
-            // 회수 = 가격 / 초당 생산. 판 길이(600s)보다 충분히 짧아야 살 이유가 있다.
+            // 회수 = 가격 / 초당 생산. 판 길이(600s)보다 짧아야 살 이유가 있고,
+            // 너무 짧으면 창고만 짓고 앉아 있는 게 최적해가 된다(v3.6에서 75s → 150s).
             float payback = ShopLogic.Find(ShopItemId.Warehouse).Cost
                             / (float)ShopLogic.WAREHOUSE_INCOME_PER_SECOND;
-            Assert.AreEqual(75f, payback, 1e-4f);
+            Assert.AreEqual(150f, payback, 1e-4f);
             Assert.Less(payback, CTC.Runtime.Match.MatchFlowLogic.MATCH_DURATION_SECONDS * 0.5f);
         }
 
         [Test]
         public void WarehouseTick_DerivesFromIncomeAndChunk()
         {
-            // 10개씩 초당 2 → 5초마다 1회. 연출이 너무 잦거나 뜸하지 않은 구간이어야 한다.
-            Assert.AreEqual(5f, ShopLogic.WarehouseTickSeconds, 1e-4f);
+            // 10개씩 초당 1 → 10초마다 1회. 연출이 너무 잦거나 뜸하지 않은 구간이어야 한다.
+            Assert.AreEqual(10f, ShopLogic.WarehouseTickSeconds, 1e-4f);
             Assert.GreaterOrEqual(ShopLogic.WarehouseTickSeconds, 2f);
-            Assert.LessOrEqual(ShopLogic.WarehouseTickSeconds, 10f);
+            Assert.LessOrEqual(ShopLogic.WarehouseTickSeconds, 12f);
         }
 
         [Test]
@@ -116,13 +117,21 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void IsPlaceable_OnlyStructures()
+        public void IsPlaceable_OnlyBuildings()
         {
             Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Fortress));
-            Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Decoy));
             Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Warehouse));
+            // 미끼는 v3.6부터 즉시 설치 — 쫓기는 중에 고스트 조준을 요구할 수 없다
+            Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Decoy));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Slingshot));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.CatSpeed));
+        }
+
+        [Test]
+        public void CurrencyName_IsRoleSpecific() // 고양이에게 "치즈 부족"이라 하던 버그
+        {
+            Assert.AreEqual("장난기", ShopLogic.CurrencyNameOf(RoleId.Cat));
+            Assert.AreEqual("치즈", ShopLogic.CurrencyNameOf(RoleId.Mouse));
         }
 
         [Test]

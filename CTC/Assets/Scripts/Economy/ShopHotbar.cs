@@ -78,7 +78,7 @@ namespace CTC.Runtime.Economy
             RefreshSlots(shop, wallet.Cheese, indices);
 
             if (m_PlacingId != ShopItemId.None) UpdatePlacement(shop);
-            else HandleHotkeys(shop, wallet.Cheese, indices);
+            else HandleHotkeys(shop, wallet.Cheese, indices, tag.Role);
 
             if (m_Toast.gameObject.activeSelf && Time.time >= m_ToastUntil)
             {
@@ -106,7 +106,8 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        private void HandleHotkeys(ShopController _shop, int _cheese, System.Collections.Generic.List<int> _indices)
+        private void HandleHotkeys(ShopController _shop, int _cheese,
+            System.Collections.Generic.List<int> _indices, RoleId _role)
         {
             // 인게임 콘솔 등 입력창에 포커스가 있으면 타이핑이 구매로 새지 않게 무시
             Keyboard kb = Keyboard.current;
@@ -120,7 +121,12 @@ namespace CTC.Runtime.Economy
                 string name = ITEM_LABELS[_indices[slot]];
 
                 if (!_shop.CanApply(item.Id)) { Say($"{name} 이미 보유"); return; }
-                if (!ShopLogic.CanBuy(_cheese, item.Cost)) { Say($"치즈 부족 · {item.Cost - _cheese} 모자람"); return; }
+                if (!ShopLogic.CanBuy(_cheese, item.Cost))
+                {
+                    // 재화 이름은 역할별 — 고양이는 치즈를 캐지 않는다
+                    Say($"{ShopLogic.CurrencyNameOf(_role)} 부족 · {item.Cost - _cheese} 모자람");
+                    return;
+                }
 
                 if (ShopLogic.IsPlaceable(item.Id)) BeginPlacement(item.Id, name);
                 else { _shop.Buy(item.Id); Say($"{name} 구매"); }

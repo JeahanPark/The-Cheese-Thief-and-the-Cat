@@ -20,6 +20,9 @@ namespace CTC.Runtime.Cameras
         private OrbitCameraController m_Orbit;
         private Transform m_Current;
 
+        /// <summary>지금 관전 중인 대상(살아 있으면 null) — 따봉 대상 판정에 쓰인다.</summary>
+        public Transform Current => m_Current;
+
         private void Awake()
         {
             m_Orbit = GetComponent<OrbitCameraController>();

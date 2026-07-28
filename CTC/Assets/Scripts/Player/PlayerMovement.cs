@@ -23,6 +23,7 @@ namespace CTC.Runtime.Player
         private readonly NetworkVariable<int> _speedStacks = new NetworkVariable<int>();
 
         private CharacterController _controller;
+        private CatSneak _sneak;   // 고양이 전용(쥐 프리팹엔 없음)
         private float _verticalVelocity;
         private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
 
@@ -44,6 +45,7 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _sneak = GetComponent<CatSneak>();
         }
 
         /// <summary>
@@ -100,7 +102,10 @@ namespace CTC.Runtime.Player
             if (_controller.isGrounded && _verticalVelocity < 0f) _verticalVelocity = -1f;
             _verticalVelocity += GRAVITY * Time.deltaTime;
 
-            Vector3 motion = dir * ShopLogic.MoveSpeed(moveSpeed, _speedStacks.Value);
+            float speed = ShopLogic.MoveSpeed(moveSpeed, _speedStacks.Value);
+            if (_sneak != null && _sneak.Sneaking) speed *= CatSneak.SPEED_MULTIPLIER;
+
+            Vector3 motion = dir * speed;
             motion.y = _verticalVelocity;
             _controller.Move(motion * Time.deltaTime);
 

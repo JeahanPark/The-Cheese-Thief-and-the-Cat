@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 4826755275216159815}
   - component: {fileID: 3722839825644162623}
   - component: {fileID: 1825586617100723517}
+  - component: {fileID: 868449302951146565}
   - component: {fileID: 6558113436026960680}
   - component: {fileID: 2911770353754494756}
   m_Layer: 0
@@ -290,6 +291,19 @@ MonoBehaviour:
   m_HalfAngleDeg: 60
   m_Damage: 60
   m_CooldownSeconds: 2.5
+--- !u!114 &868449302951146565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73572fe4891364e4c86235ee73c7b327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.CatSneak
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!82 &6558113436026960680
 AudioSource:
   m_ObjectHideFlags: 0

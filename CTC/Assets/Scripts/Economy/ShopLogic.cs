@@ -61,7 +61,9 @@ namespace CTC.Runtime.Economy
         // 창고(v3.4) — 파밍이 '서 있기'라 지루하다는 플레이 피드백의 답.
         // 지어두면 자리를 비워도 수입이 들어오되, 위치가 드러난 자산이라 고양이가 부술 수 있다.
         // 요새(방어)와 역할이 겹치지 않게 별도 건물로 분리했고 HP는 절반이다.
-        public const int WAREHOUSE_INCOME_PER_SECOND = 2;
+        // 수입 2/s는 과했다(원가 회수 75초 → 판 하나에 원가의 6배). 1/s로 내려 회수 150초 —
+        // 짓고도 캐러 나가야 하는 보조 수입으로 되돌린다 (2026-07-28 플레이 피드백).
+        public const int WAREHOUSE_INCOME_PER_SECOND = 1;
         public const int WAREHOUSE_MAX_HP = 150;
         public const int WAREHOUSE_LIMIT_PER_MOUSE = 1;
 
@@ -109,7 +111,7 @@ namespace CTC.Runtime.Economy
                 case ShopItemId.Dash:
                     return "LShift 순간 가속 — 쫓길 때 거리를 벌린다";
                 case ShopItemId.Decoy:
-                    return $"가짜 쥐를 놓는다 — {DECOY_LIFETIME_SECONDS:F0}초 뒤 사라짐";
+                    return $"발소리를 내는 가짜 쥐 — 고양이를 {DECOY_LIFETIME_SECONDS:F0}초간 낚는다 (즉시 설치)";
                 case ShopItemId.Fortress:
                     return $"쥐만 드나드는 벙커 — 안에서 초당 {FORTRESS_HEAL_PER_TICK} 회복, 외벽 HP {FORTRESS_HP}";
                 case ShopItemId.Warehouse:
@@ -167,10 +169,23 @@ namespace CTC.Runtime.Economy
             return list;
         }
 
-        /// <summary>설치형(월드에 스폰) 아이템인가 — 고스트 미리보기 후 위치 지정 구매.</summary>
+        /// <summary>
+        /// 설치형(월드에 스폰) 아이템인가 — 고스트 미리보기 후 위치 지정 구매.
+        /// 미끼는 제외한다: 쫓기는 중에 쓰는 물건인데 고스트 조준을 요구하면 그 순간에 못 쓴다
+        /// ("설치기가 너무 힘들다" 2026-07-28) — 발밑에 즉시 떨군다.
+        /// </summary>
         public static bool IsPlaceable(ShopItemId _id)
         {
-            return _id == ShopItemId.Decoy || _id == ShopItemId.Fortress || _id == ShopItemId.Warehouse;
+            return _id == ShopItemId.Fortress || _id == ShopItemId.Warehouse;
+        }
+
+        /// <summary>
+        /// 역할별 재화 이름. 고양이 재화는 치즈가 아니라 장난기다 —
+        /// 고양이에게 "치즈 부족"이라고 알리던 버그(2026-07-28)의 단일 출처.
+        /// </summary>
+        public static string CurrencyNameOf(RoleId _role)
+        {
+            return _role == RoleId.Cat ? "장난기" : "치즈";
         }
 
         public static WeaponStats WeaponStatsForTier(int _tier)
