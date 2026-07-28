@@ -113,5 +113,19 @@ namespace CTC.Tests
             // 1번째 쥐 = 요새1 — (9,0,-12.5)+yaw0 전방*1.8
             AssertPos(new Vector3(9f, 0.1f, -10.7f), LobbyManager.SpawnPosition(roles, 2, forts));
         }
+        [Test]
+        public void ClampMapIndex_FoldsIntoRange()
+        {
+            Assert.AreEqual(0, LobbyRoleLogic.ClampMapIndex(-3, 2));
+            Assert.AreEqual(1, LobbyRoleLogic.ClampMapIndex(1, 2));
+            Assert.AreEqual(1, LobbyRoleLogic.ClampMapIndex(9, 2));
+        }
+
+        [Test]
+        public void ClampMapIndex_NoMapsIsSafe()
+        {
+            // 배선 누락으로 목록이 비어도 인덱싱이 터지면 안 된다
+            Assert.AreEqual(0, LobbyRoleLogic.ClampMapIndex(5, 0));
+        }
     }
 }

@@ -15,7 +15,11 @@ namespace CTC.Runtime.Lobby
 
         [SerializeField] private GameObject catPrefab;
         [SerializeField] private GameObject mousePrefab;
-        [SerializeField] private CTC.Runtime.Map.MapLayout m_ActiveLayout; // 씬 굽기(Setup)가 배선
+
+        // v3.5: 맵이 런타임에 지어진다. 로비에서 호스트가 고르면 전원이 그 맵을 다시 짓는다.
+        [SerializeField] private CTC.Runtime.Map.MapLayout[] m_MapLayouts;
+        [SerializeField] private CTC.Runtime.Map.MapBuilder m_MapBuilder;
+        [SerializeField] private Economy.CheeseSpotDirector m_CheeseDirector;
 
         // v3.4: 초기 요새 지급 폐지. 시드머니는 미끼 1개(50)분 — 요새(220)는 벌어서 짓는다.
         // 220을 주면 t=0 요새와 사실상 같고, 기관총(600) 진척을 37% 앞당겨 고양이가 이중 너프된다.
@@ -23,11 +27,22 @@ namespace CTC.Runtime.Lobby
 
         private NetworkList<LobbyPlayerState> _players;
         private readonly NetworkVariable<bool> _gameStarted = new NetworkVariable<bool>();
+        private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
 
         public bool GameStarted => _gameStarted.Value;
         public int PlayerCount => _players.Count;
         public LobbyPlayerState GetPlayer(int index) => _players[index];
         public bool CanStart => LobbyRoleLogic.CanStart(SnapshotRoles());
+
+        public int MapCount => m_MapLayouts != null ? m_MapLayouts.Length : 0;
+        public int MapIndex => LobbyRoleLogic.ClampMapIndex(m_MapIndex.Value, MapCount);
+
+        /// <summary>선택된 맵. 스폰 공식·요새 자리가 이걸 읽는다.</summary>
+        public CTC.Runtime.Map.MapLayout ActiveLayout =>
+            MapCount == 0 ? null : m_MapLayouts[MapIndex];
+
+        public string MapNameAt(int _index) =>
+            MapCount == 0 ? "" : m_MapLayouts[LobbyRoleLogic.ClampMapIndex(_index, MapCount)].DisplayName;
 
         private void Awake()
         {
@@ -37,6 +52,10 @@ namespace CTC.Runtime.Lobby
 
         public override void OnNetworkSpawn()
         {
+            // 지오메트리는 복제하지 않는다 — 전 클라가 같은 레이아웃으로 각자 짓는다
+            m_MapIndex.OnValueChanged += OnMapIndexChanged;
+            RebuildMap();
+
             if (!IsServer) return;
 
             NetworkManager.OnClientConnectedCallback += OnClientConnected;
@@ -49,9 +68,43 @@ namespace CTC.Runtime.Lobby
 
         public override void OnNetworkDespawn()
         {
+            m_MapIndex.OnValueChanged -= OnMapIndexChanged;
             if (NetworkManager == null) return;
             NetworkManager.OnClientConnectedCallback -= OnClientConnected;
             NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+
+        // ---- 맵 선택 (호스트 전용) ----
+
+        /// <summary>로컬 UI/QA 진입점. 실제 권한 판정은 서버.</summary>
+        public void SelectMap(int _index)
+        {
+            SelectMapRpc(_index);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SelectMapRpc(int _index, RpcParams rpcParams = default)
+        {
+            // 방장만 바꾼다 — 시작 버튼과 같은 권한 구조
+            if (rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId) return;
+            if (_gameStarted.Value) return;
+
+            m_MapIndex.Value = LobbyRoleLogic.ClampMapIndex(_index, MapCount);
+        }
+
+        private void OnMapIndexChanged(int _previous, int _current)
+        {
+            RebuildMap();
+        }
+
+        // 맵을 새로 짓고 치즈 감독에 재바인딩한다. 순서가 중요 — 지점이 만들어진 뒤에
+        // 복제 상태를 붙여야 인덱스가 어긋나지 않는다.
+        private void RebuildMap()
+        {
+            if (m_MapBuilder == null || ActiveLayout == null) return;
+
+            m_MapBuilder.Build(ActiveLayout);
+            if (m_CheeseDirector != null) m_CheeseDirector.Rebind(m_MapBuilder.Spots);
         }
 
         private void OnClientConnected(ulong clientId)
@@ -125,8 +178,8 @@ namespace CTC.Runtime.Lobby
         private List<(Vector3 pos, float yaw)> FortressSpots()
         {
             var list = new List<(Vector3, float)>();
-            if (m_ActiveLayout == null) return list;
-            foreach (var f in m_ActiveLayout.Fortresses)
+            if (ActiveLayout == null) return list;
+            foreach (var f in ActiveLayout.Fortresses)
                 list.Add((new Vector3(f.Pos.x, 0f, f.Pos.y), f.YawDeg));
             return list;
         }
@@ -232,5 +285,6 @@ namespace CTC.Runtime.Lobby
         public void DevSelectMouse() => SelectRole(RoleId.Mouse);
         public void DevSelectCat() => SelectRole(RoleId.Cat);
         public void DevStartGame() => RequestStartGame();
+        public void DevSelectMap(int _index) => SelectMap(_index);
     }
 }

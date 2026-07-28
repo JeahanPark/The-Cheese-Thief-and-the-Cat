@@ -15,6 +15,7 @@ namespace CTC.Editor
     public class MapGeneratorWindow : EditorWindow
     {
         private const string PoolPath = "Assets/Prefabs/Maps/MapCandidatePool.asset";
+        public const string ExpandedPoolPath = "Assets/Prefabs/Maps/MapCandidatePool_Expanded.asset";
         private Pool m_Pool;
         private int m_Seed = 1;
         private MapGenerator.LayoutResult m_Preview;
@@ -28,19 +29,34 @@ namespace CTC.Editor
         [MenuItem("Tools/CTC/Build Sample Map Layout")]
         public static void BuildSample()
         {
-            var pool = AssetDatabase.LoadAssetAtPath<Pool>(PoolPath);
-            if (pool == null) { Debug.LogError($"[MapGenerator] 후보풀 없음: {PoolPath} — 먼저 Build Map Candidate Pool"); return; }
+            BakeFirstValid(PoolPath, "Assets/Prefabs/Maps/Layout_Sketch01.asset", "기본 맵");
+        }
 
+        /// <summary>확장 풀(Build Expanded Map Pool 산출)로 확장 레이아웃을 굽는다.</summary>
+        [MenuItem("Tools/CTC/Build Expanded Map Layout")]
+        public static void BuildExpanded()
+        {
+            BakeFirstValid(ExpandedPoolPath, "Assets/Prefabs/Maps/Layout_Expanded01.asset", "확장 맵");
+        }
+
+        // 첫 유효 시드로 레이아웃을 굽는다. 풀의 캔버스 크기·표시 이름을 레이아웃에 함께 새긴다.
+        private static void BakeFirstValid(string poolPath, string layoutPath, string fallbackName)
+        {
+            var pool = AssetDatabase.LoadAssetAtPath<Pool>(poolPath);
+            if (pool == null) { Debug.LogError($"[MapGenerator] 후보풀 없음: {poolPath}"); return; }
+
+            string displayName = string.IsNullOrEmpty(pool.DisplayName) ? fallbackName : pool.DisplayName;
             var dto = ToDto(pool);
             for (int s = 1; s <= 5000; s++)
             {
                 var r = MapGenerator.Generate(dto, s);
                 if (r == null) continue;
-                SaveLayout("Assets/Prefabs/Maps/Layout_Sketch01.asset", s, "sample", r);
-                Debug.Log($"[MapGenerator] 샘플 레이아웃 저장 (seed {s}) — 방 {r.Rooms.Count}·통로 {r.Corridors.Count}·치즈 {r.Cheese.Count}·요새 {r.Fortresses.Count}");
+                SaveLayout(layoutPath, s, "sample", r, pool.HalfExtent, displayName);
+                Debug.Log($"[MapGenerator] {displayName} 저장 (seed {s}) — 방 {r.Rooms.Count}·통로 {r.Corridors.Count}" +
+                          $"·치즈 {r.Cheese.Count}·요새 {r.Fortresses.Count}·반경 {pool.HalfExtent}");
                 return;
             }
-            Debug.LogError("[MapGenerator] 5000시드 내 유효 맵 실패 — 후보풀 점검 필요");
+            Debug.LogError($"[MapGenerator] 5000시드 내 유효 맵 실패 — {poolPath} 점검 필요");
         }
 
         private void OnEnable() => m_Pool = AssetDatabase.LoadAssetAtPath<Pool>(PoolPath);
@@ -76,7 +92,8 @@ namespace CTC.Editor
                 c.RoomId, c.Pos, c.MinGrade, c.MaxGrade, c.Fixed, c.FixedGrade, c.Radius)).ToList();
             var fort = p.FortressSlots.Select(f => new MapGenerator.FortressSlotOption(
                 f.RoomId, f.Pos, f.YawDeg, f.AlwaysInclude)).ToList();
-            return new MapGenerator.PoolData(rooms, corr, new List<MazePreset>(p.Mazes), cheese, fort);
+            return new MapGenerator.PoolData(rooms, corr, new List<MazePreset>(p.Mazes), cheese, fort,
+                p.MinRooms, p.MaxRooms);
         }
 
         private void Generate(int seed)
@@ -104,13 +121,15 @@ namespace CTC.Editor
         }
 
         // 생성 결과(순수) → MapLayout 에셋. 창·시안 빌더 공용.
-        public static void SaveLayout(string path, int seed, string source, MapGenerator.LayoutResult r)
+        // halfExtent·displayName은 풀에서 온다 — 런타임 MapBuilder가 바닥·경계벽을 이걸로 만든다.
+        public static void SaveLayout(string path, int seed, string source, MapGenerator.LayoutResult r,
+            float halfExtent = 15f, string displayName = "")
         {
             if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Maps"))
                 AssetDatabase.CreateFolder("Assets/Prefabs", "Maps");
             var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
             if (layout == null) { layout = ScriptableObject.CreateInstance<MapLayout>(); AssetDatabase.CreateAsset(layout, path); }
-            layout.Set(seed, source, r.Rooms, r.Corridors, r.Cheese, r.Fortresses);
+            layout.Set(seed, source, r.Rooms, r.Corridors, r.Cheese, r.Fortresses, halfExtent, displayName);
             EditorUtility.SetDirty(layout);
             AssetDatabase.SaveAssets();
         }

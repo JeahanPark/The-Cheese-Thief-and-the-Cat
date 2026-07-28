@@ -12,8 +12,6 @@ namespace CTC.Runtime.Map
     public static class MapGenerator
     {
         private const int MAX_RETRY = 200;
-        private const int MIN_ROOMS = 5;
-        private const int MAX_ROOMS = 6;
 
         public enum Tag { Outer, Middle, Center }
 
@@ -51,9 +49,15 @@ namespace CTC.Runtime.Map
             public readonly List<MazePreset> Mazes;
             public readonly List<CheeseSlotOption> Cheese;
             public readonly List<FortressSlotOption> Fortress;
+            // 한 판에 채택할 방 수 범위 — 맵이 넓어지면 방도 더 써야 공터가 안 남는다
+            public readonly int MinRooms, MaxRooms;
+
             public PoolData(List<RoomOption> r, List<CorridorOption> c, List<MazePreset> m,
-                List<CheeseSlotOption> ch, List<FortressSlotOption> f)
-            { Rooms = r; Corridors = c; Mazes = m; Cheese = ch; Fortress = f; }
+                List<CheeseSlotOption> ch, List<FortressSlotOption> f, int minRooms = 5, int maxRooms = 6)
+            {
+                Rooms = r; Corridors = c; Mazes = m; Cheese = ch; Fortress = f;
+                MinRooms = minRooms; MaxRooms = maxRooms;
+            }
         }
 
         public class LayoutResult
@@ -82,7 +86,9 @@ namespace CTC.Runtime.Map
             // 1. 방 선택
             var chosen = pool.Rooms.Where(r => r.Always).ToList();
             var rest = pool.Rooms.Where(r => !r.Always).OrderBy(_ => rng.Next()).ToList();
-            int target = MIN_ROOMS + rng.Next(0, MAX_ROOMS - MIN_ROOMS + 1);
+            int minRooms = Mathf.Max(1, pool.MinRooms);
+            int maxRooms = Mathf.Max(minRooms, pool.MaxRooms);
+            int target = minRooms + rng.Next(0, maxRooms - minRooms + 1);
             foreach (var r in rest)
             {
                 if (chosen.Count >= target) break;

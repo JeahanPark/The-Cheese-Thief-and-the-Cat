@@ -1,0 +1,307 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dd7171fa64b70449a212b540a4372a8, type: 3}
+  m_Name: MapCandidatePool_Expanded
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapCandidatePool
+  m_Rooms:
+  - Id: R3
+    Center: {x: 0, y: 2.1}
+    Size: {x: 9.8, y: 12.599999}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R5
+    Center: {x: -14.7, y: -14.7}
+    Size: {x: 9.8, y: 11.2}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R1
+    Center: {x: 14.7, y: 16.8}
+    Size: {x: 6.2999997, y: 7.7}
+    Tag: 0
+    AlwaysInclude: 0
+  - Id: R2
+    Center: {x: -17.5, y: 4.2}
+    Size: {x: 5.6, y: 8.4}
+    Tag: 0
+    AlwaysInclude: 0
+  - Id: R4
+    Center: {x: 15.4, y: 2.8}
+    Size: {x: 7.7, y: 9.8}
+    Tag: 1
+    AlwaysInclude: 0
+  - Id: R6
+    Center: {x: -15.4, y: 15.4}
+    Size: {x: 7, y: 7}
+    Tag: 0
+    AlwaysInclude: 0
+  - Id: R7
+    Center: {x: 0, y: 16.8}
+    Size: {x: 7, y: 5.6}
+    Tag: 1
+    AlwaysInclude: 0
+  - Id: R8
+    Center: {x: 15.4, y: -14}
+    Size: {x: 7, y: 8.4}
+    Tag: 0
+    AlwaysInclude: 0
+  - Id: R9
+    Center: {x: 0, y: -15.4}
+    Size: {x: 7, y: 7}
+    Tag: 0
+    AlwaysInclude: 0
+  m_Corridors:
+  - Id: C1
+    RoomA: R3
+    RoomB: R2
+    Waypoints:
+    - {x: -4.9, y: 3.5}
+    - {x: -14.7, y: 3.5}
+    Width: 3
+  - Id: C2
+    RoomA: R3
+    RoomB: R4
+    Waypoints:
+    - {x: 4.9, y: 3.5}
+    - {x: 11.55, y: 3.5}
+    Width: 3
+  - Id: C3
+    RoomA: R3
+    RoomB: R7
+    Waypoints:
+    - {x: 0, y: 8.4}
+    - {x: 0, y: 14}
+    Width: 3
+  - Id: C5
+    RoomA: R2
+    RoomB: R6
+    Waypoints:
+    - {x: -17.5, y: 8.4}
+    - {x: -18.62, y: 10.5}
+    - {x: -15.4, y: 11.9}
+    Width: 3
+  - Id: C6a
+    RoomA: R6
+    RoomB: R7
+    Waypoints:
+    - {x: -11.9, y: 16.8}
+    - {x: -3.5, y: 16.8}
+    Width: 3
+  - Id: C6b
+    RoomA: R7
+    RoomB: R1
+    Waypoints:
+    - {x: 3.5, y: 16.8}
+    - {x: 11.55, y: 16.8}
+    Width: 3
+  - Id: C6c
+    RoomA: R6
+    RoomB: R1
+    Waypoints:
+    - {x: -11.9, y: 18.199999}
+    - {x: 11.55, y: 18.199999}
+    Width: 3
+  - Id: C7
+    RoomA: R1
+    RoomB: R4
+    Waypoints:
+    - {x: 15.4, y: 12.95}
+    - {x: 15.4, y: 7.7}
+    Width: 3
+  - Id: C10
+    RoomA: R5
+    RoomB: R2
+    Waypoints:
+    - {x: -15.4, y: -9.099999}
+    - {x: -17.5, y: -9.099999}
+    - {x: -17.5, y: 0}
+    Width: 3
+  - Id: CS1
+    RoomA: R3
+    RoomB: R9
+    Waypoints:
+    - {x: 0, y: -4.2}
+    - {x: 0, y: -11.9}
+    Width: 3
+  - Id: CS2
+    RoomA: R5
+    RoomB: R9
+    Waypoints:
+    - {x: -9.8, y: -14.7}
+    - {x: -3.5, y: -14.7}
+    Width: 3
+  - Id: CS3
+    RoomA: R9
+    RoomB: R8
+    Waypoints:
+    - {x: 3.5, y: -14.7}
+    - {x: 11.9, y: -14.7}
+    Width: 3
+  - Id: CS4
+    RoomA: R4
+    RoomB: R8
+    Waypoints:
+    - {x: 15.4, y: -2.1}
+    - {x: 15.4, y: -9.8}
+    Width: 3
+  m_Mazes:
+  - Id: MazeA
+    ExclusiveRoomId: R9
+    Segments:
+    - From: {x: 2.38, y: -4.2}
+      To: {x: 2.38, y: -16.8}
+      Width: 3
+    - From: {x: 2.38, y: -9.8}
+      To: {x: -4.2, y: -9.8}
+      Width: 3
+    - From: {x: -4.2, y: -9.8}
+      To: {x: -4.2, y: -17.5}
+      Width: 3
+    - From: {x: -4.2, y: -17.5}
+      To: {x: -5.6, y: -17.5}
+      Width: 3
+    - From: {x: 2.38, y: -11.2}
+      To: {x: 5.6, y: -11.2}
+      Width: 3
+    - From: {x: 2.38, y: -16.8}
+      To: {x: 4.2, y: -16.8}
+      Width: 3
+    - From: {x: 4.2, y: -16.8}
+      To: {x: 4.2, y: -18.9}
+      Width: 3
+    - From: {x: -5.6, y: -17.5}
+      To: {x: -9.8, y: -17.5}
+      Width: 3
+  - Id: MazeB
+    ExclusiveRoomId: R8
+    Segments:
+    - From: {x: 14, y: -2.1}
+      To: {x: 14, y: -18.199999}
+      Width: 3
+    - From: {x: 14, y: -11.2}
+      To: {x: 9.8, y: -11.2}
+      Width: 3
+    - From: {x: 14, y: -7}
+      To: {x: 18.199999, y: -7}
+      Width: 3
+    - From: {x: 18.199999, y: -7}
+      To: {x: 18.199999, y: -15.4}
+      Width: 3
+    - From: {x: 18.199999, y: -15.4}
+      To: {x: 14, y: -15.4}
+      Width: 3
+    - From: {x: 14, y: -18.199999}
+      To: {x: 11.2, y: -18.199999}
+      Width: 3
+  m_CheeseSlots:
+  - RoomId: R5
+    Pos: {x: -12.599999, y: -9.8}
+    MinGrade: 1
+    MaxGrade: 1
+    Fixed: 1
+    FixedGrade: 1
+    Radius: 2
+  - RoomId: R2
+    Pos: {x: -16.1, y: 7}
+    MinGrade: 2
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R6
+    Pos: {x: -12.599999, y: 13.3}
+    MinGrade: 2
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R1
+    Pos: {x: 12.25, y: 14}
+    MinGrade: 2
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R8
+    Pos: {x: 12.599999, y: -11.2}
+    MinGrade: 2
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R9
+    Pos: {x: 2.52, y: -12.599999}
+    MinGrade: 3
+    MaxGrade: 4
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R4
+    Pos: {x: 12.599999, y: 1.4}
+    MinGrade: 4
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R7
+    Pos: {x: 0, y: 15.4}
+    MinGrade: 4
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R3
+    Pos: {x: -2.8, y: 5.6}
+    MinGrade: 6
+    MaxGrade: 6
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  - RoomId: R3
+    Pos: {x: 0, y: -2.8}
+    MinGrade: 7
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 1.5
+  m_FortressSlots:
+  - RoomId: R5
+    Pos: {x: -15.4, y: -16.8}
+    YawDeg: 0
+    AlwaysInclude: 1
+  - RoomId: R8
+    Pos: {x: 16.8, y: -15.4}
+    YawDeg: 0
+    AlwaysInclude: 0
+  - RoomId: R6
+    Pos: {x: -16.8, y: 16.8}
+    YawDeg: 180
+    AlwaysInclude: 0
+  - RoomId: R1
+    Pos: {x: 16.1, y: 18.199999}
+    YawDeg: 180
+    AlwaysInclude: 0
+  - RoomId: R9
+    Pos: {x: 0, y: -17.22}
+    YawDeg: 0
+    AlwaysInclude: 0
+  - RoomId: R2
+    Pos: {x: -18.199999, y: 2.1}
+    YawDeg: 90
+    AlwaysInclude: 0
+  - RoomId: R4
+    Pos: {x: 17.5, y: 6.2999997}
+    YawDeg: 270
+    AlwaysInclude: 0
+  m_MinRooms: 9
+  m_MaxRooms: 9
+  m_HalfExtent: 21
+  m_DisplayName: "\uD655\uC7A5 \uB9F5 (42\xD742)"

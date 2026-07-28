@@ -291,14 +291,52 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 서버 전용 — 모든 지점을 즉시 고갈시켜 후반 부활을 검증한다.</summary>
         public void TestDrainAllCheeseSpots()
         {
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm == null || !nm.IsServer) { GameDebug.LogWarning("[TestManager] 서버 아님"); return; }
+            // 감독이 복제 목록까지 같이 갱신해야 클라 표시가 따라온다
+            var director = FindFirstObjectByType<CheeseSpotDirector>();
+            if (director == null) { GameDebug.LogWarning("[TestManager] CheeseSpotDirector 없음"); return; }
 
+            director.ServerDrainAll();
+            GameDebug.Log("[TestManager] 전 치즈 지점 고갈");
+        }
+
+        /// <summary>QA: 최고 등급 치즈 지점 위치 "x,z" — 맵마다 좌표가 달라 QA가 물어봐야 한다.</summary>
+        public string TestGetBestCheeseSpotPos()
+        {
+            CheeseSpot best = null;
             foreach (var spot in FindObjectsByType<CheeseSpot>(FindObjectsSortMode.None))
             {
-                spot.ServerRevive(0);
+                if (best == null || spot.Grade > best.Grade) best = spot;
             }
-            GameDebug.Log("[TestManager] 전 치즈 지점 고갈");
+            if (best == null) return "";
+            UnityEngine.Vector3 p = best.transform.position;
+            return $"{p.x:F2},{p.z:F2}";
+        }
+
+        /// <summary>QA: 로컬 플레이어의 원점 거리 — 맵 스케일이 스폰에 반영됐는지 본다.</summary>
+        public float TestGetSpawnDistanceFromOrigin()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) return -1f;
+
+            UnityEngine.Vector3 p = local.transform.position;
+            return new UnityEngine.Vector2(p.x, p.z).magnitude;
+        }
+
+        /// <summary>QA: 현재 선택된 맵 인덱스와 이름.</summary>
+        public string TestGetSelectedMap()
+        {
+            var lobby = FindLobby();
+            return lobby == null ? "" : $"{lobby.MapIndex}:{lobby.MapNameAt(lobby.MapIndex)}";
+        }
+
+        /// <summary>QA: 맵 선택 요청 — 비호스트가 부르면 서버가 무시해야 한다.</summary>
+        public void TestSelectMap(int _index)
+        {
+            var lobby = FindLobby();
+            if (lobby == null) return;
+            lobby.DevSelectMap(_index);
+            GameDebug.Log($"[TestManager] TestSelectMap({_index})");
         }
 
         /// <summary>QA: 후반 부활이 일어났는가.</summary>

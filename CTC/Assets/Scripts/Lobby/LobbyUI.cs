@@ -17,12 +17,23 @@ namespace CTC.Runtime.Lobby
         [SerializeField] private Button mouseButton;
         [SerializeField] private Button catButton;
         [SerializeField] private Button startButton;
+        [SerializeField] private Button[] mapButtons;   // 인덱스 = 맵 인덱스
+        [SerializeField] private TMP_Text mapLabel;
+
+        private static readonly Color MAP_SELECTED = new Color(0.45f, 0.95f, 0.45f);
+        private static readonly Color MAP_NORMAL = Color.white;
 
         private void Awake()
         {
             mouseButton.onClick.AddListener(() => lobby.SelectRole(RoleId.Mouse));
             catButton.onClick.AddListener(() => lobby.SelectRole(RoleId.Cat));
             startButton.onClick.AddListener(() => lobby.RequestStartGame());
+
+            for (int i = 0; i < mapButtons.Length; i++)
+            {
+                int index = i; // 클로저 캡처 — 루프 변수를 그대로 넘기면 전부 마지막 값이 된다
+                mapButtons[i].onClick.AddListener(() => lobby.SelectMap(index));
+            }
         }
 
         private void Update()
@@ -62,6 +73,26 @@ namespace CTC.Runtime.Lobby
             bool isHost = nm.IsHost;
             startButton.gameObject.SetActive(isHost);
             startButton.interactable = isHost && lobby.CanStart;
+
+            UpdateMapButtons(isHost);
+        }
+
+        // 맵은 방장만 바꾼다(서버도 같은 가드). 비호스트에게도 어떤 맵인지는 보여야 한다.
+        private void UpdateMapButtons(bool isHost)
+        {
+            int selected = lobby.MapIndex;
+            if (mapLabel != null) mapLabel.text = $"맵: {lobby.MapNameAt(selected)}";
+
+            for (int i = 0; i < mapButtons.Length; i++)
+            {
+                bool exists = i < lobby.MapCount;
+                if (mapButtons[i].gameObject.activeSelf != exists) mapButtons[i].gameObject.SetActive(exists);
+                if (!exists) continue;
+
+                mapButtons[i].interactable = isHost && i != selected;
+                var target = mapButtons[i].targetGraphic;
+                if (target != null) target.color = i == selected ? MAP_SELECTED : MAP_NORMAL;
+            }
         }
     }
 }

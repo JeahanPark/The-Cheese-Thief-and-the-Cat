@@ -36,5 +36,16 @@ namespace CTC.Runtime.Lobby
             }
             return cats >= 1 && mice >= 1;
         }
+
+        /// <summary>
+        /// 맵 인덱스를 유효 범위로 접는다. 맵이 없으면 0 —
+        /// 배선 누락으로 목록이 비어도 인덱싱이 터지지 않게 한다.
+        /// </summary>
+        public static int ClampMapIndex(int index, int mapCount)
+        {
+            if (mapCount <= 0) return 0;
+            if (index < 0) return 0;
+            return index >= mapCount ? mapCount - 1 : index;
+        }
     }
 }

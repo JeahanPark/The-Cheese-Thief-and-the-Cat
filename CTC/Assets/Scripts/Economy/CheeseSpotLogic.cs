@@ -22,7 +22,15 @@ namespace CTC.Runtime.Economy
         // 매장량을 등급에 비례시키지 않고 '균일'로 두는 게 핵심이다. 그래야 고등급일수록
         // 빨리 말라(7등급 100초 / 1등급 700초) 좋은 자리부터 사라지고, 플레이어가 점점
         // 나쁜 자리로 밀려나며 자연스럽게 압축된다. 비례로 주면 전부 동시에 말라 압축이 안 생긴다.
-        public const int SPOT_RESERVE = 700;
+        //
+        // 총량을 고정하고 지점 수로 나눈다 — 맵이 넓어져 지점이 늘어도 고갈 시점이 유지된다.
+        public const int TOTAL_MAP_CHEESE = 4900;
+
+        /// <summary>지점 하나가 가질 매장량. 7지점이면 700(기준 맵), 10지점이면 490.</summary>
+        public static int ReservePerSpot(int _spotCount)
+        {
+            return _spotCount <= 0 ? 0 : TOTAL_MAP_CHEESE / _spotCount;
+        }
 
         /// <summary>마지막 부활 지점의 매장량 — 뒤처진 쥐의 만회 기회이자 후반 결전지.</summary>
         public const int LAST_STAND_RESERVE = 400;
@@ -36,10 +44,13 @@ namespace CTC.Runtime.Economy
             return Mathf.Min(_remaining, _requested);
         }
 
-        /// <summary>맵 전체 매장량 — 쥐 전원이 최종 테크까지 사고도 남을 만큼이어야 한다.</summary>
+        /// <summary>
+        /// 맵 전체 매장량 — 지점 수와 무관하게 고정이다(나눗셈 나머지만큼만 줄어든다).
+        /// 쥐 전원이 최종 테크까지 사고도 남을 만큼이어야 고갈이 '기한'으로 작동한다.
+        /// </summary>
         public static int TotalReserve(int _spotCount)
         {
-            return Mathf.Max(0, _spotCount) * SPOT_RESERVE;
+            return Mathf.Max(0, _spotCount) * ReservePerSpot(_spotCount);
         }
 
         public static int IncomePerSecond(int _grade)
