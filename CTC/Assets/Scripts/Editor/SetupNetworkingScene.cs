@@ -84,6 +84,7 @@ namespace CTC.Editor
                 addExtras: _root =>
                 {
                     _root.AddComponent<DecoyLifetime>();
+                    _root.AddComponent<DecoyPassThrough>(); // 쥐는 통과, 고양이는 막힌다
                     // 미끼의 값어치는 생김새가 아니라 소리다 — 진짜 쥐와 같은 발소리를 같은
                     // 반경(8m)으로 계속 흘려 고양이를 끌어당긴다. 소리 없는 캡슐은 아무도
                     // 속이지 못했다("미끼가 의미가 없다" 2026-07-28).
