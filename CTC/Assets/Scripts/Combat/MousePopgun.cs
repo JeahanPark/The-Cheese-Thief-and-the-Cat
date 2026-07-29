@@ -88,7 +88,7 @@ namespace CTC.Runtime.Combat
                 }
                 if (target.IsDead) continue;
 
-                // 미끼는 총알도 통과시킨다 — 몸은 안 막는데(DecoyPassThrough) 총알만 막으면
+                // 미끼는 총알도 통과시킨다 — 몸은 안 막는데(DecoyLayers) 총알만 막으면
                 // 제가 놓은 미끼가 제 사선을 가리고, 고양이에겐 엄폐물이 된다
                 if (target.GetComponent<DecoyLifetime>() != null) continue;
 

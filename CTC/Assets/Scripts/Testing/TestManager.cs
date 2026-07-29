@@ -465,9 +465,7 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 지정 클라이언트의 잠행 상태(복제 확인용). 대상이 없으면 false.</summary>
         public bool TestGetSneaking(long _clientId)
         {
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            var player = nm != null && nm.SpawnManager != null
-                ? nm.SpawnManager.GetPlayerNetworkObject((ulong)_clientId) : null;
+            var player = NetUtil.FindPlayerObject((ulong)_clientId);
             var sneak = player != null ? player.GetComponent<CTC.Runtime.Player.CatSneak>() : null;
             return sneak != null && sneak.Sneaking;
         }
@@ -475,9 +473,7 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 지정 클라이언트의 발소리가 지금 나고 있는가 — 잠행 무음 검증.</summary>
         public bool TestGetFootstepAudible(long _clientId)
         {
-            var nm = Unity.Netcode.NetworkManager.Singleton;
-            var player = nm != null && nm.SpawnManager != null
-                ? nm.SpawnManager.GetPlayerNetworkObject((ulong)_clientId) : null;
+            var player = NetUtil.FindPlayerObject((ulong)_clientId);
             if (player == null) return false;
 
             foreach (var source in player.GetComponentsInChildren<UnityEngine.AudioSource>())
@@ -485,6 +481,63 @@ namespace CTC.Runtime.Testing
                 if (source.loop && source.isPlaying) return true;
             }
             return false;
+        }
+
+        /// <summary>QA: 가장 가까운 미끼 위치 "x,z" (없으면 빈 문자열).</summary>
+        public string TestGetDecoyPos()
+        {
+            DecoyLifetime decoy = NearestDecoy();
+            if (decoy == null) return "";
+            UnityEngine.Vector3 p = decoy.transform.position;
+            return $"{p.x:F2},{p.z:F2}";
+        }
+
+        /// <summary>QA: 로컬 플레이어 ↔ 가장 가까운 미끼 평면 거리 (없으면 -1).</summary>
+        public float TestGetDecoyDistance()
+        {
+            DecoyLifetime decoy = NearestDecoy();
+            if (decoy == null) return -1f;
+            UnityEngine.Vector3 p = decoy.transform.position;
+            return TestGetDistanceTo(p.x, p.z);
+        }
+
+        private static DecoyLifetime NearestDecoy()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) return null;
+
+            DecoyLifetime best = null;
+            float bestSqr = float.MaxValue;
+            foreach (var decoy in FindObjectsByType<DecoyLifetime>())
+            {
+                float d = UnityEngine.Vector3.SqrMagnitude(decoy.transform.position - local.transform.position);
+                if (d >= bestSqr) continue;
+                bestSqr = d;
+                best = decoy;
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// QA: 목표가 아니라 **방향**으로 일정 시간 밀어붙인다. 통과/막힘 판정용 —
+        /// TestWalkTowards는 목표 1m 앞에서 멈춰서 "뚫고 지나갔는가"를 구분하지 못한다.
+        /// </summary>
+        public void TestWalkDirection(float _x, float _z, float _seconds)
+        {
+            StartCoroutine(CoWalkDirection(new UnityEngine.Vector3(_x, 0f, _z).normalized, _seconds));
+        }
+
+        private IEnumerator CoWalkDirection(UnityEngine.Vector3 _dir, float _seconds)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var move = local != null ? local.GetComponent<CTC.Runtime.Player.PlayerMovement>() : null;
+            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); yield break; }
+
+            move.DevSetMoveInput(_dir);
+            yield return new UnityEngine.WaitForSeconds(_seconds);
+            move.DevSetMoveInput(UnityEngine.Vector3.zero);
         }
 
         /// <summary>QA: 관전 중인 대상에게 따봉 — 대상 클라이언트 ID를 직접 준다.</summary>

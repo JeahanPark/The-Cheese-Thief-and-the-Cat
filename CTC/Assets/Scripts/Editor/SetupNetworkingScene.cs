@@ -70,9 +70,43 @@ namespace CTC.Editor
             "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP";
         private const string DefaultNetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
 
+        // 미끼·쥐 전용 레이어 — 둘의 충돌을 매트릭스에서 끊는다(DecoyLayers).
+        // 레이어가 없으면 빈 슬롯(8번 이후)에 만든다.
+        private static int EnsureLayer(string layerName)
+        {
+            int existing = LayerMask.NameToLayer(layerName);
+            if (existing >= 0) return existing;
+
+            var asset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
+            if (asset == null || asset.Length == 0)
+            {
+                Debug.LogError("[SetupNetworkingScene] TagManager.asset을 열 수 없다 — 미끼 레이어 미생성");
+                return -1;
+            }
+
+            var tagManager = new SerializedObject(asset[0]);
+            SerializedProperty layers = tagManager.FindProperty("layers");
+            for (int i = 8; i < layers.arraySize; i++)
+            {
+                SerializedProperty slot = layers.GetArrayElementAtIndex(i);
+                if (!string.IsNullOrEmpty(slot.stringValue)) continue;
+
+                slot.stringValue = layerName;
+                tagManager.ApplyModifiedProperties();
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[SetupNetworkingScene] '{layerName}' 레이어 생성 (index {i})");
+                return i;
+            }
+
+            Debug.LogError($"[SetupNetworkingScene] 빈 레이어 슬롯이 없다 — '{layerName}' 미생성");
+            return -1;
+        }
+
         [MenuItem("Tools/CTC/Setup Networking Scene")]
         public static void Run()
         {
+            int decoyLayer = EnsureLayer(DecoyLayers.DECOY);
+            int mouseLayer = EnsureLayer(DecoyLayers.MOUSE);
             Material catMat = CreateUrpMaterial("M_Cat_URP", CatSourceMatPath);
             Material mouseMat = CreateUrpMaterial("M_Mouse_URP", MouseSourceMatPath);
 
@@ -84,7 +118,6 @@ namespace CTC.Editor
                 addExtras: _root =>
                 {
                     _root.AddComponent<DecoyLifetime>();
-                    _root.AddComponent<DecoyPassThrough>(); // 쥐는 통과, 고양이는 막힌다
                     // 미끼의 값어치는 생김새가 아니라 소리다 — 진짜 쥐와 같은 발소리를 같은
                     // 반경(8m)으로 계속 흘려 고양이를 끌어당긴다. 소리 없는 캡슐은 아무도
                     // 속이지 못했다("미끼가 의미가 없다" 2026-07-28).
@@ -98,7 +131,9 @@ namespace CTC.Editor
                     lure.rolloffMode = AudioRolloffMode.Linear;
                     lure.minDistance = 1.5f;
                     lure.maxDistance = 8f;
-                });
+                },
+                // 쥐만 통과시키려면 미끼가 자기 레이어에 있어야 한다(쥐 CC의 excludeLayers 대상)
+                layer: decoyLayer);
 
             GameObject fortressPrefab = CreateFortressPrefab();
 
@@ -128,7 +163,10 @@ namespace CTC.Editor
                 ccHeight: 0.5f, ccRadius: 0.22f,
                 moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
                 role: RoleId.Mouse, maxHp: 100,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab);
+                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab,
+                // 쥐만 전용 레이어 — 미끼(Decoy)와의 충돌을 매트릭스에서 끊기 위해서다(DecoyLayers).
+                // 고양이는 Default에 남아 미끼에 부딪힌다.
+                layer: mouseLayer);
 
             CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
             Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 5종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
@@ -162,7 +200,7 @@ namespace CTC.Editor
         // RoleTag.Mouse라 고양이 덮치기 판정을 그대로 받는다(파괴 가능, 보상은 플레이어 한정).
         private static GameObject CreateStructurePrefab(
             string name, string prefabPath, PrimitiveType primitive, Material material,
-            int maxHp, Vector3 scale, System.Action<GameObject> addExtras)
+            int maxHp, Vector3 scale, System.Action<GameObject> addExtras, int layer = -1)
         {
             var root = new GameObject(name);
             try
@@ -189,6 +227,13 @@ namespace CTC.Editor
                 body.transform.localPosition = new Vector3(0f, scale.y * unitHalfHeight, 0f);
                 body.transform.localScale = scale;
                 if (material != null) body.GetComponent<Renderer>().sharedMaterial = material;
+
+                // 레이어는 콜라이더가 붙은 Body까지 칠해야 물리 필터가 걸린다
+                if (layer >= 0)
+                {
+                    foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
+                        tr.gameObject.layer = layer;
+                }
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
@@ -323,7 +368,8 @@ namespace CTC.Editor
             float ccHeight, float ccRadius,
             float moveSpeed, float runThreshold, float fov, float camDistance,
             RoleId role, int maxHp,
-            GameObject decoyPrefab, GameObject fortressPrefab, GameObject warehousePrefab)
+            GameObject decoyPrefab, GameObject fortressPrefab, GameObject warehousePrefab,
+            int layer = -1)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
@@ -406,6 +452,13 @@ namespace CTC.Editor
                 // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다
                 foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
                     tr.gameObject.tag = "Player";
+
+                // 레이어도 계층 전체에 — 콜라이더가 붙은 자식까지 칠해야 물리 필터가 걸린다
+                if (layer >= 0)
+                {
+                    foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
+                        tr.gameObject.layer = layer;
+                }
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                 // 저장 전 임시 씬 오브젝트에서 OnValidate가 구운 해시는 무효(두 프리팹이 동일값).

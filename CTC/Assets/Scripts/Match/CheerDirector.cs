@@ -109,10 +109,8 @@ namespace CTC.Runtime.Match
         [Rpc(SendTo.SpecifiedInParams)]
         private void ShowCheerRpc(ulong _targetClientId, RpcParams _rpcParams = default)
         {
-            NetworkManager nm = NetworkManager.Singleton;
-            NetworkObject target = nm != null && nm.SpawnManager != null
-                ? nm.SpawnManager.GetPlayerNetworkObject(_targetClientId)
-                : null;
+            // 클라이언트에서는 GetPlayerNetworkObject로 남을 못 찾는다(서버 전용) — 스폰 목록을 훑는다
+            NetworkObject target = Core.NetUtil.FindPlayerObject(_targetClientId);
             if (target == null) return;
 
             SpawnMarker(target.transform);

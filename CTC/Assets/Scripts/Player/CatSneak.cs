@@ -23,9 +23,12 @@ namespace CTC.Runtime.Player
 
         public bool Sneaking => m_Sneaking.Value;
 
-        /// <summary>QA 전용 — 키 입력 없이 잠행 상태를 강제한다.</summary>
+        private bool m_DevForced; // QA 강제 — 키를 누르고 있는 것과 같게 취급한다
+
+        /// <summary>QA 전용 — 키 입력 없이 잠행을 켜고 끈다(Update가 매 프레임 되돌리지 않도록 래치).</summary>
         public void DevSetSneak(bool _sneaking)
         {
+            m_DevForced = _sneaking;
             if (IsOwner && IsSpawned) m_Sneaking.Value = _sneaking;
         }
 
@@ -37,7 +40,8 @@ namespace CTC.Runtime.Player
             if (kb == null) return;
 
             // 커서가 풀린 동안(로비·인게임 콘솔)은 조작으로 치지 않는다 — 다른 창에서 Ctrl 조합을 누를 때
-            bool held = Cursor.lockState == CursorLockMode.Locked && kb.leftCtrlKey.isPressed;
+            bool held = m_DevForced
+                        || (Cursor.lockState == CursorLockMode.Locked && kb.leftCtrlKey.isPressed);
             if (m_Sneaking.Value != held) m_Sneaking.Value = held;
         }
     }
