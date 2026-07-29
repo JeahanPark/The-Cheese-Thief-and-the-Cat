@@ -20,6 +20,42 @@ namespace CTC.Editor
         private const string ASM = "UnityEditor.MultiplayerModule";
         private const string NS = "Unity.Multiplayer.PlayMode.Editor.";
 
+        // Preferences > General > Interaction Mode. 0=Default(유휴 시 절전) / 1=No Throttling.
+        // 기본값이면 포커스를 잃은 클론 에디터가 초당 몇 프레임으로 떨어져 "클릭해야 갱신"이 된다.
+        private const string INTERACTION_MODE_PREF = "InteractionMode";
+        private const int INTERACTION_MODE_NO_THROTTLING = 1;
+
+        /// <summary>
+        /// 클론이 포커스 없이도 계속 도는 조건 두 가지를 한 번에 켠다(2026-07-29).
+        /// - Player Settings > Run In Background: 플레이모드가 백그라운드에서 계속 갱신
+        ///   (런타임에도 AppBootstrap이 켜지만, 에디터는 이 체크박스를 먼저 본다)
+        /// - Interaction Mode = No Throttling: 에디터 자체의 유휴 절전 해제
+        ///   → 이게 꺼져 있으면 클론 창을 클릭해야만 화면이 갱신된다
+        /// </summary>
+        [MenuItem("Tools/CTC/Dev/MPPM 백그라운드 갱신 켜기")]
+        public static void EnableBackgroundUpdates()
+        {
+            var sb = new StringBuilder("[MppmSetup] 백그라운드 갱신\n");
+
+            if (!PlayerSettings.runInBackground)
+            {
+                PlayerSettings.runInBackground = true;
+                AssetDatabase.SaveAssets();
+                sb.AppendLine("  Run In Background: 꺼짐 → 켬 (ProjectSettings 저장)");
+            }
+            else sb.AppendLine("  Run In Background: 이미 켜짐");
+
+            int mode = EditorPrefs.GetInt(INTERACTION_MODE_PREF, 0);
+            if (mode != INTERACTION_MODE_NO_THROTTLING)
+            {
+                EditorPrefs.SetInt(INTERACTION_MODE_PREF, INTERACTION_MODE_NO_THROTTLING);
+                sb.AppendLine($"  Interaction Mode: {mode} → 1(No Throttling) — 클론은 재시작해야 적용된다");
+            }
+            else sb.AppendLine("  Interaction Mode: 이미 No Throttling");
+
+            Report(sb.ToString());
+        }
+
         [MenuItem("Tools/CTC/Dev/MPPM 3인 세팅 (클론 2개 + wes 태그)")]
         public static void SetupThreePlayers()
         {
@@ -28,6 +64,8 @@ namespace CTC.Editor
                 Debug.LogError($"[MppmSetup] {error}");
                 return;
             }
+
+            EnableBackgroundUpdates(); // 세팅할 때마다 절전이 켜져 있는지 확인
 
             var sb = new StringBuilder("[MppmSetup] 3인 세팅\n");
             int cloneOrder = 0;
