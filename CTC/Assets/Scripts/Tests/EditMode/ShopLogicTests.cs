@@ -82,19 +82,19 @@ namespace CTC.Tests
         [Test]
         public void Warehouse_PaysBackWithinMatch()
         {
-            // 회수 = 가격 / 초당 생산. 판 길이(600s)보다 짧아야 살 이유가 있고,
-            // 너무 짧으면 창고만 짓고 앉아 있는 게 최적해가 된다(v3.6에서 75s → 150s).
+            // 회수 = 가격 / 초당 생산. 판 길이(600s)보다 충분히 짧아야 살 이유가 있다.
+            // v3.6: 2/s(75s)는 "150을 들일 값이 아니다"는 피드백을 받아 5/s(30s)로 올렸다.
             float payback = ShopLogic.Find(ShopItemId.Warehouse).Cost
                             / (float)ShopLogic.WAREHOUSE_INCOME_PER_SECOND;
-            Assert.AreEqual(150f, payback, 1e-4f);
+            Assert.AreEqual(30f, payback, 1e-4f);
             Assert.Less(payback, CTC.Runtime.Match.MatchFlowLogic.MATCH_DURATION_SECONDS * 0.5f);
         }
 
         [Test]
         public void WarehouseTick_DerivesFromIncomeAndChunk()
         {
-            // 10개씩 초당 1 → 10초마다 1회. 연출이 너무 잦거나 뜸하지 않은 구간이어야 한다.
-            Assert.AreEqual(10f, ShopLogic.WarehouseTickSeconds, 1e-4f);
+            // 10개씩 초당 5 → 2초마다 1회. 연출이 너무 잦거나 뜸하지 않은 구간이어야 한다.
+            Assert.AreEqual(2f, ShopLogic.WarehouseTickSeconds, 1e-4f);
             Assert.GreaterOrEqual(ShopLogic.WarehouseTickSeconds, 2f);
             Assert.LessOrEqual(ShopLogic.WarehouseTickSeconds, 12f);
         }

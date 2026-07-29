@@ -134,7 +134,7 @@ def main():
     print("   창고 생산 21초 대기...")
     time.sleep(21)
     ticks = m1.invoke("TestGetWarehouseTicks") - before_ticks
-    check("창고 — 10초마다 1틱(1/s)", 1 <= ticks <= 3, "21초 동안 %s틱 (기대 2)" % ticks)
+    check("창고 — 2초마다 1틱(5/s)", 8 <= ticks <= 12, "21초 동안 %s틱 (기대 10)" % ticks)
 
     # ---------- 8. 따봉 ----------
     m2.invoke("TestTeleportLocalPlayer", _x=sx + 8.0, _z=sz)
