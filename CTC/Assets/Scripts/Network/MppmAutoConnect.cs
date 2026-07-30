@@ -62,7 +62,7 @@ namespace CTC.Runtime.Networking
         {
             for (float waited = 0f; waited < ROLE_WAIT_TIMEOUT_SECONDS; waited += ROLE_POLL_SECONDS)
             {
-                Lobby.LobbyManager lobby = FindFirstObjectByType<Lobby.LobbyManager>();
+                Lobby.LobbyController lobby = FindFirstObjectByType<Lobby.LobbyController>();
                 if (lobby != null && lobby.IsSpawned)
                 {
                     lobby.SelectRole(Lobby.RoleId.Mouse);
@@ -71,7 +71,7 @@ namespace CTC.Runtime.Networking
                 }
                 await UniTask.Delay(TimeSpan.FromSeconds(ROLE_POLL_SECONDS), cancellationToken: _token);
             }
-            Debug.LogWarning("[MppmAutoConnect] LobbyManager 스폰 대기 초과 — 역할 수동 선택 필요");
+            Debug.LogWarning("[MppmAutoConnect] LobbyController 스폰 대기 초과 — 역할 수동 선택 필요");
         }
     }
 }

@@ -9,7 +9,7 @@ using UnityEngine;
 namespace CTC.Runtime.Match
 {
     /// <summary>
-    /// 매치 승패 관리(LobbyManager GO의 in-scene NetworkObject에 동승).
+    /// 매치 승패 관리(LobbyController GO의 in-scene NetworkObject에 동승).
     /// 서버가 0.5s 간격으로 생존 수를 세어 판정하고 결과를 NetworkVariable로 복제.
     /// 재시작: 비-씬 NetworkObject 전부 despawn → 결과 리셋 → 로비 복귀(역할 유지).
     /// </summary>
@@ -17,7 +17,7 @@ namespace CTC.Runtime.Match
     {
         private const float POLL_INTERVAL_SECONDS = 0.5f;
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
 
         // MatchResult. 서버 기록, 전원 읽기(ResultHud).
         private readonly NetworkVariable<int> m_Result = new NetworkVariable<int>();

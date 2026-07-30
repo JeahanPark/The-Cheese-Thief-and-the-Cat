@@ -7,7 +7,7 @@ namespace CTC.Runtime.Audio
     /// <summary>매치 전환 알림음(2D) — 게임 시작 팡파레, 승패 징글. 엣지 감지로 1회씩만.</summary>
     public class MatchSfx : MonoBehaviour
     {
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private MatchManager m_Match;
 
         private const float TIMER_WARN_SECONDS = 10f; // 막판 N초 동안 초당 째깍

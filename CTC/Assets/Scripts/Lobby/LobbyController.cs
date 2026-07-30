@@ -11,12 +11,12 @@ namespace CTC.Runtime.Lobby
     /// `LobbySession`(상태) · `PlayerSpawner`(스폰) · `MapDirector`(맵)에 위임한다.
     ///
     /// 개편 3단계(2026-07-31) 전에는 이 클래스가 290줄로 넷을 다 겸했다. 지금은 넘겨주는 역할만 한다.
-    /// 이름은 아직 `LobbyManager` — 규약상 Manager는 글로벌 싱글톤이라 맞지 않지만,
-    /// 참조하는 파일이 15개라 리네임은 별도 커밋으로 뺀다.
+    /// 옛 이름 `LobbyManager`에서 리네임(2026-07-31) — 규약상 Manager는 씬을 넘어 사는 글로벌 싱글톤이고
+    /// 이건 씬 오브젝트라 Controller가 맞다.
     ///
     /// 셋 다 같은 in-scene NetworkObject에 동승한다(NetworkBehaviour 다중 부착).
     /// </summary>
-    public class LobbyManager : NetworkBehaviour
+    public class LobbyController : NetworkBehaviour
     {
         public const int CatCapacity = LobbySession.CAT_CAPACITY;
         public const float FORTRESS_ENTRANCE_OFFSET_METERS = PlayerSpawner.FORTRESS_ENTRANCE_OFFSET_METERS;

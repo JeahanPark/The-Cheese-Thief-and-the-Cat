@@ -41,7 +41,7 @@ namespace CTC.Runtime.Match
             public List<PlayerEntry> players = new List<PlayerEntry>();
         }
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private MatchManager m_Match;
 
         private readonly HashSet<Health> m_Hooked = new HashSet<Health>();

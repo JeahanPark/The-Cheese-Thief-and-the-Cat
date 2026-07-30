@@ -14,7 +14,7 @@ namespace CTC.Runtime.Match
     /// </summary>
     public class TimerHud : MonoBehaviour
     {
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private MatchManager m_Match;
         [SerializeField] private TMP_Text m_Text;
 

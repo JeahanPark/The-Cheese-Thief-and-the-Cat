@@ -23,7 +23,7 @@ namespace CTC.Runtime.Economy
     }
 
     /// <summary>
-    /// 치즈 지점 전체를 감독한다(in-scene NetworkObject, LobbyManager와 동승).
+    /// 치즈 지점 전체를 감독한다(in-scene NetworkObject, LobbyController와 동승).
     /// - 지점 상태(잔량·점유)를 NetworkList로 복제 — 지점 자체는 네트워크 오브젝트가 아니다.
     ///   맵이 런타임에 지어지므로 in-scene 해시를 쓸 수 없고, 지점마다 동적 스폰하는 건 과하다.
     /// - 매치 시작 시 매장량 복구
@@ -34,7 +34,7 @@ namespace CTC.Runtime.Economy
     {
         private const float POLL_SECONDS = 1f;
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private MatchManager m_Match;
 
         private NetworkList<CheeseSpotState> m_States;

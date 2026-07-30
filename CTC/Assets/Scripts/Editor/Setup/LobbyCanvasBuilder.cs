@@ -33,7 +33,7 @@ namespace CTC.Editor
         private const float SLOT_GAP = 8f;
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
-        private static void BuildLobbyCanvas(LobbyManager lobby, MatchManager match)
+        private static void BuildLobbyCanvas(LobbyController lobby, MatchManager match)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();

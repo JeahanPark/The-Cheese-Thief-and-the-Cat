@@ -22,7 +22,7 @@ namespace CTC.Runtime.Match
         private const float MARKER_HEIGHT = 1.1f;
         private const double COOLDOWN_SECONDS = 3.0;
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private Cameras.SpectatorFallback m_Spectator;
 
         private readonly Dictionary<ulong, double> m_NextAllowed = new Dictionary<ulong, double>();

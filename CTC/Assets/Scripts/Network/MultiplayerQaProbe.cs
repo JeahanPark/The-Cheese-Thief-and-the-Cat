@@ -145,10 +145,10 @@ namespace CTC.Runtime.Networking
         // 클론 로컬에서 로비 역할 선택 — MPPM 로비 자동화용.
         private void SelectRole(RoleId role)
         {
-            var lobby = FindFirstObjectByType<LobbyManager>();
+            var lobby = FindFirstObjectByType<LobbyController>();
             if (lobby == null || !lobby.IsSpawned)
             {
-                Debug.LogWarning("[MultiplayerQaProbe] SelectRole — LobbyManager 없음/미스폰");
+                Debug.LogWarning("[MultiplayerQaProbe] SelectRole — LobbyController 없음/미스폰");
                 return;
             }
             lobby.SelectRole(role);

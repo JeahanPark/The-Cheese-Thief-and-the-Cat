@@ -18,7 +18,7 @@ namespace CTC.Runtime.Lobby
         private static readonly Color COLOR_OK = new Color(0.78f, 0.82f, 0.9f);
         private static readonly Color COLOR_WARN = new Color(1f, 0.72f, 0.35f);
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private TMP_Text m_Text;
 
         private void Update()

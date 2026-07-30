@@ -32,7 +32,7 @@ namespace CTC.Runtime.Lobby
             "새총", "기관총", "대시", "미끼", "요새", "창고", "공격 강화", "이속 강화",
         };
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private TMP_Text m_Text;
 
         private RoleId m_CachedRole = RoleId.None;

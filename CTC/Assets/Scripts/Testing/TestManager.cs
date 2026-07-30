@@ -93,29 +93,29 @@ namespace CTC.Runtime.Testing
 
         public void TestSelectRoleCat()
         {
-            LobbyManager lobby = FindLobby();
+            LobbyController lobby = FindLobby();
             if (lobby == null) return;
 
             lobby.DevSelectCat();
-            GameDebug.Log("[TestManager] TestSelectRoleCat → LobbyManager.DevSelectCat");
+            GameDebug.Log("[TestManager] TestSelectRoleCat → LobbyController.DevSelectCat");
         }
 
         public void TestSelectRoleMouse()
         {
-            LobbyManager lobby = FindLobby();
+            LobbyController lobby = FindLobby();
             if (lobby == null) return;
 
             lobby.DevSelectMouse();
-            GameDebug.Log("[TestManager] TestSelectRoleMouse → LobbyManager.DevSelectMouse");
+            GameDebug.Log("[TestManager] TestSelectRoleMouse → LobbyController.DevSelectMouse");
         }
 
         public void TestStartGame()
         {
-            LobbyManager lobby = FindLobby();
+            LobbyController lobby = FindLobby();
             if (lobby == null) return;
 
             lobby.DevStartGame();
-            GameDebug.Log("[TestManager] TestStartGame → LobbyManager.DevStartGame");
+            GameDebug.Log("[TestManager] TestStartGame → LobbyController.DevStartGame");
         }
 
         /// <summary>로컬 플레이어(고양이)의 덮치기 실행.</summary>
@@ -199,12 +199,12 @@ namespace CTC.Runtime.Testing
             return best;
         }
 
-        private static LobbyManager FindLobby()
+        private static LobbyController FindLobby()
         {
-            var lobby = FindFirstObjectByType<LobbyManager>();
+            var lobby = FindFirstObjectByType<LobbyController>();
             if (lobby == null)
             {
-                GameDebug.LogError("[TestManager] LobbyManager not found in scene");
+                GameDebug.LogError("[TestManager] LobbyController not found in scene");
             }
             return lobby;
         }

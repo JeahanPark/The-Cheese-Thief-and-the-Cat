@@ -8,9 +8,9 @@ namespace CTC.Runtime.Lobby
 {
     /// <summary>
     /// 로비의 **네트워크 상태만** 소유한다 — 참가자 목록·역할·시작 여부 (MVC의 Model).
-    /// 스폰·맵·UI는 각각 PlayerSpawner·MapDirector·LobbyManager가 맡는다(개편 3단계, 2026-07-31).
+    /// 스폰·맵·UI는 각각 PlayerSpawner·MapDirector·LobbyController가 맡는다(개편 3단계, 2026-07-31).
     ///
-    /// LobbyManager와 같은 in-scene NetworkObject에 동승한다 — NetworkBehaviour를 여러 개 붙이면
+    /// LobbyController와 같은 in-scene NetworkObject에 동승한다 — NetworkBehaviour를 여러 개 붙이면
     /// RPC 발신자 식별(RpcParams.Receive.SenderClientId)이 각자 그대로 동작한다.
     /// </summary>
     public class LobbySession : NetworkBehaviour

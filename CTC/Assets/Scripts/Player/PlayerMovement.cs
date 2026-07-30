@@ -57,7 +57,7 @@ namespace CTC.Runtime.Player
         {
             if (!IsOwner) return;
 
-            var lobby = FindFirstObjectByType<Lobby.LobbyManager>();
+            var lobby = FindFirstObjectByType<Lobby.LobbyController>();
             if (lobby == null) return;
 
             int idx = lobby.IndexOfClient(OwnerClientId);

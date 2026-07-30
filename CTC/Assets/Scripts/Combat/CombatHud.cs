@@ -16,7 +16,7 @@ namespace CTC.Runtime.Combat
     /// </summary>
     public class CombatHud : MonoBehaviour
     {
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private TMP_Text m_Text;
 
         private const float CAT_BIND_RETRY_SECONDS = 0.5f;

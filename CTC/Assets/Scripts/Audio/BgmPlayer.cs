@@ -10,7 +10,7 @@ namespace CTC.Runtime.Audio
     /// </summary>
     public class BgmPlayer : MonoBehaviour
     {
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private AudioSource m_Source;
         [SerializeField] private bool m_PlayWhenGameStopped;
         // 임시 소등(2026-07-28 요청) — 곡이 확정되기 전까지 배경음을 끈다.

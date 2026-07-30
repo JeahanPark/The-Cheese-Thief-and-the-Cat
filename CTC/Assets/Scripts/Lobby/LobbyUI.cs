@@ -19,7 +19,7 @@ namespace CTC.Runtime.Lobby
         private static readonly Color MAP_SELECTED = new Color(0.45f, 0.95f, 0.45f);
         private static readonly Color MAP_NORMAL = Color.white;
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Panel;
         [SerializeField] private TMP_Text m_PlayerListText;
         [SerializeField] private Button m_MouseButton;

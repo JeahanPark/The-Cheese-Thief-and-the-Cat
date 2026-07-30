@@ -15,7 +15,7 @@ namespace CTC.Runtime.Cameras
         private const float SPECTATE_FOV = 60f;
         private const float SPECTATE_DISTANCE = 5f;
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
 
         private OrbitCameraController m_Orbit;
         private Transform m_Current;

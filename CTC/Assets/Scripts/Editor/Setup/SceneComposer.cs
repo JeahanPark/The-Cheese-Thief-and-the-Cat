@@ -62,7 +62,7 @@ namespace CTC.Editor
             nmGo.AddComponent<MultiplayerQaProbe>();
 
             // 로비 (in-scene NetworkObject — 서버 시작 시 자동 스폰)
-            var lobbyGo = new GameObject("LobbyManager");
+            var lobbyGo = new GameObject("LobbyController");
             lobbyGo.AddComponent<NetworkObject>();
             // 개편 3단계(2026-07-31): 상태·스폰·맵이 각각 별도 컴포넌트로 갈라져 한 오브젝트에 동승한다.
             // NetworkBehaviour를 여러 개 붙여도 RPC 발신자 식별은 각자 그대로 동작한다.
@@ -76,7 +76,7 @@ namespace CTC.Editor
             SetRefArray(mapDirector, "m_MapLayouts", LoadMapLayouts());
             SetRef(mapDirector, "m_MapBuilder", mapBuilder);
 
-            var lobby = lobbyGo.AddComponent<LobbyManager>();             // 조립자(Controller)
+            var lobby = lobbyGo.AddComponent<LobbyController>();             // 조립자(Controller)
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
 
@@ -92,7 +92,7 @@ namespace CTC.Editor
             var binderGo = new GameObject("LocalPlayerBinder");
             binderGo.AddComponent<CTC.Runtime.Core.LocalPlayerBinder>();
 
-            // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
+            // 채팅 (in-scene NetworkObject — LobbyController와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
             var chatGo = new GameObject("ChatManager");
             chatGo.AddComponent<NetworkObject>();
             chatGo.AddComponent<ChatManager>();

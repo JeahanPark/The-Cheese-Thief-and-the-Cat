@@ -28,7 +28,7 @@ namespace CTC.Runtime.Economy
         private static readonly Color COLOR_POOR = new Color(1f, 0.45f, 0.35f);
         private static readonly Color COLOR_OWNED = new Color(0.5f, 0.82f, 0.42f);
 
-        [SerializeField] private LobbyManager m_Lobby;
+        [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Root;
         [SerializeField] private GameObject[] m_Slots;     // 슬롯 루트(표시/숨김)
         [SerializeField] private TMP_Text[] m_SlotLabels;  // "1 새총"
