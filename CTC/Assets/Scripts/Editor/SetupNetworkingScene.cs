@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using CTC.Runtime.Cameras;
 using CTC.Runtime.Combat;
@@ -392,14 +392,14 @@ namespace CTC.Editor
                 root.AddComponent<ClientNetworkTransform>();
 
                 var move = root.AddComponent<PlayerMovement>();
-                SetFloat(move, "moveSpeed", moveSpeed);
+                SetFloat(move, "m_MoveSpeed", moveSpeed);
 
                 var anim = root.AddComponent<PlayerAnimationDriver>();
-                SetFloat(anim, "runThreshold", runThreshold);
+                SetFloat(anim, "m_RunThreshold", runThreshold);
 
                 var binder = root.AddComponent<PlayerCameraBinder>();
-                SetFloat(binder, "cameraFov", fov);
-                SetFloat(binder, "cameraDistance", camDistance);
+                SetFloat(binder, "m_CameraFov", fov);
+                SetFloat(binder, "m_CameraDistance", camDistance);
 
                 root.AddComponent<CheeseWallet>();
 
@@ -525,8 +525,8 @@ namespace CTC.Editor
             var lobbyGo = new GameObject("LobbyManager");
             lobbyGo.AddComponent<NetworkObject>();
             var lobby = lobbyGo.AddComponent<LobbyManager>();
-            SetRef(lobby, "catPrefab", catPrefab);
-            SetRef(lobby, "mousePrefab", mousePrefab);
+            SetRef(lobby, "m_CatPrefab", catPrefab);
+            SetRef(lobby, "m_MousePrefab", mousePrefab);
             // 로비에서 고를 맵 목록 — 요새자리·스폰 공식이 선택된 레이아웃을 읽는다
             SetRefArray(lobby, "m_MapLayouts", LoadMapLayouts());
             SetRef(lobby, "m_MapBuilder", mapBuilder);
@@ -811,14 +811,14 @@ namespace CTC.Editor
             Button startButton = CreateMuipButton(panel.transform, "StartButton", "Start Game", new Vector2(0f, -550f));
 
             var ui = canvasGo.AddComponent<LobbyUI>();
-            SetRef(ui, "lobby", lobby);
-            SetRef(ui, "panel", panel);
-            SetRef(ui, "playerListText", playerList);
-            SetRef(ui, "mouseButton", mouseButton);
-            SetRef(ui, "catButton", catButton);
-            SetRef(ui, "startButton", startButton);
-            SetRef(ui, "mapLabel", mapLabel);
-            SetRefArray(ui, "mapButtons", mapButtons);
+            SetRef(ui, "m_Lobby", lobby);
+            SetRef(ui, "m_Panel", panel);
+            SetRef(ui, "m_PlayerListText", playerList);
+            SetRef(ui, "m_MouseButton", mouseButton);
+            SetRef(ui, "m_CatButton", catButton);
+            SetRef(ui, "m_StartButton", startButton);
+            SetRef(ui, "m_MapLabel", mapLabel);
+            SetRefArray(ui, "m_MapButtons", mapButtons);
 
             // 치즈 잔액 HUD (우상단, 게임 시작 후 WalletHud가 표시 제어)
             var hudTextGo = new GameObject("WalletText");

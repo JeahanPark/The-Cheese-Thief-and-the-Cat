@@ -1,4 +1,4 @@
-using CTC.Runtime.Economy;
+﻿using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,18 +16,18 @@ namespace CTC.Runtime.Player
     {
         private const float GRAVITY = -20f;
 
-        [SerializeField] private float moveSpeed = 5f;
-        [SerializeField] private float turnSpeedDegPerSec = 720f;
+        [SerializeField] private float m_MoveSpeed = 5f;
+        [SerializeField] private float m_TurnSpeedDegPerSec = 720f;
 
         // 이속 강화 스택(상점, 고양이). 서버 기록·소유자 적용.
-        private readonly NetworkVariable<int> _speedStacks = new NetworkVariable<int>();
+        private readonly NetworkVariable<int> m_SpeedStacks = new NetworkVariable<int>();
 
-        private CharacterController _controller;
-        private CatSneak _sneak;   // 고양이 전용(쥐 프리팹엔 없음)
-        private float _verticalVelocity;
+        private CharacterController m_Controller;
+        private CatSneak m_Sneak;   // 고양이 전용(쥐 프리팹엔 없음)
+        private float m_VerticalVelocity;
         private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
 
-        public int SpeedStacks => _speedStacks.Value;
+        public int SpeedStacks => m_SpeedStacks.Value;
 
         /// <summary>QA 전용 — 키보드 대신 이 방향으로 걷는다. 영벡터면 해제.</summary>
         public void DevSetMoveInput(Vector3 _worldDirection)
@@ -38,14 +38,14 @@ namespace CTC.Runtime.Player
         /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
         public void ServerAddSpeedStack()
         {
-            if (!IsServer || !ShopLogic.CanAddStack(_speedStacks.Value)) return;
-            _speedStacks.Value++;
+            if (!IsServer || !ShopLogic.CanAddStack(m_SpeedStacks.Value)) return;
+            m_SpeedStacks.Value++;
         }
 
         private void Awake()
         {
-            _controller = GetComponent<CharacterController>();
-            _sneak = GetComponent<CatSneak>();
+            m_Controller = GetComponent<CharacterController>();
+            m_Sneak = GetComponent<CatSneak>();
         }
 
         /// <summary>
@@ -63,9 +63,9 @@ namespace CTC.Runtime.Player
             int idx = lobby.IndexOfClient(OwnerClientId);
             if (idx < 0) return;
 
-            _controller.enabled = false;
+            m_Controller.enabled = false;
             transform.position = lobby.SpawnPositionOf(idx);
-            _controller.enabled = true;
+            m_Controller.enabled = true;
         }
 
         /// <summary>
@@ -75,7 +75,7 @@ namespace CTC.Runtime.Player
         /// </summary>
         public override void OnNetworkDespawn()
         {
-            _controller.enabled = false;
+            m_Controller.enabled = false;
         }
 
         private void Update()
@@ -99,21 +99,21 @@ namespace CTC.Runtime.Player
             if (m_DevMoveInput.sqrMagnitude > 0.0001f) dir = m_DevMoveInput;
 
             // 중력 — 접지 중엔 살짝 눌러 붙이고, 공중에선 가속 낙하
-            if (_controller.isGrounded && _verticalVelocity < 0f) _verticalVelocity = -1f;
-            _verticalVelocity += GRAVITY * Time.deltaTime;
+            if (m_Controller.isGrounded && m_VerticalVelocity < 0f) m_VerticalVelocity = -1f;
+            m_VerticalVelocity += GRAVITY * Time.deltaTime;
 
-            float speed = ShopLogic.MoveSpeed(moveSpeed, _speedStacks.Value);
-            if (_sneak != null && _sneak.Sneaking) speed *= CatSneak.SPEED_MULTIPLIER;
+            float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value);
+            if (m_Sneak != null && m_Sneak.Sneaking) speed *= CatSneak.SPEED_MULTIPLIER;
 
             Vector3 motion = dir * speed;
-            motion.y = _verticalVelocity;
-            _controller.Move(motion * Time.deltaTime);
+            motion.y = m_VerticalVelocity;
+            m_Controller.Move(motion * Time.deltaTime);
 
             if (dir.sqrMagnitude > 0.0001f)
             {
                 Quaternion look = Quaternion.LookRotation(dir);
                 transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation, look, turnSpeedDegPerSec * Time.deltaTime);
+                    transform.rotation, look, m_TurnSpeedDegPerSec * Time.deltaTime);
             }
         }
     }

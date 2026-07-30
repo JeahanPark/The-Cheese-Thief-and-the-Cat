@@ -1,3 +1,4 @@
+﻿using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace CTC.Runtime.Match
         /// <summary>결과 패널이 커서를 점유 중인지 — LobbyUI가 잠금 강제 전 확인.</summary>
         public static bool IsShowing { get; private set; }
 
+        private const int RESTART_THROTTLE_MS = 400;
+
         [SerializeField] private MatchManager m_Match;
         [SerializeField] private GameObject m_Panel;
         [SerializeField] private TMP_Text m_Text;
@@ -21,10 +24,15 @@ namespace CTC.Runtime.Match
 
         private void Awake()
         {
-            m_RestartButton.onClick.AddListener(() => m_Match.RequestRestart());
+            // 버튼 연결은 R3 (CTC 규칙 2·4) — 재시작은 연타가 잦아 ThrottleFirst로 한 번만 통과시킨다
+            m_RestartButton.OnClickAsObservable()
+                .ThrottleFirst(System.TimeSpan.FromMilliseconds(RESTART_THROTTLE_MS))
+                .Subscribe(_ => OnClickRestart()).AddTo(this);
             m_Panel.SetActive(false);
             IsShowing = false;
         }
+
+        private void OnClickRestart() => m_Match.RequestRestart();
 
         private void OnDestroy()
         {

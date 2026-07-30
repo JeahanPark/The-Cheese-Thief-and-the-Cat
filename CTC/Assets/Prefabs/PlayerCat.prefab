@@ -157,8 +157,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  moveSpeed: 6.7
-  turnSpeedDegPerSec: 720
+  m_MoveSpeed: 6.7
+  m_TurnSpeedDegPerSec: 720
 --- !u!114 &2931861370349972259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -171,10 +171,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6af1791f962aed948800cc00bfde8159, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerAnimationDriver
-  walkThreshold: 0.1
-  runThreshold: 3.2
-  crossFadeSeconds: 0.15
-  speedSmoothing: 0.25
+  m_WalkThreshold: 0.1
+  m_RunThreshold: 3.2
+  m_CrossFadeSeconds: 0.15
+  m_SpeedSmoothing: 0.25
 --- !u!114 &2949772959274618968
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -188,8 +188,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Cameras.PlayerCameraBinder
   ShowTopMostFoldoutHeaderGroup: 1
-  cameraFov: 70
-  cameraDistance: 3
+  m_CameraFov: 70
+  m_CameraDistance: 3
 --- !u!114 &4598405987156818162
 MonoBehaviour:
   m_ObjectHideFlags: 0

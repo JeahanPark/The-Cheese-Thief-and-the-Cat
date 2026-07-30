@@ -1,4 +1,4 @@
-using Unity.Cinemachine;
+﻿using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -12,61 +12,61 @@ namespace CTC.Runtime.Cameras
     [RequireComponent(typeof(CinemachineCamera), typeof(CinemachineOrbitalFollow))]
     public class OrbitCameraController : MonoBehaviour
     {
-        [SerializeField] private float sensitivity = 0.15f;
-        [SerializeField] private float minPitch = -30f;
-        [SerializeField] private float maxPitch = 70f;
+        [SerializeField] private float m_Sensitivity = 0.15f;
+        [SerializeField] private float m_MinPitch = -30f;
+        [SerializeField] private float m_MaxPitch = 70f;
 
-        private CinemachineCamera _cam;
-        private CinemachineOrbitalFollow _orbital;
-        private Vector2 _angles = new Vector2(0f, 20f); // (yaw, pitch)
+        private CinemachineCamera m_Cam;
+        private CinemachineOrbitalFollow m_Orbital;
+        private Vector2 m_Angles = new Vector2(0f, 20f); // (yaw, pitch)
 
         private void Awake()
         {
-            _cam = GetComponent<CinemachineCamera>();
-            _orbital = GetComponent<CinemachineOrbitalFollow>();
+            m_Cam = GetComponent<CinemachineCamera>();
+            m_Orbital = GetComponent<CinemachineOrbitalFollow>();
         }
 
         /// <summary>로컬 플레이어 스폰 시 호출 — 추적 대상과 역할별 렌즈를 적용한다.</summary>
         public void Bind(Transform target, float fov, float distance)
         {
-            _cam.Follow = target;
-            _cam.LookAt = target;
+            m_Cam.Follow = target;
+            m_Cam.LookAt = target;
 
-            LensSettings lens = _cam.Lens;
+            LensSettings lens = m_Cam.Lens;
             lens.FieldOfView = fov;
-            _cam.Lens = lens;
+            m_Cam.Lens = lens;
 
-            _orbital.Radius = distance;
+            m_Orbital.Radius = distance;
         }
 
         private void Update()
         {
-            if (_cam.Follow == null) return;
+            if (m_Cam.Follow == null) return;
             if (Cursor.lockState != CursorLockMode.Locked) return;
 
             Mouse mouse = Mouse.current;
             if (mouse == null) return;
 
-            _angles = CameraOrbitLogic.Step(_angles, mouse.delta.ReadValue(), sensitivity, minPitch, maxPitch);
-            _orbital.HorizontalAxis.Value = _angles.x;
-            _orbital.VerticalAxis.Value = _angles.y;
+            m_Angles = CameraOrbitLogic.Step(m_Angles, mouse.delta.ReadValue(), m_Sensitivity, m_MinPitch, m_MaxPitch);
+            m_Orbital.HorizontalAxis.Value = m_Angles.x;
+            m_Orbital.VerticalAxis.Value = m_Angles.y;
         }
 
         /// <summary>QA 전용 — 마우스 없이 시점을 지정한다(차폐 페이드 검증).</summary>
         public void DevSetAngles(float _yawDeg, float _pitchDeg)
         {
-            _angles = new Vector2(
+            m_Angles = new Vector2(
                 CameraOrbitLogic.WrapYaw(_yawDeg),
-                CameraOrbitLogic.ClampPitch(_pitchDeg, minPitch, maxPitch));
-            _orbital.HorizontalAxis.Value = _angles.x;
-            _orbital.VerticalAxis.Value = _angles.y;
+                CameraOrbitLogic.ClampPitch(_pitchDeg, m_MinPitch, m_MaxPitch));
+            m_Orbital.HorizontalAxis.Value = m_Angles.x;
+            m_Orbital.VerticalAxis.Value = m_Angles.y;
         }
 
         /// <summary>QA 전용 — 카메라와 추적 대상의 실제 거리. 페이드 방식은 이 값이 상수여야 한다.</summary>
         public float DevDistanceToTarget()
         {
-            if (_cam.Follow == null) return -1f;
-            return Vector3.Distance(transform.position, _cam.Follow.position);
+            if (m_Cam.Follow == null) return -1f;
+            return Vector3.Distance(transform.position, m_Cam.Follow.position);
         }
     }
 }

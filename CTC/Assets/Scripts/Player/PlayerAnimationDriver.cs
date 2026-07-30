@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CTC.Runtime.Player
 {
@@ -9,10 +9,10 @@ namespace CTC.Runtime.Player
     /// </summary>
     public class PlayerAnimationDriver : MonoBehaviour
     {
-        [SerializeField] private float walkThreshold = 0.1f;
-        [SerializeField] private float runThreshold = 3.5f;
-        [SerializeField] private float crossFadeSeconds = 0.15f;
-        [SerializeField] private float speedSmoothing = 0.25f;
+        [SerializeField] private float m_WalkThreshold = 0.1f;
+        [SerializeField] private float m_RunThreshold = 3.5f;
+        [SerializeField] private float m_CrossFadeSeconds = 0.15f;
+        [SerializeField] private float m_SpeedSmoothing = 0.25f;
 
         private Animator _animator;
         private Vector3 _lastPosition;
@@ -37,13 +37,13 @@ namespace CTC.Runtime.Player
             delta.y = 0f;
 
             float rawSpeed = delta.magnitude / Time.deltaTime;
-            _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, rawSpeed, speedSmoothing);
+            _smoothedSpeed = Mathf.Lerp(_smoothedSpeed, rawSpeed, m_SpeedSmoothing);
 
-            string state = AnimationStateLogic.FromSpeed(_smoothedSpeed, walkThreshold, runThreshold);
+            string state = AnimationStateLogic.FromSpeed(_smoothedSpeed, m_WalkThreshold, m_RunThreshold);
             if (Time.time < _oneShotUntil || state == _currentState) return;
 
             _currentState = state;
-            _animator.CrossFadeInFixedTime(state, crossFadeSeconds);
+            _animator.CrossFadeInFixedTime(state, m_CrossFadeSeconds);
         }
 
         /// <summary>
@@ -55,7 +55,7 @@ namespace CTC.Runtime.Player
             if (_animator == null) return;
             _oneShotUntil = Time.time + _seconds;
             _currentState = _state;
-            _animator.CrossFadeInFixedTime(_state, crossFadeSeconds);
+            _animator.CrossFadeInFixedTime(_state, m_CrossFadeSeconds);
         }
     }
 }

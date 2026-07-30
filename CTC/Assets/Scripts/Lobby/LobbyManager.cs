@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -13,8 +13,8 @@ namespace CTC.Runtime.Lobby
     {
         public const int CatCapacity = 1;
 
-        [SerializeField] private GameObject catPrefab;
-        [SerializeField] private GameObject mousePrefab;
+        [SerializeField] private GameObject m_CatPrefab;
+        [SerializeField] private GameObject m_MousePrefab;
 
         // v3.5: 맵이 런타임에 지어진다. 로비에서 호스트가 고르면 전원이 그 맵을 다시 짓는다.
         [SerializeField] private CTC.Runtime.Map.MapLayout[] m_MapLayouts;
@@ -26,13 +26,13 @@ namespace CTC.Runtime.Lobby
         // (구) 인스펙터 시작 치즈 — CSV로 옮겨 더 이상 읽지 않는다. 개편 2단계에서 필드째 제거.
         [SerializeField] private int m_MouseStartCheese = 50;
 
-        private NetworkList<LobbyPlayerState> _players;
-        private readonly NetworkVariable<bool> _gameStarted = new NetworkVariable<bool>();
+        private NetworkList<LobbyPlayerState> m_Players;
+        private readonly NetworkVariable<bool> m_GameStarted = new NetworkVariable<bool>();
         private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
 
-        public bool GameStarted => _gameStarted.Value;
-        public int PlayerCount => _players.Count;
-        public LobbyPlayerState GetPlayer(int index) => _players[index];
+        public bool GameStarted => m_GameStarted.Value;
+        public int PlayerCount => m_Players.Count;
+        public LobbyPlayerState GetPlayer(int index) => m_Players[index];
         public bool CanStart => LobbyRoleLogic.CanStart(SnapshotRoles());
 
         public int MapCount => m_MapLayouts != null ? m_MapLayouts.Length : 0;
@@ -48,7 +48,7 @@ namespace CTC.Runtime.Lobby
         private void Awake()
         {
             // NetworkList는 필드 초기화 대신 Awake에서 생성 (NGO 권장 — 도메인 리로드 누수 방지)
-            _players = new NetworkList<LobbyPlayerState>();
+            m_Players = new NetworkList<LobbyPlayerState>();
         }
 
         public override void OnNetworkSpawn()
@@ -88,7 +88,7 @@ namespace CTC.Runtime.Lobby
         {
             // 방장만 바꾼다 — 시작 버튼과 같은 권한 구조
             if (rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId) return;
-            if (_gameStarted.Value) return;
+            if (m_GameStarted.Value) return;
 
             m_MapIndex.Value = LobbyRoleLogic.ClampMapIndex(_index, MapCount);
         }
@@ -120,19 +120,19 @@ namespace CTC.Runtime.Lobby
 
         private void Update()
         {
-            if (!IsSpawned || !IsServer || _gameStarted.Value) return;
+            if (!IsSpawned || !IsServer || m_GameStarted.Value) return;
 
             m_ReconcileTimer += Time.deltaTime;
             if (m_ReconcileTimer < 1f) return;
             m_ReconcileTimer = 0f;
 
-            for (int i = _players.Count - 1; i >= 0; i--)
+            for (int i = m_Players.Count - 1; i >= 0; i--)
             {
-                ulong id = _players[i].ClientId;
+                ulong id = m_Players[i].ClientId;
                 if (IsConnected(id)) continue;
 
-                _players.RemoveAt(i);
-                Debug.LogWarning($"[Lobby] 유령 항목 제거 client={id} → 인원 {_players.Count}");
+                m_Players.RemoveAt(i);
+                Debug.LogWarning($"[Lobby] 유령 항목 제거 client={id} → 인원 {m_Players.Count}");
             }
         }
 
@@ -149,24 +149,24 @@ namespace CTC.Runtime.Lobby
         private void OnClientDisconnected(ulong clientId)
         {
             int idx = IndexOf(clientId);
-            if (idx >= 0) _players.RemoveAt(idx);
-            Debug.Log($"[Lobby] 접속 해제 client={clientId} → 인원 {_players.Count}");
+            if (idx >= 0) m_Players.RemoveAt(idx);
+            Debug.Log($"[Lobby] 접속 해제 client={clientId} → 인원 {m_Players.Count}");
         }
 
         private void EnsureEntry(ulong clientId)
         {
             if (IndexOf(clientId) < 0)
             {
-                _players.Add(new LobbyPlayerState { ClientId = clientId, Role = RoleId.None });
-                Debug.Log($"[Lobby] 접속 client={clientId} → 인원 {_players.Count}");
+                m_Players.Add(new LobbyPlayerState { ClientId = clientId, Role = RoleId.None });
+                Debug.Log($"[Lobby] 접속 client={clientId} → 인원 {m_Players.Count}");
             }
         }
 
         private int IndexOf(ulong clientId)
         {
-            for (int i = 0; i < _players.Count; i++)
+            for (int i = 0; i < m_Players.Count; i++)
             {
-                if (_players[i].ClientId == clientId) return i;
+                if (m_Players[i].ClientId == clientId) return i;
             }
             return -1;
         }
@@ -220,8 +220,8 @@ namespace CTC.Runtime.Lobby
 
         private List<RoleId> SnapshotRoles()
         {
-            var roles = new List<RoleId>(_players.Count);
-            for (int i = 0; i < _players.Count; i++) roles.Add(_players[i].Role);
+            var roles = new List<RoleId>(m_Players.Count);
+            for (int i = 0; i < m_Players.Count; i++) roles.Add(m_Players[i].Role);
             return roles;
         }
 
@@ -234,24 +234,24 @@ namespace CTC.Runtime.Lobby
         [Rpc(SendTo.Server)]
         private void SelectRoleRpc(RoleId role, RpcParams rpcParams = default)
         {
-            if (_gameStarted.Value) return;
+            if (m_GameStarted.Value) return;
 
             ulong sender = rpcParams.Receive.SenderClientId;
             int idx = IndexOf(sender);
             if (!LobbyRoleLogic.CanSelect(SnapshotRoles(), idx, role, CatCapacity)) return;
 
-            LobbyPlayerState st = _players[idx];
+            LobbyPlayerState st = m_Players[idx];
             st.Role = role;
-            _players[idx] = st;
+            m_Players[idx] = st;
         }
 
         /// <summary>호스트 UI에서 호출. 서버에서만 동작.</summary>
         public void RequestStartGame()
         {
-            if (!IsServer || _gameStarted.Value) return;
+            if (!IsServer || m_GameStarted.Value) return;
             if (!LobbyRoleLogic.CanStart(SnapshotRoles())) return;
 
-            _gameStarted.Value = true;
+            m_GameStarted.Value = true;
             SpawnPlayers();
         }
 
@@ -259,17 +259,17 @@ namespace CTC.Runtime.Lobby
         public void ResetToLobby()
         {
             if (!IsServer) return;
-            _gameStarted.Value = false;
+            m_GameStarted.Value = false;
         }
 
         private void SpawnPlayers()
         {
             List<RoleId> roles = SnapshotRoles();
             var forts = FortressSpots();
-            for (int i = 0; i < _players.Count; i++)
+            for (int i = 0; i < m_Players.Count; i++)
             {
-                LobbyPlayerState p = _players[i];
-                GameObject prefab = p.Role == RoleId.Cat ? catPrefab : mousePrefab;
+                LobbyPlayerState p = m_Players[i];
+                GameObject prefab = p.Role == RoleId.Cat ? m_CatPrefab : m_MousePrefab;
                 Vector3 pos = SpawnPosition(roles, i, forts);
                 GameObject go = Instantiate(prefab, pos, Quaternion.identity);
                 go.GetComponent<NetworkObject>().SpawnAsPlayerObject(p.ClientId);

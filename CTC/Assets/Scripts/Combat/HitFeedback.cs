@@ -1,4 +1,5 @@
-using System.Collections;
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CTC.Runtime.Combat
@@ -20,7 +21,7 @@ namespace CTC.Runtime.Combat
         private Health m_Health;
         private Renderer[] m_Renderers;
         private MaterialPropertyBlock m_Block;
-        private Coroutine m_Flash;
+        private CancellationTokenSource m_FlashCts;
 
         private void Awake()
         {
@@ -33,6 +34,8 @@ namespace CTC.Runtime.Combat
         private void OnDestroy()
         {
             if (m_Health != null) m_Health.HpChanged -= OnHpChanged;
+            m_FlashCts?.Cancel();
+            m_FlashCts?.Dispose();
         }
 
         private void OnHpChanged(int _previous, int _current)
@@ -72,16 +75,30 @@ namespace CTC.Runtime.Combat
                 driver.PlayOneShot(Player.AnimationStateLogic.Hit, m_HitAnimSeconds);
             }
 
-            if (m_Flash != null) StopCoroutine(m_Flash);
-            m_Flash = StartCoroutine(CoFlash());
+            RestartFlash();
         }
 
-        private IEnumerator CoFlash()
+        // 연타로 맞으면 이전 플래시를 끊고 다시 시작한다(코루틴 StopCoroutine과 같은 의미).
+        private void RestartFlash()
+        {
+            m_FlashCts?.Cancel();
+            m_FlashCts?.Dispose();
+            m_FlashCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            FlashAsync(m_FlashCts.Token).Forget();
+        }
+
+        private async UniTaskVoid FlashAsync(CancellationToken _token)
         {
             SetTint(true);
-            yield return new WaitForSeconds(m_FlashSeconds);
-            SetTint(false);
-            m_Flash = null;
+            // 취소(연타·파괴)되면 여기서 빠져나가고 아래 복구는 finally가 맡는다
+            try
+            {
+                await UniTask.Delay(System.TimeSpan.FromSeconds(m_FlashSeconds), cancellationToken: _token);
+            }
+            finally
+            {
+                if (this != null) SetTint(false);
+            }
         }
 
         // MaterialPropertyBlock — 머티리얼 인스턴스화 없이 렌더러 단위 틴트 (URP _BaseColor/레거시 _Color 겸용)

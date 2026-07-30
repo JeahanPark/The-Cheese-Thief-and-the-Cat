@@ -21,6 +21,10 @@
 | 6 | Model 공급·씬 기능은 **Worker** (`LocalPlayerBinder`·`MapDirector`·`PlayerSpawner` 등) | 매니저 비대화 |
 | 7 | 기능은 **컴포넌트 조합** (기능 1개 = 컴포넌트 1개) | 기존 클래스에 기능 덧붙이기 |
 | 8 | **코드를 고치면 [코드 다이어그램](docs/design-vault/코드%20다이어그램.md)의 머메이드(클래스·워크플로우)를 같이 갱신한다** | 다이어그램 방치 |
+| 9 | **Unity 객체는 `if (x != null)`로 검사** — `GameObject`·`Component`·`ScriptableObject` 등 `UnityEngine.Object` 파생 | `?.` · `??` · `??=` (Unity의 `==` 오버로드를 건너뛰어 **파괴된 객체가 통과** → `MissingReferenceException`) |
+
+- 규칙 9 예외: 순수 C# 객체에는 `?.`를 써도 된다 — C# 이벤트(`HpChanged?.Invoke`), `CancellationTokenSource`,
+  `MaterialPropertyBlock`, R3 `Subject`, 리플렉션 결과 등. `UnityEngine.Object` 파생인지만 보면 된다.
 
 - UniTask·R3는 `CTC.Runtime.asmdef`에 참조 배선 완료(`UniTask`, `R3.Unity`). R3 코어는 `Assets/Packages/R3.1.3.1/`의 DLL이라 자동 참조된다.
 

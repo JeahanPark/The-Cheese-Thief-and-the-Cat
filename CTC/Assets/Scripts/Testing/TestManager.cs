@@ -1,8 +1,10 @@
-// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
+﻿// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
 // WES 원본의 인게임 의존 메서드(InGameController/Popup/FullPlay 등)는 CTC 미이식 상태라 제외.
 // WesQA InvokeBridge가 리플렉션으로 Instance.<method>(kwargs)를 호출하는 QA 진입점 싱글턴.
 #if UNITY_EDITOR
-using System.Collections;
+using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
@@ -16,27 +18,29 @@ namespace CTC.Runtime.Testing
 {
     public class TestManager : MonoSingleton<TestManager>
     {
+        private const float KEY_PRESS_SECONDS = 0.1f;
+
         // ===== 범용 입력 시뮬레이션 =====
 
         public void SimulateKeyPress(string _keyName)
         {
-            StartCoroutine(CoSimulateKeyPress(_keyName));
+            SimulateKeyPressAsync(_keyName, destroyCancellationToken).Forget();
         }
 
-        private IEnumerator CoSimulateKeyPress(string _keyName)
+        private static async UniTaskVoid SimulateKeyPressAsync(string _keyName, CancellationToken _token)
         {
             var keyboard = Keyboard.current;
             if (keyboard == null)
             {
                 GameDebug.LogError("[TestManager] Keyboard not found");
-                yield break;
+                return;
             }
 
             var key = keyboard.FindKeyOnCurrentKeyboardLayout(_keyName);
             if (key == null)
             {
                 GameDebug.LogError($"[TestManager] Key '{_keyName}' not found");
-                yield break;
+                return;
             }
 
             using (StateEvent.From(keyboard, out var eventPtr))
@@ -46,7 +50,7 @@ namespace CTC.Runtime.Testing
             }
 
             GameDebug.Log($"[TestManager] Key '{_keyName}' down");
-            yield return new WaitForSeconds(0.1f);
+            await UniTask.Delay(TimeSpan.FromSeconds(KEY_PRESS_SECONDS), cancellationToken: _token);
 
             using (StateEvent.From(keyboard, out var eventPtr))
             {
@@ -305,24 +309,25 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public void TestWalkTowards(float _x, float _z, float _seconds)
         {
-            StartCoroutine(CoWalkTowards(new UnityEngine.Vector3(_x, 0f, _z), _seconds));
+            WalkTowardsAsync(new UnityEngine.Vector3(_x, 0f, _z), _seconds, destroyCancellationToken).Forget();
         }
 
-        private IEnumerator CoWalkTowards(UnityEngine.Vector3 _target, float _seconds)
+        private static async UniTaskVoid WalkTowardsAsync(
+            UnityEngine.Vector3 _target, float _seconds, CancellationToken _token)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var move = local != null ? local.GetComponent<CTC.Runtime.Player.PlayerMovement>() : null;
-            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); yield break; }
+            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); return; }
 
             float until = UnityEngine.Time.time + _seconds;
-            while (UnityEngine.Time.time < until)
+            while (UnityEngine.Time.time < until && !_token.IsCancellationRequested)
             {
                 UnityEngine.Vector3 to = _target - local.transform.position;
                 to.y = 0f;
                 if (to.sqrMagnitude < 1f) break;
                 move.DevSetMoveInput(to.normalized);
-                yield return null;
+                await UniTask.Yield(PlayerLoopTiming.Update, _token);
             }
             move.DevSetMoveInput(UnityEngine.Vector3.zero);
         }
@@ -525,18 +530,19 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public void TestWalkDirection(float _x, float _z, float _seconds)
         {
-            StartCoroutine(CoWalkDirection(new UnityEngine.Vector3(_x, 0f, _z).normalized, _seconds));
+            WalkDirectionAsync(new UnityEngine.Vector3(_x, 0f, _z).normalized, _seconds, destroyCancellationToken).Forget();
         }
 
-        private IEnumerator CoWalkDirection(UnityEngine.Vector3 _dir, float _seconds)
+        private static async UniTaskVoid WalkDirectionAsync(
+            UnityEngine.Vector3 _dir, float _seconds, CancellationToken _token)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var move = local != null ? local.GetComponent<CTC.Runtime.Player.PlayerMovement>() : null;
-            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); yield break; }
+            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); return; }
 
             move.DevSetMoveInput(_dir);
-            yield return new UnityEngine.WaitForSeconds(_seconds);
+            await UniTask.Delay(TimeSpan.FromSeconds(_seconds), cancellationToken: _token);
             move.DevSetMoveInput(UnityEngine.Vector3.zero);
         }
 
