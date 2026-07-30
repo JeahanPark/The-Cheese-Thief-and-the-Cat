@@ -13,7 +13,9 @@
         "UnityEngine.UI",
         "Unity.TextMeshPro",
         "Unity.Addressables",
-        "Unity.ResourceManager"
+        "Unity.ResourceManager",
+        "UniTask",
+        "R3.Unity"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

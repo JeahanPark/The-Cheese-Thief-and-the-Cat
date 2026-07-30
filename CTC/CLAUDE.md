@@ -6,9 +6,24 @@
 
 ## 코딩 규칙
 
-- `m_` 멤버 변수 접두 · `_` 매개변수 접두 · `Co` 코루틴 접두 · public 필드 금지(`[SerializeField]` + 프로퍼티) · 상수 `UPPER_SNAKE_CASE` · Manager/Controller/Worker/Component 아키텍처 — 상세는 [claude-gamedev-kit/gamedev-team/agents/client.md](C:/GitFork/claude-gamedev-kit/gamedev-team/agents/client.md)의 "코딩 규칙" 섹션 참조.
+- `m_` 멤버 변수 접두 · `_` 매개변수 접두 · public 필드 금지(`[SerializeField]` + 프로퍼티) · 상수 `UPPER_SNAKE_CASE` · Manager/Controller/Worker/Component 아키텍처 — 상세는 [claude-gamedev-kit/gamedev-team/agents/client.md](C:/GitFork/claude-gamedev-kit/gamedev-team/agents/client.md)의 "코딩 규칙" 섹션 참조.
   - WES 프로젝트 사본(`C:/GitFork/WES_Project/WES/.claude/agents/client.md`)은 **참조하지 않는다** — WES 전용으로 하드코딩돼 있고 CTC에 없는 경로(`Assets/CSVInfo/`, `document/design/client-spec/`)를 전제한다.
-- **적용 범위**: 신규 코드부터 적용. 기존 파일 일괄 리네임은 **1차 최종본 이후 코드 전면 재편**에서 일괄 처리한다 — [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 2단계. 그 전까지 기존 파일의 컨벤션은 건드리지 않는다.
+
+### CTC 전용 규칙 (kit 규칙보다 우선, 2026-07-30 지정)
+
+| # | 규칙 | 금지 |
+|---|---|---|
+| 1 | 비동기는 **UniTask** (`async UniTask`, `UniTask.Delay`, `CancellationToken`) | 코루틴(`IEnumerator`·`StartCoroutine`) — kit의 `Co` 접두 규칙을 대체 |
+| 2 | 버튼·이벤트 구독은 **R3** (`button.OnClickAsObservable().Subscribe(...).AddTo(this)`) | `onClick.AddListener` |
+| 3 | UI 상태 반영은 **R3 구독**(`ReadOnlyReactiveProperty`) | `Update()`에서 값 폴링·오브젝트 탐색 |
+| 4 | 버튼 핸들러 이름은 **`OnClick~`** | 람다에 로직 직접 작성 |
+| 5 | UI는 **MVC** — View=UI 표시만 / Model=상태 소유 Component / Controller=입력→서버 RPC | View가 상태를 조회·판정 |
+| 6 | Model 공급·씬 기능은 **Worker** (`LocalPlayerBinder`·`MapDirector`·`PlayerSpawner` 등) | 매니저 비대화 |
+| 7 | 기능은 **컴포넌트 조합** (기능 1개 = 컴포넌트 1개) | 기존 클래스에 기능 덧붙이기 |
+| 8 | **코드를 고치면 [코드 다이어그램](docs/design-vault/코드%20다이어그램.md)의 머메이드(클래스·워크플로우)를 같이 갱신한다** | 다이어그램 방치 |
+
+- UniTask·R3는 `CTC.Runtime.asmdef`에 참조 배선 완료(`UniTask`, `R3.Unity`). R3 코어는 `Assets/Packages/R3.1.3.1/`의 DLL이라 자동 참조된다.
+- **적용 범위**: 신규 코드부터 적용. 기존 파일 일괄 전환(리네임·코루틴·버튼·UI 폴링)은 **1차 최종본 이후 코드 전면 재편**에서 처리한다 — [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 2단계. 그 전까지 기존 파일의 컨벤션은 건드리지 않는다.
 
 ## unity-scanner (에셋 YAML 탐색 — 토큰 절약)
 
