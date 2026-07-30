@@ -1,4 +1,4 @@
-using CTC.Runtime.Combat;
+﻿using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using TMPro;
 using Unity.Netcode;
@@ -75,10 +75,10 @@ namespace CTC.Runtime.Economy
             if (tag == null || wallet == null) return;
 
             var indices = ShopLogic.RoleCatalogIndices(tag.Role);
-            RefreshSlots(shop, wallet.Cheese, indices);
+            RefreshSlots(shop, wallet.CheeseValue, indices);
 
             if (m_PlacingId != ShopItemId.None) UpdatePlacement(shop);
-            else HandleHotkeys(shop, wallet.Cheese, indices, tag.Role);
+            else HandleHotkeys(shop, wallet.CheeseValue, indices, tag.Role);
 
             if (m_Toast.gameObject.activeSelf && Time.time >= m_ToastUntil)
             {

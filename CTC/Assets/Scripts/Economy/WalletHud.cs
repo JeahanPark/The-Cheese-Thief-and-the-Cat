@@ -1,4 +1,6 @@
+using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
+using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -6,41 +8,47 @@ using UnityEngine;
 namespace CTC.Runtime.Economy
 {
     /// <summary>
-    /// 자기 지갑 잔액 HUD. 게임 시작 후 표시 — 쥐 `Cheese:` / 고양이 `Fun:`(스펙 v3.2).
-    /// 관전자(로컬 플레이어 없음)는 숨김.
+    /// 자기 지갑 잔액 HUD (MVC의 View). 쥐 `치즈:` / 고양이 `장난기:`.
+    ///
+    /// 개편 3b(2026-07-31): Update 폴링 → R3 구독. 매 프레임 로컬 플레이어를 찾고
+    /// 문자열을 새로 만들던 것을 **값이 바뀔 때만** 하도록 바꿨다.
+    /// 관전자(로컬 플레이어 null)는 스트림이 null을 흘려 자동으로 숨겨진다.
     /// </summary>
     public class WalletHud : MonoBehaviour
     {
-        [SerializeField] private LobbyManager m_Lobby;
         [SerializeField] private TMP_Text m_Text;
 
-        private CheeseWallet m_LocalWallet;
+        private readonly SerialDisposable m_WalletSub = new SerialDisposable();
 
-        private void Update()
+        private void Start()
         {
-            bool show = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
-            if (show && m_LocalWallet == null)
+            m_Text.gameObject.SetActive(false);
+            m_WalletSub.AddTo(this);
+
+            LocalPlayerBinder.LocalPlayer.Subscribe(OnLocalPlayerChanged).AddTo(this);
+        }
+
+        // 플레이어가 바뀔 때마다 지갑 구독을 통째로 갈아 끼운다(SerialDisposable이 이전 것을 끊는다)
+        private void OnLocalPlayerChanged(NetworkObject _player)
+        {
+            if (_player == null)
             {
-                NetworkManager nm = NetworkManager.Singleton;
-                NetworkObject local = nm != null && nm.SpawnManager != null
-                    ? nm.SpawnManager.GetLocalPlayerObject()
-                    : null;
-                m_LocalWallet = local != null ? local.GetComponent<CheeseWallet>() : null;
+                m_WalletSub.Disposable = null;
+                m_Text.gameObject.SetActive(false);
+                return;
             }
-            if (!show) m_LocalWallet = null;
 
-            Combat.RoleTag tag = m_LocalWallet != null ? m_LocalWallet.GetComponent<Combat.RoleTag>() : null;
-            show = show && tag != null; // 관전자(로컬 플레이어 없음)만 숨김
-
-            if (m_Text.gameObject.activeSelf != show)
+            var wallet = _player.GetComponent<CheeseWallet>();
+            var role = _player.GetComponent<Combat.RoleTag>();
+            if (wallet == null || role == null)
             {
-                m_Text.gameObject.SetActive(show);
+                m_Text.gameObject.SetActive(false);
+                return;
             }
-            if (!show) return;
 
-            // 스펙 v3.2: 고양이 재화 = 장난기(Fun) — 같은 지갑, 라벨만 역할별
-            // 수입음은 FarmingSfx(3D 공개음)가 담당 — 자기 위치에서 나므로 본인에게도 들림
-            m_Text.text = $"{ShopLogic.CurrencyNameOf(tag.Role)}: {m_LocalWallet.Cheese}";
+            m_Text.gameObject.SetActive(true);
+            string label = ShopLogic.CurrencyNameOf(role.Role);
+            m_WalletSub.Disposable = wallet.Cheese.Subscribe(c => m_Text.text = $"{label}: {c}");
         }
     }
 }

@@ -1,3 +1,5 @@
+﻿using CTC.Runtime.Core;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,6 +13,9 @@ namespace CTC.Runtime.Combat
         private readonly NetworkVariable<int> m_Hp = new NetworkVariable<int>();
 
         public int Hp => m_Hp.Value;
+
+        /// <summary>HP 스트림(MVC의 Model 노출) — 구독 즉시 현재 값이 흐른다.</summary>
+        public Observable<int> HpChangedRx => m_Hp.AsObservableWithCurrent();
         public int MaxHp => m_MaxHp;
         public bool IsDead => CombatLogic.IsDead(m_Hp.Value);
 

@@ -1,6 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
+using CTC.Runtime.Core;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -28,6 +30,10 @@ namespace CTC.Runtime.Match
         private bool m_WasStarted;
 
         public MatchResult Result => (MatchResult)m_Result.Value;
+
+        /// <summary>결과 스트림(View용) — 구독 즉시 현재 값이 흐른다.</summary>
+        public Observable<MatchResult> ResultChanged =>
+            m_Result.AsObservableWithCurrent().Select(v => (MatchResult)v);
 
         public float RemainingSeconds => m_RemainingSeconds.Value;
 

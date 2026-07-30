@@ -1,4 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using CTC.Runtime.Core;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -22,6 +24,9 @@ namespace CTC.Runtime.Lobby
         private float m_ReconcileTimer;
 
         public bool GameStarted => m_GameStarted.Value;
+
+        /// <summary>시작 여부 스트림 — View는 이걸 구독해 표시/숨김을 정한다(매 프레임 조회 대신).</summary>
+        public Observable<bool> GameStartedChanged => m_GameStarted.AsObservableWithCurrent();
         public int PlayerCount => m_Players.Count;
         public LobbyPlayerState GetPlayer(int _index) => m_Players[_index];
         public bool CanStart => LobbyRoleLogic.CanStart(SnapshotRoles());

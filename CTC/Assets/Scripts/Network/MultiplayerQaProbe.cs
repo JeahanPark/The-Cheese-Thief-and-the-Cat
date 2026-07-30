@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
 
@@ -286,7 +286,7 @@ namespace CTC.Runtime.Networking
                         posX = p.x,
                         posY = p.y,
                         posZ = p.z,
-                        cheese = wallet != null ? wallet.Cheese : -1,
+                        cheese = wallet != null ? wallet.CheeseValue : -1,
                         hp = health != null ? health.Hp : -1,
                         weaponTier = popgun != null ? popgun.Tier : -1
                     });

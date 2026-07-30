@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 5266508621866913705}
   - component: {fileID: 2888748911153239412}
   - component: {fileID: 931013392751080562}
+  - component: {fileID: 3634663368589302921}
   - component: {fileID: 7969670973942088240}
   - component: {fileID: 3194180182503786071}
   - component: {fileID: 2258780326856655791}
@@ -259,6 +260,19 @@ MonoBehaviour:
   m_FlashSeconds: 0.15
   m_FlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   m_HitAnimSeconds: 0.4
+--- !u!114 &3634663368589302921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3e3748144c47e74fa71e8353dfe9ea1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.LocalPlayerPublisher
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &7969670973942088240
 MonoBehaviour:
   m_ObjectHideFlags: 0

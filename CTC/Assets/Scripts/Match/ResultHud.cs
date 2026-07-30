@@ -39,9 +39,15 @@ namespace CTC.Runtime.Match
             IsShowing = false;
         }
 
-        private void Update()
+        // 개편 3b(2026-07-31): Update 폴링 → 결과 스트림 구독. 결과는 판당 한 번만 바뀐다.
+        private void Start()
         {
-            bool show = m_Match != null && m_Match.IsSpawned && m_Match.Result != MatchResult.None;
+            m_Match.ResultChanged.Subscribe(OnResultChanged).AddTo(this);
+        }
+
+        private void OnResultChanged(MatchResult _result)
+        {
+            bool show = _result != MatchResult.None;
             if (m_Panel.activeSelf != show)
             {
                 m_Panel.SetActive(show);
@@ -54,7 +60,7 @@ namespace CTC.Runtime.Match
             }
             if (!show) return;
 
-            m_Text.text = m_Match.Result == MatchResult.MouseWin ? "MICE WIN!" : "CAT WINS!";
+            m_Text.text = _result == MatchResult.MouseWin ? "MICE WIN!" : "CAT WINS!";
 
             NetworkManager nm = NetworkManager.Singleton;
             m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost);

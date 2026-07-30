@@ -1,4 +1,4 @@
-using CTC.Runtime.Combat;
+﻿using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using UnityEngine;
@@ -34,7 +34,7 @@ namespace CTC.Runtime.Audio
             }
             if (m_Tag == null || m_Tag.Role != RoleId.Mouse) return; // 고양이 장난기 적립은 무음
 
-            int cheese = m_Wallet.Cheese;
+            int cheese = m_Wallet.CheeseValue;
             if (m_LastCheese >= 0 && cheese > m_LastCheese)
             {
                 SfxPlayer.PlayAt(SfxId.CheeseTick, transform.position, VOLUME, AUDIBLE_DISTANCE);

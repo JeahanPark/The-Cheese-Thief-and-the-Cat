@@ -1,4 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using CTC.Runtime.Core;
+using R3;
 using System.Text;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
@@ -37,28 +39,28 @@ namespace CTC.Runtime.Lobby
         private bool m_HasCache; // None도 유효한 상태(관전자)라 값 비교만으로는 초기화를 못 가린다
         private string m_CachedText = "";
 
-        private void Update()
+        // 개편 3b(2026-07-31): Update 폴링 → 로컬 플레이어 스트림 구독.
+        // 역할이 바뀔 때(= 스폰/탈락)만 문자열을 다시 만든다.
+        private void Start()
         {
-            bool show = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
-            RoleTag tag = null;
-            if (show)
+            m_Text.gameObject.SetActive(false);
+            LocalPlayerBinder.LocalPlayer.Subscribe(OnLocalPlayerChanged).AddTo(this);
+        }
+
+        private void OnLocalPlayerChanged(Unity.Netcode.NetworkObject _player)
+        {
+            bool started = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
+            RoleTag tag = _player != null ? _player.GetComponent<RoleTag>() : null;
+
+            // 매치 전에는 아예 숨긴다 — 로비에는 조작 안내가 필요 없다
+            if (!started && tag == null)
             {
-                NetworkManager nm = NetworkManager.Singleton;
-                NetworkObject local = nm != null && nm.SpawnManager != null
-                    ? nm.SpawnManager.GetLocalPlayerObject()
-                    : null;
-                tag = local != null ? local.GetComponent<RoleTag>() : null;
+                m_Text.gameObject.SetActive(false);
+                return;
             }
 
-            if (m_Text.gameObject.activeSelf != show)
-            {
-                m_Text.gameObject.SetActive(show);
-            }
-            if (!show) return;
-
-            // 역할이 바뀔 때만 문자열을 만든다 — 매 프레임 조립할 이유가 없다
-            // 탈락하면 RoleId.None으로 돌아가며 관전자 안내로 바뀐다
-            RoleId role = tag != null ? tag.Role : RoleId.None;
+            m_Text.gameObject.SetActive(true);
+            RoleId role = tag != null ? tag.Role : RoleId.None; // None = 관전자
             if (role != m_CachedRole || !m_HasCache)
             {
                 m_CachedRole = role;

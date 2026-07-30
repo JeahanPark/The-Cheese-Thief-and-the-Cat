@@ -411,6 +411,7 @@ namespace CTC.Editor
 
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
+                root.AddComponent<LocalPlayerPublisher>(); // 스폰/디스폰을 LocalPlayerBinder에 알린다
 
                 var shop = root.AddComponent<ShopController>();
                 SetRef(shop, "m_DecoyPrefab", decoyPrefab);
@@ -547,6 +548,10 @@ namespace CTC.Editor
             SetRef(cheeseDirector, "m_Match", match);
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
             BuildLobbyCanvas(lobby, match);
+
+            // 로컬 플레이어 발행자 — HUD들이 매 프레임 탐색하는 대신 이 스트림을 구독한다(개편 3b)
+            var binderGo = new GameObject("LocalPlayerBinder");
+            binderGo.AddComponent<CTC.Runtime.Core.LocalPlayerBinder>();
 
             // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
             var chatGo = new GameObject("ChatManager");
@@ -843,8 +848,7 @@ namespace CTC.Editor
             hudTextGo.SetActive(false); // WalletHud가 게임 시작 시 켬
 
             var walletHud = canvasGo.AddComponent<WalletHud>();
-            SetRef(walletHud, "m_Lobby", lobby);
-            SetRef(walletHud, "m_Text", hudText);
+            SetRef(walletHud, "m_Text", hudText); // 로컬 플레이어는 LocalPlayerBinder 스트림에서 받는다
 
             // 전투 HUD (좌상단 아래쪽, CombatHud가 게임 시작 시 켬)
             var combatTextGo = new GameObject("CombatText");

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
@@ -104,7 +104,7 @@ namespace CTC.Runtime.Match
                 }
 
                 CheeseWallet wallet = h.GetComponent<CheeseWallet>();
-                if (wallet != null) entry.finalCheese = wallet.Cheese;
+                if (wallet != null) entry.finalCheese = wallet.CheeseValue;
             }
         }
 

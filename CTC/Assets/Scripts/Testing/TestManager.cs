@@ -430,7 +430,7 @@ namespace CTC.Runtime.Testing
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var wallet = local != null ? local.GetComponent<CheeseWallet>() : null;
-            return wallet != null ? wallet.Cheese : -1;
+            return wallet != null ? wallet.CheeseValue : -1;
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Map;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -34,6 +35,10 @@ namespace CTC.Runtime.Lobby
         // ---- 상태 조회 (View·QA가 읽는다) ----
 
         public bool GameStarted => m_Session != null && m_Session.GameStarted;
+
+        /// <summary>시작 여부 스트림(View용). 세션이 없으면 false 하나만 흘린다.</summary>
+        public Observable<bool> GameStartedChanged =>
+            m_Session != null ? m_Session.GameStartedChanged : Observable.Return(false);
         public int PlayerCount => m_Session != null ? m_Session.PlayerCount : 0;
         public LobbyPlayerState GetPlayer(int _index) => m_Session.GetPlayer(_index);
         public bool CanStart => m_Session != null && m_Session.CanStart;
