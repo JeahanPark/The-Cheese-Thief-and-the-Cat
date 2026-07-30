@@ -15,8 +15,12 @@ namespace CTC.Runtime.Player
     /// </summary>
     public class CatSneak : NetworkBehaviour
     {
-        /// <summary>잠행 중 이속 배율 — 6.7 → 3.0. 걷는 쥐(6)보다 느려야 추격 대체재가 되지 않는다.</summary>
-        public const float SPEED_MULTIPLIER = 0.45f;
+        /// <summary>
+        /// 잠행 중 이속 배율 — 6.7 → 3.0. 걷는 쥐(6)보다 느려야 추격 대체재가 되지 않는다.
+        /// 수치 원본은 CSV(PlayerInfo.csv의 Cat 행) — 2026-07-31 데이터 분리.
+        /// </summary>
+        public static float SPEED_MULTIPLIER =>
+            Info.InfoManager.Instance.PlayerOf(Lobby.RoleId.Cat).SneakSpeedMultiplier;
 
         private readonly NetworkVariable<bool> m_Sneaking = new NetworkVariable<bool>(
             false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);

@@ -11,13 +11,16 @@ namespace CTC.Runtime.Economy
     /// </summary>
     public static class FunLogic
     {
-        public const int KILL_BONUS = 30;
+        // 수치 원본은 CSV(BalanceInfo.csv) — 2026-07-31 데이터 분리
+        private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
+
+        public static int KILL_BONUS => Balance.KillBonus;
 
         /// <summary>플레이어 실피해 1당 장난기 — 정수 유지를 위해 나눗셈으로 적용한다.</summary>
-        public const int PLAYER_DAMAGE_DIVISOR = 2;
+        public static int PLAYER_DAMAGE_DIVISOR => Balance.PlayerDamageDivisor;
 
         /// <summary>구조물 실피해 1당 장난기 — 요새(300HP) 1채 = 75.</summary>
-        public const int STRUCTURE_DAMAGE_DIVISOR = 4;
+        public static int STRUCTURE_DAMAGE_DIVISOR => Balance.StructureDamageDivisor;
 
         /// <param name="_isStructure">대상이 플레이어가 아닌 설치물인가(요새·창고·미끼).</param>
         public static int AccruedFun(int _dealtDamage, bool _killedPlayer, bool _isStructure)

@@ -1,0 +1,9 @@
+ItemId.ShopItemId,Role.RoleId,Cost.int
+Slingshot,Mouse,150
+MachineGun,Mouse,600
+Dash,Mouse,100
+Decoy,Mouse,50
+Fortress,Mouse,220
+Warehouse,Mouse,150
+CatAttack,Cat,200
+CatSpeed,Cat,150

@@ -148,21 +148,27 @@ namespace CTC.Editor
                     SetRef(production, "m_ProduceVfx", CreateProduceVfx(_root));
                 });
 
+            // 플레이어 수치는 CSV(PlayerInfo.csv)가 원본 — 이 생성기는 굽기만 한다(2026-07-31).
+            // 이속·HP·FOV를 바꾸려면 CSV만 고치고 이 메뉴를 다시 돌리면 된다.
+            var catInfo = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Cat);
+            var mouseInfo = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Mouse);
+
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
-                ccHeight: 0.9f, ccRadius: 0.35f,
-                // 원작: 술래가 먹이보다 빠름 (쥐 6, 밸런스 2026-07-26 2차)
-                // camDistance는 쥐와 동일한 3 — 5는 좁은 방에서 카메라가 상시 벽 밖이었다(2026-07-28).
-                // 고양이의 넓은 시야는 거리가 아니라 FOV(70)로 표현한다.
-                moveSpeed: 6.7f, runThreshold: 3.2f, fov: 70f, camDistance: 3f,
-                role: RoleId.Cat, maxHp: 1000,
+                ccHeight: catInfo.CcHeight, ccRadius: catInfo.CcRadius,
+                // 원작: 술래가 먹이보다 빠름. camDistance는 쥐와 동일한 3 —
+                // 5는 좁은 방에서 카메라가 상시 벽 밖이었다(2026-07-28). 넓은 시야는 FOV로 표현.
+                moveSpeed: catInfo.MoveSpeed, runThreshold: catInfo.RunThreshold,
+                fov: catInfo.Fov, camDistance: catInfo.CamDistance,
+                role: RoleId.Cat, maxHp: catInfo.MaxHp,
                 decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
-                ccHeight: 0.5f, ccRadius: 0.22f,
-                moveSpeed: 6f, runThreshold: 4.2f, fov: 55f, camDistance: 3f,
-                role: RoleId.Mouse, maxHp: 100,
+                ccHeight: mouseInfo.CcHeight, ccRadius: mouseInfo.CcRadius,
+                moveSpeed: mouseInfo.MoveSpeed, runThreshold: mouseInfo.RunThreshold,
+                fov: mouseInfo.Fov, camDistance: mouseInfo.CamDistance,
+                role: RoleId.Mouse, maxHp: mouseInfo.MaxHp,
                 decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab,
                 // 쥐만 전용 레이어 — 미끼(Decoy)와의 충돌을 매트릭스에서 끊기 위해서다(DecoyLayers).
                 // 고양이는 Default에 남아 미끼에 부딪힌다.
@@ -411,9 +417,15 @@ namespace CTC.Editor
                 SetRef(shop, "m_FortressPrefab", fortressPrefab);
                 SetRef(shop, "m_WarehousePrefab", warehousePrefab);
 
+                CTC.Runtime.Info.PlayerInfo info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(role);
+
                 if (role == RoleId.Cat)
                 {
-                    root.AddComponent<CatPounce>();
+                    // 덮치기 수치도 CSV(PlayerInfo.csv)에서 굽는다
+                    var pounce = root.AddComponent<CatPounce>();
+                    SetInt(pounce, "m_Damage", info.PounceDamage);
+                    SetFloat(pounce, "m_CooldownSeconds", info.PounceCooldown);
+                    SetFloat(pounce, "m_Range", info.PounceRange);
                     root.AddComponent<CatSneak>(); // LCtrl 잠행 — 발소리 소거·이속 절반
                 }
                 else
@@ -434,8 +446,8 @@ namespace CTC.Editor
                 stepSource.spatialBlend = 1f;
                 stepSource.rolloffMode = AudioRolloffMode.Linear;
                 stepSource.minDistance = 1.5f;
-                // 고양이 15m(위협 경보 반경 — 이속 6.7 기준 도주 성립 거리), 쥐 8m(살금살금 — 고양이도 귀 사냥 가능)
-                stepSource.maxDistance = role == RoleId.Cat ? 15f : 8f;
+                // 고양이 15m(위협 경보 반경 — 도주가 성립하는 거리), 쥐 8m(고양이도 귀 사냥 가능)
+                stepSource.maxDistance = info.FootstepRangeMeters;
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
 
@@ -1074,6 +1086,11 @@ namespace CTC.Editor
                     if (toggle != null) toggle.boolValue = true;
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
+
+                // 개발용 빌드에서만 켠다 — GameDebug(DEVELOPMENT_BUILD)와 같은 기준
+                var gateGo = new GameObject("DebugConsoleGate");
+                var gate = gateGo.AddComponent<CTC.Runtime.Core.DebugConsoleGate>();
+                SetRef(gate, "m_Console", console);
             }
             else
             {

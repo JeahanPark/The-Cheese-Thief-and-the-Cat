@@ -23,6 +23,7 @@ namespace CTC.Runtime.Lobby
 
         // v3.4: 초기 요새 지급 폐지. 시드머니는 미끼 1개(50)분 — 요새(220)는 벌어서 짓는다.
         // 220을 주면 t=0 요새와 사실상 같고, 기관총(600) 진척을 37% 앞당겨 고양이가 이중 너프된다.
+        // (구) 인스펙터 시작 치즈 — CSV로 옮겨 더 이상 읽지 않는다. 개편 2단계에서 필드째 제거.
         [SerializeField] private int m_MouseStartCheese = 50;
 
         private NetworkList<LobbyPlayerState> _players;
@@ -276,7 +277,8 @@ namespace CTC.Runtime.Lobby
                 {
                     // 스폰 직후 서버 권위로 지급 — 요새 1채분. 사는 시점·자리는 쥐의 선택.
                     var wallet = go.GetComponent<CTC.Runtime.Economy.CheeseWallet>();
-                    if (wallet != null) wallet.AddCheese(m_MouseStartCheese);
+                    // 시작 치즈는 CSV(BalanceInfo.csv)가 원본 — 인스펙터 값은 쓰지 않는다(2026-07-31)
+                    if (wallet != null) wallet.AddCheese(CTC.Runtime.Info.InfoManager.Instance.Balance.MouseStartCheese);
                 }
             }
         }

@@ -14,8 +14,12 @@ namespace CTC.Runtime.Match
     /// </summary>
     public static class MatchFlowLogic
     {
-        /// <summary>v3: 안전 타이머(원작 66:40 대응 축소) — 만료 시 생존 쥐가 있으면 쥐 승.</summary>
-        public const float MATCH_DURATION_SECONDS = 600f;
+        /// <summary>
+        /// v3: 안전 타이머(원작 66:40 대응 축소) — 만료 시 생존 쥐가 있으면 쥐 승.
+        /// 수치 원본은 CSV(BalanceInfo.csv) — 2026-07-31 데이터 분리.
+        /// </summary>
+        public static float MATCH_DURATION_SECONDS =>
+            CTC.Runtime.Info.InfoManager.Instance.Balance.MatchDurationSeconds;
 
         public static bool ShouldArm(bool _gameStarted, bool _armed, int _aliveCats, int _aliveMice)
         {

@@ -50,53 +50,47 @@ namespace CTC.Runtime.Economy
     /// </summary>
     public static class ShopLogic
     {
-        public const int MAX_UPGRADE_STACKS = 5;
-        public const int POUNCE_DAMAGE_PER_STACK = 10;
-        public const float SPEED_PER_STACK = 0.2f; // 기본 이속 6.4 상향과 동반 하향 — 만렙 7.4 (8.5는 도주 무의미)
-        public const int FORTRESS_HEAL_PER_TICK = 10;
-        public const int FORTRESS_HP = 300; // 씬 생성기가 요새 프리팹에 굽는 값과 같아야 한다
-        public const float FORTRESS_HEAL_RADIUS = 1.0f; // 요새 내부(입구 밖 미적용)
-        public const float DECOY_LIFETIME_SECONDS = 30f;
+        // 수치는 전부 CSV(Assets/Resources/CSVInfo/)가 원본이다 — 2026-07-31 데이터 분리.
+        // 이름은 예전 상수 그대로 두되 실제 값은 표에서 읽는다(호출부 50여 곳을 안 건드리려고).
+        // 밸런싱은 이제 CSV만 고치면 되고, 재컴파일 없이 다음 플레이에 반영된다.
+        private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
+
+        public static int MAX_UPGRADE_STACKS => Balance.MaxUpgradeStacks;
+        public static int POUNCE_DAMAGE_PER_STACK => Balance.PounceDamagePerStack;
+        public static float SPEED_PER_STACK => Balance.SpeedPerStack;
+        public static int FORTRESS_HEAL_PER_TICK => Balance.FortressHealPerTick;
+        public static int FORTRESS_HP => Balance.FortressHp; // 씬 생성기가 요새 프리팹에 굽는 값과 같다
+        public static float FORTRESS_HEAL_RADIUS => Balance.FortressHealRadius;
+        public static float DECOY_LIFETIME_SECONDS => Balance.DecoyLifetimeSeconds;
 
         // 창고(v3.4) — 파밍이 '서 있기'라 지루하다는 플레이 피드백의 답.
         // 지어두면 자리를 비워도 수입이 들어오되, 위치가 드러난 자산이라 고양이가 부술 수 있다.
-        // 요새(방어)와 역할이 겹치지 않게 별도 건물로 분리했고 HP는 절반이다.
-        // 수입 2/s는 등급 2 치즈 지점과 같아 150을 들일 값이 아니었다("창고가 주는 치즈가
-        // 너무 적다" 2026-07-29 플레이 피드백). 5/s = 등급 5 지점급으로 올려 회수 30초 —
-        // 자리를 비워도 좋은 지점 하나를 낀 셈이 되어야 살 이유가 생긴다.
-        public const int WAREHOUSE_INCOME_PER_SECOND = 5;
-        public const int WAREHOUSE_MAX_HP = 150;
-        public const int WAREHOUSE_LIMIT_PER_MOUSE = 1;
-
-        // 지급을 매 프레임 잔돈으로 흘리지 않고 덩어리로 끊는다 — 2초마다 10개(2026-07-29 지정).
-        // 총 수입은 +5/s로 같지만 "생산했다"는 순간이 생겨 소리·이펙트를 붙일 수 있고,
-        // 그 소리가 곧 고양이에게 창고 위치를 알리는 단서가 된다(파밍음 20m와 같은 설계).
-        // 간격 2초는 수입을 올린 대가다 — 강한 수입일수록 창고가 시끄러워 위치가 빨리 팔린다.
-        public const int WAREHOUSE_TICK_CHEESE = 10;
-        public const float WAREHOUSE_SOUND_RANGE_METERS = 15f;
+        // 수입 2/s는 등급 2 치즈 지점과 같아 150을 들일 값이 아니었다(2026-07-29) → 5/s.
+        // 지급은 2초마다 10개 — 수입을 올린 대가로 창고가 시끄러워 위치가 빨리 팔린다.
+        public static int WAREHOUSE_INCOME_PER_SECOND => Balance.WarehouseIncomePerSecond;
+        public static int WAREHOUSE_MAX_HP => Balance.WarehouseMaxHp;
+        public static int WAREHOUSE_LIMIT_PER_MOUSE => Balance.WarehouseLimitPerMouse;
+        public static int WAREHOUSE_TICK_CHEESE => Balance.WarehouseTickCheese;
+        public static float WAREHOUSE_SOUND_RANGE_METERS => Balance.WarehouseSoundRangeMeters;
 
         /// <summary>생산 1회 사이의 간격(초) — 수입/틱량에서 파생되므로 따로 튜닝하지 않는다.</summary>
         public static float WarehouseTickSeconds =>
             WAREHOUSE_TICK_CHEESE / (float)WAREHOUSE_INCOME_PER_SECOND;
 
-        public static readonly ShopItem[] CATALOG =
+        /// <summary>상점 카탈로그 — ShopInfo.csv 순서 그대로(핫바 슬롯 순서와 같다).</summary>
+        public static ShopItem[] CATALOG
         {
-            new ShopItem(ShopItemId.Slingshot, RoleId.Mouse, 150),
-            new ShopItem(ShopItemId.MachineGun, RoleId.Mouse, 600),
-            new ShopItem(ShopItemId.Dash, RoleId.Mouse, 100),
-            new ShopItem(ShopItemId.Decoy, RoleId.Mouse, 50),
-            new ShopItem(ShopItemId.Fortress, RoleId.Mouse, 220),
-            new ShopItem(ShopItemId.Warehouse, RoleId.Mouse, 150),
-            new ShopItem(ShopItemId.CatAttack, RoleId.Cat, 200),
-            new ShopItem(ShopItemId.CatSpeed, RoleId.Cat, 150),
-        };
-
-        private static readonly WeaponStats[] WEAPON_TIERS =
-        {
-            new WeaponStats(5, 0.8f, 8f),    // 0 딱총(기본)
-            new WeaponStats(12, 0.8f, 10f),  // 1 새총
-            new WeaponStats(5, 0.15f, 10f),  // 2 기관총급
-        };
+            get
+            {
+                var rows = Info.InfoManager.Instance.Shop;
+                var catalog = new ShopItem[rows.Count];
+                for (int i = 0; i < rows.Count; i++)
+                {
+                    catalog[i] = new ShopItem(rows[i].ItemId, rows[i].Role, rows[i].Cost);
+                }
+                return catalog;
+            }
+        }
 
         /// <summary>
         /// 핫바 항목 한 줄 설명 — 이름·가격만으로는 뭘 사는지 알 수 없다(특히 창고·미끼).
@@ -192,8 +186,8 @@ namespace CTC.Runtime.Economy
 
         public static WeaponStats WeaponStatsForTier(int _tier)
         {
-            int idx = UnityEngine.Mathf.Clamp(_tier, 0, WEAPON_TIERS.Length - 1);
-            return WEAPON_TIERS[idx];
+            Info.WeaponInfo row = Info.InfoManager.Instance.WeaponOf(_tier);
+            return new WeaponStats(row.Damage, row.CooldownSeconds, row.Range);
         }
     }
 }

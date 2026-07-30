@@ -23,6 +23,23 @@
 | 8 | **코드를 고치면 [코드 다이어그램](docs/design-vault/코드%20다이어그램.md)의 머메이드(클래스·워크플로우)를 같이 갱신한다** | 다이어그램 방치 |
 
 - UniTask·R3는 `CTC.Runtime.asmdef`에 참조 배선 완료(`UniTask`, `R3.Unity`). R3 코어는 `Assets/Packages/R3.1.3.1/`의 DLL이라 자동 참조된다.
+
+### 데이터 (CSV — 2026-07-31)
+
+- **밸런스 수치는 코드에 박지 않는다.** 원본은 `Assets/Resources/CSVInfo/*.csv` (WES 파이프라인 이식).
+  - 표 4종: `ShopInfo`(가격) · `WeaponInfo`(무기 티어) · `PlayerInfo`(HP·이속·덮치기·발소리) · `BalanceInfo`(그 외 전역)
+  - 컬럼 추가·변경 후 **`Tools/CTC/Convert CSV → Info`** 실행 → `Info/Generator/ConvertInfo/*.cs` 재생성.
+    헤더는 `필드명.타입` 형식(`Cost.int`, `Role.RoleId`). 생성 파일은 손으로 고치지 않는다.
+  - 읽기는 `InfoManager.Instance.Balance` / `.PlayerOf(role)` / `.WeaponOf(tier)` / `.Shop`.
+  - `PlayerInfo`만 프리팹에 굽히므로 바꾸면 **씬 재생성**이 필요하다. 나머지는 재컴파일 없이 다음 플레이에 반영.
+- 구조 제약(`MIN_GRADE`·`MAX_GRADE`·`HOTBAR_SLOTS`·`NO_EARNER`)은 CSV로 내리지 않는다 — 튜닝 대상이 아니다.
+
+### 디버그 로그·빌드
+
+- 로그는 `GameDebug.Log/LogWarning/LogError` (WES 방식, `[Conditional("DEVELOPMENT_BUILD")]`) — 배포 빌드에선 전부 제거된다.
+- 빌드 메뉴 2종: `Tools/CTC/Build Windows (개발용 — 로그·콘솔 켜짐)` → `Builds/Windows-Dev`,
+  `Tools/CTC/Build Windows (배포용)` → `Builds/Windows`.
+- 인게임 로그 콘솔(` 키)은 `DebugConsoleGate`가 **개발용 빌드에서만** 켠다 — `GameDebug`와 같은 기준.
 - **적용 범위**: 신규 코드부터 적용. 기존 파일 일괄 전환(리네임·코루틴·버튼·UI 폴링)은 **1차 최종본 이후 코드 전면 재편**에서 처리한다 — [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 2단계. 그 전까지 기존 파일의 컨벤션은 건드리지 않는다.
 
 ## unity-scanner (에셋 YAML 탐색 — 토큰 절약)

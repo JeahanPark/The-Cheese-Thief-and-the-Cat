@@ -24,7 +24,8 @@ namespace CTC.Runtime.Economy
         // 나쁜 자리로 밀려나며 자연스럽게 압축된다. 비례로 주면 전부 동시에 말라 압축이 안 생긴다.
         //
         // 총량을 고정하고 지점 수로 나눈다 — 맵이 넓어져 지점이 늘어도 고갈 시점이 유지된다.
-        public const int TOTAL_MAP_CHEESE = 4900;
+        // 수치 원본은 CSV(BalanceInfo.csv) — 2026-07-31 데이터 분리
+        public static int TOTAL_MAP_CHEESE => Info.InfoManager.Instance.Balance.TotalMapCheese;
 
         /// <summary>지점 하나가 가질 매장량. 7지점이면 700(기준 맵), 10지점이면 490.</summary>
         public static int ReservePerSpot(int _spotCount)
@@ -33,7 +34,7 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>마지막 부활 지점의 매장량 — 뒤처진 쥐의 만회 기회이자 후반 결전지.</summary>
-        public const int LAST_STAND_RESERVE = 400;
+        public static int LAST_STAND_RESERVE => Info.InfoManager.Instance.Balance.LastStandReserve;
 
         /// <summary>
         /// 매장량에서 실제로 캘 수 있는 양. 바닥나면 요청량보다 적게 나온다.
