@@ -524,12 +524,19 @@ namespace CTC.Editor
             // 로비 (in-scene NetworkObject — 서버 시작 시 자동 스폰)
             var lobbyGo = new GameObject("LobbyManager");
             lobbyGo.AddComponent<NetworkObject>();
-            var lobby = lobbyGo.AddComponent<LobbyManager>();
-            SetRef(lobby, "m_CatPrefab", catPrefab);
-            SetRef(lobby, "m_MousePrefab", mousePrefab);
+            // 개편 3단계(2026-07-31): 상태·스폰·맵이 각각 별도 컴포넌트로 갈라져 한 오브젝트에 동승한다.
+            // NetworkBehaviour를 여러 개 붙여도 RPC 발신자 식별은 각자 그대로 동작한다.
+            lobbyGo.AddComponent<LobbySession>();                        // 상태(Model)
+            var spawner = lobbyGo.AddComponent<PlayerSpawner>();         // 스폰(Worker)
+            SetRef(spawner, "m_CatPrefab", catPrefab);
+            SetRef(spawner, "m_MousePrefab", mousePrefab);
+
+            var mapDirector = lobbyGo.AddComponent<CTC.Runtime.Map.MapDirector>(); // 맵(Worker)
             // 로비에서 고를 맵 목록 — 요새자리·스폰 공식이 선택된 레이아웃을 읽는다
-            SetRefArray(lobby, "m_MapLayouts", LoadMapLayouts());
-            SetRef(lobby, "m_MapBuilder", mapBuilder);
+            SetRefArray(mapDirector, "m_MapLayouts", LoadMapLayouts());
+            SetRef(mapDirector, "m_MapBuilder", mapBuilder);
+
+            var lobby = lobbyGo.AddComponent<LobbyManager>();             // 조립자(Controller)
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
 
@@ -538,7 +545,7 @@ namespace CTC.Editor
             var cheeseDirector = lobbyGo.AddComponent<CheeseSpotDirector>();
             SetRef(cheeseDirector, "m_Lobby", lobby);
             SetRef(cheeseDirector, "m_Match", match);
-            SetRef(lobby, "m_CheeseDirector", cheeseDirector);
+            SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
             BuildLobbyCanvas(lobby, match);
 
             // 채팅 (in-scene NetworkObject — LobbyManager와 동일 패턴, [Rpc]는 스폰된 NetworkBehaviour 필요)
