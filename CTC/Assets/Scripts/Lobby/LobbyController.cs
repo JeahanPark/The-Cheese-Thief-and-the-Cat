@@ -39,6 +39,32 @@ namespace CTC.Runtime.Lobby
         /// <summary>시작 여부 스트림(View용). 세션이 없으면 false 하나만 흘린다.</summary>
         public Observable<bool> GameStartedChanged =>
             m_Session != null ? m_Session.GameStartedChanged : Observable.Return(false);
+
+        /// <summary>
+        /// 로비 화면에 영향을 주는 모든 변화를 하나로 합친 신호 — 스폰·참가자·역할·시작·맵.
+        /// View는 이걸 구독해 **바뀔 때만** 다시 그린다(개편 3b의 마무리, 2026-07-31).
+        ///
+        /// 필드마다 스트림을 쪼개지 않은 건 로비 표시가 통짜 텍스트·버튼 몇 개라서다 —
+        /// 어차피 전부 다시 그리는데 델타를 나르면 배선만 늘고 얻는 게 없다.
+        /// 구독 즉시 한 번 흘려(`Prepend`) 첫 변화 전까지 화면이 비는 것을 막는다.
+        /// </summary>
+        public Observable<Unit> ViewChanged
+        {
+            get
+            {
+                if (m_Session == null) return Observable.Return(Unit.Default);
+
+                Observable<Unit> merged = Observable.Merge(
+                    m_Session.SpawnChanged,
+                    m_Session.PlayersChanged,
+                    m_Session.GameStartedChanged.AsUnitObservable());
+
+                if (m_MapDirector != null)
+                    merged = Observable.Merge(merged, m_MapDirector.MapIndexChanged.AsUnitObservable());
+
+                return merged.Prepend(Unit.Default);
+            }
+        }
         public int PlayerCount => m_Session != null ? m_Session.PlayerCount : 0;
         public LobbyPlayerState GetPlayer(int _index) => m_Session.GetPlayer(_index);
         public bool CanStart => m_Session != null && m_Session.CanStart;

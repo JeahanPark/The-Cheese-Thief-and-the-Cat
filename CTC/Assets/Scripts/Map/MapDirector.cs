@@ -1,4 +1,6 @@
+using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -22,6 +24,9 @@ namespace CTC.Runtime.Map
 
         public int MapCount => m_MapLayouts != null ? m_MapLayouts.Length : 0;
         public int MapIndex => LobbyRoleLogic.ClampMapIndex(m_MapIndex.Value, MapCount);
+
+        /// <summary>선택 맵이 바뀌었다는 신호 — 로비 UI가 버튼 강조를 다시 그린다.</summary>
+        public Observable<int> MapIndexChanged => m_MapIndex.AsObservable();
 
         /// <summary>선택된 맵. 스폰 공식·요새 자리가 이걸 읽는다.</summary>
         public MapLayout ActiveLayout => MapCount == 0 ? null : m_MapLayouts[MapIndex];

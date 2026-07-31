@@ -1,4 +1,5 @@
 using CTC.Runtime.Map;
+using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +13,8 @@ namespace CTC.Runtime.Lobby
     /// 넓은 맵에 인원이 적으면 고양이가 쥐를 못 찾아 타이머 만료(쥐 승)로 끝난다 —
     /// 방을 만들 때 알아야 할 정보라 게임 중이 아니라 로비에서 띄운다.
     /// (게임이 시작되면 같은 자리를 ControlsHud가 조작키로 채운다)
+    ///
+    /// 표시는 R3 구독 — 맵·참가자·시작 여부가 바뀔 때만 다시 그린다(2026-07-31).
     /// </summary>
     public class MapInfoHud : MonoBehaviour
     {
@@ -21,7 +24,13 @@ namespace CTC.Runtime.Lobby
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private TMP_Text m_Text;
 
-        private void Update()
+        private void Start()
+        {
+            // Awake가 아니라 Start — LobbyController.Awake가 세션·맵 감독을 잡은 뒤여야 한다.
+            if (m_Lobby != null) m_Lobby.ViewChanged.Subscribe(_ => Render()).AddTo(this);
+        }
+
+        private void Render()
         {
             NetworkManager nm = NetworkManager.Singleton;
             bool connected = nm != null && (nm.IsClient || nm.IsServer);

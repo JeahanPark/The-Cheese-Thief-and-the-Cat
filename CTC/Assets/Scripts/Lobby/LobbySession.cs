@@ -21,12 +21,22 @@ namespace CTC.Runtime.Lobby
         private NetworkList<LobbyPlayerState> m_Players;
         private readonly NetworkVariable<bool> m_GameStarted = new NetworkVariable<bool>();
 
+        // 스폰/디스폰 알림 — 이 오브젝트는 씬에 미리 있고 서버 시작 시점에 스폰된다.
+        // 즉 View는 스폰 전부터 살아 있으므로, 언제 다시 그려야 하는지 알려 줄 신호가 따로 필요하다.
+        private readonly Subject<Unit> m_SpawnChanged = new Subject<Unit>();
+
         private float m_ReconcileTimer;
 
         public bool GameStarted => m_GameStarted.Value;
 
         /// <summary>시작 여부 스트림 — View는 이걸 구독해 표시/숨김을 정한다(매 프레임 조회 대신).</summary>
         public Observable<bool> GameStartedChanged => m_GameStarted.AsObservableWithCurrent();
+
+        /// <summary>참가자·역할이 바뀌었다는 신호.</summary>
+        public Observable<Unit> PlayersChanged => m_Players.AsChangedObservable();
+
+        /// <summary>스폰·디스폰 신호(접속/해제와 사실상 같다).</summary>
+        public Observable<Unit> SpawnChanged => m_SpawnChanged;
         public int PlayerCount => m_Players.Count;
         public LobbyPlayerState GetPlayer(int _index) => m_Players[_index];
         public bool CanStart => LobbyRoleLogic.CanStart(SnapshotRoles());
@@ -39,6 +49,7 @@ namespace CTC.Runtime.Lobby
 
         public override void OnNetworkSpawn()
         {
+            m_SpawnChanged.OnNext(Unit.Default);
             if (!IsServer) return;
 
             NetworkManager.OnClientConnectedCallback += OnClientConnected;
@@ -51,9 +62,16 @@ namespace CTC.Runtime.Lobby
 
         public override void OnNetworkDespawn()
         {
+            m_SpawnChanged.OnNext(Unit.Default);
             if (NetworkManager == null) return;
             NetworkManager.OnClientConnectedCallback -= OnClientConnected;
             NetworkManager.OnClientDisconnectCallback -= OnClientDisconnected;
+        }
+
+        public override void OnDestroy()
+        {
+            m_SpawnChanged.Dispose(); // 순수 C# 객체라 `?.` 예외 대상이 아니다(규칙 9)
+            base.OnDestroy();
         }
 
         // ---- 역할 ----

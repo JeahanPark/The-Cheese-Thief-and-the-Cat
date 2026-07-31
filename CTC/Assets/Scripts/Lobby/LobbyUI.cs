@@ -12,7 +12,8 @@ namespace CTC.Runtime.Lobby
     ///
     /// 버튼 연결은 R3 (CTC 규칙 2·4) — 구독은 버튼 파괴 시 자동 해제되고,
     /// 핸들러가 `OnClick~` 이름을 가져 검색·재사용이 된다.
-    /// 표시 갱신은 아직 Update 폴링이다 — 개편 3b단계에서 R3 구독으로 바뀐다.
+    /// 표시 갱신도 R3 구독이다 (`LobbyController.ViewChanged`, 2026-07-31) — 매 프레임 다시 그리지 않는다.
+    /// `Update`에 남은 건 커서 잠금뿐이고, 그건 표시가 아니라 입력 계층이다.
     /// </summary>
     public class LobbyUI : MonoBehaviour
     {
@@ -41,20 +42,23 @@ namespace CTC.Runtime.Lobby
             }
         }
 
+        private void Start()
+        {
+            // Awake가 아니라 Start — LobbyController.Awake가 세션·맵 감독을 잡은 뒤여야 한다.
+            if (m_Lobby != null) m_Lobby.ViewChanged.Subscribe(_ => Render()).AddTo(this);
+        }
+
         private void OnClickMouse() => m_Lobby.SelectRole(RoleId.Mouse);
         private void OnClickCat() => m_Lobby.SelectRole(RoleId.Cat);
         private void OnClickStart() => m_Lobby.RequestStartGame();
         private void OnClickMap(int _index) => m_Lobby.SelectMap(_index);
 
+        // 커서만 남긴다 — ResultHud가 커서를 점유했다 놓는 시점은 스트림으로 오지 않는다.
         private void Update()
         {
-            NetworkManager nm = NetworkManager.Singleton;
-            bool connected = nm != null && (nm.IsClient || nm.IsServer);
-            bool inLobby = connected && m_Lobby != null && m_Lobby.IsSpawned && !m_Lobby.GameStarted;
+            bool inGame = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
 
-            m_Panel.SetActive(inLobby);
-
-            if (m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted)
+            if (inGame)
             {
                 // 결과 패널이 커서를 점유 중이면 양보 (핫바는 커서를 쓰지 않는다)
                 if (!Match.ResultHud.IsShowing && Cursor.lockState != CursorLockMode.Locked)
@@ -68,7 +72,15 @@ namespace CTC.Runtime.Lobby
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
+        }
 
+        private void Render()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            bool connected = nm != null && (nm.IsClient || nm.IsServer);
+            bool inLobby = connected && m_Lobby != null && m_Lobby.IsSpawned && !m_Lobby.GameStarted;
+
+            m_Panel.SetActive(inLobby);
             if (!inLobby) return;
 
             var sb = new System.Text.StringBuilder();
