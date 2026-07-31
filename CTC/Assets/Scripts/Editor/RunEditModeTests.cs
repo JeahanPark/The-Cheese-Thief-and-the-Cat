@@ -20,18 +20,18 @@ namespace CTC.Editor
 
         private class ResultLogger : ICallbacks
         {
-            public void RunStarted(ITestAdaptor testsToRun) { }
-            public void TestStarted(ITestAdaptor test) { }
+            public void RunStarted(ITestAdaptor _testsToRun) { }
+            public void TestStarted(ITestAdaptor _test) { }
 
-            public void TestFinished(ITestResultAdaptor result)
+            public void TestFinished(ITestResultAdaptor _result)
             {
-                if (!result.Test.IsSuite && result.TestStatus != TestStatus.Passed)
-                    Debug.LogError($"[EditModeTests] FAIL {result.Test.FullName}: {result.Message}");
+                if (!_result.Test.IsSuite && _result.TestStatus != TestStatus.Passed)
+                    Debug.LogError($"[EditModeTests] FAIL {_result.Test.FullName}: {_result.Message}");
             }
 
-            public void RunFinished(ITestResultAdaptor result)
+            public void RunFinished(ITestResultAdaptor _result)
             {
-                Debug.Log($"[EditModeTests] 완료 — Passed: {result.PassCount}, Failed: {result.FailCount}, Skipped: {result.SkipCount}");
+                Debug.Log($"[EditModeTests] 완료 — Passed: {_result.PassCount}, Failed: {_result.FailCount}, Skipped: {_result.SkipCount}");
             }
         }
     }

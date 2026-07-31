@@ -70,25 +70,25 @@ namespace CTC.Runtime.Map
         }
 
         /// <summary>시드로 유효 맵 생성. 재시도 소진 시 null.</summary>
-        public static LayoutResult Generate(PoolData pool, int seed)
+        public static LayoutResult Generate(PoolData _pool, int _seed)
         {
             for (int attempt = 0; attempt < MAX_RETRY; attempt++)
             {
-                var rng = new System.Random(seed + attempt * 7919);
-                LayoutResult r = TryBuild(pool, rng, seed);
+                var rng = new System.Random(_seed + attempt * 7919);
+                LayoutResult r = TryBuild(_pool, rng, _seed);
                 if (r != null && Validate(r)) return r;
             }
             return null;
         }
 
-        private static LayoutResult TryBuild(PoolData pool, System.Random rng, int seed)
+        private static LayoutResult TryBuild(PoolData _pool, System.Random _rng, int _seed)
         {
             // 1. 방 선택
-            var chosen = pool.Rooms.Where(r => r.Always).ToList();
-            var rest = pool.Rooms.Where(r => !r.Always).OrderBy(_ => rng.Next()).ToList();
-            int minRooms = Mathf.Max(1, pool.MinRooms);
-            int maxRooms = Mathf.Max(minRooms, pool.MaxRooms);
-            int target = minRooms + rng.Next(0, maxRooms - minRooms + 1);
+            var chosen = _pool.Rooms.Where(r => r.Always).ToList();
+            var rest = _pool.Rooms.Where(r => !r.Always).OrderBy(_ => _rng.Next()).ToList();
+            int minRooms = Mathf.Max(1, _pool.MinRooms);
+            int maxRooms = Mathf.Max(minRooms, _pool.MaxRooms);
+            int target = minRooms + _rng.Next(0, maxRooms - minRooms + 1);
             foreach (var r in rest)
             {
                 if (chosen.Count >= target) break;
@@ -96,11 +96,11 @@ namespace CTC.Runtime.Map
             }
             var chosenIds = chosen.Select(r => r.Id).ToHashSet();
 
-            var result = new LayoutResult { Seed = seed };
+            var result = new LayoutResult { Seed = _seed };
             result.Rooms = chosen.Select(r => new RoomRect { Id = r.Id, Center = r.Center, Size = r.Size }).ToList();
 
             // 2. 통로 — 양 끝 방이 모두 선택됐으면 채택
-            foreach (var c in pool.Corridors)
+            foreach (var c in _pool.Corridors)
             {
                 if (!chosenIds.Contains(c.A) || !chosenIds.Contains(c.B)) continue;
                 for (int i = 0; i < c.Waypoints.Length - 1; i++)
@@ -108,25 +108,25 @@ namespace CTC.Runtime.Map
             }
 
             // 3. 미로 — 배타 방 미선택 시 채택 (남부 슬롯)
-            foreach (var m in pool.Mazes)
+            foreach (var m in _pool.Mazes)
             {
                 if (!string.IsNullOrEmpty(m.ExclusiveRoomId) && chosenIds.Contains(m.ExclusiveRoomId)) continue;
                 if (m.Segments != null) result.Corridors.AddRange(m.Segments);
             }
 
             // 4. 치즈 배정
-            if (!AssignCheese(pool, chosenIds, result)) return null;
+            if (!AssignCheese(_pool, chosenIds, result)) return null;
 
             // 5. 요새 배정
-            if (!AssignFortresses(pool, chosenIds, result)) return null;
+            if (!AssignFortresses(_pool, chosenIds, result)) return null;
 
             return result;
         }
 
         // G1 고정 → G7·G6(중앙/미로) → G2~G5(외곽·중간 밴드). 등급 완전 소진 실패 시 null.
-        private static bool AssignCheese(PoolData pool, HashSet<string> chosenIds, LayoutResult result)
+        private static bool AssignCheese(PoolData _pool, HashSet<string> _chosenIds, LayoutResult _result)
         {
-            var avail = pool.Cheese.Where(s => chosenIds.Contains(s.RoomId)).ToList();
+            var avail = _pool.Cheese.Where(s => _chosenIds.Contains(s.RoomId)).ToList();
             var used = new HashSet<int>();
             var placed = new List<CheesePlacement>();
 
@@ -153,14 +153,14 @@ namespace CTC.Runtime.Map
                 placed.Add(new CheesePlacement { Pos = free[pick].Pos, Grade = g, Radius = free[pick].Radius });
                 used.Add(g);
             }
-            result.Cheese = placed;
+            _result.Cheese = placed;
             return used.Count == 7;
         }
 
         // F0 고정 첫째 + 선택 외곽/중간 방에 라운드로빈으로 총 6개(부족분은 남은 슬롯).
-        private static bool AssignFortresses(PoolData pool, HashSet<string> chosenIds, LayoutResult result)
+        private static bool AssignFortresses(PoolData _pool, HashSet<string> _chosenIds, LayoutResult _result)
         {
-            var avail = pool.Fortress.Where(s => chosenIds.Contains(s.RoomId)).ToList();
+            var avail = _pool.Fortress.Where(s => _chosenIds.Contains(s.RoomId)).ToList();
             var placed = new List<FortressPlacement>();
             foreach (var s in avail.Where(s => s.Always))
                 placed.Add(new FortressPlacement { Pos = s.Pos, YawDeg = s.Yaw });
@@ -169,15 +169,15 @@ namespace CTC.Runtime.Map
                 if (placed.Count >= 6) break;
                 placed.Add(new FortressPlacement { Pos = s.Pos, YawDeg = s.Yaw });
             }
-            result.Fortresses = placed;
+            _result.Fortresses = placed;
             return placed.Count >= 1; // 최소 F0. 쥐 수 초과분은 런타임에서 요새 공유(SpawnPosition % 개수)
         }
 
-        private static bool Validate(LayoutResult r) =>
-            MapValidator.NoRoomOverlap(r.Rooms)
-            && MapValidator.AllConnected(r.Rooms, r.Corridors, "R3")
-            && MapValidator.CorridorsWideEnough(r.Corridors, MapValidator.MIN_CORRIDOR_WIDTH)
-            && MapValidator.CheeseGradesComplete(r.Cheese)
-            && MapValidator.FortressCheeseSpacing(r.Fortresses, r.Cheese, MapValidator.MIN_FORTRESS_CHEESE_DIST);
+        private static bool Validate(LayoutResult _r) =>
+            MapValidator.NoRoomOverlap(_r.Rooms)
+            && MapValidator.AllConnected(_r.Rooms, _r.Corridors, "R3")
+            && MapValidator.CorridorsWideEnough(_r.Corridors, MapValidator.MIN_CORRIDOR_WIDTH)
+            && MapValidator.CheeseGradesComplete(_r.Cheese)
+            && MapValidator.FortressCheeseSpacing(_r.Fortresses, _r.Cheese, MapValidator.MIN_FORTRESS_CHEESE_DIST);
     }
 }

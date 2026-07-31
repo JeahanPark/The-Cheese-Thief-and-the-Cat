@@ -149,17 +149,17 @@ namespace CTC.Editor
 
         // ---- 리플렉션 헬퍼 ----
 
-        private static bool TryGetPlayers(out object[] players, out string error)
+        private static bool TryGetPlayers(out object[] _players, out string _error)
         {
-            players = null;
-            error = null;
+            _players = null;
+            _error = null;
 
             // UnityPlayer.GetPlayers()는 직렬화 DTO(PlayerStateJson)를 주고 Activate/AddTag가 없다.
             // 실제 조작 대상은 MultiplayerPlaymode.Players (UnityPlayer[]) — MPPM 창이 쓰는 것과 동일.
             Type mppm = FindType("MultiplayerPlaymode");
             if (mppm == null)
             {
-                error = "MPPM 내부 타입(MultiplayerPlaymode)을 못 찾음 — 패키지 버전 변경 가능성";
+                _error = "MPPM 내부 타입(MultiplayerPlaymode)을 못 찾음 — 패키지 버전 변경 가능성";
                 return false;
             }
 
@@ -167,20 +167,20 @@ namespace CTC.Editor
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null);
             if (result is IEnumerable e)
             {
-                players = e.Cast<object>().Where(o => o != null).ToArray();
+                _players = e.Cast<object>().Where(o => o != null).ToArray();
                 return true;
             }
 
-            error = "MultiplayerPlaymode.Players 접근 실패";
+            _error = "MultiplayerPlaymode.Players 접근 실패";
             return false;
         }
 
         // Activate(out ActivationError, List<T>) — 두 번째 인자는 빈 리스트로 호출.
-        private static string Activate(object player)
+        private static string Activate(object _player)
         {
-            if (Get(player, "PlayerState")?.ToString() == "Launched") return "이미 실행 중";
+            if (Get(_player, "PlayerState")?.ToString() == "Launched") return "이미 실행 중";
 
-            MethodInfo activate = player.GetType()
+            MethodInfo activate = _player.GetType()
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(m => m.Name == "Activate");
             if (activate == null) return "Activate 없음";
@@ -196,7 +196,7 @@ namespace CTC.Editor
                     : (pt.IsValueType ? Activator.CreateInstance(pt) : null);
             }
 
-            activate.Invoke(player, args);
+            activate.Invoke(_player, args);
             for (int i = 0; i < ps.Length; i++)
             {
                 if (!ps[i].ParameterType.IsByRef) continue;
@@ -206,45 +206,45 @@ namespace CTC.Editor
             return "활성화";
         }
 
-        private static string Deactivate(object player)
+        private static string Deactivate(object _player)
         {
-            MethodInfo deactivate = player.GetType()
+            MethodInfo deactivate = _player.GetType()
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(m => m.Name == "Deactivate");
             if (deactivate == null) return "Deactivate 없음";
 
             var args = new object[deactivate.GetParameters().Length];
-            deactivate.Invoke(player, args);
+            deactivate.Invoke(_player, args);
             return "종료";
         }
 
-        private static string EnsureTag(object player, string tag)
+        private static string EnsureTag(object _player, string _tag)
         {
-            IEnumerable tags = Get(player, "Tags") as IEnumerable;
-            if (tags != null && tags.Cast<object>().Any(o => o?.ToString() == tag)) return $"{tag}(기존)";
+            IEnumerable tags = Get(_player, "Tags") as IEnumerable;
+            if (tags != null && tags.Cast<object>().Any(o => o?.ToString() == _tag)) return $"{_tag}(기존)";
 
-            MethodInfo add = player.GetType()
+            MethodInfo add = _player.GetType()
                 .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .FirstOrDefault(m => m.Name == "AddTag");
             if (add == null) return "AddTag 없음";
 
-            var args = new object[] { tag, null };
-            add.Invoke(player, args);
-            return args[1] == null || args[1].ToString() == "None" ? tag : $"{tag} 실패({args[1]})";
+            var args = new object[] { _tag, null };
+            add.Invoke(_player, args);
+            return args[1] == null || args[1].ToString() == "None" ? _tag : $"{_tag} 실패({args[1]})";
         }
 
-        private static object Get(object target, string propertyName)
+        private static object Get(object _target, string _propertyName)
         {
-            PropertyInfo p = target.GetType().GetProperty(propertyName,
+            PropertyInfo p = _target.GetType().GetProperty(_propertyName,
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            return p?.GetValue(target);
+            return p?.GetValue(_target);
         }
 
-        private static Type FindType(string shortName)
+        private static Type FindType(string _shortName)
         {
             Assembly asm = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => a.GetName().Name == ASM);
-            return asm?.GetType(NS + shortName);
+            return asm?.GetType(NS + _shortName);
         }
     }
 }

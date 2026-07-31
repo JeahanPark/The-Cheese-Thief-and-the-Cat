@@ -116,14 +116,14 @@ namespace CTC.Editor
             };
         }
 
-        private static Pool.CorridorCandidate Corridor(string id, string a, string b, Vector2 from, Vector2 to)
+        private static Pool.CorridorCandidate Corridor(string _id, string _a, string _b, Vector2 _from, Vector2 _to)
         {
             return new Pool.CorridorCandidate
             {
-                Id = id,
-                RoomA = a,
-                RoomB = b,
-                Waypoints = new List<Vector2> { from * COORD_SCALE, to * COORD_SCALE },
+                Id = _id,
+                RoomA = _a,
+                RoomB = _b,
+                Waypoints = new List<Vector2> { _from * COORD_SCALE, _to * COORD_SCALE },
                 Width = CORRIDOR_WIDTH,
             };
         }

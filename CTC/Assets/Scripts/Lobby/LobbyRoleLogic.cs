@@ -8,30 +8,30 @@ namespace CTC.Runtime.Lobby
     public static class LobbyRoleLogic
     {
         /// <summary>selfIndex 참가자가 requested 역할을 고를 수 있는가. 고양이는 정원(catCapacity) 검사.</summary>
-        public static bool CanSelect(IReadOnlyList<RoleId> roles, int selfIndex, RoleId requested, int catCapacity)
+        public static bool CanSelect(IReadOnlyList<RoleId> _roles, int _selfIndex, RoleId _requested, int _catCapacity)
         {
-            if (requested == RoleId.None) return false;
-            if (selfIndex < 0 || selfIndex >= roles.Count) return false;
-            if (requested != RoleId.Cat) return true;
+            if (_requested == RoleId.None) return false;
+            if (_selfIndex < 0 || _selfIndex >= _roles.Count) return false;
+            if (_requested != RoleId.Cat) return true;
 
             int otherCats = 0;
-            for (int i = 0; i < roles.Count; i++)
+            for (int i = 0; i < _roles.Count; i++)
             {
-                if (i != selfIndex && roles[i] == RoleId.Cat) otherCats++;
+                if (i != _selfIndex && _roles[i] == RoleId.Cat) otherCats++;
             }
-            return otherCats < catCapacity;
+            return otherCats < _catCapacity;
         }
 
         /// <summary>전원 역할 선택 완료 + 고양이·쥐 각 1 이상이어야 시작 가능.</summary>
-        public static bool CanStart(IReadOnlyList<RoleId> roles)
+        public static bool CanStart(IReadOnlyList<RoleId> _roles)
         {
-            if (roles.Count < 2) return false;
+            if (_roles.Count < 2) return false;
 
             int cats = 0, mice = 0;
-            for (int i = 0; i < roles.Count; i++)
+            for (int i = 0; i < _roles.Count; i++)
             {
-                if (roles[i] == RoleId.None) return false;
-                if (roles[i] == RoleId.Cat) cats++;
+                if (_roles[i] == RoleId.None) return false;
+                if (_roles[i] == RoleId.Cat) cats++;
                 else mice++;
             }
             return cats >= 1 && mice >= 1;
@@ -41,11 +41,11 @@ namespace CTC.Runtime.Lobby
         /// 맵 인덱스를 유효 범위로 접는다. 맵이 없으면 0 —
         /// 배선 누락으로 목록이 비어도 인덱싱이 터지지 않게 한다.
         /// </summary>
-        public static int ClampMapIndex(int index, int mapCount)
+        public static int ClampMapIndex(int _index, int _mapCount)
         {
-            if (mapCount <= 0) return 0;
-            if (index < 0) return 0;
-            return index >= mapCount ? mapCount - 1 : index;
+            if (_mapCount <= 0) return 0;
+            if (_index < 0) return 0;
+            return _index >= _mapCount ? _mapCount - 1 : _index;
         }
     }
 }

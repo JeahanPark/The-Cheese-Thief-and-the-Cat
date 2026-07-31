@@ -96,9 +96,9 @@ namespace CTC.Editor
             // 설치형 프리팹을 먼저 생성 — 플레이어 프리팹(ShopController)이 참조한다
             GameObject decoyPrefab = CreateStructurePrefab(
                 "MouseDecoy", DecoyPrefabPath, PrimitiveType.Capsule,
-                mouseMat, maxHp: 1,
-                scale: new Vector3(0.4f, 0.25f, 0.4f),
-                addExtras: _root =>
+                mouseMat, _maxHp: 1,
+                _scale: new Vector3(0.4f, 0.25f, 0.4f),
+                _addExtras: _root =>
                 {
                     _root.AddComponent<DecoyLifetime>();
                     // 미끼의 값어치는 생김새가 아니라 소리다 — 진짜 쥐와 같은 발소리를 같은
@@ -116,16 +116,16 @@ namespace CTC.Editor
                     lure.maxDistance = 8f;
                 },
                 // 쥐만 통과시키려면 미끼가 자기 레이어에 있어야 한다(쥐 CC의 excludeLayers 대상)
-                layer: decoyLayer);
+                _layer: decoyLayer);
 
             GameObject fortressPrefab = CreateFortressPrefab();
 
             // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
             GameObject warehousePrefab = CreateStructurePrefab(
                 "CheeseWarehouse", WarehousePrefabPath, PrimitiveType.Cube,
-                GridboxMaterial("Yellow"), maxHp: ShopLogic.WAREHOUSE_MAX_HP,
-                scale: new Vector3(1f, 0.8f, 1f),
-                addExtras: _root =>
+                GridboxMaterial("Yellow"), _maxHp: ShopLogic.WAREHOUSE_MAX_HP,
+                _scale: new Vector3(1f, 0.8f, 1f),
+                _addExtras: _root =>
                 {
                     var production = _root.AddComponent<WarehouseProduction>();
                     SetRef(production, "m_ProduceVfx", CreateProduceVfx(_root));
@@ -138,24 +138,24 @@ namespace CTC.Editor
 
             GameObject catPrefab = CreatePlayerPrefab(
                 "PlayerCat", CatPrefabPath, CatModelPath, catMat,
-                ccHeight: catInfo.CcHeight, ccRadius: catInfo.CcRadius,
+                _ccHeight: catInfo.CcHeight, _ccRadius: catInfo.CcRadius,
                 // 원작: 술래가 먹이보다 빠름. camDistance는 쥐와 동일한 3 —
                 // 5는 좁은 방에서 카메라가 상시 벽 밖이었다(2026-07-28). 넓은 시야는 FOV로 표현.
-                moveSpeed: catInfo.MoveSpeed, runThreshold: catInfo.RunThreshold,
-                fov: catInfo.Fov, camDistance: catInfo.CamDistance,
-                role: RoleId.Cat, maxHp: catInfo.MaxHp,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab);
+                _moveSpeed: catInfo.MoveSpeed, _runThreshold: catInfo.RunThreshold,
+                _fov: catInfo.Fov, _camDistance: catInfo.CamDistance,
+                _role: RoleId.Cat, _maxHp: catInfo.MaxHp,
+                _decoyPrefab: decoyPrefab, _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
-                ccHeight: mouseInfo.CcHeight, ccRadius: mouseInfo.CcRadius,
-                moveSpeed: mouseInfo.MoveSpeed, runThreshold: mouseInfo.RunThreshold,
-                fov: mouseInfo.Fov, camDistance: mouseInfo.CamDistance,
-                role: RoleId.Mouse, maxHp: mouseInfo.MaxHp,
-                decoyPrefab: decoyPrefab, fortressPrefab: fortressPrefab, warehousePrefab: warehousePrefab,
+                _ccHeight: mouseInfo.CcHeight, _ccRadius: mouseInfo.CcRadius,
+                _moveSpeed: mouseInfo.MoveSpeed, _runThreshold: mouseInfo.RunThreshold,
+                _fov: mouseInfo.Fov, _camDistance: mouseInfo.CamDistance,
+                _role: RoleId.Mouse, _maxHp: mouseInfo.MaxHp,
+                _decoyPrefab: decoyPrefab, _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab,
                 // 쥐만 전용 레이어 — 미끼(Decoy)와의 충돌을 매트릭스에서 끊기 위해서다(DecoyLayers).
                 // 고양이는 Default에 남아 미끼에 부딪힌다.
-                layer: mouseLayer);
+                _layer: mouseLayer);
 
             CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
             Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 5종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");

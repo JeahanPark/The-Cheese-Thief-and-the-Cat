@@ -27,16 +27,16 @@ namespace CTC.Runtime.Cameras
         }
 
         /// <summary>로컬 플레이어 스폰 시 호출 — 추적 대상과 역할별 렌즈를 적용한다.</summary>
-        public void Bind(Transform target, float fov, float distance)
+        public void Bind(Transform _target, float _fov, float _distance)
         {
-            m_Cam.Follow = target;
-            m_Cam.LookAt = target;
+            m_Cam.Follow = _target;
+            m_Cam.LookAt = _target;
 
             LensSettings lens = m_Cam.Lens;
-            lens.FieldOfView = fov;
+            lens.FieldOfView = _fov;
             m_Cam.Lens = lens;
 
-            m_Orbital.Radius = distance;
+            m_Orbital.Radius = _distance;
         }
 
         private void Update()

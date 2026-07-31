@@ -13,8 +13,8 @@ namespace CTC.Runtime.Map
 
         public Vector2 Min => Center - Size * 0.5f;
         public Vector2 Max => Center + Size * 0.5f;
-        public bool Contains(Vector2 p) =>
-            p.x >= Min.x && p.x <= Max.x && p.y >= Min.y && p.y <= Max.y;
+        public bool Contains(Vector2 _p) =>
+            _p.x >= Min.x && _p.x <= Max.x && _p.y >= Min.y && _p.y <= Max.y;
     }
 
     /// <summary>통로/미로 세그먼트 — 중심선 두 끝점(x,z) + 폭. 굽기 시 폭만큼의 바닥 통로 박스.</summary>

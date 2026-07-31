@@ -7,11 +7,11 @@ namespace CTC.Tests
 {
     public class MapValidatorTests
     {
-        private static RoomRect Room(string id, float cx, float cz, float sx, float sz) =>
-            new RoomRect { Id = id, Center = new Vector2(cx, cz), Size = new Vector2(sx, sz) };
+        private static RoomRect Room(string _id, float _cx, float _cz, float _sx, float _sz) =>
+            new RoomRect { Id = _id, Center = new Vector2(_cx, _cz), Size = new Vector2(_sx, _sz) };
 
-        private static CorridorSeg Seg(float ax, float az, float bx, float bz, float w = 1.6f) =>
-            new CorridorSeg { From = new Vector2(ax, az), To = new Vector2(bx, bz), Width = w };
+        private static CorridorSeg Seg(float _ax, float _az, float _bx, float _bz, float _w = 1.6f) =>
+            new CorridorSeg { From = new Vector2(_ax, _az), To = new Vector2(_bx, _bz), Width = _w };
 
         // R3(중앙)·R5(남서)만 있고 통로 1개로 이은 최소 유효 맵
         private static (List<RoomRect>, List<CorridorSeg>) MinimalConnected()

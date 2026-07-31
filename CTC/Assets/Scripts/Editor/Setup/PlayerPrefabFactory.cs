@@ -26,57 +26,57 @@ namespace CTC.Editor
     public static partial class SetupNetworkingScene
     {
         private static GameObject CreatePlayerPrefab(
-            string name, string prefabPath, string modelPath, Material material,
-            float ccHeight, float ccRadius,
-            float moveSpeed, float runThreshold, float fov, float camDistance,
-            RoleId role, int maxHp,
-            GameObject decoyPrefab, GameObject fortressPrefab, GameObject warehousePrefab,
-            int layer = -1)
+            string _name, string _prefabPath, string _modelPath, Material _material,
+            float _ccHeight, float _ccRadius,
+            float _moveSpeed, float _runThreshold, float _fov, float _camDistance,
+            RoleId _role, int _maxHp,
+            GameObject _decoyPrefab, GameObject _fortressPrefab, GameObject _warehousePrefab,
+            int _layer = -1)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
                 AssetDatabase.CreateFolder("Assets", "Prefabs");
 
-            var root = new GameObject(name);
+            var root = new GameObject(_name);
             try
             {
                 var cc = root.AddComponent<CharacterController>();
-                cc.height = ccHeight;
-                cc.radius = ccRadius;
-                cc.center = new Vector3(0f, ccHeight * 0.5f + 0.05f, 0f);
+                cc.height = _ccHeight;
+                cc.radius = _ccRadius;
+                cc.center = new Vector3(0f, _ccHeight * 0.5f + 0.05f, 0f);
 
                 root.AddComponent<NetworkObject>();
                 root.AddComponent<ClientNetworkTransform>();
 
                 var move = root.AddComponent<PlayerMovement>();
-                SetFloat(move, "m_MoveSpeed", moveSpeed);
+                SetFloat(move, "m_MoveSpeed", _moveSpeed);
 
                 var anim = root.AddComponent<PlayerAnimationDriver>();
-                SetFloat(anim, "m_RunThreshold", runThreshold);
+                SetFloat(anim, "m_RunThreshold", _runThreshold);
 
                 var binder = root.AddComponent<PlayerCameraBinder>();
-                SetFloat(binder, "m_CameraFov", fov);
-                SetFloat(binder, "m_CameraDistance", camDistance);
+                SetFloat(binder, "m_CameraFov", _fov);
+                SetFloat(binder, "m_CameraDistance", _camDistance);
 
                 root.AddComponent<CheeseWallet>();
 
                 var health = root.AddComponent<Health>();
-                SetInt(health, "m_MaxHp", maxHp);
+                SetInt(health, "m_MaxHp", _maxHp);
 
                 var roleTag = root.AddComponent<RoleTag>();
-                SetInt(roleTag, "m_Role", (int)role); // enum은 intValue로
+                SetInt(roleTag, "m_Role", (int)_role); // enum은 intValue로
 
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
                 root.AddComponent<LocalPlayerPublisher>(); // 스폰/디스폰을 LocalPlayerBinder에 알린다
 
                 var shop = root.AddComponent<ShopController>();
-                SetRef(shop, "m_DecoyPrefab", decoyPrefab);
-                SetRef(shop, "m_FortressPrefab", fortressPrefab);
-                SetRef(shop, "m_WarehousePrefab", warehousePrefab);
+                SetRef(shop, "m_DecoyPrefab", _decoyPrefab);
+                SetRef(shop, "m_FortressPrefab", _fortressPrefab);
+                SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
 
-                CTC.Runtime.Info.PlayerInfo info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(role);
+                CTC.Runtime.Info.PlayerInfo info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(_role);
 
-                if (role == RoleId.Cat)
+                if (_role == RoleId.Cat)
                 {
                     // 덮치기 수치도 CSV(PlayerInfo.csv)에서 굽는다
                     var pounce = root.AddComponent<CatPounce>();
@@ -94,7 +94,7 @@ namespace CTC.Editor
 
                 // 발소리 — 3D 루프(거리 감쇠), FootstepPlayer가 이동 속도로 재생 제어
                 var stepSource = root.AddComponent<AudioSource>();
-                stepSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(role == RoleId.Cat
+                stepSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(_role == RoleId.Cat
                     ? "Assets/Audio/Movement/sfx_cat_footstep.ogg"
                     : "Assets/Audio/Movement/sfx_mouse_footstep.ogg");
                 stepSource.loop = true;
@@ -108,14 +108,14 @@ namespace CTC.Editor
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
 
-                var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
+                var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(_modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);
                 model.name = "Model";
                 model.transform.SetParent(root.transform, false);
                 model.transform.localPosition = Vector3.zero;
 
                 foreach (var r in model.GetComponentsInChildren<Renderer>(true))
-                    r.sharedMaterials = Enumerable.Repeat(material, r.sharedMaterials.Length).ToArray();
+                    r.sharedMaterials = Enumerable.Repeat(_material, r.sharedMaterials.Length).ToArray();
 
                 // 카메라 Deoccluder IgnoreTag용 — 히트한 '콜라이더의 GO' 태그를 비교하므로
                 // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다
@@ -123,13 +123,13 @@ namespace CTC.Editor
                     tr.gameObject.tag = "Player";
 
                 // 레이어도 계층 전체에 — 콜라이더가 붙은 자식까지 칠해야 물리 필터가 걸린다
-                if (layer >= 0)
+                if (_layer >= 0)
                 {
                     foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
-                        tr.gameObject.layer = layer;
+                        tr.gameObject.layer = _layer;
                 }
 
-                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, _prefabPath);
                 // 저장 전 임시 씬 오브젝트에서 OnValidate가 구운 해시는 무효(두 프리팹이 동일값).
                 // 영속화된 에셋에서 다시 구워야 에셋 GUID 기반의 유일한 해시가 나온다.
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());

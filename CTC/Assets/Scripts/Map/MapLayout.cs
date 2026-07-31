@@ -39,21 +39,21 @@ namespace CTC.Runtime.Map
         public IReadOnlyList<FortressPlacement> Fortresses => m_Fortresses;
 
         /// <summary>생성기/툴이 결과를 채울 때 사용(에디터 전용 경로).</summary>
-        public void Set(int seed, string source, List<RoomRect> rooms, List<CorridorSeg> corridors,
-            List<CheesePlacement> cheese, List<FortressPlacement> fortresses,
-            float halfExtent = 15f, string displayName = "",
-            int recommendedMiceMin = 2, int recommendedMiceMax = 3)
+        public void Set(int _seed, string _source, List<RoomRect> _rooms, List<CorridorSeg> _corridors,
+            List<CheesePlacement> _cheese, List<FortressPlacement> _fortresses,
+            float _halfExtent = 15f, string _displayName = "",
+            int _recommendedMiceMin = 2, int _recommendedMiceMax = 3)
         {
-            m_Seed = seed;
-            m_Source = source;
-            m_HalfExtent = halfExtent;
-            m_DisplayName = displayName;
-            m_RecommendedMiceMin = recommendedMiceMin;
-            m_RecommendedMiceMax = recommendedMiceMax;
-            m_Rooms = rooms;
-            m_Corridors = corridors;
-            m_Cheese = cheese;
-            m_Fortresses = fortresses;
+            m_Seed = _seed;
+            m_Source = _source;
+            m_HalfExtent = _halfExtent;
+            m_DisplayName = _displayName;
+            m_RecommendedMiceMin = _recommendedMiceMin;
+            m_RecommendedMiceMax = _recommendedMiceMax;
+            m_Rooms = _rooms;
+            m_Corridors = _corridors;
+            m_Cheese = _cheese;
+            m_Fortresses = _fortresses;
         }
     }
 }

@@ -15,9 +15,9 @@ namespace CTC.Runtime.Lobby
             serializer.SerializeValue(ref Role);
         }
 
-        public bool Equals(LobbyPlayerState other)
+        public bool Equals(LobbyPlayerState _other)
         {
-            return ClientId == other.ClientId && Role == other.Role;
+            return ClientId == _other.ClientId && Role == _other.Role;
         }
     }
 }

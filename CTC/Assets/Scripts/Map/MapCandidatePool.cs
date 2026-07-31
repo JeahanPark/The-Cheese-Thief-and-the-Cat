@@ -82,23 +82,23 @@ namespace CTC.Runtime.Map
         public IReadOnlyList<CheeseSlot> CheeseSlots => m_CheeseSlots;
         public IReadOnlyList<FortressSlot> FortressSlots => m_FortressSlots;
 
-        public void Set(List<RoomCandidate> rooms, List<CorridorCandidate> corridors, List<MazePreset> mazes,
-            List<CheeseSlot> cheese, List<FortressSlot> fortress)
+        public void Set(List<RoomCandidate> _rooms, List<CorridorCandidate> _corridors, List<MazePreset> _mazes,
+            List<CheeseSlot> _cheese, List<FortressSlot> _fortress)
         {
-            m_Rooms = rooms; m_Corridors = corridors; m_Mazes = mazes;
-            m_CheeseSlots = cheese; m_FortressSlots = fortress;
+            m_Rooms = _rooms; m_Corridors = _corridors; m_Mazes = _mazes;
+            m_CheeseSlots = _cheese; m_FortressSlots = _fortress;
         }
 
         /// <summary>확장 풀 생성 툴이 채우는 값 — 방 수 범위·캔버스 크기·표시 이름·권장 인원.</summary>
-        public void SetShape(int minRooms, int maxRooms, float halfExtent, string displayName,
-            int recommendedMiceMin, int recommendedMiceMax)
+        public void SetShape(int _minRooms, int _maxRooms, float _halfExtent, string _displayName,
+            int _recommendedMiceMin, int _recommendedMiceMax)
         {
-            m_MinRooms = minRooms;
-            m_MaxRooms = maxRooms;
-            m_HalfExtent = halfExtent;
-            m_DisplayName = displayName;
-            m_RecommendedMiceMin = recommendedMiceMin;
-            m_RecommendedMiceMax = recommendedMiceMax;
+            m_MinRooms = _minRooms;
+            m_MaxRooms = _maxRooms;
+            m_HalfExtent = _halfExtent;
+            m_DisplayName = _displayName;
+            m_RecommendedMiceMin = _recommendedMiceMin;
+            m_RecommendedMiceMax = _recommendedMiceMax;
         }
     }
 }

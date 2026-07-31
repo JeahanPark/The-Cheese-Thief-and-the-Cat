@@ -26,8 +26,8 @@ namespace CTC.Editor
     public static partial class SetupNetworkingScene
     {
         private static void CreateGameScene(
-            GameObject catPrefab, GameObject mousePrefab, GameObject fortressPrefab, GameObject decoyPrefab,
-            GameObject warehousePrefab)
+            GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab, GameObject _decoyPrefab,
+            GameObject _warehousePrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -50,7 +50,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
+            RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
             nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
@@ -68,8 +68,8 @@ namespace CTC.Editor
             // NetworkBehaviour를 여러 개 붙여도 RPC 발신자 식별은 각자 그대로 동작한다.
             lobbyGo.AddComponent<LobbySession>();                        // 상태(Model)
             var spawner = lobbyGo.AddComponent<PlayerSpawner>();         // 스폰(Worker)
-            SetRef(spawner, "m_CatPrefab", catPrefab);
-            SetRef(spawner, "m_MousePrefab", mousePrefab);
+            SetRef(spawner, "m_CatPrefab", _catPrefab);
+            SetRef(spawner, "m_MousePrefab", _mousePrefab);
 
             var mapDirector = lobbyGo.AddComponent<CTC.Runtime.Map.MapDirector>(); // 맵(Worker)
             // 로비에서 고를 맵 목록 — 요새자리·스폰 공식이 선택된 레이아웃을 읽는다
@@ -155,11 +155,11 @@ namespace CTC.Editor
             EditorSceneManager.SaveScene(scene, GameScenePath);
 
             VerifyUniqueHashes(sceneObjects
-                .Append(catPrefab.GetComponent<NetworkObject>())
-                .Append(mousePrefab.GetComponent<NetworkObject>())
-                .Append(fortressPrefab.GetComponent<NetworkObject>())
-                .Append(decoyPrefab.GetComponent<NetworkObject>())
-                .Append(warehousePrefab.GetComponent<NetworkObject>())
+                .Append(_catPrefab.GetComponent<NetworkObject>())
+                .Append(_mousePrefab.GetComponent<NetworkObject>())
+                .Append(_fortressPrefab.GetComponent<NetworkObject>())
+                .Append(_decoyPrefab.GetComponent<NetworkObject>())
+                .Append(_warehousePrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }
 
@@ -167,7 +167,7 @@ namespace CTC.Editor
         // m_RuntimeAddedPrefabs)에만 기록되어 씬에 직렬화되지 않는다. 직렬화되는 경로는
         // NetworkPrefabs.NetworkPrefabsLists([SerializeField]) → NetworkPrefabsList 에셋뿐이므로
         // DefaultNetworkPrefabs.asset에 프리팹을 등록하고 그 리스트를 명시적으로 연결한다.
-        private static void RegisterNetworkPrefabs(NetworkManager nm, params GameObject[] prefabs)
+        private static void RegisterNetworkPrefabs(NetworkManager _nm, params GameObject[] _prefabs)
         {
             var list = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(DefaultNetworkPrefabsPath);
             if (list == null)
@@ -192,7 +192,7 @@ namespace CTC.Editor
                 }
             }
 
-            foreach (GameObject prefab in prefabs)
+            foreach (GameObject prefab in _prefabs)
             {
                 if (list.Contains(prefab)) continue;
                 list.Add(new NetworkPrefab { Prefab = prefab });
@@ -204,8 +204,8 @@ namespace CTC.Editor
                 AssetDatabase.SaveAssets();
             }
 
-            if (!nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Contains(list))
-                nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
+            if (!_nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Contains(list))
+                _nm.NetworkConfig.Prefabs.NetworkPrefabsLists.Add(list);
         }
 
         // 설치 미리보기 머티리얼을 '에셋'으로 만든다.

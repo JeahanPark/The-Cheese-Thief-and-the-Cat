@@ -19,7 +19,7 @@ namespace CTC.Runtime.Economy
             serializer.SerializeValue(ref Earner);
         }
 
-        public bool Equals(CheeseSpotState other) => Remaining == other.Remaining && Earner == other.Earner;
+        public bool Equals(CheeseSpotState _other) => Remaining == _other.Remaining && Earner == _other.Earner;
     }
 
     /// <summary>

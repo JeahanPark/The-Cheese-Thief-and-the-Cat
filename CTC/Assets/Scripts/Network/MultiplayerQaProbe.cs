@@ -80,15 +80,15 @@ namespace CTC.Runtime.Networking
             }
         }
 
-        private void ExecuteCloneCommand(string method)
+        private void ExecuteCloneCommand(string _method)
         {
-            if (string.IsNullOrEmpty(method) || !method.StartsWith("TestMp"))
+            if (string.IsNullOrEmpty(_method) || !_method.StartsWith("TestMp"))
             {
-                Debug.LogWarning($"[MultiplayerQaProbe] 클론 커맨드 거부(화이트리스트 위반): '{method}'");
+                Debug.LogWarning($"[MultiplayerQaProbe] 클론 커맨드 거부(화이트리스트 위반): '{_method}'");
                 return;
             }
 
-            switch (method)
+            switch (_method)
             {
                 case "TestMpNudgeLocalPlayer":
                     NudgeLocalPlayer();
@@ -118,7 +118,7 @@ namespace CTC.Runtime.Networking
                     EnterNearestFortress();
                     break;
                 default:
-                    Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{method}'");
+                    Debug.LogWarning($"[MultiplayerQaProbe] 알 수 없는 클론 커맨드: '{_method}'");
                     break;
             }
         }
@@ -143,7 +143,7 @@ namespace CTC.Runtime.Networking
         }
 
         // 클론 로컬에서 로비 역할 선택 — MPPM 로비 자동화용.
-        private void SelectRole(RoleId role)
+        private void SelectRole(RoleId _role)
         {
             var lobby = FindFirstObjectByType<LobbyController>();
             if (lobby == null || !lobby.IsSpawned)
@@ -151,8 +151,8 @@ namespace CTC.Runtime.Networking
                 Debug.LogWarning("[MultiplayerQaProbe] SelectRole — LobbyController 없음/미스폰");
                 return;
             }
-            lobby.SelectRole(role);
-            Debug.Log($"[MultiplayerQaProbe] SelectRole({role}) 요청");
+            lobby.SelectRole(_role);
+            Debug.Log($"[MultiplayerQaProbe] SelectRole({_role}) 요청");
         }
 
         // 클론 쥐가 가장 가까운 고양이에게 딱총 발사 — 전투 QA용.
@@ -171,7 +171,7 @@ namespace CTC.Runtime.Networking
         }
 
         // 클론 로컬 플레이어의 상점 구매 — 상점 QA용.
-        private void BuyLocal(ShopItemId itemId)
+        private void BuyLocal(ShopItemId _itemId)
         {
             NetworkObject local = NetworkManager.Singleton != null
                 ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
@@ -182,7 +182,7 @@ namespace CTC.Runtime.Networking
                 Debug.LogWarning("[MultiplayerQaProbe] BuyLocal — ShopController 없음");
                 return;
             }
-            shop.Buy(itemId);
+            shop.Buy(_itemId);
         }
 
         // 클론 쥐를 가장 가까운 요새 중심으로 순간이동(CC 토글) — 내부 회복/차폐 QA용.

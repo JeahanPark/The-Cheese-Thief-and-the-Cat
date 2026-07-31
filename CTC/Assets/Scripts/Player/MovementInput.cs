@@ -9,16 +9,16 @@ namespace CTC.Runtime.Player
     /// </summary>
     public static class MovementInput
     {
-        public static Vector3 ToDirection(float horizontal, float vertical)
+        public static Vector3 ToDirection(float _horizontal, float _vertical)
         {
-            var v = new Vector3(horizontal, 0f, vertical);
+            var v = new Vector3(_horizontal, 0f, _vertical);
             return v.sqrMagnitude > 1f ? v.normalized : v;
         }
 
         /// <summary>카메라 yaw(도) 기준으로 회전된 월드 이동 방향을 반환한다.</summary>
-        public static Vector3 ToWorldDirection(float horizontal, float vertical, float cameraYawDegrees)
+        public static Vector3 ToWorldDirection(float _horizontal, float _vertical, float _cameraYawDegrees)
         {
-            return Quaternion.Euler(0f, cameraYawDegrees, 0f) * ToDirection(horizontal, vertical);
+            return Quaternion.Euler(0f, _cameraYawDegrees, 0f) * ToDirection(_horizontal, _vertical);
         }
     }
 }

@@ -85,22 +85,22 @@ namespace CTC.Editor
             Debug.Log($"[MapCandidatePoolBuilder] 후보풀 저장 — 방 {rooms.Count}·통로 {corr.Count}·미로 {mazes.Count}·치즈 {cheese.Count}·요새 {fort.Count}");
         }
 
-        private static Vector2 V(float x, float z) => new Vector2(x, z);
+        private static Vector2 V(float _x, float _z) => new Vector2(_x, _z);
 
-        private static Pool.RoomCandidate Room(string id, float cx, float cz, float sx, float sz, Pool.RoomTag tag, bool always) =>
-            new() { Id = id, Center = V(cx, cz), Size = V(sx, sz), Tag = tag, AlwaysInclude = always };
+        private static Pool.RoomCandidate Room(string _id, float _cx, float _cz, float _sx, float _sz, Pool.RoomTag _tag, bool _always) =>
+            new() { Id = _id, Center = V(_cx, _cz), Size = V(_sx, _sz), Tag = _tag, AlwaysInclude = _always };
 
-        private static Pool.CorridorCandidate Corr(string id, string a, string b, float w, params Vector2[] wp) =>
-            new() { Id = id, RoomA = a, RoomB = b, Width = w, Waypoints = new List<Vector2>(wp) };
+        private static Pool.CorridorCandidate Corr(string _id, string _a, string _b, float _w, params Vector2[] _wp) =>
+            new() { Id = _id, RoomA = _a, RoomB = _b, Width = _w, Waypoints = new List<Vector2>(_wp) };
 
-        private static Pool.CheeseSlot Cheese(string room, float x, float z, int min, int max, bool fix, int fg, float r) =>
-            new() { RoomId = room, Pos = V(x, z), MinGrade = min, MaxGrade = max, Fixed = fix, FixedGrade = fg, Radius = r };
+        private static Pool.CheeseSlot Cheese(string _room, float _x, float _z, int _min, int _max, bool _fix, int _fg, float _r) =>
+            new() { RoomId = _room, Pos = V(_x, _z), MinGrade = _min, MaxGrade = _max, Fixed = _fix, FixedGrade = _fg, Radius = _r };
 
-        private static Pool.FortressSlot Fort(string room, float x, float z, float yaw, bool always) =>
-            new() { RoomId = room, Pos = V(x, z), YawDeg = yaw, AlwaysInclude = always };
+        private static Pool.FortressSlot Fort(string _room, float _x, float _z, float _yaw, bool _always) =>
+            new() { RoomId = _room, Pos = V(_x, _z), YawDeg = _yaw, AlwaysInclude = _always };
 
-        private static CorridorSeg Seg(float ax, float az, float bx, float bz) =>
-            new() { From = V(ax, az), To = V(bx, bz), Width = 1.6f };
+        private static CorridorSeg Seg(float _ax, float _az, float _bx, float _bz) =>
+            new() { From = V(_ax, _az), To = V(_bx, _bz), Width = 1.6f };
 
         // 미로-A (남중앙) — 명세 §3
         private static MazePreset MazeA() => new()

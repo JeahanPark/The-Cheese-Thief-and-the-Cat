@@ -12,10 +12,10 @@ namespace CTC.Runtime.Player
         public const string Attack = "Attack"; // AC_Cat·AC_Mouse 공통 원샷 상태
         public const string Hit = "Hit";       // AC_Cat·AC_Mouse 공통 원샷 상태
 
-        public static string FromSpeed(float speed, float walkThreshold, float runThreshold)
+        public static string FromSpeed(float _speed, float _walkThreshold, float _runThreshold)
         {
-            if (speed >= runThreshold) return Run;
-            if (speed >= walkThreshold) return Walk;
+            if (_speed >= _runThreshold) return Run;
+            if (_speed >= _walkThreshold) return Walk;
             return Idle;
         }
     }

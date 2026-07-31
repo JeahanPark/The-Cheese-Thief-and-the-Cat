@@ -28,16 +28,16 @@ namespace CTC.Editor
         // 설치형 NetworkObject 프리팹(요새·미끼). 프리미티브 + Health/RoleTag(Mouse)/PlayerDeath.
         // RoleTag.Mouse라 고양이 덮치기 판정을 그대로 받는다(파괴 가능, 보상은 플레이어 한정).
         private static GameObject CreateStructurePrefab(
-            string name, string prefabPath, PrimitiveType primitive, Material material,
-            int maxHp, Vector3 scale, System.Action<GameObject> addExtras, int layer = -1)
+            string _name, string _prefabPath, PrimitiveType _primitive, Material _material,
+            int _maxHp, Vector3 _scale, System.Action<GameObject> _addExtras, int _layer = -1)
         {
-            var root = new GameObject(name);
+            var root = new GameObject(_name);
             try
             {
                 root.AddComponent<NetworkObject>();
 
                 var health = root.AddComponent<Health>();
-                SetInt(health, "m_MaxHp", maxHp);
+                SetInt(health, "m_MaxHp", _maxHp);
 
                 var roleTag = root.AddComponent<RoleTag>();
                 SetInt(roleTag, "m_Role", (int)RoleId.Mouse);
@@ -46,25 +46,25 @@ namespace CTC.Editor
                 root.AddComponent<HitFeedback>();
                 var placeSfx = root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>();
                 SetInt(placeSfx, "m_Sfx", (int)CTC.Runtime.Audio.SfxId.DecoyPlace);
-                addExtras(root);
+                _addExtras(root);
 
-                var body = GameObject.CreatePrimitive(primitive);
+                var body = GameObject.CreatePrimitive(_primitive);
                 body.name = "Body";
                 body.transform.SetParent(root.transform, false);
                 // 프리미티브 기본 높이가 캡슐·구·실린더는 2, 큐브는 1 — 밑면을 바닥(y=0)에 맞춘다
-                float unitHalfHeight = primitive == PrimitiveType.Cube ? 0.5f : 1f;
-                body.transform.localPosition = new Vector3(0f, scale.y * unitHalfHeight, 0f);
-                body.transform.localScale = scale;
-                if (material != null) body.GetComponent<Renderer>().sharedMaterial = material;
+                float unitHalfHeight = _primitive == PrimitiveType.Cube ? 0.5f : 1f;
+                body.transform.localPosition = new Vector3(0f, _scale.y * unitHalfHeight, 0f);
+                body.transform.localScale = _scale;
+                if (_material != null) body.GetComponent<Renderer>().sharedMaterial = _material;
 
                 // 레이어는 콜라이더가 붙은 Body까지 칠해야 물리 필터가 걸린다
-                if (layer >= 0)
+                if (_layer >= 0)
                 {
                     foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
-                        tr.gameObject.layer = layer;
+                        tr.gameObject.layer = _layer;
                 }
 
-                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, _prefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
                 AssetDatabase.SaveAssets();
                 return asset;

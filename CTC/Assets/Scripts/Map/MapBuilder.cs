@@ -102,28 +102,28 @@ namespace CTC.Runtime.Map
             }
         }
 
-        private void BuildRoomWalls(RoomRect r, IReadOnlyList<CorridorSeg> corridors)
+        private void BuildRoomWalls(RoomRect _r, IReadOnlyList<CorridorSeg> _corridors)
         {
             // 바닥류는 Ignore Raycast — 카메라가 바닥과 충돌하지 않게 (전역 Floor와 동일)
-            AddBox(m_Root, m_FloorMaterial, $"Floor_{r.Id}",
-                new Vector3(r.Center.x, 0.02f, r.Center.y), new Vector3(r.Size.x, 0.04f, r.Size.y)).layer = 2;
+            AddBox(m_Root, m_FloorMaterial, $"Floor_{_r.Id}",
+                new Vector3(_r.Center.x, 0.02f, _r.Center.y), new Vector3(_r.Size.x, 0.04f, _r.Size.y)).layer = 2;
 
             for (int side = 0; side < 4; side++)
-                BuildWallWithGaps(r, corridors, side);
+                BuildWallWithGaps(_r, _corridors, side);
         }
 
         // 방 한 변을 통로 접점(개구부)만 남기고 벽 세그먼트로 깐다.
         // side: 0=N(+z) 1=S(-z) 2=E(+x) 3=W(-x)
-        private void BuildWallWithGaps(RoomRect r, IReadOnlyList<CorridorSeg> corridors, int side)
+        private void BuildWallWithGaps(RoomRect _r, IReadOnlyList<CorridorSeg> _corridors, int _side)
         {
-            bool horizontal = side <= 1; // N/S 변은 x축 방향으로 뻗음
-            float fixedCoord = side == 0 ? r.Max.y : side == 1 ? r.Min.y : side == 2 ? r.Max.x : r.Min.x;
-            float min = horizontal ? r.Min.x : r.Min.y;
-            float max = horizontal ? r.Max.x : r.Max.y;
+            bool horizontal = _side <= 1; // N/S 변은 x축 방향으로 뻗음
+            float fixedCoord = _side == 0 ? _r.Max.y : _side == 1 ? _r.Min.y : _side == 2 ? _r.Max.x : _r.Min.x;
+            float min = horizontal ? _r.Min.x : _r.Min.y;
+            float max = horizontal ? _r.Max.x : _r.Max.y;
 
             // 이 변에 닿는 통로 끝점 → 개구부(변 축 좌표, 반폭)
             var gaps = new List<(float center, float half)>();
-            foreach (CorridorSeg c in corridors)
+            foreach (CorridorSeg c in _corridors)
             {
                 foreach (Vector2 p in new[] { c.From, c.To })
                 {
@@ -136,7 +136,7 @@ namespace CTC.Runtime.Map
             }
             gaps.Sort((a, b) => a.center.CompareTo(b.center));
 
-            string sideName = side == 0 ? "N" : side == 1 ? "S" : side == 2 ? "E" : "W";
+            string sideName = _side == 0 ? "N" : _side == 1 ? "S" : _side == 2 ? "E" : "W";
             float cursor = min;
             int seg = 0;
             for (int i = 0; i <= gaps.Count; i++)
@@ -146,7 +146,7 @@ namespace CTC.Runtime.Map
                 if (length > 0.05f)
                 {
                     float center = (cursor + segEnd) * 0.5f;
-                    AddBox(m_Root, m_WallMaterial, $"Wall_{r.Id}_{sideName}{seg++}",
+                    AddBox(m_Root, m_WallMaterial, $"Wall_{_r.Id}_{sideName}{seg++}",
                         horizontal ? new Vector3(center, ROOM_WALL_HEIGHT * 0.5f, fixedCoord)
                                    : new Vector3(fixedCoord, ROOM_WALL_HEIGHT * 0.5f, center),
                         horizontal ? new Vector3(length, ROOM_WALL_HEIGHT, ROOM_WALL_THICK)
@@ -158,10 +158,10 @@ namespace CTC.Runtime.Map
 
         // 통로 세그먼트: 바닥 + 양측 낮은 벽(고양이도 통과 — 폭이 이동을 제약, 벽은 이탈 차단).
         // 대각 세그먼트(미로·사선 통로) 지원을 위해 회전 박스로 깐다.
-        private void BuildCorridor(CorridorSeg c, IReadOnlyList<CorridorSeg> all)
+        private void BuildCorridor(CorridorSeg _c, IReadOnlyList<CorridorSeg> _all)
         {
-            Vector3 a = new Vector3(c.From.x, 0f, c.From.y);
-            Vector3 b = new Vector3(c.To.x, 0f, c.To.y);
+            Vector3 a = new Vector3(_c.From.x, 0f, _c.From.y);
+            Vector3 b = new Vector3(_c.To.x, 0f, _c.To.y);
             Vector3 dir = b - a;
             float len = dir.magnitude;
             if (len < 0.01f) return;
@@ -169,29 +169,29 @@ namespace CTC.Runtime.Map
             Vector3 mid = (a + b) * 0.5f;
             Quaternion rot = Quaternion.LookRotation(dir / len);
             AddOrientedBox(m_Root, m_FloorMaterial, "CorridorFloor",
-                mid + Vector3.up * 0.02f, rot, new Vector3(c.Width, 0.04f, len)).layer = 2;
+                mid + Vector3.up * 0.02f, rot, new Vector3(_c.Width, 0.04f, len)).layer = 2;
 
-            BuildCorridorSideWall(c, all, +1f);
-            BuildCorridorSideWall(c, all, -1f);
+            BuildCorridorSideWall(_c, _all, +1f);
+            BuildCorridorSideWall(_c, _all, -1f);
         }
 
         // 통로 한쪽 측벽: 다른 세그먼트 중심선이 이 벽 라인을 실제로 가로지르는 구간만
         // 개구부로 비우고 나머지를 세그먼트로 깐다. 교차는 2D(x,z) 선분-선분으로 판정 —
         // 분기가 뻗는 쪽 벽만 열리고(u∈[0,1] 조건) 반대쪽·바깥 코너는 닫힌 채 유지된다.
-        private void BuildCorridorSideWall(CorridorSeg c, IReadOnlyList<CorridorSeg> all, float sideSign)
+        private void BuildCorridorSideWall(CorridorSeg _c, IReadOnlyList<CorridorSeg> _all, float _sideSign)
         {
-            Vector2 a = c.From;
-            Vector2 d = c.To - c.From;
+            Vector2 a = _c.From;
+            Vector2 d = _c.To - _c.From;
             float len = d.magnitude;
             if (len < 0.01f) return;
             Vector2 fwd = d / len;
             Vector2 right = new Vector2(fwd.y, -fwd.x); // (x,z) 평면에서 진행방향의 오른쪽
-            Vector2 wallStart = a + right * (sideSign * (c.Width * 0.5f + ROOM_WALL_THICK * 0.5f));
+            Vector2 wallStart = a + right * (_sideSign * (_c.Width * 0.5f + ROOM_WALL_THICK * 0.5f));
 
             var gaps = new List<(float center, float half)>();
-            foreach (CorridorSeg o in all)
+            foreach (CorridorSeg o in _all)
             {
-                if (o.From == c.From && o.To == c.To) continue; // 자기 자신
+                if (o.From == _c.From && o.To == _c.To) continue; // 자기 자신
                 Vector2 od = o.To - o.From;
                 float denom = od.x * fwd.y - od.y * fwd.x;     // cross(od, fwd)
                 if (Mathf.Abs(denom) < 0.15f) continue;        // 평행/준평행 — 접합 아님
@@ -210,7 +210,7 @@ namespace CTC.Runtime.Map
             gaps.Sort((x, y) => x.center.CompareTo(y.center));
 
             Quaternion rot = Quaternion.LookRotation(new Vector3(fwd.x, 0f, fwd.y));
-            string sideName = sideSign > 0 ? "R" : "L";
+            string sideName = _sideSign > 0 ? "R" : "L";
             float cursor = -ROOM_WALL_THICK * 0.5f;
             float end = len + ROOM_WALL_THICK * 0.5f;
             int seg = 0;
@@ -231,35 +231,35 @@ namespace CTC.Runtime.Map
 
         // 통로 끝점이 방 경계·다른 세그먼트에 닿지 않으면(진짜 막다른 끝) 폭+여유만큼 캡 벽을 세운다.
         private void AddEndCapIfDeadEnd(
-            CorridorSeg c, Vector2 end, IReadOnlyList<RoomRect> rooms, IReadOnlyList<CorridorSeg> all)
+            CorridorSeg _c, Vector2 _end, IReadOnlyList<RoomRect> _rooms, IReadOnlyList<CorridorSeg> _all)
         {
             const float TOUCH_TOLERANCE = 0.3f;
 
-            foreach (RoomRect r in rooms)
+            foreach (RoomRect r in _rooms)
             {
-                if (end.x >= r.Min.x - TOUCH_TOLERANCE && end.x <= r.Max.x + TOUCH_TOLERANCE &&
-                    end.y >= r.Min.y - TOUCH_TOLERANCE && end.y <= r.Max.y + TOUCH_TOLERANCE) return;
+                if (_end.x >= r.Min.x - TOUCH_TOLERANCE && _end.x <= r.Max.x + TOUCH_TOLERANCE &&
+                    _end.y >= r.Min.y - TOUCH_TOLERANCE && _end.y <= r.Max.y + TOUCH_TOLERANCE) return;
             }
-            foreach (CorridorSeg o in all)
+            foreach (CorridorSeg o in _all)
             {
-                if (o.From == c.From && o.To == c.To) continue;
-                if (DistancePointToSegment(end, o.From, o.To) < TOUCH_TOLERANCE) return;
+                if (o.From == _c.From && o.To == _c.To) continue;
+                if (DistancePointToSegment(_end, o.From, o.To) < TOUCH_TOLERANCE) return;
             }
 
-            Vector2 dir = (c.To - c.From).normalized;
+            Vector2 dir = (_c.To - _c.From).normalized;
             Quaternion rot = Quaternion.LookRotation(new Vector3(dir.x, 0f, dir.y));
             AddOrientedBox(m_Root, m_WallMaterial, "CorridorEndCap",
-                new Vector3(end.x, CORRIDOR_WALL_HEIGHT * 0.5f, end.y), rot,
-                new Vector3(c.Width + ROOM_WALL_THICK * 2f, CORRIDOR_WALL_HEIGHT, ROOM_WALL_THICK));
+                new Vector3(_end.x, CORRIDOR_WALL_HEIGHT * 0.5f, _end.y), rot,
+                new Vector3(_c.Width + ROOM_WALL_THICK * 2f, CORRIDOR_WALL_HEIGHT, ROOM_WALL_THICK));
         }
 
-        private static float DistancePointToSegment(Vector2 p, Vector2 a, Vector2 b)
+        private static float DistancePointToSegment(Vector2 _p, Vector2 _a, Vector2 _b)
         {
-            Vector2 ab = b - a;
+            Vector2 ab = _b - _a;
             float len2 = ab.sqrMagnitude;
-            if (len2 < 1e-6f) return Vector2.Distance(p, a);
-            float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / len2);
-            return Vector2.Distance(p, a + ab * t);
+            if (len2 < 1e-6f) return Vector2.Distance(_p, _a);
+            float t = Mathf.Clamp01(Vector2.Dot(_p - _a, ab) / len2);
+            return Vector2.Distance(_p, _a + ab * t);
         }
 
         // 치즈 지점 — 레이아웃 순서를 그대로 유지한다. CheeseSpotDirector가 이 순서를
@@ -286,10 +286,10 @@ namespace CTC.Runtime.Map
         }
 
         // 디스크·라벨을 한 루트 밑에 묶는다 — 고갈 시 이 루트만 끄면 지점이 사라진 것으로 보인다.
-        private GameObject AddCheeseVisual(GameObject spotGo, int grade)
+        private GameObject AddCheeseVisual(GameObject _spotGo, int _grade)
         {
             var visual = new GameObject("Visual");
-            visual.transform.SetParent(spotGo.transform, false);
+            visual.transform.SetParent(_spotGo.transform, false);
 
             var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disc.name = "Disc";
@@ -297,14 +297,14 @@ namespace CTC.Runtime.Map
             disc.transform.SetParent(visual.transform, false);
             disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
-            disc.GetComponent<Renderer>().sharedMaterial = GradeDiscMaterial(grade);
+            disc.GetComponent<Renderer>().sharedMaterial = GradeDiscMaterial(_grade);
 
             var labelGo = new GameObject("GradeLabel");
             labelGo.transform.SetParent(visual.transform, false);
             labelGo.transform.localPosition = new Vector3(0f, 1.2f, 0f);
             // 폰트는 TMP 기본(한글 Pretendard로 교체돼 있음) — "점유 중" 표기가 그대로 나온다
             var tmp = labelGo.AddComponent<TextMeshPro>();
-            tmp.text = grade.ToString(); // 런타임엔 CheeseSpot이 "등급 · 잔량"으로 덮어쓴다
+            tmp.text = _grade.ToString(); // 런타임엔 CheeseSpot이 "등급 · 잔량"으로 덮어쓴다
             tmp.fontSize = 6f;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.yellow;
@@ -314,34 +314,34 @@ namespace CTC.Runtime.Map
         }
 
         // 등급별 디스크 색 — 위험도 가독성 (1~3 노랑 / 4~5 주황 / 6~7 빨강)
-        private Material GradeDiscMaterial(int grade)
+        private Material GradeDiscMaterial(int _grade)
         {
-            return grade >= 6 ? m_DiscHighMaterial : grade >= 4 ? m_DiscMidMaterial : m_DiscLowMaterial;
+            return _grade >= 6 ? m_DiscHighMaterial : _grade >= 4 ? m_DiscMidMaterial : m_DiscLowMaterial;
         }
 
         private static GameObject AddBox(
-            GameObject parent, Material material, string name, Vector3 center, Vector3 size)
+            GameObject _parent, Material _material, string _name, Vector3 _center, Vector3 _size)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            box.name = name;
-            box.transform.SetParent(parent.transform, false);
-            box.transform.localPosition = center;
-            box.transform.localScale = size;
-            box.GetComponent<Renderer>().sharedMaterial = material;
+            box.name = _name;
+            box.transform.SetParent(_parent.transform, false);
+            box.transform.localPosition = _center;
+            box.transform.localScale = _size;
+            box.GetComponent<Renderer>().sharedMaterial = _material;
             return box;
         }
 
         // 대각 통로용 회전 박스 (AddBox + 회전)
         private static GameObject AddOrientedBox(
-            GameObject parent, Material material, string name, Vector3 center, Quaternion rotation, Vector3 size)
+            GameObject _parent, Material _material, string _name, Vector3 _center, Quaternion _rotation, Vector3 _size)
         {
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            box.name = name;
-            box.transform.SetParent(parent.transform, false);
-            box.transform.localPosition = center;
-            box.transform.localRotation = rotation;
-            box.transform.localScale = size;
-            box.GetComponent<Renderer>().sharedMaterial = material;
+            box.name = _name;
+            box.transform.SetParent(_parent.transform, false);
+            box.transform.localPosition = _center;
+            box.transform.localRotation = _rotation;
+            box.transform.localScale = _size;
+            box.GetComponent<Renderer>().sharedMaterial = _material;
             return box;
         }
     }

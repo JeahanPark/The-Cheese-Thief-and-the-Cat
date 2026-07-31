@@ -33,7 +33,7 @@ namespace CTC.Editor
         private const float SLOT_GAP = 8f;
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
-        private static void BuildLobbyCanvas(LobbyController lobby, MatchManager match)
+        private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -85,7 +85,7 @@ namespace CTC.Editor
             Button startButton = CreateMuipButton(panel.transform, "StartButton", "Start Game", new Vector2(0f, -550f));
 
             var ui = canvasGo.AddComponent<LobbyUI>();
-            SetRef(ui, "m_Lobby", lobby);
+            SetRef(ui, "m_Lobby", _lobby);
             SetRef(ui, "m_Panel", panel);
             SetRef(ui, "m_PlayerListText", playerList);
             SetRef(ui, "m_MouseButton", mouseButton);
@@ -128,7 +128,7 @@ namespace CTC.Editor
             combatTextGo.SetActive(false);
 
             var combatHud = canvasGo.AddComponent<CombatHud>();
-            SetRef(combatHud, "m_Lobby", lobby);
+            SetRef(combatHud, "m_Lobby", _lobby);
             SetRef(combatHud, "m_Text", combatText);
 
             // 상점 핫바 (하단 중앙 상시 표시, 숫자키 즉시 구매 — UX 개정 2026-07-27)
@@ -170,7 +170,7 @@ namespace CTC.Editor
             hotbarRoot.SetActive(false); // ShopHotbar가 게임 시작 시 켬
 
             var hotbar = canvasGo.AddComponent<ShopHotbar>();
-            SetRef(hotbar, "m_Lobby", lobby);
+            SetRef(hotbar, "m_Lobby", _lobby);
             SetRef(hotbar, "m_Root", hotbarRoot);
             SetRefArray(hotbar, "m_Slots", slotRoots);
             SetRefArray(hotbar, "m_SlotLabels", slotLabels);
@@ -203,7 +203,7 @@ namespace CTC.Editor
             resultPanel.SetActive(false);
 
             var resultHud = canvasGo.AddComponent<ResultHud>();
-            SetRef(resultHud, "m_Match", match);
+            SetRef(resultHud, "m_Match", _match);
             SetRef(resultHud, "m_Panel", resultPanel);
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
@@ -227,7 +227,7 @@ namespace CTC.Editor
             controlsTextGo.SetActive(false);
 
             var controlsHud = canvasGo.AddComponent<ControlsHud>();
-            SetRef(controlsHud, "m_Lobby", lobby);
+            SetRef(controlsHud, "m_Lobby", _lobby);
             SetRef(controlsHud, "m_Text", controlsText);
 
             // 맵 설명 (좌하단 — 로비에서만. 게임이 시작되면 같은 자리를 조작키가 채운다)
@@ -246,7 +246,7 @@ namespace CTC.Editor
             mapInfoGo.SetActive(false);
 
             var mapInfoHud = canvasGo.AddComponent<MapInfoHud>();
-            SetRef(mapInfoHud, "m_Lobby", lobby);
+            SetRef(mapInfoHud, "m_Lobby", _lobby);
             SetRef(mapInfoHud, "m_Text", mapInfoText);
 
             // 매치 타이머 (상단 중앙 — v3 안전 타이머)
@@ -265,8 +265,8 @@ namespace CTC.Editor
             timerTextGo.SetActive(false);
 
             var timerHud = canvasGo.AddComponent<TimerHud>();
-            SetRef(timerHud, "m_Lobby", lobby);
-            SetRef(timerHud, "m_Match", match);
+            SetRef(timerHud, "m_Lobby", _lobby);
+            SetRef(timerHud, "m_Match", _match);
             SetRef(timerHud, "m_Text", timerText);
 
             // 인게임 BGM (게임 시작 시 루프 재생 — BgmPlayer가 제어)
@@ -278,7 +278,7 @@ namespace CTC.Editor
             bgmSource.volume = 0.35f;
             bgmSource.spatialBlend = 0f; // 2D — 거리 감쇠 없음
             var bgm = bgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
-            SetRef(bgm, "m_Lobby", lobby);
+            SetRef(bgm, "m_Lobby", _lobby);
             SetRef(bgm, "m_Source", bgmSource);
 
             // 로비 BGM — 게임이 안 도는 동안(접속 전·로비) 루프
@@ -290,7 +290,7 @@ namespace CTC.Editor
             lobbyBgmSource.volume = 0.35f;
             lobbyBgmSource.spatialBlend = 0f;
             var lobbyBgm = lobbyBgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
-            SetRef(lobbyBgm, "m_Lobby", lobby);
+            SetRef(lobbyBgm, "m_Lobby", _lobby);
             SetRef(lobbyBgm, "m_Source", lobbyBgmSource);
             SetInt(lobbyBgm, "m_PlayWhenGameStopped", 1);
 
@@ -303,7 +303,7 @@ namespace CTC.Editor
             ambSource.volume = 0.15f;
             ambSource.spatialBlend = 0f;
             var amb = ambGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
-            SetRef(amb, "m_Lobby", lobby);
+            SetRef(amb, "m_Lobby", _lobby);
             SetRef(amb, "m_Source", ambSource);
 
             // 효과음 허브 — m_Clips는 SfxId enum 순서와 1:1
@@ -340,8 +340,8 @@ namespace CTC.Editor
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
-            SetRef(matchSfx, "m_Lobby", lobby);
-            SetRef(matchSfx, "m_Match", match);
+            SetRef(matchSfx, "m_Lobby", _lobby);
+            SetRef(matchSfx, "m_Match", _match);
 
             // 인게임 디버그 콘솔(yasirkula, MIT) — 빌드에서 로그 확인용. 기본 최소화, ` 키 토글.
             // 원격 테스터가 [SteamLobby]/[Lobby] 로그를 화면에서 바로 볼 수 있어야 원인 특정이 된다.
@@ -373,26 +373,26 @@ namespace CTC.Editor
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
             var stats = statsGo.AddComponent<MatchStatsRecorder>();
-            SetRef(stats, "m_Lobby", lobby);
-            SetRef(stats, "m_Match", match);
+            SetRef(stats, "m_Lobby", _lobby);
+            SetRef(stats, "m_Match", _match);
         }
 
         private static TMP_Text CreateTmpText(
-            string name, Transform parent, string text,
-            float fontSize, TextAlignmentOptions alignment, Vector2 anchoredPos, Vector2 size)
+            string _name, Transform _parent, string _text,
+            float _fontSize, TextAlignmentOptions _alignment, Vector2 _anchoredPos, Vector2 _size)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = size;
+            rt.anchoredPosition = _anchoredPos;
+            rt.sizeDelta = _size;
 
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.text = text;
-            tmp.fontSize = fontSize;
-            tmp.alignment = alignment;
+            tmp.text = _text;
+            tmp.fontSize = _fontSize;
+            tmp.alignment = _alignment;
             tmp.color = Color.white;
             tmp.raycastTarget = false;
             return tmp;
@@ -402,16 +402,16 @@ namespace CTC.Editor
         // 깨지는 문제(비가시 버튼)와 한글 글리프·다중 라벨 이슈가 반복돼 그레이박스 단계에선
         // 플레인 UGUI로 통일 — 본 UI 패스에서 디자인 버튼으로 교체 전제.
         private static Button CreateMuipButton(
-            Transform parent, string name, string label, Vector2 anchoredPos, float width = 380f)
+            Transform _parent, string _name, string _label, Vector2 _anchoredPos, float _width = 380f)
         {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
 
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
             rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(width, 56f);
+            rt.anchoredPosition = _anchoredPos;
+            rt.sizeDelta = new Vector2(_width, 56f);
 
             var bg = go.AddComponent<Image>();
             bg.color = Color.white;
@@ -424,7 +424,7 @@ namespace CTC.Editor
             labelRt.offsetMin = labelRt.offsetMax = Vector2.zero;
 
             var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-            tmp.text = label;
+            tmp.text = _label;
             tmp.fontSize = 24f;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = new Color(0.12f, 0.13f, 0.16f);
