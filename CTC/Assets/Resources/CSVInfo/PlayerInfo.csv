@@ -1,3 +1,3 @@
-Role.RoleId,MaxHp.int,MoveSpeed.float,RunThreshold.float,Fov.float,CamDistance.float,CcHeight.float,CcRadius.float,PounceDamage.int,PounceCooldown.float,PounceRange.float,SneakSpeedMultiplier.float,FootstepRangeMeters.float
-Cat,1000,6.7,3.2,70,3,0.9,0.35,60,2.5,2.2,0.45,15
-Mouse,100,6,4.2,55,3,0.5,0.22,0,0,0,1,8
+Role.RoleId,MaxHp.int,MoveSpeed.float,RunThreshold.float,TurnSpeedDegPerSec.float,Fov.float,CamDistance.float,CcHeight.float,CcRadius.float,PounceDamage.int,PounceCooldown.float,PounceRange.float,PounceHalfAngleDeg.float,SneakSpeedMultiplier.float,FootstepRangeMeters.float
+Cat,1000,6.7,3.2,720,70,3,0.9,0.35,60,2.5,2.2,60,0.45,15
+Mouse,100,6,4.2,720,55,3,0.5,0.22,0,0,0,0,1,8

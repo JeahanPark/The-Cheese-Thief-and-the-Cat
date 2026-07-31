@@ -12,6 +12,7 @@ namespace CTC.Runtime.Combat
     /// </summary>
     public class CatPounce : NetworkBehaviour
     {
+        // 네 값 모두 PlayerInfo.csv가 원본 — 생성기가 프리팹에 굽는다(씬 재생성 필요).
         [SerializeField] private float m_Range = 2.2f;
         [SerializeField] private float m_HalfAngleDeg = 60f;
         [SerializeField] private int m_Damage = 60;

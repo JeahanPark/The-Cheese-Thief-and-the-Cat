@@ -12,7 +12,8 @@ namespace CTC.Runtime.Audio
     /// </summary>
     public class FarmingSfx : MonoBehaviour
     {
-        private const float AUDIBLE_DISTANCE = 20f;
+        // 노출 반경은 스텔스 밸런스라 CSV가 원본(BalanceInfo.csv). 볼륨은 연출이라 코드에 둔다.
+        private static float AUDIBLE_DISTANCE => Info.InfoManager.Instance.Balance.FarmingSoundRangeMeters;
         private const float VOLUME = 0.5f;
 
         private CheeseWallet m_Wallet;

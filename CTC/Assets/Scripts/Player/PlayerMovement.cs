@@ -16,6 +16,7 @@ namespace CTC.Runtime.Player
     {
         private const float GRAVITY = -20f;
 
+        // 둘 다 PlayerInfo.csv가 원본 — 생성기가 프리팹에 굽는다(씬 재생성 필요).
         [SerializeField] private float m_MoveSpeed = 5f;
         [SerializeField] private float m_TurnSpeedDegPerSec = 720f;
 

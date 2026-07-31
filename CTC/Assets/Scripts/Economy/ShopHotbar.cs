@@ -17,7 +17,9 @@ namespace CTC.Runtime.Economy
     {
         private const float TOAST_SECONDS = 1.4f;
         private const float GHOST_MIN_DISTANCE = 1.5f;
-        private const float GHOST_MAX_DISTANCE = 4f;
+
+        // 고스트가 뻗는 최대 거리 — 서버 검증(ShopController.MAX_PLACE_DISTANCE)보다 짧아야 한다.
+        private static float GHOST_MAX_DISTANCE => Info.InfoManager.Instance.Balance.PlaceGhostMaxMeters;
 
         private static readonly string[] ITEM_LABELS =
         {

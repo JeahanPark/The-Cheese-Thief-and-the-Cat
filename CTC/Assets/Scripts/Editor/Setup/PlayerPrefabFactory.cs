@@ -47,8 +47,11 @@ namespace CTC.Editor
                 root.AddComponent<NetworkObject>();
                 root.AddComponent<ClientNetworkTransform>();
 
+                CTC.Runtime.Info.PlayerInfo info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(_role);
+
                 var move = root.AddComponent<PlayerMovement>();
                 SetFloat(move, "m_MoveSpeed", _moveSpeed);
+                SetFloat(move, "m_TurnSpeedDegPerSec", info.TurnSpeedDegPerSec);
 
                 var anim = root.AddComponent<PlayerAnimationDriver>();
                 SetFloat(anim, "m_RunThreshold", _runThreshold);
@@ -74,8 +77,6 @@ namespace CTC.Editor
                 SetRef(shop, "m_FortressPrefab", _fortressPrefab);
                 SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
 
-                CTC.Runtime.Info.PlayerInfo info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(_role);
-
                 if (_role == RoleId.Cat)
                 {
                     // 덮치기 수치도 CSV(PlayerInfo.csv)에서 굽는다
@@ -83,6 +84,7 @@ namespace CTC.Editor
                     SetInt(pounce, "m_Damage", info.PounceDamage);
                     SetFloat(pounce, "m_CooldownSeconds", info.PounceCooldown);
                     SetFloat(pounce, "m_Range", info.PounceRange);
+                    SetFloat(pounce, "m_HalfAngleDeg", info.PounceHalfAngleDeg);
                     root.AddComponent<CatSneak>(); // LCtrl 잠행 — 발소리 소거·이속 절반
                 }
                 else

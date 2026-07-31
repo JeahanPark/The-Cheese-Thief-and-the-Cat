@@ -11,9 +11,11 @@ namespace CTC.Runtime.Player
     [RequireComponent(typeof(CharacterController))]
     public class MouseDash : NetworkBehaviour
     {
-        private const float DASH_DISTANCE = 4f;
-        private const float DASH_DURATION_SECONDS = 0.2f;
-        private const float COOLDOWN_SECONDS = 5f;
+        // 밸런스 원본은 BalanceInfo.csv — 재컴파일 없이 다음 플레이에 반영된다.
+        private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
+        private static float DASH_DISTANCE => Balance.DashDistance;
+        private static float DASH_DURATION_SECONDS => Balance.DashDurationSeconds;
+        private static float COOLDOWN_SECONDS => Balance.DashCooldownSeconds;
 
         // 구매 여부. 서버 기록(ShopController), 소유자 읽기.
         private readonly NetworkVariable<bool> m_Owned = new NetworkVariable<bool>();

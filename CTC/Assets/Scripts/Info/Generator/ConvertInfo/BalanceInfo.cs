@@ -16,6 +16,7 @@ namespace CTC.Runtime.Info
         public int FortressHp;
         public int FortressHealPerTick;
         public float FortressHealRadius;
+        public float FortressHealTickSeconds;
         public float DecoyLifetimeSeconds;
         public int WarehouseIncomePerSecond;
         public int WarehouseTickCheese;
@@ -27,6 +28,13 @@ namespace CTC.Runtime.Info
         public int KillBonus;
         public int PlayerDamageDivisor;
         public int StructureDamageDivisor;
+        public float DashDistance;
+        public float DashDurationSeconds;
+        public float DashCooldownSeconds;
+        public float PlaceMaxDistanceMeters;
+        public float PlaceForwardMeters;
+        public float PlaceGhostMaxMeters;
+        public float FarmingSoundRangeMeters;
     }
 
     public partial class InfoManager

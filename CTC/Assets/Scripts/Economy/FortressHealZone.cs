@@ -12,7 +12,7 @@ namespace CTC.Runtime.Economy
     /// </summary>
     public class FortressHealZone : NetworkBehaviour
     {
-        private const float TICK_SECONDS = 1f;
+        private static float TICK_SECONDS => Info.InfoManager.Instance.Balance.FortressHealTickSeconds;
 
         private float m_Timer;
 

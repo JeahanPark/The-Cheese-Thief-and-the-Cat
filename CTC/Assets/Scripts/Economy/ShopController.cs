@@ -11,14 +11,16 @@ namespace CTC.Runtime.Economy
     /// </summary>
     public class ShopController : NetworkBehaviour
     {
-        private const float PLACE_FORWARD_METERS = 1.5f;
+        // 밸런스 원본은 BalanceInfo.csv — 재컴파일 없이 다음 플레이에 반영된다.
+        private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
+        private static float PLACE_FORWARD_METERS => Balance.PlaceForwardMeters;
 
         [SerializeField] private GameObject m_DecoyPrefab;
         [SerializeField] private GameObject m_FortressPrefab;
         [SerializeField] private GameObject m_WarehousePrefab;
 
-        /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프(4m)보다 넉넉히.</summary>
-        public const float MAX_PLACE_DISTANCE = 6f;
+        /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프보다 넉넉히.</summary>
+        public static float MAX_PLACE_DISTANCE => Balance.PlaceMaxDistanceMeters;
 
         /// <summary>로컬 UI/QA 진입점.</summary>
         public void Buy(ShopItemId _itemId)

@@ -12,6 +12,7 @@ namespace CTC.Runtime.Info
         public int MaxHp;
         public float MoveSpeed;
         public float RunThreshold;
+        public float TurnSpeedDegPerSec;
         public float Fov;
         public float CamDistance;
         public float CcHeight;
@@ -19,6 +20,7 @@ namespace CTC.Runtime.Info
         public int PounceDamage;
         public float PounceCooldown;
         public float PounceRange;
+        public float PounceHalfAngleDeg;
         public float SneakSpeedMultiplier;
         public float FootstepRangeMeters;
     }
