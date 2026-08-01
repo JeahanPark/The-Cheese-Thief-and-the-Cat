@@ -14,6 +14,15 @@
   height: auto !important;
 }
 
+/* 본문은 읽기 좋은 폭(readableLineLength)을 유지하되, 다이어그램만 폭 제한을 벗어난다.
+   본문까지 전폭으로 풀면 긴 줄이 화면 밖으로 나가 오히려 못 읽는다. */
+.markdown-rendered .el-pre:has(.mermaid),
+.markdown-rendered .el-pre:has(> .mermaid) {
+  width: min(1200px, 96vw);
+  max-width: none;
+  margin-inline: auto;
+}
+
 /* 클래스 다이어그램은 축소되면 글자가 먼저 죽는다 — 최소 크기를 준다 */
 .markdown-rendered .mermaid .nodeLabel,
 .markdown-rendered .mermaid .edgeLabel,
