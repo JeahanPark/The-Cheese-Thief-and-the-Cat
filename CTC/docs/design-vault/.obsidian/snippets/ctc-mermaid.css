@@ -1,0 +1,23 @@
+/* 머메이드 다이어그램을 노트 폭에 맞춘다.
+   옵시디언은 SVG를 자연 크기로 그려서, 넓은 다이어그램이 오른쪽으로 잘려 나간다.
+   (CTC 코드 다이어그램은 6장 중 3장이 노트 폭보다 넓다) */
+
+.markdown-rendered .mermaid,
+.markdown-source-view.mod-cm6 .mermaid {
+  overflow-x: auto;   /* 축소해도 안 맞으면 그 블록만 가로 스크롤 */
+  text-align: center;
+}
+
+.markdown-rendered .mermaid > svg,
+.markdown-source-view.mod-cm6 .mermaid > svg {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* 클래스 다이어그램은 축소되면 글자가 먼저 죽는다 — 최소 크기를 준다 */
+.markdown-rendered .mermaid .nodeLabel,
+.markdown-rendered .mermaid .edgeLabel,
+.markdown-rendered .mermaid .classTitle,
+.markdown-rendered .mermaid text {
+  font-size: 13px;
+}

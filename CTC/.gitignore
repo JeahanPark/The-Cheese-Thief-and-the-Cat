@@ -126,3 +126,6 @@ screenshot_*.png
 
 # MCP screenshot output
 /screenshot.png
+
+# 옵시디언 — 창 배치 등 로컬 UI 상태만. 스니펫·태그·그래프 설정은 공유한다.
+docs/design-vault/.obsidian/workspace.json
