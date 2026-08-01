@@ -1,32 +1,36 @@
-/* 머메이드 다이어그램을 노트 폭에 맞춘다.
-   옵시디언은 SVG를 자연 크기로 그려서, 넓은 다이어그램이 오른쪽으로 잘려 나간다.
-   (CTC 코드 다이어그램은 6장 중 3장이 노트 폭보다 넓다) */
+/* 머메이드 다이어그램 가독성.
+   처음엔 max-width:100%로 노트 폭에 맞췄는데, 넓은 클래스 다이어그램이 통째로 축소돼
+   글자가 안 읽혔다(2026-08-01). 축소하지 않고 **가로 스크롤**로 바꾼다 — 글자 크기가 산다. */
 
-.markdown-rendered .mermaid,
-.markdown-source-view.mod-cm6 .mermaid {
-  overflow-x: auto;   /* 축소해도 안 맞으면 그 블록만 가로 스크롤 */
-  text-align: center;
-}
-
-.markdown-rendered .mermaid > svg,
-.markdown-source-view.mod-cm6 .mermaid > svg {
-  max-width: 100% !important;
-  height: auto !important;
-}
-
-/* 본문은 읽기 좋은 폭(readableLineLength)을 유지하되, 다이어그램만 폭 제한을 벗어난다.
-   본문까지 전폭으로 풀면 긴 줄이 화면 밖으로 나가 오히려 못 읽는다. */
+/* 본문은 읽기 좋은 폭(readableLineLength)을 유지하되, 다이어그램만 폭 제한을 벗어난다. */
 .markdown-rendered .el-pre:has(.mermaid),
 .markdown-rendered .el-pre:has(> .mermaid) {
-  width: min(1200px, 96vw);
+  width: min(1400px, 96vw);
   max-width: none;
   margin-inline: auto;
 }
 
-/* 클래스 다이어그램은 축소되면 글자가 먼저 죽는다 — 최소 크기를 준다 */
-.markdown-rendered .mermaid .nodeLabel,
-.markdown-rendered .mermaid .edgeLabel,
-.markdown-rendered .mermaid .classTitle,
-.markdown-rendered .mermaid text {
-  font-size: 13px;
+.markdown-rendered .mermaid,
+.markdown-source-view.mod-cm6 .mermaid {
+  overflow-x: auto;      /* 노트보다 넓으면 축소 대신 이 블록만 가로 스크롤 */
+  overflow-y: hidden;
+  text-align: left;
+  padding-bottom: 6px;   /* 스크롤바가 그림을 가리지 않게 */
+}
+
+/* 자연 크기 유지 — 축소 금지가 핵심이다 */
+.markdown-rendered .mermaid > svg,
+.markdown-source-view.mod-cm6 .mermaid > svg {
+  max-width: none !important;
+  min-width: 0;
+  height: auto !important;
+}
+
+/* 스크롤바를 눈에 띄게 — 옆에 더 있다는 걸 알아야 스크롤한다 */
+.markdown-rendered .mermaid::-webkit-scrollbar {
+  height: 10px;
+}
+.markdown-rendered .mermaid::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border-hover);
+  border-radius: 5px;
 }
