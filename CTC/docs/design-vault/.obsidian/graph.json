@@ -5,10 +5,53 @@
   "showAttachments": false,
   "hideUnresolved": false,
   "showOrphans": true,
-  "collapse-color-groups": true,
-  "colorGroups": [],
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "tag:#코드",
+      "color": {
+        "a": 1,
+        "rgb": 5017306
+      }
+    },
+    {
+      "query": "tag:#밸런스",
+      "color": {
+        "a": 1,
+        "rgb": 14721852
+      }
+    },
+    {
+      "query": "tag:#레벨디자인",
+      "color": {
+        "a": 1,
+        "rgb": 6274923
+      }
+    },
+    {
+      "query": "tag:#사운드",
+      "color": {
+        "a": 1,
+        "rgb": 10647510
+      }
+    },
+    {
+      "query": "tag:#논의중",
+      "color": {
+        "a": 1,
+        "rgb": 15254599
+      }
+    },
+    {
+      "query": "tag:#제거예정",
+      "color": {
+        "a": 1,
+        "rgb": 14242639
+      }
+    }
+  ],
   "collapse-display": true,
-  "showArrow": false,
+  "showArrow": true,
   "textFadeMultiplier": 0,
   "nodeSizeMultiplier": 1,
   "lineSizeMultiplier": 1,
@@ -17,6 +60,6 @@
   "repelStrength": 10,
   "linkStrength": 1,
   "linkDistance": 250,
-  "scale": 1.401982897776098,
+  "scale": 1.4019828977760949,
   "close": false
 }
