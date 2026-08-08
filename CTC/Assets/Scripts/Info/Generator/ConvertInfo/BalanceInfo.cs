@@ -35,6 +35,13 @@ namespace CTC.Runtime.Info
         public float PlaceForwardMeters;
         public float PlaceGhostMaxMeters;
         public float FarmingSoundRangeMeters;
+        public float CamDefaultPitchDeg;
+        public float CamMinPitchDeg;
+        public float CamMaxPitchDeg;
+        public float CamScreenY;
+        public float MouseSensitivityDefault;
+        public float BgmVolumeDefault;
+        public float SfxVolumeDefault;
     }
 
     public partial class InfoManager

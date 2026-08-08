@@ -105,16 +105,22 @@ namespace CTC.Editor
             camGo.AddComponent<CinemachineCamera>();
             var orbital = camGo.AddComponent<CinemachineOrbitalFollow>();
             orbital.OrbitStyle = CinemachineOrbitalFollow.OrbitStyles.Sphere;
-            // 반경 3 + 타깃 오프셋 0.7: 기본 앵글(20°)에서 카메라 높이 ≈1.7 — 통로벽(1.6) 위로
-            // 넘겨 보게 되어 좁은 통로에서 충돌 자체가 드물다 (맵 스케일: 방 5~9m·통로 1.6m)
+            // 반경 3 + 타깃 오프셋 0.7. 기본 앵글은 CSV(CamDefaultPitchDeg=35°)라 카메라 높이 ≈2.4 —
+            // 통로벽(1.6) 위로 넘겨 보게 되어 좁은 통로에서 충돌 자체가 드물다 (맵 스케일: 방 5~9m·통로 1.6m)
             // 역할별 덮어쓰기는 PlayerCameraBinder — 두 역할 모두 3으로 통일했다(2026-07-28)
+            CTC.Runtime.Info.BalanceInfo balance = CTC.Runtime.Info.InfoManager.Instance.Balance;
             orbital.Radius = 3f;
             orbital.TargetOffset = new Vector3(0f, 0.7f, 0f);
             orbital.HorizontalAxis.Range = new Vector2(-180f, 180f);
             orbital.HorizontalAxis.Wrap = true;
-            orbital.VerticalAxis.Range = new Vector2(-30f, 70f);
-            orbital.VerticalAxis.Value = 20f;
-            camGo.AddComponent<CinemachineRotationComposer>();
+            orbital.VerticalAxis.Range = new Vector2(balance.CamMinPitchDeg, balance.CamMaxPitchDeg);
+            orbital.VerticalAxis.Value = balance.CamDefaultPitchDeg;
+
+            // 구도: 캐릭터를 화면 중앙보다 아래에 둔다(CamScreenY=-0.15 → 화면 위에서 65% 지점).
+            // 3인칭에서 캐릭터 **위쪽**이 곧 "앞쪽 바닥"이라, 캐릭터를 내리면 갈 곳이 넓게 보인다.
+            // 2026-08-01 피드백: "위쪽만 보이고 아래가 안 보여 불편하다".
+            var composer = camGo.AddComponent<CinemachineRotationComposer>();
+            composer.Composition.ScreenPosition = new Vector2(0f, balance.CamScreenY);
 
             // 지형-카메라 처리 (2026-07-28 2차 개정): 카메라 충돌 보정을 **전부 뺐다**.
             //   Deoccluder(당김) → Decollider(침투 방지)로 바꿔도 좁은 방·복도에서는 여전히

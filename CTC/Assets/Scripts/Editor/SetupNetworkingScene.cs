@@ -88,6 +88,10 @@ namespace CTC.Editor
         [MenuItem("Tools/CTC/Setup Networking Scene")]
         public static void Run()
         {
+            // CSV를 고치고 바로 이 메뉴를 누르는 게 정상 흐름인데, InfoManager는 한 번 읽으면
+            // 도메인 리로드까지 캐시를 들고 있다 → 옛 값을 프리팹·씬에 구워 버린다(2026-08-01 실측).
+            CTC.Runtime.Info.InfoManager.Reload();
+
             int decoyLayer = EnsureLayer(DecoyLayers.DECOY);
             int mouseLayer = EnsureLayer(DecoyLayers.MOUSE);
             BakeDecoyMatrix(decoyLayer, mouseLayer);
