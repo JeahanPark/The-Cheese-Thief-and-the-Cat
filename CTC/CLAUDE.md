@@ -36,7 +36,8 @@
     헤더는 `필드명.타입` 형식(`Cost.int`, `Role.RoleId`). 생성 파일은 손으로 고치지 않는다.
   - 읽기는 `InfoManager.Instance.Balance` / `.PlayerOf(role)` / `.WeaponOf(tier)` / `.Shop`.
   - `PlayerInfo`만 프리팹에 굽히므로 바꾸면 **씬 재생성**이 필요하다. 나머지는 재컴파일 없이 다음 플레이에 반영.
-- 구조 제약(`MIN_GRADE`·`MAX_GRADE`·`HOTBAR_SLOTS`·`NO_EARNER`·`CAT_CAPACITY`)과 연출 수치(볼륨·크로스페이드·토스트 시간)는 CSV로 내리지 않는다 — 튜닝 대상이 아니다.
+- 구조 제약(`MIN_GRADE`·`MAX_GRADE`·`HOTBAR_SLOTS`·`NO_EARNER`·`CAT_CAPACITY`)과 연출 수치(볼륨 비율·크로스페이드·토스트 시간)는 CSV로 내리지 않는다 — 튜닝 대상이 아니다.
+- **개인 설정(마우스 감도·BGM·SFX 볼륨)은 CSV가 아니라 `Core/UserSettings`(PlayerPrefs + R3)다.** 밸런스가 아니라 그 사람 기기의 취향이라서. CSV는 *처음 켰을 때의 기본값*만 준다(`MouseSensitivityDefault`·`BgmVolumeDefault`·`SfxVolumeDefault`).
 - **코드에 남은 밸런스는 0이다**(2026-07-31 확인). 수치를 고쳐 달라는 요청이 오면 먼저 CSV를 본다.
 
 ### 디버그 로그·빌드
@@ -72,6 +73,8 @@
 
 ## CTC 코드 제약
 
+- **입력 가드**: 새 게임플레이 입력을 만들면 `if (Core.UiFocus.BlocksGameplay) return;`을 넣는다 — 채팅 타이핑·옵션 창 중에 새면 안 된다.
+- **ESC는 `Core/EscapeRouter`가 단독으로 읽는다.** 다른 컴포넌트에서 `escapeKey`를 읽지 않는다(같은 프레임 경합). 새 모달은 라우터의 우선순위 사슬에 끼운다.
 - 레거시 `Input.*` API 금지 (Input System 사용)
 - CharacterController 오브젝트에 transform 직접 세팅 금지 → `CC.Move()` 사용
 - EditMode 테스트 실행: 메뉴 `Tools/CTC/Run EditMode Tests` (`u_editor_menu`로 호출 가능)
