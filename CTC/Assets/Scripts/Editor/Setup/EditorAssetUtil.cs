@@ -57,10 +57,9 @@ namespace CTC.Editor
             return -1;
         }
 
-        // 쥐×미끼 충돌을 **프로젝트 세팅에 미리 구워 둔다**(2026-08-01).
-        // 그전에는 런타임 `DecoyLayers.Apply()`만 걸어서, Project Settings의 물리 매트릭스는
-        // 전부 켜진 채였다 — 에디터에서 매트릭스를 봐도 진실이 안 보였다.
-        // 런타임 쪽은 그대로 둔다(멱등): 세팅을 리셋하거나 이 메뉴를 안 돌린 클론에서도 스스로 복구한다.
+        // 쥐×미끼 충돌을 프로젝트 세팅에 굽는다(2026-08-01). 이게 **유일한** 설정 지점이다 —
+        // 런타임 적용 코드는 지웠다. 매트릭스는 레이어 *번호*로 저장되므로,
+        // 레이어 슬롯이 바뀐 사본에서도 이 메뉴만 다시 돌리면 제자리를 찾는다.
         private static void BakeDecoyMatrix(int _decoyLayer, int _mouseLayer)
         {
             if (_decoyLayer < 0 || _mouseLayer < 0) return;
