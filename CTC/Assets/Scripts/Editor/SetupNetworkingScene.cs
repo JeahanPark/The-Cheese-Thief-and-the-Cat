@@ -90,6 +90,7 @@ namespace CTC.Editor
         {
             int decoyLayer = EnsureLayer(DecoyLayers.DECOY);
             int mouseLayer = EnsureLayer(DecoyLayers.MOUSE);
+            BakeDecoyMatrix(decoyLayer, mouseLayer);
             Material catMat = CreateUrpMaterial("M_Cat_URP", CatSourceMatPath);
             Material mouseMat = CreateUrpMaterial("M_Mouse_URP", MouseSourceMatPath);
 

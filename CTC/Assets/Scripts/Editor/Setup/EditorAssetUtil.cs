@@ -57,6 +57,20 @@ namespace CTC.Editor
             return -1;
         }
 
+        // 쥐×미끼 충돌을 **프로젝트 세팅에 미리 구워 둔다**(2026-08-01).
+        // 그전에는 런타임 `DecoyLayers.Apply()`만 걸어서, Project Settings의 물리 매트릭스는
+        // 전부 켜진 채였다 — 에디터에서 매트릭스를 봐도 진실이 안 보였다.
+        // 런타임 쪽은 그대로 둔다(멱등): 세팅을 리셋하거나 이 메뉴를 안 돌린 클론에서도 스스로 복구한다.
+        private static void BakeDecoyMatrix(int _decoyLayer, int _mouseLayer)
+        {
+            if (_decoyLayer < 0 || _mouseLayer < 0) return;
+            if (Physics.GetIgnoreLayerCollision(_mouseLayer, _decoyLayer)) return;
+
+            Physics.IgnoreLayerCollision(_mouseLayer, _decoyLayer, true);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[SetupNetworkingScene] 물리 매트릭스: Mouse({_mouseLayer}) × Decoy({_decoyLayer}) 충돌 해제 — 프로젝트 세팅에 저장");
+        }
+
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.
         // (원본은 빌트인 CGPROGRAM 셰이더라 URP에서 마젠타)
         private static Material CreateUrpMaterial(string _name, string _sourceMatPath)
