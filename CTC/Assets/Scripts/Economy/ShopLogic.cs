@@ -100,10 +100,19 @@ namespace CTC.Runtime.Economy
         {
             switch (_id)
             {
+                // 무기 수치는 WeaponInfo.csv가 원본 — 문자열에 복제하면 CSV를 고칠 때 안내가 조용히 거짓이 된다.
                 case ShopItemId.Slingshot:
-                    return "딱총을 새총으로 — 5뎀 → 12뎀, 사거리 10m";
+                {
+                    WeaponStats popgun = WeaponStatsForTier(0);
+                    WeaponStats sling = WeaponStatsForTier(1);
+                    return $"딱총을 새총으로 — {popgun.Damage}뎀 → {sling.Damage}뎀, 사거리 {sling.Range:F0}m";
+                }
                 case ShopItemId.MachineGun:
-                    return "연사 무기 — 초당 33뎀. 2정이 모이면 고양이를 잡을 수 있다";
+                {
+                    WeaponStats mg = WeaponStatsForTier(2);
+                    float dps = mg.CooldownSeconds > 0f ? mg.Damage / mg.CooldownSeconds : mg.Damage;
+                    return $"연사 무기 — 초당 {dps:F0}뎀. 2정이 모이면 고양이를 잡을 수 있다";
+                }
                 case ShopItemId.Dash:
                     return "LShift 순간 가속 — 쫓길 때 거리를 벌린다";
                 case ShopItemId.Decoy:

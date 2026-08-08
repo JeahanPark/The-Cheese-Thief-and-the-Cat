@@ -129,3 +129,8 @@ screenshot_*.png
 
 # 옵시디언 — 창 배치 등 로컬 UI 상태만. 스니펫·태그·그래프 설정은 공유한다.
 docs/design-vault/.obsidian/workspace.json
+
+# 도구가 흘리는 임시물 (작업물 아님)
+.playwright-mcp/
+gemini-state.jpeg
+screenshot.png
