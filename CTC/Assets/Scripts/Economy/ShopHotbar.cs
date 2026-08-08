@@ -1,5 +1,7 @@
 using CTC.Runtime.Combat;
+using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
+using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +14,11 @@ namespace CTC.Runtime.Economy
     /// 하단 상시 핫바 — 숫자키 1~6으로 즉시 구매(커서 잠금 유지, 게임 안 멈춤).
     /// 설치물(요새·미끼·창고)은 고스트 미리보기 모드로 진입해 좌클릭 확정 / 우클릭·ESC 취소.
     /// 구 B키 패널을 대체한다 (UX 개정 2026-07-27 — 쫓기는 중에도 살 수 있어야 한다).
+    ///
+    /// 개편 3b 마무리(2026-08-08): Update 폴링 → R3 구독. 매 프레임 로컬 플레이어를 찾고
+    /// 슬롯 6칸 문자열·색을 재조립하던 것을 `LocalPlayerBinder.LocalPlayer` +
+    /// `CheeseWallet.Cheese` 구독으로 바꿨다(View 8개 중 마지막). Update에 남은 건
+    /// 핫키·고스트 추적·토스트 시한 — 프레임 단위 입력/연출이라 스트림 대상이 아니다.
     /// </summary>
     public class ShopHotbar : MonoBehaviour
     {
@@ -42,6 +49,15 @@ namespace CTC.Runtime.Economy
         /// <summary>고스트 배치 중인가 — `EscapeRouter`가 ESC를 무엇에 쓸지 정할 때 본다.</summary>
         public bool IsPlacing => m_PlacingId != ShopItemId.None;
 
+        private readonly SerialDisposable m_WalletSub = new SerialDisposable();
+
+        private ShopController m_Shop;                       // 로컬 플레이어의 상점 (null = 관전·매치 전)
+        private RoleId m_Role;
+        private System.Collections.Generic.List<int> m_Indices;
+        private int m_Cheese;
+        private bool m_GameStarted;
+        private bool m_SlotsDirty;
+
         private float m_ToastUntil;
         private ShopItemId m_PlacingId = ShopItemId.None;
         private GameObject m_Ghost;
@@ -54,33 +70,76 @@ namespace CTC.Runtime.Economy
             m_Toast.gameObject.SetActive(false);
         }
 
+        private void Start()
+        {
+            m_WalletSub.AddTo(this);
+
+            m_Lobby.GameStartedChanged.Subscribe(OnGameStartedChanged).AddTo(this);
+            LocalPlayerBinder.LocalPlayer.Subscribe(OnLocalPlayerChanged).AddTo(this);
+        }
+
         private void OnDestroy()
         {
             CancelPlacement();
             if (m_GhostMaterial != null) Destroy(m_GhostMaterial);
         }
 
-        private void Update()
+        private void OnGameStartedChanged(bool _started)
         {
-            ShopController shop = LocalShop();
-            bool inGame = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted && shop != null;
+            m_GameStarted = _started;
+            ApplyActive();
+        }
 
-            if (m_Root.activeSelf != inGame) m_Root.SetActive(inGame);
-            if (!inGame)
+        // 플레이어가 바뀌면 지갑 구독을 통째로 갈아 끼운다(SerialDisposable이 이전 것을 끊는다)
+        private void OnLocalPlayerChanged(NetworkObject _player)
+        {
+            ShopController shop = _player != null ? _player.GetComponent<ShopController>() : null;
+            RoleTag tag = _player != null ? _player.GetComponent<RoleTag>() : null;
+            CheeseWallet wallet = _player != null ? _player.GetComponent<CheeseWallet>() : null;
+
+            if (shop == null || tag == null || wallet == null)
             {
-                CancelPlacement();
+                m_Shop = null;
+                m_WalletSub.Disposable = null;
+                ApplyActive();
                 return;
             }
 
-            RoleTag tag = shop.GetComponent<RoleTag>();
-            CheeseWallet wallet = shop.GetComponent<CheeseWallet>();
-            if (tag == null || wallet == null) return;
+            m_Shop = shop;
+            m_Role = tag.Role;
+            m_Indices = ShopLogic.RoleCatalogIndices(m_Role);
+            m_WalletSub.Disposable = wallet.Cheese.Subscribe(c =>
+            {
+                m_Cheese = c;
+                m_SlotsDirty = true;
+            });
+            ApplyActive();
+        }
 
-            var indices = ShopLogic.RoleCatalogIndices(tag.Role);
-            RefreshSlots(shop, wallet.CheeseValue, indices);
+        // 표시 여부는 시작 신호 × 로컬 상점 — 어느 쪽이 바뀌어도 여기로 온다
+        private void ApplyActive()
+        {
+            bool inGame = m_GameStarted && m_Shop != null;
+            if (m_Root.activeSelf != inGame) m_Root.SetActive(inGame);
+            if (inGame) m_SlotsDirty = true;
+            else CancelPlacement();
+        }
 
-            if (m_PlacingId != ShopItemId.None) UpdatePlacement(shop);
-            else HandleHotkeys(shop, wallet.CheeseValue, indices, tag.Role);
+        private void Update()
+        {
+            if (!m_GameStarted || m_Shop == null) return;
+
+            // 구독 콜백이 아니라 여기서 그리는 이유: 구매 하나가 치즈·팝건 티어 등 NetworkVariable
+            // 여러 개를 같은 틱에 바꾸는데, 치즈 콜백 시점엔 시블링 변수가 아직 옛값일 수 있다.
+            // NGO가 EarlyUpdate에서 배치를 다 적용한 뒤라 여기서는 전부 새 값이다.
+            if (m_SlotsDirty)
+            {
+                m_SlotsDirty = false;
+                RefreshSlots();
+            }
+
+            if (m_PlacingId != ShopItemId.None) UpdatePlacement();
+            else HandleHotkeys();
 
             if (m_Toast.gameObject.activeSelf && Time.time >= m_ToastUntil)
             {
@@ -88,19 +147,19 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        private void RefreshSlots(ShopController _shop, int _cheese, System.Collections.Generic.List<int> _indices)
+        private void RefreshSlots()
         {
             for (int slot = 0; slot < m_Slots.Length; slot++)
             {
-                bool used = slot < _indices.Count;
+                bool used = slot < m_Indices.Count;
                 if (m_Slots[slot].activeSelf != used) m_Slots[slot].SetActive(used);
                 if (!used) continue;
 
-                ShopItem item = ShopLogic.CATALOG[_indices[slot]];
-                bool owned = !_shop.CanApply(item.Id);
-                bool affordable = ShopLogic.CanBuy(_cheese, item.Cost);
+                ShopItem item = ShopLogic.CATALOG[m_Indices[slot]];
+                bool owned = !m_Shop.CanApply(item.Id);
+                bool affordable = ShopLogic.CanBuy(m_Cheese, item.Cost);
 
-                m_SlotLabels[slot].text = $"{slot + 1}  {ITEM_LABELS[_indices[slot]]}";
+                m_SlotLabels[slot].text = $"{slot + 1}  {ITEM_LABELS[m_Indices[slot]]}";
                 m_SlotCosts[slot].text = owned ? "보유" : item.Cost.ToString();
                 Color color = owned ? COLOR_OWNED : affordable ? COLOR_READY : COLOR_POOR;
                 m_SlotLabels[slot].color = color;
@@ -108,30 +167,29 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        private void HandleHotkeys(ShopController _shop, int _cheese,
-            System.Collections.Generic.List<int> _indices, RoleId _role)
+        private void HandleHotkeys()
         {
             // 인게임 콘솔 등 입력창에 포커스가 있으면 타이핑이 구매로 새지 않게 무시
             Keyboard kb = Keyboard.current;
             if (kb == null || Core.UiFocus.BlocksGameplay) return;
 
-            for (int slot = 0; slot < _indices.Count && slot < ShopLogic.HOTBAR_SLOTS; slot++)
+            for (int slot = 0; slot < m_Indices.Count && slot < ShopLogic.HOTBAR_SLOTS; slot++)
             {
                 if (!kb[SlotKey(slot)].wasPressedThisFrame) continue;
 
-                ShopItem item = ShopLogic.CATALOG[_indices[slot]];
-                string name = ITEM_LABELS[_indices[slot]];
+                ShopItem item = ShopLogic.CATALOG[m_Indices[slot]];
+                string name = ITEM_LABELS[m_Indices[slot]];
 
-                if (!_shop.CanApply(item.Id)) { Say($"{name} 이미 보유"); return; }
-                if (!ShopLogic.CanBuy(_cheese, item.Cost))
+                if (!m_Shop.CanApply(item.Id)) { Say($"{name} 이미 보유"); return; }
+                if (!ShopLogic.CanBuy(m_Cheese, item.Cost))
                 {
                     // 재화 이름은 역할별 — 고양이는 치즈를 캐지 않는다
-                    Say($"{ShopLogic.CurrencyNameOf(_role)} 부족 · {item.Cost - _cheese} 모자람");
+                    Say($"{ShopLogic.CurrencyNameOf(m_Role)} 부족 · {item.Cost - m_Cheese} 모자람");
                     return;
                 }
 
                 if (ShopLogic.IsPlaceable(item.Id)) BeginPlacement(item.Id, name);
-                else { _shop.Buy(item.Id); Say($"{name} 구매"); }
+                else { m_Shop.Buy(item.Id); Say($"{name} 구매"); }
                 return;
             }
         }
@@ -178,13 +236,13 @@ namespace CTC.Runtime.Economy
             Say($"{_name} 배치 — 좌클릭 설치 / 우클릭 취소");
         }
 
-        private void UpdatePlacement(ShopController _shop)
+        private void UpdatePlacement()
         {
             Mouse mouse = Mouse.current;
             // ESC는 EscapeRouter가 단독으로 읽고 CancelPlacementFromEscape()를 부른다(2026-08-01)
             if (mouse != null && mouse.rightButton.wasPressedThisFrame) { CancelPlacement(); Say("배치 취소"); return; }
 
-            Vector3 pos = GhostPosition(_shop.transform);
+            Vector3 pos = GhostPosition(m_Shop.transform);
             m_GhostValid = ShopController.PlacementFits(m_PlacingId, pos);
 
             Vector3 half = ShopController.HalfExtentsOf(m_PlacingId);
@@ -196,7 +254,7 @@ namespace CTC.Runtime.Economy
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
             if (!m_GhostValid) { Say("여기엔 설치할 수 없다"); return; }
 
-            _shop.BuyAt(m_PlacingId, pos); // 차감은 서버가 설치 확정 시점에
+            m_Shop.BuyAt(m_PlacingId, pos); // 차감은 서버가 설치 확정 시점에
             CancelPlacement();
         }
 
@@ -257,15 +315,6 @@ namespace CTC.Runtime.Economy
             m_Toast.text = _message;
             m_Toast.gameObject.SetActive(true);
             m_ToastUntil = Time.time + TOAST_SECONDS;
-        }
-
-        private static ShopController LocalShop()
-        {
-            NetworkManager nm = NetworkManager.Singleton;
-            NetworkObject local = nm != null && nm.SpawnManager != null
-                ? nm.SpawnManager.GetLocalPlayerObject()
-                : null;
-            return local != null ? local.GetComponent<ShopController>() : null;
         }
     }
 }
