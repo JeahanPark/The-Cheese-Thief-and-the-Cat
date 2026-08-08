@@ -34,7 +34,7 @@ namespace CTC.Runtime.Match
 
             Keyboard kb = Keyboard.current;
             if (kb == null || !kb.gKey.wasPressedThisFrame) return;
-            if (IsTypingInUi()) return; // 인게임 콘솔에 'g'를 치는 중이면 응원이 아니다
+            if (Core.UiFocus.BlocksGameplay) return; // 채팅·콘솔에 'g'를 치는 중이면 응원이 아니다
 
             ulong target = SpectatedClientId();
             if (target == ulong.MaxValue) return;
@@ -45,13 +45,6 @@ namespace CTC.Runtime.Match
         /// <summary>QA 전용 — 키 입력 없이 따봉을 보낸다.</summary>
         public void DevCheer(ulong _targetClientId) => CheerRpc(_targetClientId);
 
-        private static bool IsTypingInUi()
-        {
-            UnityEngine.EventSystems.EventSystem es = UnityEngine.EventSystems.EventSystem.current;
-            if (es == null || es.currentSelectedGameObject == null) return false;
-            return es.currentSelectedGameObject.GetComponent<TMP_InputField>() != null
-                   || es.currentSelectedGameObject.GetComponent<UnityEngine.UI.InputField>() != null;
-        }
 
         // 살아 있으면(로컬 플레이어 오브젝트가 있으면) 따봉을 보낼 수 없다 — 관전자 전용 행동.
         private ulong SpectatedClientId()

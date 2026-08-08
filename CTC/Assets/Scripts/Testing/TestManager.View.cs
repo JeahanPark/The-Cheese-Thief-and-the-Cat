@@ -1,4 +1,4 @@
-﻿// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
+// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
 // WES 원본의 인게임 의존 메서드(InGameController/Popup/FullPlay 등)는 CTC 미이식 상태라 제외.
 // WesQA InvokeBridge가 리플렉션으로 Instance.<method>(kwargs)를 호출하는 QA 진입점 싱글턴.
 #if UNITY_EDITOR
@@ -84,6 +84,97 @@ namespace CTC.Runtime.Testing
             }
             return count;
         }
+
+        // ===== 채팅 (2026-08-01) =====
+
+        /// <summary>QA: 채팅 한 줄 전송(입력창을 거치지 않고 바로 서버로).</summary>
+        public void TestSendChat(string _text)
+        {
+            CTC.Runtime.Managers.ChatManager chat = CTC.Runtime.Managers.ChatManager.Instance;
+            if (chat == null) { GameDebug.LogWarning("[TestManager] ChatManager 없음"); return; }
+            chat.SendChatMessage(_text);
+        }
+
+        /// <summary>QA: 이 클라이언트의 채팅 로그 전문(수신 확인·정보 누출 확인).</summary>
+        public string TestGetChatLog()
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            return hud != null ? hud.DevLogText : "";
+        }
+
+        /// <summary>QA: 채팅 입력창 열림 여부.</summary>
+        public bool TestGetChatOpen()
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            return hud != null && hud.IsOpen;
+        }
+
+        // ===== 옵션 (2026-08-01) =====
+
+        public void TestOpenOptions()
+        {
+            var popup = FindFirstObjectByType<CTC.Runtime.UI.OptionsPopup>();
+            if (popup != null) popup.Open();
+        }
+
+        public void TestCloseOptions()
+        {
+            var popup = FindFirstObjectByType<CTC.Runtime.UI.OptionsPopup>();
+            if (popup != null) popup.Close();
+        }
+
+        public bool TestGetOptionsOpen()
+        {
+            var popup = FindFirstObjectByType<CTC.Runtime.UI.OptionsPopup>();
+            return popup != null && popup.IsOpen;
+        }
+
+        /// <summary>QA: 설정값 읽기 — "sensitivity" | "bgm" | "sfx".</summary>
+        public float TestGetSetting(string _key)
+        {
+            switch (_key)
+            {
+                case "sensitivity": return UserSettings.MouseSensitivity.Value;
+                case "bgm": return UserSettings.BgmVolume.Value;
+                default: return UserSettings.SfxVolume.Value;
+            }
+        }
+
+        /// <summary>QA: 설정값 쓰기 — 슬라이더를 드래그한 것과 같은 경로(Model에 직접).</summary>
+        public void TestSetSetting(string _key, float _value)
+        {
+            switch (_key)
+            {
+                case "sensitivity": UserSettings.MouseSensitivity.Value = _value; break;
+                case "bgm": UserSettings.BgmVolume.Value = _value; break;
+                default: UserSettings.SfxVolume.Value = _value; break;
+            }
+        }
+
+        /// <summary>QA: 로컬 플레이어 HP(관전 중이면 -1) — 역할 판별·사망 확인에 쓴다.</summary>
+        public int TestGetLocalHp()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return -1;
+            Unity.Netcode.NetworkObject me = nm.SpawnManager.GetLocalPlayerObject();
+            if (me == null) return -1;
+            Health hp = me.GetComponent<Health>();
+            return hp != null ? hp.Hp : -1;
+        }
+
+        /// <summary>QA: 로컬 플레이어 역할 — "Cat" | "Mouse" | "None"(관전·미시작).</summary>
+        public string TestGetRole()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return "None";
+            Unity.Netcode.NetworkObject me = nm.SpawnManager.GetLocalPlayerObject();
+            if (me == null) return "None";
+            RoleTag tag = me.GetComponent<RoleTag>();
+            return tag != null ? tag.Role.ToString() : "None";
+        }
+
+        /// <summary>QA: 게임플레이 입력이 막혀 있는가(채팅 타이핑·옵션 창).</summary>
+        public bool TestGetInputBlocked() => UiFocus.BlocksGameplay;
     }
 }
 #endif

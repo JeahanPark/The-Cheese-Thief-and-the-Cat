@@ -1,4 +1,4 @@
-﻿using CTC.Runtime.Combat;
+using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using TMPro;
 using Unity.Netcode;
@@ -39,7 +39,7 @@ namespace CTC.Runtime.Economy
         // 설치 미리보기 원본 — 에셋으로 둬야 빌드에서 셰이더가 스트리핑되지 않는다
         [SerializeField] private Material m_GhostMaterialSource;
 
-        /// <summary>고스트 배치 중인가 — ESC가 종료 대신 배치 취소로 쓰여야 하는지 판단(QuitOnEscape).</summary>
+        /// <summary>고스트 배치 중인가 — `EscapeRouter`가 ESC를 무엇에 쓸지 정할 때 본다.</summary>
         public bool IsPlacing => m_PlacingId != ShopItemId.None;
 
         private float m_ToastUntil;
@@ -113,7 +113,7 @@ namespace CTC.Runtime.Economy
         {
             // 인게임 콘솔 등 입력창에 포커스가 있으면 타이핑이 구매로 새지 않게 무시
             Keyboard kb = Keyboard.current;
-            if (kb == null || IsTypingInUi()) return;
+            if (kb == null || Core.UiFocus.BlocksGameplay) return;
 
             for (int slot = 0; slot < _indices.Count && slot < ShopLogic.HOTBAR_SLOTS; slot++)
             {
@@ -136,13 +136,6 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        private static bool IsTypingInUi()
-        {
-            var es = UnityEngine.EventSystems.EventSystem.current;
-            if (es == null || es.currentSelectedGameObject == null) return false;
-            return es.currentSelectedGameObject.GetComponent<TMP_InputField>() != null
-                   || es.currentSelectedGameObject.GetComponent<InputField>() != null;
-        }
 
         private static Key SlotKey(int _slot)
         {
@@ -187,9 +180,8 @@ namespace CTC.Runtime.Economy
 
         private void UpdatePlacement(ShopController _shop)
         {
-            Keyboard kb = Keyboard.current;
             Mouse mouse = Mouse.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) { CancelPlacement(); Say("배치 취소"); return; }
+            // ESC는 EscapeRouter가 단독으로 읽고 CancelPlacementFromEscape()를 부른다(2026-08-01)
             if (mouse != null && mouse.rightButton.wasPressedThisFrame) { CancelPlacement(); Say("배치 취소"); return; }
 
             Vector3 pos = GhostPosition(_shop.transform);
@@ -228,6 +220,13 @@ namespace CTC.Runtime.Economy
             Vector3 target = _player.position + dir * distance;
             target.y = _player.position.y; // 지형 높이는 평면 맵이라 플레이어 발치 기준
             return target;
+        }
+
+        /// <summary>ESC 처리 — `EscapeRouter`만 부른다(ESC를 두 곳에서 읽지 않으려고).</summary>
+        public void CancelPlacementFromEscape()
+        {
+            CancelPlacement();
+            Say("배치 취소");
         }
 
         private void CancelPlacement()

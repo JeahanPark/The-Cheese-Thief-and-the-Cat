@@ -64,7 +64,7 @@ namespace CTC.Runtime.Audio
             go.transform.position = _position;
             AudioSource source = go.AddComponent<AudioSource>();
             source.clip = clip;
-            source.volume = _volume;
+            source.volume = _volume * Core.UserSettings.SfxVolume.Value;
             source.spatialBlend = 1f;
             source.rolloffMode = AudioRolloffMode.Linear;
             source.minDistance = WORLD_MIN_DISTANCE;
@@ -82,7 +82,7 @@ namespace CTC.Runtime.Audio
             var go = new GameObject($"Sfx_{_id}");
             AudioSource source = go.AddComponent<AudioSource>();
             source.clip = clip;
-            source.volume = _volume;
+            source.volume = _volume * Core.UserSettings.SfxVolume.Value;
             source.spatialBlend = 0f;
             source.Play();
             Destroy(go, clip.length + 0.1f);

@@ -32,6 +32,7 @@ namespace CTC.Runtime.Combat
         {
             if (!IsOwner || Cursor.lockState != CursorLockMode.Locked) return;
 
+            if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
 

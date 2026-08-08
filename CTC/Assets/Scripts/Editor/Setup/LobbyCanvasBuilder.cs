@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Reflection;
 using CTC.Runtime.Cameras;
 using CTC.Runtime.Combat;
@@ -9,6 +9,7 @@ using CTC.Runtime.Map;
 using CTC.Runtime.Match;
 using CTC.Runtime.Networking;
 using CTC.Runtime.Player;
+using CTC.Runtime.UI;
 using TMPro;
 using Unity.Cinemachine;
 using Unity.Netcode;
@@ -178,11 +179,11 @@ namespace CTC.Editor
             SetRef(hotbar, "m_Toast", toastText);
             SetRef(hotbar, "m_GhostMaterialSource", CreateGhostMaterialAsset());
 
-            // ESC 종료 — 빌드에는 창을 닫는 것 말고 나가는 방법이 없었다.
-            // 배치 중일 땐 ESC가 배치 취소라 핫바를 참조해 구분한다.
-            var quitGo = new GameObject("QuitOnEscape");
-            var quit = quitGo.AddComponent<CTC.Runtime.Core.QuitOnEscape>();
-            SetRef(quit, "m_Hotbar", hotbar);
+            // ESC 단독 소유자 — 배치 취소 / 채팅 닫기 / 옵션 닫기 / 옵션 열기 순으로 하나만 처리한다.
+            // (전에는 QuitOnEscape와 ShopHotbar가 같은 프레임에 ESC를 각자 읽어 경합했다)
+            var escGo = new GameObject("EscapeRouter");
+            var escRouter = escGo.AddComponent<CTC.Runtime.Core.EscapeRouter>();
+            SetRef(escRouter, "m_Hotbar", hotbar);
 
             // 결과 패널 (매치 종료 시 ResultHud가 표시)
             var resultPanel = new GameObject("ResultPanel", typeof(RectTransform));
@@ -370,11 +371,198 @@ namespace CTC.Editor
                 Debug.LogWarning("[Setup] IngameDebugConsole 프리팹 없음 — 패키지 확인");
             }
 
+            BuildOptionsPopup(canvasGo, escRouter);
+            BuildChatHud(canvasGo, escRouter);
+
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
             var stats = statsGo.AddComponent<MatchStatsRecorder>();
             SetRef(stats, "m_Lobby", _lobby);
             SetRef(stats, "m_Match", _match);
+        }
+
+        // ===== 옵션 팝업 (2026-08-01 건의) =====
+        // 게임을 멈추지 않는다(멀티플레이) — 커서만 풀고 UiFocus.ModalOpen으로 조작을 막는다.
+        private static void BuildOptionsPopup(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)
+        {
+            var panel = new GameObject("OptionsPanel", typeof(RectTransform));
+            panel.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)panel.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(560f, 440f);
+            panel.AddComponent<Image>().color = new Color(0.08f, 0.09f, 0.12f, 0.96f);
+
+            TMP_Text title = CreateTmpText("OptionsTitle", panel.transform, "옵션",
+                34f, TextAlignmentOptions.Center, new Vector2(0f, -18f), new Vector2(520f, 46f));
+            title.fontStyle = FontStyles.Bold;
+
+            Slider sens = CreateSlider(panel.transform, "SensitivitySlider", "마우스 감도", -90f, out TMP_Text sensValue);
+            Slider bgm = CreateSlider(panel.transform, "BgmSlider", "배경음", -160f, out TMP_Text bgmValue);
+            Slider sfx = CreateSlider(panel.transform, "SfxSlider", "효과음", -230f, out TMP_Text sfxValue);
+
+            Button reset = CreateMuipButton(panel.transform, "ResetButton", "기본값", new Vector2(-125f, -300f), 230f);
+            Button close = CreateMuipButton(panel.transform, "CloseButton", "닫기", new Vector2(125f, -300f), 230f);
+            Button quit = CreateMuipButton(panel.transform, "QuitButton", "게임 종료", new Vector2(0f, -366f), 230f);
+
+            var popup = _canvasGo.AddComponent<OptionsPopup>();
+            SetRef(popup, "m_Panel", panel);
+            SetRef(popup, "m_SensitivitySlider", sens);
+            SetRef(popup, "m_BgmSlider", bgm);
+            SetRef(popup, "m_SfxSlider", sfx);
+            SetRef(popup, "m_SensitivityValue", sensValue);
+            SetRef(popup, "m_BgmValue", bgmValue);
+            SetRef(popup, "m_SfxValue", sfxValue);
+            SetRef(popup, "m_ResetButton", reset);
+            SetRef(popup, "m_CloseButton", close);
+            SetRef(popup, "m_QuitButton", quit);
+            SetRef(_esc, "m_Options", popup);
+
+            panel.SetActive(false);
+        }
+
+        // 프로젝트 첫 Slider — 재사용할 프리팹이 없어 4계층(배경/채움영역/채움/손잡이)을 손으로 조립한다.
+        private static Slider CreateSlider(
+            Transform _parent, string _name, string _label, float _y, out TMP_Text _value)
+        {
+            CreateTmpText(_name + "Label", _parent, _label, 22f, TextAlignmentOptions.Left,
+                new Vector2(-140f, _y), new Vector2(240f, 30f));
+            _value = CreateTmpText(_name + "Value", _parent, "-", 22f, TextAlignmentOptions.Right,
+                new Vector2(190f, _y), new Vector2(130f, 30f));
+
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, _y - 34f);
+            rt.sizeDelta = new Vector2(460f, 20f);
+
+            GameObject bg = AddStretchedImage(go.transform, "Background", new Color(0.22f, 0.23f, 0.28f, 1f));
+
+            var fillArea = new GameObject("Fill Area", typeof(RectTransform));
+            fillArea.transform.SetParent(go.transform, false);
+            StretchFull((RectTransform)fillArea.transform);
+            GameObject fill = AddStretchedImage(fillArea.transform, "Fill", new Color(0.45f, 0.95f, 0.45f, 1f));
+
+            var handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
+            handleArea.transform.SetParent(go.transform, false);
+            StretchFull((RectTransform)handleArea.transform);
+            GameObject handle = AddStretchedImage(handleArea.transform, "Handle", Color.white);
+            var handleRt = (RectTransform)handle.transform;
+            handleRt.sizeDelta = new Vector2(22f, 0f);
+
+            var slider = go.AddComponent<Slider>();
+            slider.targetGraphic = handle.GetComponent<Image>();
+            slider.fillRect = (RectTransform)fill.transform;
+            slider.handleRect = handleRt;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.wholeNumbers = false;
+            bg.GetComponent<Image>().raycastTarget = true;
+            return slider;
+        }
+
+        private static GameObject AddStretchedImage(Transform _parent, string _name, Color _color)
+        {
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            StretchFull((RectTransform)go.transform);
+            go.AddComponent<Image>().color = _color;
+            return go;
+        }
+
+        private static void StretchFull(RectTransform _rt)
+        {
+            _rt.anchorMin = Vector2.zero;
+            _rt.anchorMax = Vector2.one;
+            _rt.offsetMin = Vector2.zero;
+            _rt.offsetMax = Vector2.zero;
+        }
+
+        // ===== 채팅 (2026-08-01 건의) =====
+        // 좌측 중단이 비어 있다 — 좌하단은 ControlsHud·MapInfoHud, 하단 중앙은 ShopHotbar가 쓴다.
+        private static void BuildChatHud(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)
+        {
+            var root = new GameObject("ChatRoot", typeof(RectTransform));
+            root.transform.SetParent(_canvasGo.transform, false);
+            var rootRt = (RectTransform)root.transform;
+            rootRt.anchorMin = rootRt.anchorMax = new Vector2(0f, 0f);
+            rootRt.pivot = new Vector2(0f, 0f);
+            rootRt.anchoredPosition = new Vector2(24f, 300f);
+            rootRt.sizeDelta = new Vector2(560f, 200f);
+
+            var logGo = new GameObject("ChatLog", typeof(RectTransform));
+            logGo.transform.SetParent(root.transform, false);
+            var logRt = (RectTransform)logGo.transform;
+            logRt.anchorMin = new Vector2(0f, 0f);
+            logRt.anchorMax = new Vector2(1f, 1f);
+            logRt.offsetMin = new Vector2(0f, 40f);
+            logRt.offsetMax = Vector2.zero;
+            var log = logGo.AddComponent<TextMeshProUGUI>();
+            log.text = "";
+            log.fontSize = 20f;
+            log.alignment = TextAlignmentOptions.BottomLeft;
+            log.color = Color.white;
+            log.raycastTarget = false;
+
+            GameObject input = CreateChatInput(root.transform, out TMP_InputField field);
+            input.SetActive(false);
+
+            var chat = _canvasGo.AddComponent<ChatHud>();
+            SetRef(chat, "m_Root", root);
+            SetRef(chat, "m_Log", log);
+            SetRef(chat, "m_Input", field);
+            SetRef(_esc, "m_Chat", chat);
+
+            root.SetActive(false);
+        }
+
+        // TMP_InputField는 Text Area(RectMask2D) + Text + Placeholder 자식 구조를 직접 만들어야 한다.
+        private static GameObject CreateChatInput(Transform _parent, out TMP_InputField _field)
+        {
+            var go = new GameObject("ChatInput", typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0f, 0f);
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = new Vector2(0f, 34f);
+            go.AddComponent<Image>().color = new Color(0.05f, 0.06f, 0.09f, 0.9f);
+
+            var area = new GameObject("Text Area", typeof(RectTransform));
+            area.transform.SetParent(go.transform, false);
+            var areaRt = (RectTransform)area.transform;
+            areaRt.anchorMin = Vector2.zero;
+            areaRt.anchorMax = Vector2.one;
+            areaRt.offsetMin = new Vector2(10f, 4f);
+            areaRt.offsetMax = new Vector2(-10f, -4f);
+            area.AddComponent<RectMask2D>();
+
+            var textGo = new GameObject("Text", typeof(RectTransform));
+            textGo.transform.SetParent(area.transform, false);
+            StretchFull((RectTransform)textGo.transform);
+            var text = textGo.AddComponent<TextMeshProUGUI>();
+            text.fontSize = 20f;
+            text.alignment = TextAlignmentOptions.Left;
+            text.color = Color.white;
+
+            var placeholderGo = new GameObject("Placeholder", typeof(RectTransform));
+            placeholderGo.transform.SetParent(area.transform, false);
+            StretchFull((RectTransform)placeholderGo.transform);
+            var placeholder = placeholderGo.AddComponent<TextMeshProUGUI>();
+            placeholder.text = "Enter로 전송 · ESC로 취소";
+            placeholder.fontSize = 20f;
+            placeholder.color = new Color(1f, 1f, 1f, 0.35f);
+
+            _field = go.AddComponent<TMP_InputField>();
+            _field.textViewport = areaRt;
+            _field.textComponent = text;
+            _field.placeholder = placeholder;
+            _field.lineType = TMP_InputField.LineType.SingleLine;
+            _field.characterLimit = ChatManager.MAX_MESSAGE_LENGTH;
+            _field.targetGraphic = go.GetComponent<Image>();
+            return go;
         }
 
         private static TMP_Text CreateTmpText(

@@ -13,13 +13,13 @@ namespace CTC.Runtime.Audio
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private AudioSource m_Source;
         [SerializeField] private bool m_PlayWhenGameStopped;
-        // 임시 소등(2026-07-28 요청) — 곡이 확정되기 전까지 배경음을 끈다.
-        // 효과음은 그대로 둔다(위치 정보 설계의 일부라 꺼지면 게임이 달라진다).
-        [SerializeField] private bool m_Muted = true;
 
         private void Update()
         {
-            if (m_Muted)
+            // 소등 스위치(m_Muted)는 옵션 창의 배경음 볼륨으로 대체했다(2026-08-01).
+            // 기본값이 0이라 지금까지와 똑같이 조용하고, 슬라이더를 올리면 그때 들린다.
+            // 볼륨 자체는 같은 오브젝트의 AudioVolumeFollower(Bgm)가 맞춘다.
+            if (m_Source.volume <= 0.0001f)
             {
                 if (m_Source.isPlaying) m_Source.Stop();
                 return;

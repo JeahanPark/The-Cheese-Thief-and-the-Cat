@@ -52,6 +52,7 @@ namespace CTC.Runtime.Player
 
             if (!m_Owned.Value) return;
 
+            if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             Keyboard kb = Keyboard.current;
             if (kb == null || !kb.leftShiftKey.wasPressedThisFrame) return;
             if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, COOLDOWN_SECONDS)) return;

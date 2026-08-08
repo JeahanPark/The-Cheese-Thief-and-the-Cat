@@ -1,4 +1,4 @@
-﻿using CTC.Runtime.Economy;
+using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -87,9 +87,12 @@ namespace CTC.Runtime.Player
             var kb = Keyboard.current;
             if (kb == null) return;
 
-            float h = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
+            // 채팅 타이핑·옵션 창 중에는 WASD가 이동으로 새면 안 된다. 중력은 계속 먹어야 하므로
+            // early-return이 아니라 입력만 0으로 둔다(공중에서 채팅 열면 떠 있게 되는 걸 막는다).
+            bool blocked = Core.UiFocus.BlocksGameplay;
+            float h = blocked ? 0f : (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
                     - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
-            float v = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
+            float v = blocked ? 0f : (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
                     - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f);
 
             float camYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : 0f;
