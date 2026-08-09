@@ -140,6 +140,9 @@ namespace CTC.Runtime.Testing
             }
         }
 
+        /// <summary>QA: 옵션 창의 "기본값" 버튼과 같은 경로 — CSV 기본값으로 되돌린다.</summary>
+        public void TestResetSettings() => UserSettings.ResetToDefaults();
+
         /// <summary>QA: 설정값 쓰기 — 슬라이더를 드래그한 것과 같은 경로(Model에 직접).</summary>
         public void TestSetSetting(string _key, float _value)
         {
