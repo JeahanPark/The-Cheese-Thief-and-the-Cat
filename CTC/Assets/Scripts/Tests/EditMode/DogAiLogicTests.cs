@@ -102,6 +102,30 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        public void AccumulateStuck_ResetsWhenActuallyMoving()
+        {
+            // 0.1초에 0.2m면 초속 2m — 잘 가고 있다.
+            Assert.AreEqual(0f, DogAiLogic.AccumulateStuck(9f, 0.2f, 0.1f, 0.5f), 0.0001f);
+        }
+
+        [Test]
+        public void AccumulateStuck_GrowsWhenBlocked()
+        {
+            // 벽에 붙어 거의 안 움직인다 — 이게 쌓여야 스스로 길을 다시 짠다.
+            float s = DogAiLogic.AccumulateStuck(0f, 0.001f, 0.1f, 0.5f);
+            Assert.AreEqual(0.1f, s, 0.0001f);
+            Assert.AreEqual(0.2f, DogAiLogic.AccumulateStuck(s, 0.001f, 0.1f, 0.5f), 0.0001f);
+        }
+
+        [Test]
+        public void AccumulateStuck_ThresholdIsReachableBeforeTheDogLooksBroken()
+        {
+            // 1.5초쯤이면 사람 눈에 "굳었다"로 보이기 전이다. 너무 길면 버그처럼 보인다.
+            Assert.Less(DogAiLogic.STUCK_SECONDS, 3f);
+            Assert.Greater(DogAiLogic.STUCK_SECONDS, 0.5f);
+        }
+
+        [Test]
         public void TickCooldown_FloorsAtZero()
         {
             Assert.AreEqual(0.6f, DogAiLogic.TickCooldown(1f, 0.4f), 0.0001f);

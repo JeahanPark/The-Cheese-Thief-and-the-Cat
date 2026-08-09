@@ -209,6 +209,22 @@ namespace CTC.Runtime.Testing
             return CTC.Runtime.Audio.SfxPlayer.ClipNameOf(CTC.Runtime.Audio.SfxId.WarehouseTick);
         }
 
+        /// <summary>
+        /// QA: 클립이 하나라도 안 붙은 `SfxId` 목록(쉼표 구분). 비어 있어야 정상.
+        ///
+        /// `LoadClip`은 경로가 틀려도 **null을 조용히 넣는다** — 그러면 그 소리만 안 난다.
+        /// 배선 누락은 화면에 안 보이고 로그도 안 남아서, 이렇게 전수로 세지 않으면 못 잡는다.
+        /// </summary>
+        public string TestGetUnwiredSfxIds()
+        {
+            var missing = new System.Collections.Generic.List<string>();
+            foreach (CTC.Runtime.Audio.SfxId id in System.Enum.GetValues(typeof(CTC.Runtime.Audio.SfxId)))
+            {
+                if (string.IsNullOrEmpty(CTC.Runtime.Audio.SfxPlayer.ClipNameOf(id))) missing.Add(id.ToString());
+            }
+            return string.Join(",", missing);
+        }
+
         /// <summary>QA: 창고가 생산을 몇 번 했는가 — 소리·이펙트가 발화한 횟수와 같다.</summary>
         public int TestGetWarehouseTicks()
         {

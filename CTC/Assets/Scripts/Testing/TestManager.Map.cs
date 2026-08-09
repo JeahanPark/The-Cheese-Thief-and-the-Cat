@@ -92,6 +92,17 @@ namespace CTC.Runtime.Testing
             return hp != null ? hp.Hp : -1;
         }
 
+        /// <summary>QA: 강아지 상태·위치·길찾기 내부 — "state x,z graph=.. path=.. idx=.. stuck=..".</summary>
+        public string TestGetDogDiagnostics()
+        {
+            var brain = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            if (brain == null) return "";
+
+            var mover = brain.GetComponent<CTC.Runtime.Ai.DogMover>();
+            Vector3 p = brain.transform.position;
+            return $"{brain.State} {p.x:F2},{p.z:F2} {(mover != null ? mover.DevDiagnostics : "no-mover")}";
+        }
+
         /// <summary>QA: 강아지와 로컬 플레이어의 수평 거리(둘 중 하나가 없으면 -1).</summary>
         public float TestGetDogDistance()
         {

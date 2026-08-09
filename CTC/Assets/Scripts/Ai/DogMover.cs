@@ -21,6 +21,8 @@ namespace CTC.Runtime.Ai
         private const float WAYPOINT_REACH = 0.9f;
         // 바닥에 붙여 두는 힘. 점프가 없으니 상수 하나면 된다.
         private const float GRAVITY = -18f;
+        // 표적이 이만큼 움직여야 길을 다시 짠다. 매 틱 다시 짜면 경유점 진행이 리셋된다.
+        private const float REPLAN_DISTANCE = 3f;
 
         private CharacterController m_Cc;
         private DogBrain m_Brain;
@@ -31,6 +33,16 @@ namespace CTC.Runtime.Ai
         private int m_PathIndex;
         private float m_RepathTimer;
         private float m_VerticalSpeed;
+        private float m_StuckSeconds;
+        private Vector3 m_LastPos;
+        private Vector3 m_PlannedGoal;
+
+        /// <summary>QA 전용 — 길찾기가 어느 층에서 끊겼는지 본다(그래프·경로·제자리 시간).</summary>
+        public string DevDiagnostics =>
+            $"graph={(m_Graph != null ? m_Graph.Count : -1)} " +
+            $"path={m_Path.Count} idx={m_PathIndex} stuck={m_StuckSeconds:F1} " +
+            $"wp={(m_PathIndex < m_Path.Count ? $"{m_Path[m_PathIndex].x:F1},{m_Path[m_PathIndex].y:F1}" : "-")} " +
+            $"grounded={(m_Cc != null && m_Cc.isGrounded ? 1 : 0)}";
 
         /// <summary>서버 전용 — 스폰 직후 `Alcove`가 레이아웃을 넘긴다.</summary>
         public void ServerBindLayout(MapLayout _layout)
@@ -46,6 +58,7 @@ namespace CTC.Runtime.Ai
         {
             m_Cc = GetComponent<CharacterController>();
             m_Brain = GetComponent<DogBrain>();
+            m_LastPos = transform.position;
         }
 
         private void Update()
@@ -72,6 +85,15 @@ namespace CTC.Runtime.Ai
             if (m_Brain != null && m_Brain.Target != null)
             {
                 goal = m_Brain.Target.transform.position;
+
+                // **표적이 그 자리면 다시 짜지 않는다.** 매번 새로 짜면 `m_PathIndex`가 0으로
+                // 돌아가 지나온 경유점으로 되돌아가고, 벽에 막힌 경로를 무한히 반복한다
+                // (2026-08-09 실측: Chase 상태로 path=3 idx=0에 붙박여 12초 넘게 안 움직였다).
+                if (m_Path.Count > 0 && m_PathIndex < m_Path.Count
+                    && DogAiLogic.Flat(goal - m_PlannedGoal).magnitude < REPLAN_DISTANCE)
+                {
+                    return;
+                }
             }
             else if (m_Path.Count > 0 && m_PathIndex < m_Path.Count)
             {
@@ -82,16 +104,35 @@ namespace CTC.Runtime.Ai
                 goal = RandomNode();
             }
 
-            var from = new Vector2(transform.position.x, transform.position.z);
-            List<Vector2> next = NavGraphLogic.FindPath(m_Graph, from, new Vector2(goal.x, goal.z));
+            m_PlannedGoal = goal;
+
+            List<Vector2> next = NavGraphLogic.FindPath(m_Graph, NearestVisibleNode(), new Vector2(goal.x, goal.z));
 
             m_Path.Clear();
             m_Path.AddRange(next);
             m_PathIndex = 0;
+            m_StuckSeconds = 0f;
         }
 
         private void Step(float _dt)
         {
+            // **막히면 스스로 길을 다시 짠다.** 그래프는 방향만 주고 회피는 물리가 하는 구조라
+            // 웨이포인트가 벽 뒤일 수 있다. 그때 이게 없으면 벽에 붙은 채 영원히 안 움직인다
+            // (2026-08-09 실측: 배회하다 29.47m에서 굳어 12초 넘게 그대로였다).
+            float moved = DogAiLogic.Flat(transform.position - m_LastPos).magnitude;
+            m_LastPos = transform.position;
+            m_StuckSeconds = DogAiLogic.AccumulateStuck(
+                m_StuckSeconds, moved, _dt, DogAiLogic.STUCK_MIN_SPEED);
+
+            if (m_StuckSeconds >= DogAiLogic.STUCK_SECONDS)
+            {
+                // 그 경유점은 못 간다 — 건너뛴다. 그래프는 방 중심과 복도 끝점만 알아서
+                // 가장 가까운 노드가 **벽 너머**일 수 있고, 그러면 첫 구간이 애초에 막혀 있다.
+                m_StuckSeconds = 0f;
+                m_PathIndex++;
+                if (m_PathIndex >= m_Path.Count) m_Path.Clear(); // 다음 Repath가 새 목적지를 잡는다
+            }
+
             Vector3 horizontal = Vector3.zero;
 
             if (m_PathIndex < m_Path.Count)
@@ -115,6 +156,55 @@ namespace CTC.Runtime.Ai
 
             m_VerticalSpeed = m_Cc.isGrounded ? -1f : m_VerticalSpeed + GRAVITY * _dt;
             m_Cc.Move((horizontal + Vector3.up * m_VerticalSpeed) * _dt);
+        }
+
+        /// <summary>
+        /// 길을 어디서 시작할 것인가. **가장 가까운 노드가 아니라, 실제로 보이는 노드**다.
+        ///
+        /// 그래프는 방 중심과 복도 끝점만 알고 벽을 모른다. 그냥 제일 가까운 노드를 잡으면
+        /// 그게 **벽 너머**일 수 있고, 그러면 경로 첫 구간이 애초에 막혀 있어 강아지가 벽을
+        /// 밀며 제자리걸음을 한다(2026-08-09 실측: z가 4.17에 못 박힌 채 x로만 미끄러졌다).
+        ///
+        /// 보이는 노드가 하나도 없으면(구석에 끼면) 원래대로 제 위치를 쓴다 — 그때는
+        /// 경유점 건너뛰기가 빠져나오게 해 준다.
+        /// </summary>
+        private Vector2 NearestVisibleNode()
+        {
+            var self = new Vector2(transform.position.x, transform.position.z);
+            if (m_Graph == null || m_Graph.Count == 0) return self;
+
+            int best = -1;
+            float bestSqr = float.MaxValue;
+            for (int i = 0; i < m_Graph.Count; i++)
+            {
+                Vector2 node = m_Graph.Nodes[i];
+                float sqr = (node - self).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                if (IsNodeBlocked(node)) continue;
+
+                bestSqr = sqr;
+                best = i;
+            }
+            return best >= 0 ? m_Graph.Nodes[best] : self;
+        }
+
+        // 노드에는 콜라이더가 없으므로 좌표로 직접 쏜다(SightLine은 Transform을 받는다).
+        private bool IsNodeBlocked(Vector2 _node)
+        {
+            Vector3 from = transform.position + Vector3.up * Combat.SightLine.RAY_HEIGHT;
+            var to = new Vector3(_node.x, from.y, _node.y);
+            Vector3 dir = to - from;
+            if (dir.sqrMagnitude < 0.01f) return false;
+
+            foreach (RaycastHit hit in Physics.RaycastAll(
+                         from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            {
+                Transform root = hit.transform.root;
+                if (root == transform.root) continue;
+                if (root.GetComponent<CharacterController>() != null) continue;
+                return true;
+            }
+            return false;
         }
 
         // 배회 목적지. 그래프가 비면 제자리.

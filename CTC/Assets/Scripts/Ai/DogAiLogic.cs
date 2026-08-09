@@ -118,6 +118,20 @@ namespace CTC.Runtime.Ai
             return next < 0f ? 0f : next;
         }
 
+        /// <summary>제자리걸음으로 친 시간. 실제로 나아갔으면 0으로 되돌린다.</summary>
+        public static float AccumulateStuck(
+            float _stuckSeconds, float _movedThisTick, float _deltaSeconds, float _minSpeed)
+        {
+            if (_deltaSeconds <= 0f) return _stuckSeconds;
+            return _movedThisTick >= _minSpeed * _deltaSeconds ? 0f : _stuckSeconds + _deltaSeconds;
+        }
+
+        /// <summary>이만큼 제자리면 길을 다시 짠다. 안 그러면 벽에 붙어 영원히 안 움직인다.</summary>
+        public const float STUCK_SECONDS = 1.5f;
+
+        /// <summary>제자리 판정 기준 속도 — 이 이하로 움직이면 안 나아간 것으로 본다.</summary>
+        public const float STUCK_MIN_SPEED = 0.5f;
+
         /// <summary>y를 버린다 — 층이 없는 맵이라 높이차로 표적을 놓치면 안 된다.</summary>
         public static Vector3 Flat(Vector3 _v) => new Vector3(_v.x, 0f, _v.z);
     }
