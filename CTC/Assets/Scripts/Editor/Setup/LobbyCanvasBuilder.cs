@@ -401,8 +401,10 @@ namespace CTC.Editor
             Slider bgm = CreateSlider(panel.transform, "BgmSlider", "배경음", -160f, out TMP_Text bgmValue);
             Slider sfx = CreateSlider(panel.transform, "SfxSlider", "효과음", -230f, out TMP_Text sfxValue);
 
-            Button reset = CreateMuipButton(panel.transform, "ResetButton", "기본값", new Vector2(-125f, -300f), 230f);
-            Button close = CreateMuipButton(panel.transform, "CloseButton", "닫기", new Vector2(125f, -300f), 230f);
+            // 3열 — 기본값 / 취소 / 확인. "닫기"가 아니라 "취소"인 이유: 이제 닫으면 되돌아간다.
+            Button reset = CreateMuipButton(panel.transform, "ResetButton", "기본값", new Vector2(-180f, -300f), 168f);
+            Button close = CreateMuipButton(panel.transform, "CloseButton", "취소", new Vector2(0f, -300f), 168f);
+            Button confirm = CreateMuipButton(panel.transform, "ConfirmButton", "확인", new Vector2(180f, -300f), 168f);
             Button quit = CreateMuipButton(panel.transform, "QuitButton", "게임 종료", new Vector2(0f, -366f), 230f);
 
             var popup = _canvasGo.AddComponent<OptionsPopup>();
@@ -414,6 +416,7 @@ namespace CTC.Editor
             SetRef(popup, "m_BgmValue", bgmValue);
             SetRef(popup, "m_SfxValue", sfxValue);
             SetRef(popup, "m_ResetButton", reset);
+            SetRef(popup, "m_ConfirmButton", confirm);
             SetRef(popup, "m_CloseButton", close);
             SetRef(popup, "m_QuitButton", quit);
             SetRef(_esc, "m_Options", popup);

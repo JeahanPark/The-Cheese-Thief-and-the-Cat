@@ -77,6 +77,42 @@ def main():
     focus_unity()
     check("커서 — 옵션을 닫으면 다시 잠긴다", p[0].invoke("TestGetCursorLocked"))
 
+    # ---------- 미리듣기 / 확인 / 취소 (2026-08-09) ----------
+    def sfx():
+        return p[0].invoke("TestGetSetting", _key="sfx")
+
+    # 기준값 하나를 디스크에 굳혀 둔다
+    p[0].invoke("TestSetSetting", _key="sfx", _value=0.40)
+    p[0].invoke("TestSaveSettings")
+    time.sleep(0.3)
+
+    p[0].invoke("TestOpenOptions")
+    p[0].invoke("TestSetSetting", _key="sfx", _value=0.90)
+    time.sleep(0.3)
+    check("옵션 — 슬라이더는 즉시 반영된다(미리듣기)", abs(sfx() - 0.90) < 0.001, f"sfx={sfx():.2f}")
+
+    p[0].invoke("TestCloseOptions")  # 취소·ESC와 같은 경로
+    time.sleep(0.4)
+    check("옵션 — 확인 없이 닫으면 원복된다", abs(sfx() - 0.40) < 0.001, f"sfx={sfx():.2f} (기대 0.40)")
+
+    p[0].invoke("TestOpenOptions")
+    p[0].invoke("TestSetSetting", _key="sfx", _value=0.70)
+    p[0].invoke("TestSaveSettings")
+    p[0].invoke("TestCloseOptions")
+    time.sleep(0.4)
+    check("옵션 — 확인을 누르면 값이 굳는다", abs(sfx() - 0.70) < 0.001, f"sfx={sfx():.2f} (기대 0.70)")
+
+    # 굳힌 뒤의 취소는 "창을 열었을 때"가 아니라 "마지막 확인" 값으로 돌아가야 한다
+    p[0].invoke("TestOpenOptions")
+    p[0].invoke("TestSetSetting", _key="sfx", _value=0.10)
+    p[0].invoke("TestCloseOptions")
+    time.sleep(0.4)
+    check("옵션 — 취소는 마지막 확인 값으로 돌아간다", abs(sfx() - 0.70) < 0.001, f"sfx={sfx():.2f} (기대 0.70)")
+
+    # 이 PC를 CSV 기본값(50%)으로 돌려놓고 나간다
+    p[0].invoke("TestResetSettings")
+    p[0].invoke("TestSaveSettings")
+
     # ---------- 채팅 ----------
     alive = mice[0]
     p[alive].invoke("TestSendChat", _text="살아있는쥐테스트")

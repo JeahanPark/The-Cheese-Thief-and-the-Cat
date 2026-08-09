@@ -10,8 +10,16 @@ namespace CTC.Runtime.UI
     /// 옵션 창 — 마우스 감도 · 배경음 · 효과음 (2026-08-01 건의).
     ///
     /// MVC: Model은 `UserSettings`(PlayerPrefs + R3), 여기는 **표시와 입력 전달만** 한다.
-    /// 슬라이더를 움직이면 곧바로 Model에 쓰고, Model이 바뀌면 슬라이더·숫자가 따라온다 —
-    /// 그래서 "확인" 버튼이 없다(닫으면 끝). 카메라·오디오는 이 창을 전혀 모른 채 Model만 본다.
+    /// 슬라이더를 움직이면 곧바로 Model에 쓰고, Model이 바뀌면 슬라이더·숫자가 따라온다.
+    /// 카메라·오디오는 이 창을 전혀 모른 채 Model만 본다.
+    ///
+    /// **미리듣기 / 확인 / 취소** (2026-08-09). 끄는 즉시 소리·감도가 바뀌지만 그건 미리듣기고,
+    /// 디스크에 남는 건 "확인"을 눌렀을 때뿐이다. 소리는 들어 봐야 고를 수 있으니 즉시 반영하고,
+    /// 되돌릴 길은 남겨 둔다.
+    ///
+    /// 되돌리기를 <see cref="Close"/> 한 곳에 몰아넣은 이유: 창을 닫는 길이 셋(취소·ESC·씬 종료)이라
+    /// 길마다 따로 처리하면 하나를 빠뜨린다. "확인"은 저장부터 하므로 이어지는 되돌리기가 무효타다 —
+    /// **닫히고 나면 언제나 저장된 값 = 지금 들리는 값**이라는 불변식이 공짜로 선다.
     ///
     /// 멀티플레이라 **게임을 멈추지 않는다**(`Time.timeScale` 안 건드림). 대신 커서를 풀고
     /// `UiFocus.ModalOpen`을 세워 조작을 막는다 — 열어 둔 채로 죽을 수 있다는 뜻이라,
@@ -27,6 +35,7 @@ namespace CTC.Runtime.UI
         [SerializeField] private TMP_Text m_BgmValue;
         [SerializeField] private TMP_Text m_SfxValue;
         [SerializeField] private Button m_ResetButton;
+        [SerializeField] private Button m_ConfirmButton;
         [SerializeField] private Button m_CloseButton;
         [SerializeField] private Button m_QuitButton;
 
@@ -41,7 +50,8 @@ namespace CTC.Runtime.UI
             BindSlider(m_SfxSlider, m_SfxValue, UserSettings.SfxVolume, 0f, 1f, "0%");
 
             if (m_ResetButton != null) m_ResetButton.OnClickAsObservable().Subscribe(_ => OnClickReset()).AddTo(this);
-            if (m_CloseButton != null) m_CloseButton.OnClickAsObservable().Subscribe(_ => OnClickClose()).AddTo(this);
+            if (m_ConfirmButton != null) m_ConfirmButton.OnClickAsObservable().Subscribe(_ => OnClickConfirm()).AddTo(this);
+            if (m_CloseButton != null) m_CloseButton.OnClickAsObservable().Subscribe(_ => OnClickCancel()).AddTo(this);
             if (m_QuitButton != null) m_QuitButton.OnClickAsObservable().Subscribe(_ => OnClickQuit()).AddTo(this);
 
             if (m_Panel != null) m_Panel.SetActive(false);
@@ -54,9 +64,11 @@ namespace CTC.Runtime.UI
             UiFocus.SetModalOpen(true);
         }
 
+        /// <summary>창을 닫는 유일한 문 — 확정하지 않은 미리듣기는 여기서 되돌아간다.</summary>
         public void Close()
         {
             if (m_Panel == null || !m_Panel.activeSelf) return;
+            UserSettings.Revert();
             m_Panel.SetActive(false);
             UiFocus.SetModalOpen(false);
         }
@@ -68,7 +80,15 @@ namespace CTC.Runtime.UI
         }
 
         private void OnClickReset() => UserSettings.ResetToDefaults();
-        private void OnClickClose() => Close();
+
+        // 저장이 먼저다 — 뒤따르는 Close()의 되돌리기가 방금 저장한 값을 다시 읽어 무효타가 된다
+        private void OnClickConfirm()
+        {
+            UserSettings.Save();
+            Close();
+        }
+
+        private void OnClickCancel() => Close();
         private void OnClickQuit() => EscapeRouter.QuitGame();
 
         // 양방향: 슬라이더 → Model, Model → 슬라이더·숫자.
