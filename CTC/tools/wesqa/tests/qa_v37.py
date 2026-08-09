@@ -4,7 +4,7 @@
 전제: 메인 에디터가 플레이모드, 클론 2개 접속, 매치 시작 완료.
 메인=쥐, 클론 하나가 고양이여야 '관전자 채팅이 고양이에게 안 간다'를 검증할 수 있다.
 """
-import sys, time, io
+import subprocess, sys, time, io
 
 sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -12,6 +12,14 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+
+_FOCUS_SCRIPT = r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\focus-unity.ps1"
+
+
+def focus_unity():
+    """게임 뷰에 포커스를 준다 — 커서 잠금은 포커스가 없으면 에디터가 강제로 푼다."""
+    subprocess.run(["powershell", "-NoProfile", "-File", _FOCUS_SCRIPT], capture_output=True)
+    time.sleep(1.2)
 
 
 def check(name, ok, detail=""):
@@ -44,14 +52,30 @@ def main():
           abs(p[0].invoke("TestGetSetting", _key="sfx") - 0.25) < 0.001)
 
     check("옵션 — 열기 전에는 입력이 안 막혀 있다", not p[0].invoke("TestGetInputBlocked"))
+
+    # 커서 항목 3개는 게임 뷰 포커스가 있어야 의미가 있다 —
+    # 에디터는 포커스를 잃으면 잠금을 강제 해제해 전부 False로 읽힌다(2026-08-08 실측).
+    focus_unity()
+    locked_ingame = p[0].invoke("TestGetCursorLocked")
+    check("커서 — 인게임에서는 잠겨 있다", locked_ingame,
+          "" if locked_ingame else "게임 뷰 포커스 실패 — 아래 커서 2항목은 무효")
+
     p[0].invoke("TestOpenOptions")
     time.sleep(0.4)
     opened = p[0].invoke("TestGetOptionsOpen")
     blocked = p[0].invoke("TestGetInputBlocked")
     check("옵션 — 열면 조작이 막힌다", opened and blocked, f"open={opened} blocked={blocked}")
+
+    # 2026-08-08 회귀: LobbyUI가 매 프레임 커서를 다시 잠가 옵션 슬라이더를 클릭할 수 없었다.
+    focus_unity()
+    check("커서 — 옵션을 열면 풀린다 (클릭 가능)", not p[0].invoke("TestGetCursorLocked"))
+
     p[0].invoke("TestCloseOptions")
     time.sleep(0.4)
     check("옵션 — 닫으면 조작이 풀린다", not p[0].invoke("TestGetInputBlocked"))
+
+    focus_unity()
+    check("커서 — 옵션을 닫으면 다시 잠긴다", p[0].invoke("TestGetCursorLocked"))
 
     # ---------- 채팅 ----------
     alive = mice[0]

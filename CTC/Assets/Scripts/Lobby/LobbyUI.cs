@@ -53,24 +53,24 @@ namespace CTC.Runtime.Lobby
         private void OnClickStart() => m_Lobby.RequestStartGame();
         private void OnClickMap(int _index) => m_Lobby.SelectMap(_index);
 
-        // 커서만 남긴다 — ResultHud가 커서를 점유했다 놓는 시점은 스트림으로 오지 않는다.
+        // 커서만 남긴다 — ResultHud·옵션 창이 커서를 점유했다 놓는 시점은 스트림으로 오지 않는다.
+        // 판정은 CursorPolicyLogic(EditMode가 덮는다) — 2026-08-08 옵션 창에서 커서가 안 보이던 버그.
         private void Update()
         {
             bool inGame = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
 
-            if (inGame)
+            if (CursorPolicyLogic.ShouldRelease(inGame, Match.ResultHud.IsShowing, Core.UiFocus.ModalOpen))
             {
-                // 결과 패널이 커서를 점유 중이면 양보 (핫바는 커서를 쓰지 않는다)
-                if (!Match.ResultHud.IsShowing && Cursor.lockState != CursorLockMode.Locked)
+                if (Cursor.lockState != CursorLockMode.None)
                 {
-                    Cursor.lockState = CursorLockMode.Locked;
-                    Cursor.visible = false;
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
                 }
             }
-            else if (Cursor.lockState != CursorLockMode.None)
+            else if (Cursor.lockState != CursorLockMode.Locked)
             {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
 

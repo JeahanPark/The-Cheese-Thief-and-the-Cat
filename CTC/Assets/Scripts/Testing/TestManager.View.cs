@@ -175,6 +175,9 @@ namespace CTC.Runtime.Testing
 
         /// <summary>QA: 게임플레이 입력이 막혀 있는가(채팅 타이핑·옵션 창).</summary>
         public bool TestGetInputBlocked() => UiFocus.BlocksGameplay;
+
+        /// <summary>QA: 커서가 잠겨 있는가 — 옵션 창이 열리면 false, 닫히면 true여야 한다.</summary>
+        public bool TestGetCursorLocked() => Cursor.lockState == CursorLockMode.Locked;
     }
 }
 #endif
