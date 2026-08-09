@@ -101,12 +101,31 @@ namespace CTC.Runtime.UI
 
         private void Submit()
         {
+            // **읽기 전에 조합을 확정시킨다.** 한글은 마지막 음절이 IME '조합 중' 상태로
+            // 남아 있고, 그건 화면에만 그려질 뿐 InputField.text에는 아직 없다.
+            // TMP가 조합을 text로 옮기는 곳은 OnDeselect 하나뿐이고,
+            // DeactivateInputField()는 되레 IME 모드를 되돌리며 조합을 **버린다**
+            // (com.unity.ugui TMP_InputField.OnDeselect 주석이 "final Hangul syllable"을 콕 집어 말한다).
+            // 그래서 전에는 "안녕"이 "안"으로, "왜이래"가 "왜이"로 잘려 나갔다.
+            CommitComposition();
+
             string text = m_Input != null ? m_Input.text : "";
             if (ChatManager.Instance != null && !string.IsNullOrWhiteSpace(text))
             {
                 ChatManager.Instance.SendChatMessage(text);
             }
             Close();
+        }
+
+        // 선택 해제가 곧 조합 확정이다 — EventSystem이 OnDeselect를 그 자리에서 동기 호출하고,
+        // TMP가 거기서 조합 문자열을 text에 덧붙인다. 조합 중이 아니면 아무 일도 없다.
+        private void CommitComposition()
+        {
+            UnityEngine.EventSystems.EventSystem current = UnityEngine.EventSystems.EventSystem.current;
+            if (current != null && current.currentSelectedGameObject == m_Input.gameObject)
+            {
+                current.SetSelectedGameObject(null);
+            }
         }
 
         private void Append(ChatMessage _message)

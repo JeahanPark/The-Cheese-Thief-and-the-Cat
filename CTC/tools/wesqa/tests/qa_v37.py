@@ -109,6 +109,16 @@ def main():
     time.sleep(0.4)
     check("옵션 — 취소는 마지막 확인 값으로 돌아간다", abs(sfx() - 0.70) < 0.001, f"sfx={sfx():.2f} (기대 0.70)")
 
+    # ---------- 입력창을 거친 전송 (2026-08-09) ----------
+    # 한글 마지막 음절이 잘리던 버그는 ChatHud.Submit()에 있었는데, 기존 채팅 항목은
+    # TestSendChat(UI 우회)만 써서 그 경로를 한 번도 안 지나갔다.
+    typed = "입력창경유테스트"
+    p[0].invoke("TestTypeChatAndEnter", _text=typed)  # 호스트=쥐, 이 시점엔 아직 살아 있다
+    time.sleep(1.4)
+    log = p[0].invoke("TestGetChatLog")
+    check("채팅 — 입력창으로 친 글이 통째로 전송된다", typed in log,
+          "마지막 글자까지 도착" if typed in log else f"로그 끝: ...{log[-40:]}")
+
     # ---------- 실제로 들리는 볼륨 (2026-08-09) ----------
     # Model 값만 보던 기존 항목은 "설정은 바뀌는데 소리는 그대로"를 못 잡았다.
     # 루프 소스는 생성기가 볼륨을 구워 두므로 AudioVolumeFollower가 붙어 있어야만 따라온다.

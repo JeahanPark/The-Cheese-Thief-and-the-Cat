@@ -102,6 +102,27 @@ namespace CTC.Runtime.Testing
             return hud != null ? hud.DevLogText : "";
         }
 
+        /// <summary>
+        /// QA: **입력창을 거쳐서** 보낸다 — 열고, 글자를 넣고, Enter를 눌러 `ChatHud.Submit()`을 태운다.
+        /// `TestSendChat`은 UI를 건너뛰므로 "입력창이 글자를 제대로 넘기는가"를 못 덮는다
+        /// (2026-08-09 한글 마지막 음절이 잘리던 버그가 그 틈으로 빠져나갔다).
+        ///
+        /// 한계: IME 조합은 OS가 만드는 상태라 여기서 재현할 수 없다 — 조합 확정 자체는 수동 확인이다.
+        /// 이 훅이 지키는 건 "Submit이 입력창의 글자를 온전히 읽어 보낸다"는 배선이다.
+        /// </summary>
+        public void TestTypeChatAndEnter(string _text)
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            if (hud == null) { GameDebug.LogWarning("[TestManager] ChatHud 없음"); return; }
+
+            hud.Open();
+            var field = hud.GetComponentInChildren<TMPro.TMP_InputField>(true);
+            if (field == null) { GameDebug.LogWarning("[TestManager] 채팅 입력창 없음"); return; }
+
+            field.text = _text;
+            SimulateKeyPress("enter");
+        }
+
         /// <summary>QA: 채팅 입력창 열림 여부.</summary>
         public bool TestGetChatOpen()
         {
