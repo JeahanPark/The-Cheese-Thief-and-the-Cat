@@ -27,7 +27,7 @@ namespace CTC.Editor
     {
         private static void CreateGameScene(
             GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab, GameObject _decoyPrefab,
-            GameObject _warehousePrefab)
+            GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -50,7 +50,8 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab);
+            RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab,
+                _alcovePrefab, _cheeseDropPrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
             nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
@@ -70,6 +71,10 @@ namespace CTC.Editor
             var spawner = lobbyGo.AddComponent<PlayerSpawner>();         // 스폰(Worker)
             SetRef(spawner, "m_CatPrefab", _catPrefab);
             SetRef(spawner, "m_MousePrefab", _mousePrefab);
+
+            // 벽감(Worker, v3.8) — 매치 시작에 맵이 벽을 깐다(요새·창고는 쥐가 산다)
+            var alcoveSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.AlcoveSpawner>();
+            SetRef(alcoveSpawner, "m_AlcovePrefab", _alcovePrefab);
 
             var mapDirector = lobbyGo.AddComponent<CTC.Runtime.Map.MapDirector>(); // 맵(Worker)
             // 로비에서 고를 맵 목록 — 요새자리·스폰 공식이 선택된 레이아웃을 읽는다

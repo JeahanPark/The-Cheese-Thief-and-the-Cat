@@ -75,10 +75,14 @@ namespace CTC.Runtime.Combat
                 // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
                 bool isPlayerTarget = target.NetworkObject.IsPlayerObject;
 
+                // 맵 지형물(벽감)은 쥐가 쓴 돈이 아니라 값을 치르지 않는다 — 안 그러면
+                // '벽 때리기가 최고 효율'이던 v3.5의 실패가 되살아난다(2026-08-09)
+                bool exempt = target.GetComponent<BountyExempt>() != null;
+
                 int dealt = target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
                 // 장난기 적립(v3.6): 플레이어 실피해 ×0.5 + 킬 보너스, 구조물은 ×0.25.
                 // 요새 1채 300pt는 벽 때리기를 최고 효율 수입원으로 만들었다.
-                if (myWallet != null)
+                if (myWallet != null && !exempt)
                 {
                     myWallet.AddCheese(FunLogic.AccruedFun(
                         dealt, target.IsDead && isPlayerTarget, !isPlayerTarget));

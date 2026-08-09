@@ -27,10 +27,21 @@ namespace CTC.Runtime.Economy
         // 수치 원본은 CSV(BalanceInfo.csv) — 2026-07-31 데이터 분리
         public static int TOTAL_MAP_CHEESE => Info.InfoManager.Instance.Balance.TotalMapCheese;
 
-        /// <summary>지점 하나가 가질 매장량. 7지점이면 700(기준 맵), 10지점이면 490.</summary>
-        public static int ReservePerSpot(int _spotCount)
+        /// <summary>
+        /// 지점 하나가 가질 매장량. 벽감이 없으면 7지점에 700(기준 맵), 10지점에 490.
+        ///
+        /// <paramref name="_alcoveCheeseTotal"/>은 벽감이 **총량에서 먼저 떼가는** 몫이다
+        /// (2026-08-09). 더하지 않고 빼는 이유: 총량을 지점 수로 나누는 이 구조가
+        /// 고갈 시점 = 성장 기한을 고정하는데, 벽 치즈를 얹으면 성장이 늘어져 후반 압축이 무너진다.
+        /// 인자를 기본값 없이 받는 건 호출부가 "벽 몫을 뺐는가"를 반드시 답하게 하려는 것이다.
+        /// </summary>
+        public static int ReservePerSpot(int _spotCount, int _alcoveCheeseTotal)
         {
-            return _spotCount <= 0 ? 0 : TOTAL_MAP_CHEESE / _spotCount;
+            if (_spotCount <= 0) return 0;
+
+            // 배치 실수로 벽이 총량보다 많이 가져가도 지점 매장량이 음수가 되면 안 된다
+            int forSpots = Mathf.Max(0, TOTAL_MAP_CHEESE - Mathf.Max(0, _alcoveCheeseTotal));
+            return forSpots / _spotCount;
         }
 
         /// <summary>마지막 부활 지점의 매장량 — 뒤처진 쥐의 만회 기회이자 후반 결전지.</summary>
@@ -49,9 +60,9 @@ namespace CTC.Runtime.Economy
         /// 맵 전체 매장량 — 지점 수와 무관하게 고정이다(나눗셈 나머지만큼만 줄어든다).
         /// 쥐 전원이 최종 테크까지 사고도 남을 만큼이어야 고갈이 '기한'으로 작동한다.
         /// </summary>
-        public static int TotalReserve(int _spotCount)
+        public static int TotalReserve(int _spotCount, int _alcoveCheeseTotal)
         {
-            return Mathf.Max(0, _spotCount) * ReservePerSpot(_spotCount);
+            return Mathf.Max(0, _spotCount) * ReservePerSpot(_spotCount, _alcoveCheeseTotal);
         }
 
         public static int IncomePerSecond(int _grade)

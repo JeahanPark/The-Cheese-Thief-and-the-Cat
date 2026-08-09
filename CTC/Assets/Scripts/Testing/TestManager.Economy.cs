@@ -97,6 +97,66 @@ namespace CTC.Runtime.Testing
             return total;
         }
 
+        // ===== 벽감 (v3.8, 2026-08-09) =====
+
+        /// <summary>QA: 지금 서 있는 벽감 수.</summary>
+        public int TestGetAlcoveCount()
+            => FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None).Length;
+
+        /// <summary>QA: 바닥에 뒹구는 치즈 덩이 수.</summary>
+        public int TestGetCheeseDropCount()
+            => FindObjectsByType<CheeseDrop>(FindObjectsSortMode.None).Length;
+
+        /// <summary>QA: 바닥 치즈 덩이의 합계 — 벽감이 품은 값이 온전히 나왔는지 본다.</summary>
+        public int TestGetCheeseDropTotal()
+        {
+            int total = 0;
+            foreach (var drop in FindObjectsByType<CheeseDrop>(FindObjectsSortMode.None))
+            {
+                total += drop.Amount;
+            }
+            return total;
+        }
+
+        /// <summary>
+        /// QA: 서버 전용 — 첫 벽감을 실제 피해로 부순다(직접 despawn이 아니라 `Health`를 때려
+        /// 파괴 경로를 그대로 태운다). 부순 자리를 "x,z"로 돌려준다. 없으면 빈 문자열.
+        /// </summary>
+        public string TestBreakFirstAlcove()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return "";
+
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                var health = alcove.GetComponent<Health>();
+                if (health == null || health.IsDead) continue;
+
+                Vector3 p = alcove.transform.position;
+                health.TakeDamage(health.MaxHp);
+                return $"{p.x:F2},{p.z:F2}";
+            }
+            return "";
+        }
+
+        /// <summary>QA: 첫 벽감을 한 대만 때린다 — 장난기가 붙는지 보려면 파괴하면 안 된다.</summary>
+        public int TestHitFirstAlcove(int _damage)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return -1;
+
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                var health = alcove.GetComponent<Health>();
+                if (health == null || health.IsDead) continue;
+                return health.TakeDamage(_damage);
+            }
+            return -1;
+        }
+
+        /// <summary>QA: 로컬 플레이어를 좌표로 옮겨 바닥 치즈를 줍게 한다(트리거 통과).</summary>
+        public int TestGetAlcoveCheesePerWall() => CTC.Runtime.Map.AlcoveLogic.CheesePerAlcove;
+
         /// <summary>QA: 서버 전용 — 모든 지점을 즉시 고갈시켜 후반 부활을 검증한다.</summary>
         public void TestDrainAllCheeseSpots()
         {

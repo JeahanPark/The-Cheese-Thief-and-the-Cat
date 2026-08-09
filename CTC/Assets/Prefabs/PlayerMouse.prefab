@@ -261,6 +261,10 @@ MonoBehaviour:
   m_FlashSeconds: 0.15
   m_FlashColor: {r: 1, g: 0.25, b: 0.25, a: 1}
   m_HitAnimSeconds: 0.4
+  m_OverrideSfx: 0
+  m_HitSfx: 8
+  m_BreakSfx: 9
+  m_SfxMaxDistance: 0
 --- !u!114 &3634663368589302921
 MonoBehaviour:
   m_ObjectHideFlags: 0

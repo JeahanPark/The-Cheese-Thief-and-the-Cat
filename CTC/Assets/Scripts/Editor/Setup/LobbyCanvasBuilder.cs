@@ -342,6 +342,8 @@ namespace CTC.Editor
                 // 고양이가 소리만 듣고 "쥐가 파밍 중"과 "창고가 돌고 있다"를 구별해야 한다.
                 LoadClip("Economy/sfx_warehouse_tick"),  // WarehouseTick
                 LoadClip("Economy/sfx_cheese_depleted"), // CheeseDepleted
+                LoadClip("Economy/sfx_alcove_hit"),      // AlcoveHit
+                LoadClip("Economy/sfx_alcove_break"),    // AlcoveBreak
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

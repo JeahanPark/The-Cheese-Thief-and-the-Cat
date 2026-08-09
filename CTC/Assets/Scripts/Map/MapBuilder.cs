@@ -269,7 +269,9 @@ namespace CTC.Runtime.Map
             var root = new GameObject("CheeseSpots");
             root.transform.SetParent(m_Root.transform, false);
 
-            int reserve = CheeseSpotLogic.ReservePerSpot(_layout.Cheese.Count);
+            // 벽감이 총량에서 먼저 떼간다 — 더하면 고갈이 늦어져 '성장 기한'이 무너진다(v3.8)
+            int reserve = CheeseSpotLogic.ReservePerSpot(
+                _layout.Cheese.Count, AlcoveLogic.TotalCheese(_layout.Alcoves.Count));
             foreach (CheesePlacement cp in _layout.Cheese)
             {
                 var spotGo = new GameObject($"CheeseSpot_G{cp.Grade}");

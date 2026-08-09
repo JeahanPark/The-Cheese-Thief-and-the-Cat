@@ -44,6 +44,14 @@ namespace CTC.Editor
 
         private const string WarehousePrefabPath = PrefabDir + "/CheeseWarehouse.prefab";
 
+        // 벽감(v3.8) — 맵이 처음부터 들고 있는 부술 수 있는 벽과 그 안의 치즈
+        private const string AlcovePrefabPath = PrefabDir + "/Alcove.prefab";
+
+        private const string CheeseDropPrefabPath = PrefabDir + "/CheeseDrop.prefab";
+
+        // 기본 맵의 벽감 수. 방 하나에 하나씩이라 방 수를 넘지 않는다.
+        private const int ALCOVES_PER_MAP = 3;
+
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
         // 로비에서 고를 수 있는 맵들 — 배열 순서가 곧 맵 인덱스다
@@ -127,6 +135,10 @@ namespace CTC.Editor
 
             GameObject fortressPrefab = CreateFortressPrefab();
 
+            // 벽감과 그 안의 치즈 — 부수는 행위가 v3.8 콘텐츠의 유일한 입구다
+            GameObject cheeseDropPrefab = CreateCheeseDropPrefab();
+            GameObject alcovePrefab = CreateAlcovePrefab(cheeseDropPrefab);
+
             // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
             GameObject warehousePrefab = CreateStructurePrefab(
                 "CheeseWarehouse", WarehousePrefabPath, PrimitiveType.Cube,
@@ -164,8 +176,16 @@ namespace CTC.Editor
                 // 고양이는 Default에 남아 미끼에 부딪힌다.
                 _layer: mouseLayer);
 
-            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab);
-            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 5종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
+            // 레이아웃마다 벽감 자리를 덧붙인다(지형은 그대로 — 시드를 흔들지 않는다)
+            foreach (string path in MapLayoutPaths)
+            {
+                PlanAlcovesInto(AssetDatabase.LoadAssetAtPath<MapLayout>(path), ALCOVES_PER_MAP);
+            }
+            AssetDatabase.SaveAssets();
+
+            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab,
+                alcovePrefab, cheeseDropPrefab);
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 7종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
         }
     }
 }

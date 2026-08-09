@@ -23,6 +23,8 @@ namespace CTC.Runtime.Map
         [SerializeField] private List<CorridorSeg> m_Corridors = new();
         [SerializeField] private List<CheesePlacement> m_Cheese = new();
         [SerializeField] private List<FortressPlacement> m_Fortresses = new();
+        // 벽감(v3.8) — 맵마다 개수가 다르고 크기·권장 인원과 같은 층의 값이라 CSV가 아니라 여기 있다
+        [SerializeField] private List<AlcovePlacement> m_Alcoves = new();
 
         public int Seed => m_Seed;
         public string Source => m_Source;
@@ -37,13 +39,25 @@ namespace CTC.Runtime.Map
         public IReadOnlyList<CorridorSeg> Corridors => m_Corridors;
         public IReadOnlyList<CheesePlacement> Cheese => m_Cheese;
         public IReadOnlyList<FortressPlacement> Fortresses => m_Fortresses;
+        public IReadOnlyList<AlcovePlacement> Alcoves => m_Alcoves;
+
+        /// <summary>
+        /// 벽감 자리만 덧쓴다(에디터 전용). 방·복도·치즈·요새는 그대로 둔다 —
+        /// 맵을 다시 생성하면 시드가 바뀌어 검증까지 끝난 지형이 통째로 달라지기 때문이다.
+        /// </summary>
+        public void SetAlcoves(List<AlcovePlacement> _alcoves)
+        {
+            m_Alcoves = _alcoves ?? new List<AlcovePlacement>();
+        }
 
         /// <summary>생성기/툴이 결과를 채울 때 사용(에디터 전용 경로).</summary>
         public void Set(int _seed, string _source, List<RoomRect> _rooms, List<CorridorSeg> _corridors,
             List<CheesePlacement> _cheese, List<FortressPlacement> _fortresses,
             float _halfExtent = 15f, string _displayName = "",
-            int _recommendedMiceMin = 2, int _recommendedMiceMax = 3)
+            int _recommendedMiceMin = 2, int _recommendedMiceMax = 3,
+            List<AlcovePlacement> _alcoves = null)
         {
+            m_Alcoves = _alcoves ?? new List<AlcovePlacement>();
             m_Seed = _seed;
             m_Source = _source;
             m_HalfExtent = _halfExtent;

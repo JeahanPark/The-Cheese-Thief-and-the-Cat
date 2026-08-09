@@ -42,6 +42,12 @@ namespace CTC.Runtime.Info
         public float MouseSensitivityDefault;
         public float BgmVolumeDefault;
         public float SfxVolumeDefault;
+        public int AlcoveHp;
+        public int AlcoveCheese;
+        public int AlcoveDropCount;
+        public float AlcoveDropScatterMeters;
+        public float AlcoveHitSoundMeters;
+        public float AlcoveBreakSoundMeters;
     }
 
     public partial class InfoManager

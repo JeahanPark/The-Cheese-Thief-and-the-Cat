@@ -73,7 +73,11 @@ namespace CTC.Runtime.Map
             if (m_MapBuilder == null || ActiveLayout == null) return;
 
             m_MapBuilder.Build(ActiveLayout);
-            if (m_CheeseDirector != null) m_CheeseDirector.Rebind(m_MapBuilder.Spots);
+            if (m_CheeseDirector != null)
+            {
+                m_CheeseDirector.Rebind(
+                    m_MapBuilder.Spots, AlcoveLogic.TotalCheese(ActiveLayout.Alcoves.Count));
+            }
         }
     }
 }

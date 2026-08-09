@@ -80,7 +80,7 @@ namespace CTC.Tests
         {
             // 균일 매장량의 목적 — 좋은 자리부터 마르며 플레이어를 나쁜 자리로 밀어낸다.
             // 등급 비례로 주면 전부 동시에 말라 압축이 생기지 않는다.
-            int reserve = CheeseSpotLogic.ReservePerSpot(7);
+            int reserve = CheeseSpotLogic.ReservePerSpot(7, 0);
             float highSeconds = reserve / (float)CheeseSpotLogic.MAX_GRADE;
             float lowSeconds = reserve / (float)CheeseSpotLogic.MIN_GRADE;
             Assert.Less(highSeconds, lowSeconds);
@@ -92,17 +92,17 @@ namespace CTC.Tests
         {
             // 맵이 넓어져 지점이 늘어도 총량이 유지돼야 고갈 시점이 그대로다.
             // (지점당 700 고정이면 10지점에서 7000이 되어 고갈이 오지 않는다)
-            Assert.AreEqual(700, CheeseSpotLogic.ReservePerSpot(7));
-            Assert.AreEqual(490, CheeseSpotLogic.ReservePerSpot(10));
-            Assert.AreEqual(CheeseSpotLogic.TOTAL_MAP_CHEESE, CheeseSpotLogic.TotalReserve(7));
-            Assert.AreEqual(CheeseSpotLogic.TOTAL_MAP_CHEESE, CheeseSpotLogic.TotalReserve(10));
+            Assert.AreEqual(700, CheeseSpotLogic.ReservePerSpot(7, 0));
+            Assert.AreEqual(490, CheeseSpotLogic.ReservePerSpot(10, 0));
+            Assert.AreEqual(CheeseSpotLogic.TOTAL_MAP_CHEESE, CheeseSpotLogic.TotalReserve(7, 0));
+            Assert.AreEqual(CheeseSpotLogic.TOTAL_MAP_CHEESE, CheeseSpotLogic.TotalReserve(10, 0));
         }
 
         [Test]
         public void ReservePerSpot_ZeroSpotsIsSafe()
         {
-            Assert.AreEqual(0, CheeseSpotLogic.ReservePerSpot(0));
-            Assert.AreEqual(0, CheeseSpotLogic.TotalReserve(0));
+            Assert.AreEqual(0, CheeseSpotLogic.ReservePerSpot(0, 0));
+            Assert.AreEqual(0, CheeseSpotLogic.TotalReserve(0, 0));
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace CTC.Tests
             // 쥐 1마리 최종 빌드 = 기관총 600 + 요새 220 + 창고 150 = 970.
             // 맵 총량이 4마리분(3880)보다 넉넉해야 고갈이 '굶기기'가 아니라 '기한'이 된다.
             const int FULL_BUILD_PER_MOUSE = 600 + 220 + 150;
-            int total = CheeseSpotLogic.TotalReserve(7);
+            int total = CheeseSpotLogic.TotalReserve(7, 0);
             Assert.GreaterOrEqual(total, FULL_BUILD_PER_MOUSE * 4);
         }
 
@@ -119,7 +119,7 @@ namespace CTC.Tests
         public void LastStand_IsSmallerThanNormalSpot()
         {
             // 부활 지점은 만회 기회지 두 번째 성장 구간이 아니다
-            Assert.Less(CheeseSpotLogic.LAST_STAND_RESERVE, CheeseSpotLogic.ReservePerSpot(7));
+            Assert.Less(CheeseSpotLogic.LAST_STAND_RESERVE, CheeseSpotLogic.ReservePerSpot(7, 0));
         }
 
         [Test]

@@ -90,7 +90,10 @@
 - **세션 양도**: MCP 자체 수정이 불가피할 경우, `/rename`으로 세션 이름을 붙이고 사용자에게 재빌드 후 `/resume`으로 복귀하도록 안내한다.
 - **서브에이전트**: 워크플로우 사이클은 순차 실행. 개발 단계 내 독립적인 코드 작업이 여러 개일 때만 서브에이전트를 사용한다.
 - **wesqa E2E 도구 — 이식 완료, 실사용 중**(2026-07-12 `e8fa264`). C# 인게임 서버 `Assets/WesQA/`(플레이 진입 시 포트 `5001+MPPM인덱스`로 기동) + Python 클라이언트 `tools/wesqa/`.
-  - MPPM 3인 실플레이 QA 14항목: `python tools/wesqa/tests/qa_v36.py`. **MonoBehaviour를 재배치했으면 이걸 돌려야 한다** — EditMode는 순수 로직만 덮는다.
+  - MPPM 3인 실플레이 QA: `qa_v36.py`(14항목·호스트=고양이) · `qa_v37.py`(24항목·호스트=쥐) · `qa_v38.py`(벽감·호스트=고양이).
+    **MonoBehaviour를 재배치했으면 이걸 돌려야 한다** — EditMode는 순수 로직만 덮는다.
+  - **Model 값만 보는 QA는 배선 누락을 못 잡는다**(2026-08-09 실측: 볼륨 설정은 바뀌는데 소리는 그대로였다).
+    들리는 소리는 `TestGetAudioVolume`으로 **실제 `AudioSource.volume`**을, 보이는 것은 실제 오브젝트 수를 센다.
   - 진입점은 `TestManager` 하나다. wesqa가 `Instance.<method>` 리플렉션으로 부르므로 **타입을 쪼개거나 Editor 전용 어셈블리로 옮기면 안 된다**(실측으로 QA 전멸).
 
 ---

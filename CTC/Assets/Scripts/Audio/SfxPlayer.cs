@@ -29,6 +29,10 @@ namespace CTC.Runtime.Audio
         TimerWarn = 21,
         WarehouseTick = 22,
         CheeseDepleted = 23,
+        // 벽감(v3.8) — 요새 소리를 재사용하지 않는 이유: 쥐에게 요새 파괴음은 "도망"이고
+        // 벽감 파괴음은 "달려와"라 정반대 행동을 요구한다. 소리가 정보인 게임이라 겹치면 안 된다.
+        AlcoveHit = 24,
+        AlcoveBreak = 25,
     }
 
     /// <summary>

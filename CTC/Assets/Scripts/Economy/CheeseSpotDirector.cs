@@ -39,6 +39,10 @@ namespace CTC.Runtime.Economy
 
         private NetworkList<CheeseSpotState> m_States;
         private readonly List<CheeseSpot> m_Spots = new List<CheeseSpot>();
+
+        // 벽감이 총량에서 먼저 떼간 몫 — 지점은 남은 것만 나눠 갖는다(v3.8).
+        // 맵마다 벽감 수가 달라 레이아웃에서 온다.
+        private int m_AlcoveCheeseTotal;
         private bool m_WasStarted;
         private bool m_RevivedThisMatch;
         private float m_Timer;
@@ -67,10 +71,11 @@ namespace CTC.Runtime.Economy
         /// MapBuilder가 맵을 새로 지은 뒤 호출한다. 서버는 목록 길이를 지점 수에 맞추고,
         /// 클라는 이미 복제된 상태를 새 지점들에 즉시 반영한다.
         /// </summary>
-        public void Rebind(IReadOnlyList<CheeseSpot> _spots)
+        public void Rebind(IReadOnlyList<CheeseSpot> _spots, int _alcoveCheeseTotal)
         {
             m_Spots.Clear();
             m_Spots.AddRange(_spots);
+            m_AlcoveCheeseTotal = _alcoveCheeseTotal;
 
             if (IsServer && IsSpawned) ResetAll();
             else PushAllToSpots();
@@ -143,7 +148,7 @@ namespace CTC.Runtime.Economy
         private void ResetAll()
         {
             m_RevivedThisMatch = false;
-            int reserve = CheeseSpotLogic.ReservePerSpot(m_Spots.Count);
+            int reserve = CheeseSpotLogic.ReservePerSpot(m_Spots.Count, m_AlcoveCheeseTotal);
             EnsureStateCount();
             for (int i = 0; i < m_Spots.Count; i++)
             {

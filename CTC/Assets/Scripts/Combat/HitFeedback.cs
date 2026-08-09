@@ -18,6 +18,13 @@ namespace CTC.Runtime.Combat
         [SerializeField] private Color m_FlashColor = new Color(1f, 0.25f, 0.25f);
         [SerializeField] private float m_HitAnimSeconds = 0.4f;
 
+        // 소리를 대상 타입으로 고르는 게 기본이지만, 벽감처럼 "요새로 들리면 안 되는" 것이 있다.
+        // 쥐에게 요새 파괴음은 도망 신호이고 벽감 파괴음은 달려오라는 신호라 정반대다(2026-08-09).
+        [SerializeField] private bool m_OverrideSfx;
+        [SerializeField] private Audio.SfxId m_HitSfx = Audio.SfxId.FortressHit;
+        [SerializeField] private Audio.SfxId m_BreakSfx = Audio.SfxId.FortressBreak;
+        [SerializeField] private float m_SfxMaxDistance;   // 0이면 SfxPlayer 기본값
+
         private Health m_Health;
         private Renderer[] m_Renderers;
         private MaterialPropertyBlock m_Block;
@@ -57,17 +64,15 @@ namespace CTC.Runtime.Combat
             // 사망/파괴 — despawn과 무관하게 소리가 남도록 SfxPlayer가 독립 GO로 재생
             if (_current <= 0)
             {
-                Audio.SfxPlayer.PlayAt(
-                    !isPlayer ? Audio.SfxId.FortressBreak
-                    : isCat ? Audio.SfxId.CatDeath : Audio.SfxId.MouseDeath,
-                    transform.position);
+                PlaySfx(m_OverrideSfx ? m_BreakSfx
+                    : !isPlayer ? Audio.SfxId.FortressBreak
+                    : isCat ? Audio.SfxId.CatDeath : Audio.SfxId.MouseDeath);
                 return;
             }
 
-            Audio.SfxPlayer.PlayAt(
-                !isPlayer ? Audio.SfxId.FortressHit
-                : isCat ? Audio.SfxId.CatHurt : Audio.SfxId.MouseHurt,
-                transform.position);
+            PlaySfx(m_OverrideSfx ? m_HitSfx
+                : !isPlayer ? Audio.SfxId.FortressHit
+                : isCat ? Audio.SfxId.CatHurt : Audio.SfxId.MouseHurt);
 
             var driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)
@@ -76,6 +81,13 @@ namespace CTC.Runtime.Combat
             }
 
             RestartFlash();
+        }
+
+        // 들리는 거리는 정보 설계다 — 벽감처럼 "멀리서도 들려야" 하는 것은 사거리를 따로 준다
+        private void PlaySfx(Audio.SfxId _id)
+        {
+            if (m_SfxMaxDistance > 0f) Audio.SfxPlayer.PlayAt(_id, transform.position, 1f, m_SfxMaxDistance);
+            else Audio.SfxPlayer.PlayAt(_id, transform.position);
         }
 
         // 연타로 맞으면 이전 플래시를 끊고 다시 시작한다(코루틴 StopCoroutine과 같은 의미).
