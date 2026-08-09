@@ -137,3 +137,6 @@ MonoBehaviour:
   - Pos: {x: -17.5, y: 0.7}
     YawDeg: 0
     Payload: 0
+  m_Jails:
+  - Pos: {x: -14.7, y: -14.7}
+  - Pos: {x: 14.7, y: 16.8}

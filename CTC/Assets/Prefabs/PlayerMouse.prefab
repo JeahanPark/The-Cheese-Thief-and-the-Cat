@@ -25,6 +25,7 @@ GameObject:
   - component: {fileID: 3194180182503786071}
   - component: {fileID: 2258780326856655791}
   - component: {fileID: 1160264544264784013}
+  - component: {fileID: 4175062087917428992}
   - component: {fileID: 2977953179673282696}
   - component: {fileID: 316232477143233120}
   - component: {fileID: 6539816911504078304}
@@ -332,6 +333,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fe67915f9f70784f96776687ecdd430, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.FarmingSfx
+--- !u!114 &4175062087917428992
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52f5a56463955274db9a74fd6fc880a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.JailedTag
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!82 &2977953179673282696
 AudioSource:
   m_ObjectHideFlags: 0

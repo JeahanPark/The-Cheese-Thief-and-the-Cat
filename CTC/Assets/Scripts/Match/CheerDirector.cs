@@ -46,18 +46,51 @@ namespace CTC.Runtime.Match
         public void DevCheer(ulong _targetClientId) => CheerRpc(_targetClientId);
 
 
-        // 살아 있으면(로컬 플레이어 오브젝트가 있으면) 따봉을 보낼 수 없다 — 관전자 전용 행동.
+        // 보낼 자격: 관전자(영구 탈락) 또는 **갇힌 쥐**(v3.8).
+        // 감옥이 생기면서 "할 게 없는 사람"이 관전자에서 수감자로 옮겨 갔다 —
+        // 따봉이 겨냥하던 그 자리라, 대상도 같이 옮긴다.
         private ulong SpectatedClientId()
         {
             NetworkManager nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return ulong.MaxValue;
-            if (nm.SpawnManager.GetLocalPlayerObject() != null) return ulong.MaxValue;
+
+            NetworkObject local = nm.SpawnManager.GetLocalPlayerObject();
+            if (local != null)
+            {
+                // 갇힌 쥐는 자기 몸이 살아 있으므로, 응원 대상은 스스로 고르지 못한다 —
+                // 가장 가까운 자유로운 쥐(구하러 오는 사람)에게 보낸다.
+                var jailed = local.GetComponent<JailedTag>();
+                if (jailed == null || !jailed.Jailed) return ulong.MaxValue;
+                return NearestFreeMouseClientId(local.transform.position);
+            }
 
             Transform current = m_Spectator != null ? m_Spectator.Current : null;
             if (current == null) return ulong.MaxValue;
 
             var netObj = current.GetComponent<NetworkObject>();
             return netObj != null ? netObj.OwnerClientId : ulong.MaxValue;
+        }
+
+        // 갇힌 쥐가 볼 수 있는 건 감옥 주변뿐이라, 가장 가까운 자유로운 쥐를 응원 대상으로 잡는다.
+        private static ulong NearestFreeMouseClientId(Vector3 _from)
+        {
+            ulong best = ulong.MaxValue;
+            float bestSqr = float.MaxValue;
+            foreach (RoleTag tag in FindObjectsByType<RoleTag>(FindObjectsSortMode.None))
+            {
+                if (tag.Role != RoleId.Mouse) continue;
+                var no = tag.GetComponent<NetworkObject>();
+                if (no == null || !no.IsSpawned || !no.IsPlayerObject) continue;
+
+                var jailed = tag.GetComponent<JailedTag>();
+                if (jailed != null && jailed.Jailed) continue;
+
+                float sqr = (tag.transform.position - _from).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                bestSqr = sqr;
+                best = no.OwnerClientId;
+            }
+            return best;
         }
 
         [Rpc(SendTo.Server)]
@@ -67,8 +100,13 @@ namespace CTC.Runtime.Match
             double now = NetworkManager.ServerTime.Time;
             if (m_NextAllowed.TryGetValue(sender, out double next) && now < next) return;
 
-            // 살아 있는 플레이어의 따봉은 무시 — 관전자만의 행동이다
-            if (NetworkManager.SpawnManager.GetPlayerNetworkObject(sender) != null) return;
+            // 살아 있고 갇히지도 않았으면 무시 — 자유로운 사람의 행동이 아니다
+            NetworkObject senderObj = NetworkManager.SpawnManager.GetPlayerNetworkObject(sender);
+            if (senderObj != null)
+            {
+                var senderJail = senderObj.GetComponent<JailedTag>();
+                if (senderJail == null || !senderJail.Jailed) return;
+            }
 
             NetworkObject target = NetworkManager.SpawnManager.GetPlayerNetworkObject(_targetClientId);
             if (target == null) return;

@@ -379,6 +379,7 @@ namespace CTC.Editor
 
             BuildOptionsPopup(canvasGo, escRouter);
             BuildChatHud(canvasGo, escRouter);
+            BuildJailHud(canvasGo);
 
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
@@ -490,6 +491,18 @@ namespace CTC.Editor
 
         // ===== 채팅 (2026-08-01 건의) =====
         // 좌측 중단이 비어 있다 — 좌하단은 ControlsHud·MapInfoHud, 하단 중앙은 ShopHotbar가 쓴다.
+        // 갇힌 본인의 카운트다운. 화면 위쪽 가운데 — 갇힌 동안은 이게 유일한 정보다.
+        private static void BuildJailHud(GameObject _canvasGo)
+        {
+            TMP_Text text = CreateTmpText("JailText", _canvasGo.transform, "",
+                30f, TextAlignmentOptions.Center, new Vector2(0f, -120f), new Vector2(760f, 90f));
+            text.fontStyle = FontStyles.Bold;
+            text.gameObject.SetActive(false);
+
+            var hud = _canvasGo.AddComponent<CTC.Runtime.UI.JailHud>();
+            SetRef(hud, "m_Text", text);
+        }
+
         private static void BuildChatHud(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)
         {
             var root = new GameObject("ChatRoot", typeof(RectTransform));

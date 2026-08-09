@@ -145,15 +145,18 @@ def main():
         face_and_pounce(cat, sx + 8.0, sz, sx + 6.9, sz)
         time.sleep(2.2)
     time.sleep(1.0)
-    dead = m2.invoke("TestGetLocalClientId") >= 0 and m2.invoke("TestGetLocalY") == -999.0
-    check("쥐 탈락(관전 전환)", dead, "로컬 플레이어 despawn=%s" % dead)
+    # v3.8: 잡히면 죽지 않고 갇힌다. 예전엔 여기서 despawn되어 관전으로 넘어갔다 —
+    # "3분에 죽으면 남은 7분을 관전만" 문제를 감옥이 대체했다.
+    jailed = m2.invoke("TestGetJailed")
+    check("쥐가 잡히면 갇힌다(탈락 아님)", jailed, "jailed=%s" % jailed)
 
-    if dead:
+    if jailed:
+        # 따봉도 관전자에서 수감자로 옮겨 갔다 — 갇힌 쥐가 구하러 오는 동료를 응원한다
         m2.invoke("TestCheer", _targetClientId=m1_id)
         time.sleep(1.0)
         on_mouse = m1.invoke("TestGetCheerMarkerCount")
         on_cat = cat.invoke("TestGetCheerMarkerCount")
-        check("따봉 — 살아있는 쥐에게 보임", on_mouse >= 1, "마커 %s개" % on_mouse)
+        check("따봉 — 갇힌 쥐가 자유로운 쥐에게 보낸다", on_mouse >= 1, "마커 %s개" % on_mouse)
         check("따봉 — 고양이에겐 안 보임", on_cat == 0, "마커 %s개" % on_cat)
 
     # ---------- 9. 카메라 거리 상수(충돌 제거) ----------

@@ -48,6 +48,12 @@ namespace CTC.Runtime.Info
         public float AlcoveDropScatterMeters;
         public float AlcoveHitSoundMeters;
         public float AlcoveBreakSoundMeters;
+        public float JailHoldSeconds;
+        public float JailRescueSeconds;
+        public float JailRescueRadius;
+        public float JailReleaseHpRatio;
+        public int JailCatchFun;
+        public int JailEliminateFun;
     }
 
     public partial class InfoManager

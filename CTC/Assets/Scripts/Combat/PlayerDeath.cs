@@ -34,7 +34,13 @@ namespace CTC.Runtime.Combat
                 return;
             }
 
-            Debug.Log($"[PlayerDeath] 쥐({OwnerClientId}) 탈락 — despawn");
+            // v3.8: 쥐는 죽지 않고 갇힌다 — 3분에 죽으면 남은 7분을 관전만 하던 문제.
+            // 진짜 탈락은 감옥 체류가 만료될 때뿐이고, 그건 JailDirector가 처리한다.
+            var jail = FindFirstObjectByType<Match.JailDirector>();
+            if (jail != null && jail.ServerJail(NetworkObject)) return;
+
+            // 감옥이 없는 맵(구 레이아웃)에서는 예전대로 탈락한다
+            Debug.Log($"[PlayerDeath] 쥐({OwnerClientId}) 탈락 — 감옥 없음, despawn");
             NetworkObject.Despawn(true);
         }
     }

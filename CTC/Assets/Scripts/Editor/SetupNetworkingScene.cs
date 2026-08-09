@@ -52,6 +52,9 @@ namespace CTC.Editor
         // 기본 맵의 벽감 수. 방 하나에 하나씩이라 방 수를 넘지 않는다.
         private const int ALCOVES_PER_MAP = 3;
 
+        // 감옥 수(v3.8 4번). 하나면 고양이가 그 앞에 서 있는 게 최적해가 된다.
+        private const int JAILS_PER_MAP = 2;
+
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
         // 로비에서 고를 수 있는 맵들 — 배열 순서가 곧 맵 인덱스다
@@ -179,7 +182,9 @@ namespace CTC.Editor
             // 레이아웃마다 벽감 자리를 덧붙인다(지형은 그대로 — 시드를 흔들지 않는다)
             foreach (string path in MapLayoutPaths)
             {
-                PlanAlcovesInto(AssetDatabase.LoadAssetAtPath<MapLayout>(path), ALCOVES_PER_MAP);
+                MapLayout layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
+                PlanAlcovesInto(layout, ALCOVES_PER_MAP);
+                PlanJailsInto(layout, JAILS_PER_MAP);
             }
             AssetDatabase.SaveAssets();
 

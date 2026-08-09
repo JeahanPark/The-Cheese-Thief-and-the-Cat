@@ -56,6 +56,16 @@ namespace CTC.Runtime.Map
         public AlcovePayload Payload;
     }
 
+    /// <summary>
+    /// 쥐 감옥 자리 (v3.8). 여러 곳인 이유: 한 곳이면 고양이가 그 앞에 서 있는 게 최적해가 된다.
+    /// 잡힌 쥐는 가장 가까운 곳으로 가므로 "어디서 사냥했나"가 "어느 감옥이 붐비나"로 번역된다.
+    /// </summary>
+    [System.Serializable]
+    public struct JailPlacement
+    {
+        public Vector2 Pos;
+    }
+
     /// <summary>미로 프리셋 — 세그먼트 묶음 + 배타 방 id(같은 영역이면 둘 중 하나만).</summary>
     [System.Serializable]
     public struct MazePreset

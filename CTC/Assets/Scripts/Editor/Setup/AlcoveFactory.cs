@@ -164,6 +164,63 @@ namespace CTC.Editor
             return false;
         }
 
+        /// <summary>
+        /// 감옥 자리를 레이아웃에 덧쓴다. 서로 **가장 먼** 방 두 곳의 중심을 고른다 —
+        /// 붙어 있으면 고양이가 둘 다 지킬 수 있어 "어디를 지킬 것인가"라는 판단이 사라진다.
+        /// </summary>
+        private static void PlanJailsInto(MapLayout _layout, int _count)
+        {
+            if (_layout == null || _count <= 0 || _layout.Rooms.Count == 0) return;
+
+            var centers = new List<Vector2>();
+            foreach (RoomRect r in _layout.Rooms) centers.Add(r.Center);
+
+            // 가장 먼 두 방을 먼저 잡고, 더 필요하면 "이미 고른 것들에서 가장 먼" 방을 계속 더한다
+            var chosen = new List<int>();
+            if (_count >= 2)
+            {
+                float best = -1f;
+                int a = 0, b = 0;
+                for (int i = 0; i < centers.Count; i++)
+                {
+                    for (int j = i + 1; j < centers.Count; j++)
+                    {
+                        float d = Vector2.Distance(centers[i], centers[j]);
+                        if (d <= best) continue;
+                        best = d; a = i; b = j;
+                    }
+                }
+                chosen.Add(a);
+                if (b != a) chosen.Add(b);
+            }
+            else
+            {
+                chosen.Add(0);
+            }
+
+            while (chosen.Count < _count && chosen.Count < centers.Count)
+            {
+                int farthest = -1;
+                float bestMin = -1f;
+                for (int i = 0; i < centers.Count; i++)
+                {
+                    if (chosen.Contains(i)) continue;
+                    float nearest = float.MaxValue;
+                    foreach (int c in chosen) nearest = Mathf.Min(nearest, Vector2.Distance(centers[i], centers[c]));
+                    if (nearest <= bestMin) continue;
+                    bestMin = nearest; farthest = i;
+                }
+                if (farthest < 0) break;
+                chosen.Add(farthest);
+            }
+
+            var placed = new List<JailPlacement>();
+            foreach (int i in chosen) placed.Add(new JailPlacement { Pos = centers[i] });
+
+            _layout.SetJails(placed);
+            EditorUtility.SetDirty(_layout);
+        }
+
         private static bool IsClearOfCheese(Vector2 _pos, MapLayout _layout)
         {
             foreach (CheesePlacement cp in _layout.Cheese)

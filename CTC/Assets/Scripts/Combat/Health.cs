@@ -53,6 +53,17 @@ namespace CTC.Runtime.Combat
             return dealt;
         }
 
+        /// <summary>
+        /// 서버 전용 — HP를 직접 세운다. **죽은 대상도 되살린다**(감옥 수감·석방, v3.8).
+        /// <see cref="Heal"/>과 나눈 이유: 회복은 "죽으면 끝"이라는 규칙을 지켜야 하는데,
+        /// 감옥은 그 규칙의 예외라서다. 예외를 Heal에 섞으면 요새 회복이 시체를 일으킨다.
+        /// </summary>
+        public void ServerSetHp(int _hp)
+        {
+            if (!IsServer) return;
+            m_Hp.Value = UnityEngine.Mathf.Clamp(_hp, 0, m_MaxHp);
+        }
+
         /// <summary>서버 전용 회복(요새 거점). 죽은 대상은 회복 불가 — 부활 없음(원작 동일).</summary>
         public void Heal(int _amount)
         {
