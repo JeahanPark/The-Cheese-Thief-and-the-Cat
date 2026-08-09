@@ -1,4 +1,5 @@
 using CTC.Runtime.Combat;
+using CTC.Runtime.Lobby;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -71,5 +72,30 @@ namespace CTC.Tests
             Assert.IsTrue(CombatLogic.IsInPounceArc(
                 Vector3.zero, Vector3.forward, new Vector3(0f, 0.8f, 1f), 2.2f, 60f));
         }
-    }
+    
+        // ---- 교전 대상 (v3.8 5번 제3세력) ----
+
+        [Test]
+        public void CanAttack_HitsOpposingSide()
+        {
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.Mouse));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Cat));
+        }
+
+        [Test]
+        public void CanAttack_NeverHitsOwnSide()
+        {
+            // 쥐가 쥐를, 고양이가 고양이를 때리면 안 된다. 요새·미끼는 RoleId.Mouse라 여기 걸린다.
+            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Mouse));
+            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Cat, RoleId.Cat));
+        }
+
+        [Test]
+        public void CanAttack_BothSidesCanHitThirdFaction()
+        {
+            // 이게 없으면 강아지를 아무도 못 죽인다 — 실제로 그렇게 만들어 놓고 qa_v40이 잡았다.
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.None));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.None));
+        }
+}
 }

@@ -49,6 +49,9 @@ namespace CTC.Editor
 
         private const string CheeseDropPrefabPath = PrefabDir + "/CheeseDrop.prefab";
 
+        // 제3세력 강아지(v3.8 5번) — 벽감에서만 나온다
+        private const string DogPrefabPath = PrefabDir + "/Dog.prefab";
+
         // 기본 맵의 벽감 수. 방 하나에 하나씩이라 방 수를 넘지 않는다.
         private const int ALCOVES_PER_MAP = 3;
 
@@ -140,7 +143,8 @@ namespace CTC.Editor
 
             // 벽감과 그 안의 치즈 — 부수는 행위가 v3.8 콘텐츠의 유일한 입구다
             GameObject cheeseDropPrefab = CreateCheeseDropPrefab();
-            GameObject alcovePrefab = CreateAlcovePrefab(cheeseDropPrefab);
+            GameObject dogPrefab = CreateDogPrefab();
+            GameObject alcovePrefab = CreateAlcovePrefab(cheeseDropPrefab, dogPrefab);
 
             // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
             GameObject warehousePrefab = CreateStructurePrefab(
@@ -189,8 +193,8 @@ namespace CTC.Editor
             AssetDatabase.SaveAssets();
 
             CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab,
-                alcovePrefab, cheeseDropPrefab);
-            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 7종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
+                alcovePrefab, cheeseDropPrefab, dogPrefab);
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 8종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
         }
     }
 }

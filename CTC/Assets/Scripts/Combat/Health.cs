@@ -64,6 +64,19 @@ namespace CTC.Runtime.Combat
             m_Hp.Value = UnityEngine.Mathf.Clamp(_hp, 0, m_MaxHp);
         }
 
+        /// <summary>
+        /// 서버 전용 — 최대 HP를 바꾼다. **스폰 전에 부른다**: `OnNetworkSpawn`이 현재 HP를
+        /// 최대치로 채우므로 그전에 세워 두면 그대로 시작한다.
+        /// 같은 프리팹을 다른 단단함으로 쓰는 곳이 근거다(치즈 벽감 vs 강아지 벽감, v3.8 5번).
+        /// </summary>
+        public void ServerSetMaxHp(int _maxHp)
+        {
+            if (_maxHp <= 0) return;
+
+            m_MaxHp = _maxHp;
+            if (IsSpawned && IsServer) m_Hp.Value = UnityEngine.Mathf.Clamp(m_Hp.Value, 0, m_MaxHp);
+        }
+
         /// <summary>서버 전용 회복(요새 거점). 죽은 대상은 회복 불가 — 부활 없음(원작 동일).</summary>
         public void Heal(int _amount)
         {

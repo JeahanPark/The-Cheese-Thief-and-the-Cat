@@ -27,7 +27,8 @@ namespace CTC.Editor
     {
         private static void CreateGameScene(
             GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab, GameObject _decoyPrefab,
-            GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab)
+            GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab,
+            GameObject _dogPrefab)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -51,7 +52,7 @@ namespace CTC.Editor
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab,
-                _alcovePrefab, _cheeseDropPrefab);
+                _alcovePrefab, _cheeseDropPrefab, _dogPrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
             nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();

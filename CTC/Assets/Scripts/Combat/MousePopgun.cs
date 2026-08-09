@@ -49,8 +49,9 @@ namespace CTC.Runtime.Combat
             float best = float.MaxValue;
             foreach (Health h in FindObjectsByType<Health>(FindObjectsSortMode.None))
             {
+                // 고양이 + 제3세력(강아지). 제 진영(쥐·구조물)은 안 쏜다.
                 RoleTag tag = h.GetComponent<RoleTag>();
-                if (tag == null || tag.Role != RoleId.Cat || h.IsDead) continue;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role) || h.IsDead) continue;
 
                 float d = (h.transform.position - transform.position).sqrMagnitude;
                 if (d < best) { best = d; nearest = h; }
@@ -97,7 +98,7 @@ namespace CTC.Runtime.Combat
                 end = hit.point;
 
                 RoleTag tag = target.GetComponent<RoleTag>();
-                if (tag == null || tag.Role != RoleId.Cat) break; // 쥐 등 비대상이 막음
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role)) break; // 쥐 등 비대상이 막음
 
                 target.TakeDamage(stats.Damage);
                 break;

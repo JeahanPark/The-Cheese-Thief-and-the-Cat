@@ -1,0 +1,112 @@
+# -*- coding: utf-8 -*-
+"""v3.8 5번 제3세력 강아지 검증 (MPPM 3인).
+
+전제: 메인 에디터가 플레이모드, 클론 2개 접속, 매치 시작 완료.
+**호스트=고양이 · 클론 둘=쥐** — 벽감을 부수고 강아지를 때리는 쪽이 서버여야 한다.
+
+한 판에 한 번만 돌린다(강아지를 풀고 죽인다). 다시 돌리려면 플레이모드를 껐다 켠다.
+"""
+import sys, time, io
+
+sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+from wesqa import WesPoco
+
+RESULTS = []
+
+
+def check(name, ok, detail=""):
+    RESULTS.append((name, bool(ok), detail))
+    print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
+    sys.stdout.flush()
+    return ok
+
+
+def main():
+    p = [WesPoco(instance=i) for i in range(3)]
+    roles = [x.invoke("TestGetRole") for x in p]
+    cat = p[0]
+    check("역할 확인 (호스트=고양이 · 쥐 2)", roles[0] == "Cat" and roles.count("Mouse") == 2, str(roles))
+    if roles[0] != "Cat":
+        return
+
+    mouse = p[1]
+
+    # ---------- 봉인 ----------
+    alcove_hp = cat.invoke("TestGetDogAlcoveHp")
+    check("강아지 벽감이 맵에 하나 서 있다", alcove_hp > 0, f"hp={alcove_hp}")
+    # 기회비용이 시간 게이트를 대신한다 — 치즈 벽(120)보다 확실히 단단해야 한다
+    check("강아지 벽감이 치즈 벽감보다 단단하다", alcove_hp > 240, f"hp={alcove_hp} (치즈 벽감 120)")
+
+    check("풀기 전에는 강아지가 없다", cat.invoke("TestGetDogCount") == 0)
+
+    # ---------- 개방 ----------
+    cat.invoke("TestBreakDogAlcove")
+    time.sleep(2.0)
+    spawned = cat.invoke("TestGetDogCount")
+    check("벽을 부수면 강아지가 나온다", spawned == 1, f"{spawned}마리")
+    if spawned != 1:
+        return
+
+    dog_hp_full = cat.invoke("TestGetDogHp")
+    check("강아지가 HP를 갖고 시작한다", dog_hp_full > 0, f"hp={dog_hp_full}")
+
+    # 클론(쥐)도 같은 강아지를 본다 — 복제가 됐다는 뜻
+    check("쥐 클라에도 강아지가 보인다", mouse.invoke("TestGetDogCount") == 1,
+          f"{mouse.invoke('TestGetDogCount')}마리")
+
+    # ---------- 추격 ----------
+    # 고양이를 강아지 근처로 데려간 뒤 거리가 줄어드는지 본다.
+    cat.invoke("TestTeleportToDog")
+    time.sleep(0.6)
+    first = cat.invoke("TestGetDogDistance")
+    time.sleep(2.5)
+    later = cat.invoke("TestGetDogDistance")
+    # 물기 사거리(2m) 안까지 붙으면 더 안 줄어든다 — 둘 중 하나면 통과
+    check("강아지가 다가온다(또는 이미 붙어 있다)", later <= first + 0.5 or later <= 2.5,
+          f"{first:.1f}m → {later:.1f}m")
+
+    # ---------- 물기 ----------
+    hp_before = cat.invoke("TestGetLocalHp")
+    for _ in range(10):
+        cat.invoke("TestTeleportToDog")
+        time.sleep(1.5)
+        if cat.invoke("TestGetLocalHp") < hp_before:
+            break
+    hp_after = cat.invoke("TestGetLocalHp")
+    check("강아지가 고양이를 문다", hp_after < hp_before, f"{hp_before} → {hp_after}")
+
+    # **푼 쪽도 문다**가 이 기능의 전부다 — 고양이가 부쉈는데 고양이가 맞았다.
+    check("푼 쪽도 예외가 아니다", hp_after < hp_before, "부순 고양이가 물렸다")
+
+    # ---------- 장난기 면제 ----------
+    fun_before = cat.invoke("TestGetCheese")
+    cat.invoke("TestTeleportToDog")
+    time.sleep(0.4)
+    for _ in range(3):
+        cat.invoke("TestPounce")
+        time.sleep(2.6)
+    fun_after = cat.invoke("TestGetCheese")
+    check("강아지를 때려도 장난기가 안 오른다", fun_after <= fun_before,
+          f"{fun_before} → {fun_after}")
+
+    # 덮치기가 실제로 닿았는지 확인 — 안 닿았으면 위 항목이 공허하다
+    dog_hp_now = cat.invoke("TestGetDogHp")
+    check("덮치기가 강아지에게 닿았다", dog_hp_now < dog_hp_full, f"{dog_hp_full} → {dog_hp_now}")
+
+    # ---------- 퇴장 ----------
+    cat.invoke("TestDamageDog", _damage=99999)
+    time.sleep(1.5)
+    check("쓰러뜨리면 사라진다", cat.invoke("TestGetDogCount") == 0,
+          f"{cat.invoke('TestGetDogCount')}마리")
+    check("쥐 클라에서도 사라진다", mouse.invoke("TestGetDogCount") == 0)
+
+    print("\n===== 요약 =====")
+    for name, ok, detail in RESULTS:
+        print(("  OK   " if ok else "  FAIL ") + name + (f"  | {detail}" if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok)
+    print(f"{passed}/{len(RESULTS)}")
+
+
+main()

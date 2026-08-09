@@ -54,6 +54,19 @@ namespace CTC.Runtime.Info
         public float JailReleaseHpRatio;
         public int JailCatchFun;
         public int JailEliminateFun;
+        public int DogAlcoveHp;
+        public int DogHp;
+        public float DogMoveSpeed;
+        public float DogDetectRadius;
+        public float DogAggroDropSeconds;
+        public float DogRepathSeconds;
+        public float DogBiteRangeMeters;
+        public float DogBiteCooldown;
+        public int DogBiteDamageCat;
+        public int DogBiteDamageMouse;
+        public float DogBarkIntervalSeconds;
+        public float DogBarkSoundMeters;
+        public float DogAlcoveIdleSoundMeters;
     }
 
     public partial class InfoManager

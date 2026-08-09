@@ -38,12 +38,23 @@ def main():
     check("벽감 — 매치 시작에 맵이 깔아 둔다", count == 3, f"{count}개 (기대 3)")
 
     # ---------- 총량 보존 ----------
-    # 벽 몫은 총량 4900 '안에서' 뗀다 — 더하면 고갈이 늦어져 성장 기한이 무너진다
+    # 벽 몫은 총량 4900 '안에서' 뗀다 — 더하면 고갈이 늦어져 성장 기한이 무너진다.
+    #
+    # **치즈 벽감만 센다**(v3.8 5번). 벽감 하나는 강아지가 들어 있어 치즈를 안 준다 —
+    # 그 몫까지 떼면 아무도 못 받는 치즈가 생겨 총량이 샌다.
     per_wall = host.invoke("TestGetAlcoveCheesePerWall")
+    cheese_walls = host.invoke("TestGetCheeseAlcoveCount")
     reserve = host.invoke("TestGetTotalCheeseReserve")
-    expected_max = 4900 - per_wall * count
-    check("총량 — 지점 매장량이 벽 몫만큼 줄어 있다",
-          reserve <= expected_max, f"지점합 {reserve} ≤ {expected_max} (벽 {count}×{per_wall})")
+    check("총량 — 벽감 하나는 강아지 몫이라 치즈를 안 준다",
+          0 < cheese_walls < count, f"치즈 벽감 {cheese_walls} / 전체 {count}")
+
+    wall_share = per_wall * cheese_walls
+    # 지점합 + 벽 몫이 총량을 넘지 않고, 나눗셈 나머지(지점 수 미만)만 비어야 한다
+    check("총량 — 지점 매장량 + 벽 몫이 4900을 넘지 않는다",
+          reserve + wall_share <= 4900, f"{reserve} + {wall_share} = {reserve + wall_share}")
+    check("총량 — 새는 치즈가 없다(나머지뿐)",
+          4900 - (reserve + wall_share) < 10,
+          f"빈 몫 {4900 - (reserve + wall_share)} (지점 나눗셈 나머지만 허용)")
 
     # ---------- 장난기 면제 ----------
     # Health만 붙이면 !IsPlayerObject라 자동으로 구조물 취급 → 장난기가 붙는다.

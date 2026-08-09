@@ -33,9 +33,14 @@ namespace CTC.Runtime.Map
                 var pos = new Vector3(a.Pos.x, 0f, a.Pos.y);
                 GameObject go = Instantiate(m_AlcovePrefab, pos, Quaternion.Euler(0f, a.YawDeg, 0f));
 
-                // 페이로드는 자리마다 다르다 — 프리팹 기본값(치즈)을 레이아웃이 덮는다
+                // 페이로드는 자리마다 다르다 — 프리팹 기본값(치즈)을 레이아웃이 덮는다.
+                // 레이아웃도 같이 준다: 강아지 벽감이 열리면 강아지가 이 맵에서 길을 찾아야 한다.
                 var alcove = go.GetComponent<Alcove>();
-                if (alcove != null) alcove.ServerSetPayload(a.Payload);
+                if (alcove != null)
+                {
+                    alcove.ServerSetPayload(a.Payload);
+                    alcove.ServerSetLayout(_layout);
+                }
 
                 var no = go.GetComponent<NetworkObject>();
                 no.Spawn(true);

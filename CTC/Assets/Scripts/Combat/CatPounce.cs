@@ -61,8 +61,9 @@ namespace CTC.Runtime.Combat
             {
                 if (target.IsDead) continue;
 
+                // 쥐·구조물 + 제3세력(강아지). 제 진영만 아니면 때린다 — v3.8 5번에서 규칙을 하나로 모았다.
                 RoleTag tag = target.GetComponent<RoleTag>();
-                if (tag == null || tag.Role != RoleId.Mouse) continue;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Cat, tag.Role)) continue;
 
                 if (!CombatLogic.IsInPounceArc(
                         transform.position, transform.forward, target.transform.position,
@@ -105,29 +106,8 @@ namespace CTC.Runtime.Combat
             }
         }
 
-        // 차폐 레이 높이 — 요새 입구(0.75)보다 높고 요새 벽(1.2)보다 낮게:
-        // 열린 문으로는 절대 안 새고, 외벽이 서 있는 한 내부가 보호된다(원작 벙커).
-        private const float OCCLUSION_RAY_HEIGHT = 1.0f;
-
-        // 시전자→대상 차폐 레이 — 둘 자신의 콜라이더는 차단으로 안 친다
-        // (요새 자체를 때릴 때 그 요새의 외벽에 막히면 안 됨). 트리거 무시.
-        // 플레이어 계층(CC 루트 — Quirky 모델 자식 콜라이더 포함)도 차폐물이 아님:
-        // 요새 안 쥐가 몸으로 요새 레이를 가려 요새가 무적이 되는 것 방지. 차폐는 구조물/지형만.
-        private bool IsOccluded(Health _target)
-        {
-            Vector3 from = transform.position + Vector3.up * OCCLUSION_RAY_HEIGHT;
-            Vector3 to = _target.transform.position + Vector3.up * OCCLUSION_RAY_HEIGHT;
-            Vector3 dir = to - from;
-
-            foreach (RaycastHit hit in Physics.RaycastAll(
-                         from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
-            {
-                Transform hitRoot = hit.transform.root;
-                if (hitRoot == transform.root || hitRoot == _target.transform.root) continue;
-                if (hitRoot.GetComponent<CharacterController>() != null) continue;
-                return true;
-            }
-            return false;
-        }
+        // 차폐 판정은 SightLine이 단독으로 갖는다 — 강아지(v3.8 5번)가 같은 규칙을 써야 해서
+        // 여기서 꺼냈다. 규칙이 갈라지면 요새 안이 덮치기에만, 또는 강아지에게만 안전해진다.
+        private bool IsOccluded(Health _target) => SightLine.IsBlocked(transform, _target.transform);
     }
 }

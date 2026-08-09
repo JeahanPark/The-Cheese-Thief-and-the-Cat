@@ -311,8 +311,9 @@ namespace CTC.Runtime.Map
             root.transform.SetParent(m_Root.transform, false);
 
             // 벽감이 총량에서 먼저 떼간다 — 더하면 고갈이 늦어져 '성장 기한'이 무너진다(v3.8)
+            // **치즈 벽감만** 센다. 강아지 벽감 몫까지 떼면 그 치즈는 아무도 못 받고 총량이 샌다.
             int reserve = CheeseSpotLogic.ReservePerSpot(
-                _layout.Cheese.Count, AlcoveLogic.TotalCheese(_layout.Alcoves.Count));
+                _layout.Cheese.Count, AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(_layout.Alcoves)));
             foreach (CheesePlacement cp in _layout.Cheese)
             {
                 var spotGo = new GameObject($"CheeseSpot_G{cp.Grade}");

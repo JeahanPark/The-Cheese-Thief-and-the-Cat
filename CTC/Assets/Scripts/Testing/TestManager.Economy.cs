@@ -103,6 +103,17 @@ namespace CTC.Runtime.Testing
         public int TestGetAlcoveCount()
             => FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None).Length;
 
+        /// <summary>QA: 치즈를 품은 벽감 수 — 강아지 벽감은 안 센다(총량이 새는지 본다).</summary>
+        public int TestGetCheeseAlcoveCount()
+        {
+            int count = 0;
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                if (alcove.Payload == CTC.Runtime.Map.AlcovePayload.Cheese) count++;
+            }
+            return count;
+        }
+
         /// <summary>QA: 바닥에 뒹구는 치즈 덩이 수.</summary>
         public int TestGetCheeseDropCount()
             => FindObjectsByType<CheeseDrop>(FindObjectsSortMode.None).Length;
@@ -129,6 +140,10 @@ namespace CTC.Runtime.Testing
 
             foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
             {
+                // **치즈 벽감만** 부순다. 강아지 벽감을 부수면 치즈가 0덩이라 치즈 항목이 통째로
+                // 헛돈다(2026-08-09 qa_v38에서 실제로 그랬다). 강아지는 TestBreakDogAlcove가 맡는다.
+                if (alcove.Payload != CTC.Runtime.Map.AlcovePayload.Cheese) continue;
+
                 var health = alcove.GetComponent<Health>();
                 if (health == null || health.IsDead) continue;
 

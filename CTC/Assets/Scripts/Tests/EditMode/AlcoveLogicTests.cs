@@ -23,6 +23,30 @@ namespace CTC.Tests
             Assert.AreEqual(0, AlcoveLogic.TotalCheese(-2));
         }
 
+        // ---- 강아지 벽감은 치즈를 안 준다 (v3.8 5번) ----
+
+        [Test]
+        public void CountCheese_SkipsDogAlcoves()
+        {
+            // 강아지 몫까지 떼면 그 치즈는 **아무도 못 받고** 맵 총량 4900이 샌다.
+            var placements = new System.Collections.Generic.List<AlcovePlacement>
+            {
+                new AlcovePlacement { Payload = AlcovePayload.Cheese },
+                new AlcovePlacement { Payload = AlcovePayload.Dog },
+                new AlcovePlacement { Payload = AlcovePayload.Cheese },
+            };
+
+            Assert.AreEqual(2, AlcoveLogic.CountCheese(placements));
+            Assert.AreEqual(AlcoveLogic.TotalCheese(2), AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(placements)));
+        }
+
+        [Test]
+        public void CountCheese_NullOrEmptyIsZero()
+        {
+            Assert.AreEqual(0, AlcoveLogic.CountCheese(null));
+            Assert.AreEqual(0, AlcoveLogic.CountCheese(new System.Collections.Generic.List<AlcovePlacement>()));
+        }
+
         // ---- 총량 보존: 벽 몫 + 지점 몫 ≤ 맵 총량 ----
 
         [Test]

@@ -344,6 +344,14 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_cheese_depleted"), // CheeseDepleted
                 LoadClip("Economy/sfx_alcove_hit"),      // AlcoveHit
                 LoadClip("Economy/sfx_alcove_break"),    // AlcoveBreak
+                // 강아지(v3.8 5번). 짖음이 강아지의 유일한 위치 정보라 제일 멀리 간다.
+                LoadClip("Ai/sfx_dog_bark"),             // DogBark
+                LoadClip("Ai/sfx_dog_bite"),             // DogBite
+                LoadClip("Ai/sfx_dog_hurt"),             // DogHurt
+                LoadClip("Ai/sfx_dog_death"),            // DogDeath
+                // 벽 안에서 새는 낑낑·긁는 소리. 루프라 원샷 재생에는 안 쓰이고
+                // AlcoveIdleSound가 AudioSource에 얹어 튼다.
+                LoadClip("Ai/sfx_dog_alcove_idle"),      // DogAlcoveIdle
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

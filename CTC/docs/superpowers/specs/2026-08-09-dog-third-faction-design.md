@@ -124,10 +124,21 @@ CheeseSpotLogic.ReservePerSpot(spots, AlcoveLogic.TotalCheese(layout.Alcoves.Cou
 강아지 프리팹은 `Editor/Setup/DogPrefabFactory`가 만든다 — `Health` · `RoleTag(None)` ·
 `BountyExempt` · `HitFeedback` · `NetworkObject` · `CharacterController` + 위 컴포넌트.
 
-> `RoleTag`는 **`None`**으로 둔다. `Mouse`면 덮치기의 기본 표적 규칙에 걸려 고양이가
-> 강아지를 "쥐처럼" 취급하고, `Cat`이면 쥐 승리 판정(`CountAlive`)에 낄 위험이 있다.
-> 어느 쪽도 아닌 제3세력이라는 게 이 기능의 전부다.
-> (`CountAlive`는 `IsPlayerObject`로 거르므로 강아지는 애초에 안 낀다 — 이중 안전.)
+> `RoleTag`는 **`None`**으로 둔다. 어느 쪽도 아닌 제3세력이라는 게 이 기능의 전부다.
+> (`CountAlive`는 `IsPlayerObject`로 거르므로 강아지는 승패 판정에 애초에 안 낀다.)
+
+### 8. 무기의 표적 규칙을 "제 진영만 아니면 때린다"로 바꾼다
+
+전에는 무기마다 진영을 박아 뒀다 — 덮치기는 `RoleId.Mouse`만, 팝건은 `RoleId.Cat`만.
+**그 상태로 제3세력을 넣으면 양쪽 다 강아지를 못 때린다.** 시간 제한 없이 "쓰러뜨려야 끝나는"
+설계인데 아무도 못 죽이는 것이다.
+
+`CombatLogic.CanAttack(attacker, target) => attacker != target` 하나로 모은다.
+`RoleId.None`은 누구의 진영도 아니라 자동으로 양쪽의 표적이 되고, 요새·미끼·창고·벽감이
+`RoleId.Mouse`라 고양이만 부수는 규칙은 그대로다.
+
+> 이건 설계 단계에서 놓쳤고 `qa_v40`이 잡았다(덮치기 400→400). Model 값이 아니라
+> **실제 HP가 줄었는지**를 본 항목이라 걸렸다.
 
 ## 상태기
 

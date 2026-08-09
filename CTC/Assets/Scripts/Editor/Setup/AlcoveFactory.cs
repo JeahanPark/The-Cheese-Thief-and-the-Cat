@@ -23,7 +23,7 @@ namespace CTC.Editor
         ///    **despawn 전에 안의 것을 꺼내야** 하므로 순서를 남에게 맡길 수 없다.
         /// ② 설치음(`PlaceSfxOnSpawn`)이 붙는다. 벽감은 누가 설치하는 게 아니라 처음부터 맵에 있다.
         /// </summary>
-        private static GameObject CreateAlcovePrefab(GameObject _cheeseDropPrefab)
+        private static GameObject CreateAlcovePrefab(GameObject _cheeseDropPrefab, GameObject _dogPrefab)
         {
             var root = new GameObject("Alcove");
             try
@@ -51,6 +51,19 @@ namespace CTC.Editor
 
                 var alcove = root.AddComponent<Alcove>();
                 SetRef(alcove, "m_CheeseDropPrefab", _cheeseDropPrefab);
+                SetRef(alcove, "m_DogPrefab", _dogPrefab);
+
+                // 벽이 흘리는 소리 — 강아지 벽만 낑낑거린다(치즈 벽은 조용). 안에 뭐가 있는지
+                // 알 길이 이것뿐이라 벽감 스펙이 이 자리를 비워 뒀다.
+                var idleSource = root.AddComponent<AudioSource>();
+                idleSource.playOnAwake = false;
+                idleSource.spatialBlend = 1f;
+                idleSource.rolloffMode = AudioRolloffMode.Linear;
+                idleSource.minDistance = 1.5f;
+                idleSource.maxDistance = CTC.Runtime.Info.InfoManager.Instance.Balance.DogAlcoveIdleSoundMeters;
+                root.AddComponent<AlcoveIdleSound>();
+                // 루프 소스는 팔로워가 없으면 효과음 슬라이더가 이 소리에만 안 먹는다(2026-08-09 실측)
+                AddVolumeFollower(root, CTC.Runtime.Audio.AudioVolumeFollower.Category.Sfx);
 
                 // 벽감 본체 — 벽에 파인 함이라 납작하다(두께 0.4). 부숴도 지형은 안 뚫린다.
                 var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -127,12 +140,38 @@ namespace CTC.Editor
                 {
                     Pos = pos,
                     YawDeg = yaw,
-                    Payload = AlcovePayload.Cheese,   // 강아지는 v3.8 5번에서
+                    Payload = AlcovePayload.Cheese,
                 });
             }
 
+            MarkDogAlcove(placed);
+
             _layout.SetAlcoves(placed);
             EditorUtility.SetDirty(_layout);
+        }
+
+        /// <summary>
+        /// 맵 중심에 **가장 가까운** 벽감 하나를 강아지 벽으로 바꾼다 (v3.8 5번).
+        ///
+        /// 중심을 고르는 이유: 양쪽이 다 지나는 자리라 랜드마크가 되고, 한쪽 진영 구석에 있으면
+        /// 그쪽만 쓸 수 있는 카드가 되어 "지는 쪽의 무리수"라는 의도가 깨진다.
+        /// 규칙이 한 줄이라 레벨디자인이 바뀌어도 따라온다.
+        /// </summary>
+        private static void MarkDogAlcove(List<AlcovePlacement> _placed)
+        {
+            if (_placed.Count == 0) return;
+
+            int best = 0;
+            float bestSqr = _placed[0].Pos.sqrMagnitude;
+            for (int i = 1; i < _placed.Count; i++)
+            {
+                float sqr = _placed[i].Pos.sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; best = i; }
+            }
+
+            AlcovePlacement dog = _placed[best];
+            dog.Payload = AlcovePayload.Dog;
+            _placed[best] = dog;
         }
 
         // 방의 네 벽을 순서대로 시도한다. 무작위를 쓰지 않는 건 같은 레이아웃이면

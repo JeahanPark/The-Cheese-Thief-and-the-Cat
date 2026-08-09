@@ -50,6 +50,82 @@ namespace CTC.Runtime.Testing
             }
         }
 
+        // ===== 제3세력 강아지 (v3.8 5번) =====
+
+        /// <summary>QA: 맵에 서 있는 강아지 벽감의 HP(없으면 -1). 치즈 벽감보다 단단해야 한다.</summary>
+        public int TestGetDogAlcoveHp()
+        {
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                if (alcove.Payload != CTC.Runtime.Map.AlcovePayload.Dog) continue;
+                var hp = alcove.GetComponent<CTC.Runtime.Combat.Health>();
+                return hp != null ? hp.Hp : -1;
+            }
+            return -1;
+        }
+
+        /// <summary>서버 전용 — 강아지 벽감을 부순다(부수는 데 19초를 쓰지 않으려고).</summary>
+        public void TestBreakDogAlcove()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) { GameDebug.LogWarning("[TestManager] 서버 전용"); return; }
+
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                if (alcove.Payload != CTC.Runtime.Map.AlcovePayload.Dog) continue;
+                var hp = alcove.GetComponent<CTC.Runtime.Combat.Health>();
+                if (hp != null) hp.TakeDamage(hp.MaxHp);
+                return;
+            }
+        }
+
+        /// <summary>QA: 지금 살아 있는 강아지 수.</summary>
+        public int TestGetDogCount() =>
+            FindObjectsByType<CTC.Runtime.Ai.DogBrain>(FindObjectsSortMode.None).Length;
+
+        /// <summary>QA: 강아지 HP(없으면 -1).</summary>
+        public int TestGetDogHp()
+        {
+            var dog = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            if (dog == null) return -1;
+            var hp = dog.GetComponent<CTC.Runtime.Combat.Health>();
+            return hp != null ? hp.Hp : -1;
+        }
+
+        /// <summary>QA: 강아지와 로컬 플레이어의 수평 거리(둘 중 하나가 없으면 -1).</summary>
+        public float TestGetDogDistance()
+        {
+            var dog = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (dog == null || local == null) return -1f;
+
+            return CTC.Runtime.Ai.DogAiLogic
+                .Flat(dog.transform.position - local.transform.position).magnitude;
+        }
+
+        /// <summary>로컬 플레이어를 강아지 코앞으로 옮긴다 — 물리는 것을 재현한다.</summary>
+        public void TestTeleportToDog()
+        {
+            var dog = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (dog == null || local == null) { GameDebug.LogWarning("[TestManager] 강아지/로컬 없음"); return; }
+
+            MoveInFrontOf(local, dog.NetworkObject);
+        }
+
+        /// <summary>서버 전용 — 강아지에게 피해(처치 검증). 실제 전투 경로가 아니라 결과만 본다.</summary>
+        public void TestDamageDog(int _damage)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) { GameDebug.LogWarning("[TestManager] 서버 전용"); return; }
+
+            var dog = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            var hp = dog != null ? dog.GetComponent<CTC.Runtime.Combat.Health>() : null;
+            if (hp != null) hp.TakeDamage(_damage);
+        }
+
         private static void MoveInFrontOf(Unity.Netcode.NetworkObject _local, Unity.Netcode.NetworkObject _other)
         {
             var cc = _local.GetComponent<UnityEngine.CharacterController>();

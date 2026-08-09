@@ -130,7 +130,7 @@ MonoBehaviour:
   m_Alcoves:
   - Pos: {x: 0, y: 7.7}
     YawDeg: 180
-    Payload: 0
+    Payload: 1
   - Pos: {x: -14.7, y: -19.6}
     YawDeg: 0
     Payload: 0

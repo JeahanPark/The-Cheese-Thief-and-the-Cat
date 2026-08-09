@@ -33,6 +33,13 @@ namespace CTC.Runtime.Audio
         // 벽감 파괴음은 "달려와"라 정반대 행동을 요구한다. 소리가 정보인 게임이라 겹치면 안 된다.
         AlcoveHit = 24,
         AlcoveBreak = 25,
+        // 강아지(v3.8 5번). 짖음이 강아지의 **유일한 위치 정보**다 — 미니맵에도 팀에도 없다.
+        DogBark = 26,
+        DogBite = 27,
+        DogHurt = 28,
+        DogDeath = 29,
+        /// <summary>벽 안에서 새는 소리. 이것만 루프고, 치즈 벽감은 조용하다.</summary>
+        DogAlcoveIdle = 30,
     }
 
     /// <summary>
@@ -98,6 +105,12 @@ namespace CTC.Runtime.Audio
             AudioClip clip = ClipOf(_id);
             return clip != null ? clip.name : string.Empty;
         }
+
+        /// <summary>
+        /// 루프로 직접 틀 클립 — 원샷이 아니라 `AudioSource`에 얹어야 하는 소리가 쓴다
+        /// (벽감이 흘리는 강아지 소리). 배선을 두 군데로 갈라 놓지 않으려고 여기서 꺼내 준다.
+        /// </summary>
+        public static AudioClip ClipFor(SfxId _id) => ClipOf(_id);
 
         private static AudioClip ClipOf(SfxId _id)
         {

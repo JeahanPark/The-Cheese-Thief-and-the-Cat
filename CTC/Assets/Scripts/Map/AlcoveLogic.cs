@@ -22,10 +22,28 @@ namespace CTC.Runtime.Map
         /// <summary>벽감 HP — 딱총 19초 · 새총 8초 · 기관총 3.6초 · 덮치기 5초.</summary>
         public static int AlcoveHp => Balance.AlcoveHp;
 
-        /// <summary>맵의 벽감 전부가 가져가는 치즈 총액.</summary>
-        public static int TotalCheese(int _alcoveCount)
+        /// <summary>치즈 벽감 전부가 가져가는 치즈 총액.</summary>
+        public static int TotalCheese(int _cheeseAlcoveCount)
         {
-            return _alcoveCount <= 0 ? 0 : _alcoveCount * CheesePerAlcove;
+            return _cheeseAlcoveCount <= 0 ? 0 : _cheeseAlcoveCount * CheesePerAlcove;
+        }
+
+        /// <summary>
+        /// 치즈를 품은 벽감만 센다 — **강아지 벽감은 치즈를 안 준다**(v3.8 5번).
+        ///
+        /// 벽감 개수를 그대로 넘기면 강아지 몫까지 지점에서 떼는데 **아무도 그 치즈를 못 받아**
+        /// 맵 총량 4900이 새고 고갈이 빨라진다. 페이로드를 보는 곳은 여기 하나뿐이어야 한다.
+        /// </summary>
+        public static int CountCheese(System.Collections.Generic.IReadOnlyList<AlcovePlacement> _placements)
+        {
+            if (_placements == null) return 0;
+
+            int count = 0;
+            for (int i = 0; i < _placements.Count; i++)
+            {
+                if (_placements[i].Payload == AlcovePayload.Cheese) count++;
+            }
+            return count;
         }
 
         /// <summary>
