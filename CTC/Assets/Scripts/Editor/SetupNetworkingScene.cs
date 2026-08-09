@@ -119,6 +119,7 @@ namespace CTC.Editor
                     lure.rolloffMode = AudioRolloffMode.Linear;
                     lure.minDistance = 1.5f;
                     lure.maxDistance = 8f;
+                    AddVolumeFollower(_root, CTC.Runtime.Audio.AudioVolumeFollower.Category.Sfx);
                 },
                 // 쥐만 통과시키려면 미끼가 자기 레이어에 있어야 한다 — Mouse×Decoy 충돌 매트릭스 대상(DecoyLayers).
                 // (`excludeLayers`는 CharacterController에 안 먹혀서 폐기된 접근이다)

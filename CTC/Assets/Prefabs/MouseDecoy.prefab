@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 640916507054534205}
   - component: {fileID: 4756877541725515675}
   - component: {fileID: 8721054744386245148}
+  - component: {fileID: 12291318914373652}
   m_Layer: 8
   m_Name: MouseDecoy
   m_TagString: Untagged
@@ -358,3 +359,16 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &12291318914373652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6274109959196663774}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcd560e71b955c94a8257e5e6bfe378a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.AudioVolumeFollower
+  m_Category: 0

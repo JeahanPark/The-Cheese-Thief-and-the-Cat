@@ -281,6 +281,7 @@ namespace CTC.Editor
             var bgm = bgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
             SetRef(bgm, "m_Lobby", _lobby);
             SetRef(bgm, "m_Source", bgmSource);
+            AddVolumeFollower(bgmGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
 
             // 로비 BGM — 게임이 안 도는 동안(접속 전·로비) 루프
             var lobbyBgmGo = new GameObject("LobbyBgmPlayer");
@@ -294,6 +295,7 @@ namespace CTC.Editor
             SetRef(lobbyBgm, "m_Lobby", _lobby);
             SetRef(lobbyBgm, "m_Source", lobbyBgmSource);
             SetInt(lobbyBgm, "m_PlayWhenGameStopped", 1);
+            AddVolumeFollower(lobbyBgmGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
 
             // 부엌 앰비언스 — BGM과 동일 조건(게임 중 루프), 볼륨만 낮게
             var ambGo = new GameObject("AmbiencePlayer");
@@ -306,6 +308,8 @@ namespace CTC.Editor
             var amb = ambGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
             SetRef(amb, "m_Lobby", _lobby);
             SetRef(amb, "m_Source", ambSource);
+            // 앰비언스는 배경음 쪽 — 계속 깔리는 분위기라 음악을 끄는 사람은 이것도 끄고 싶어 한다
+            AddVolumeFollower(ambGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
 
             // 효과음 허브 — m_Clips는 SfxId enum 순서와 1:1
             var sfxGo = new GameObject("SfxPlayer");

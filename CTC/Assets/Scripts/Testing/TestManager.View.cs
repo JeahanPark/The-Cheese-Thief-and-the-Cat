@@ -146,6 +146,19 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 옵션 창의 "확인" — 지금 값을 디스크에 새긴다.</summary>
         public void TestSaveSettings() => UserSettings.Save();
 
+        /// <summary>
+        /// QA: 실제로 들리는 볼륨 — 이름으로 찾은 오브젝트의 `AudioSource.volume`.
+        /// Model 값만 보면 "설정은 바뀌는데 소리는 그대로"인 배선 누락을 못 잡는다(2026-08-09 실측).
+        /// 없으면 -1.
+        /// </summary>
+        public float TestGetAudioVolume(string _name)
+        {
+            GameObject go = GameObject.Find(_name);
+            if (go == null) return -1f;
+            AudioSource src = go.GetComponent<AudioSource>();
+            return src != null ? src.volume : -1f;
+        }
+
         /// <summary>QA: 옵션 창의 "취소"·ESC — 저장된 값으로 미리듣기를 되돌린다.</summary>
         public void TestRevertSettings() => UserSettings.Revert();
 

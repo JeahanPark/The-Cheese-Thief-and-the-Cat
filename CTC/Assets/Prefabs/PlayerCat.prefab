@@ -26,6 +26,7 @@ GameObject:
   - component: {fileID: 868449302951146565}
   - component: {fileID: 6558113436026960680}
   - component: {fileID: 2911770353754494756}
+  - component: {fileID: 680282509390343821}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Player
@@ -429,6 +430,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.FootstepPlayer
   m_Source: {fileID: 6558113436026960680}
   m_WalkThreshold: 0.5
+--- !u!114 &680282509390343821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcd560e71b955c94a8257e5e6bfe378a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.AudioVolumeFollower
+  m_Category: 0
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0

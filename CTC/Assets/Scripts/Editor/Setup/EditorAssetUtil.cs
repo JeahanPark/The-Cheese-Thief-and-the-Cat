@@ -206,6 +206,20 @@ namespace CTC.Editor
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>
+        /// 루프 AudioSource가 옵션 창의 볼륨을 따라가게 한다.
+        ///
+        /// 루프 소스는 여기서 볼륨을 **구워** 두기 때문에(BGM 0.35 · 앰비언스 0.15 · 발소리 0.6)
+        /// 팔로워가 없으면 슬라이더를 아무리 움직여도 그 소리만 그대로다. 실제로 2026-08-09까지
+        /// 5개 전부 팔로워가 없어 **배경음 슬라이더가 아무 일도 하지 않았다** — 붙이는 걸
+        /// 잊기 쉬우니 소스를 만드는 자리마다 이 함수를 부른다.
+        /// </summary>
+        private static void AddVolumeFollower(GameObject _go, CTC.Runtime.Audio.AudioVolumeFollower.Category _category)
+        {
+            var follower = _go.AddComponent<CTC.Runtime.Audio.AudioVolumeFollower>();
+            SetInt(follower, "m_Category", (int)_category);
+        }
+
         private static void SetRefArray(Component _c, string _field, Object[] _values)
         {
             var so = new SerializedObject(_c);

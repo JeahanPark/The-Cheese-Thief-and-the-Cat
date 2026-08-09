@@ -109,6 +109,8 @@ namespace CTC.Editor
                 stepSource.maxDistance = info.FootstepRangeMeters;
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
+                // 발소리가 제일 큰 효과음이다 — 팔로워가 없으면 "효과음을 줄였는데 발소리만 그대로"가 된다
+                AddVolumeFollower(root, CTC.Runtime.Audio.AudioVolumeFollower.Category.Sfx);
 
                 var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(_modelPath);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(modelAsset);

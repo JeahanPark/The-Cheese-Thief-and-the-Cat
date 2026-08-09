@@ -157,10 +157,15 @@ def main():
         check("따봉 — 고양이에겐 안 보임", on_cat == 0, "마커 %s개" % on_cat)
 
     # ---------- 9. 카메라 거리 상수(충돌 제거) ----------
+    # **정착 뒤에 잰다.** 0.9초에 재던 예전 판은 감쇠가 끝나기 전이라 카메라가 캐릭터를
+    # 따라잡는 중이었고, 편차가 걷는 방향과 카메라 요각의 각도에 따라 널뛰었다
+    # (2026-08-09 실측: 0.9초 0.44 · 1.5초 0.03 · 2.5초 0.00 — 같은 판에서 재현).
+    # 잡으려는 건 "벽이 카메라를 밀어 넣는가"인데 그건 서 있어도 남는 정상상태 효과라,
+    # 정착 후 측정이 오히려 더 민감하다. 이동 중 감쇠 지연은 정상 동작이고 관심사가 아니다.
     dists = []
     for i in range(4):
         cat.invoke("TestWalkDirection", _x=1 if i % 2 == 0 else -1, _z=0, _seconds=0.6)
-        time.sleep(0.9)
+        time.sleep(1.8)
         dists.append(cat.invoke("TestGetCameraDistance"))
     spread = max(dists) - min(dists)
     check("카메라 — 벽 근처에서도 거리 일정", spread < 0.35,

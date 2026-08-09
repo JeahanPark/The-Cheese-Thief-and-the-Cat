@@ -109,6 +109,27 @@ def main():
     time.sleep(0.4)
     check("옵션 — 취소는 마지막 확인 값으로 돌아간다", abs(sfx() - 0.70) < 0.001, f"sfx={sfx():.2f} (기대 0.70)")
 
+    # ---------- 실제로 들리는 볼륨 (2026-08-09) ----------
+    # Model 값만 보던 기존 항목은 "설정은 바뀌는데 소리는 그대로"를 못 잡았다.
+    # 루프 소스는 생성기가 볼륨을 구워 두므로 AudioVolumeFollower가 붙어 있어야만 따라온다.
+    def vol(name):
+        return p[0].invoke("TestGetAudioVolume", _name=name)
+
+    p[0].invoke("TestSetSetting", _key="bgm", _value=1.0)
+    time.sleep(0.4)
+    bgm_hi, amb_hi = vol("BgmPlayer"), vol("AmbiencePlayer")
+    p[0].invoke("TestSetSetting", _key="bgm", _value=0.0)
+    time.sleep(0.4)
+    bgm_lo, amb_lo = vol("BgmPlayer"), vol("AmbiencePlayer")
+
+    check("사운드 — 배경음 슬라이더가 BGM 볼륨을 실제로 바꾼다",
+          bgm_hi > 0.001 and bgm_lo < 0.001, f"100%={bgm_hi} 0%={bgm_lo}")
+    check("사운드 — 앰비언스도 배경음을 따라간다",
+          amb_hi > 0.001 and amb_lo < 0.001, f"100%={amb_hi} 0%={amb_lo}")
+    check("사운드 — 구워진 비율이 유지된다(BGM 0.35 · 앰비언스 0.15)",
+          abs(bgm_hi - 0.35) < 0.001 and abs(amb_hi - 0.15) < 0.001,
+          f"bgm={bgm_hi} amb={amb_hi}")
+
     # 이 PC를 CSV 기본값(50%)으로 돌려놓고 나간다
     p[0].invoke("TestResetSettings")
     p[0].invoke("TestSaveSettings")
