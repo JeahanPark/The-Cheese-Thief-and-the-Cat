@@ -18,6 +18,9 @@ namespace CTC.Editor
         private const string DogControllerPath =
             "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/AC_Dog.controller";
 
+        private const string DogSourceMatPath =
+            "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Materials/M_Dog.mat";
+
         /// <summary>
         /// 벽감을 부수면 나오는 강아지.
         ///
@@ -98,10 +101,12 @@ namespace CTC.Editor
                         Object.DestroyImmediate(col);
                     }
 
+                    // 고양이·쥐와 같은 방식 — Quirky 원본 머티리얼을 URP로 옮겨 쓴다.
+                    // 프로토타입 색(Gridbox)을 덮으면 강아지가 통짜 빨강으로 나온다(2026-08-10 지적).
+                    Material dogMat = CreateUrpMaterial("M_Dog_URP", DogSourceMatPath);
                     foreach (Renderer r in model.GetComponentsInChildren<Renderer>(true))
                     {
-                        r.sharedMaterials = Enumerable
-                            .Repeat(GridboxMaterial("Red"), r.sharedMaterials.Length).ToArray();
+                        r.sharedMaterials = Enumerable.Repeat(dogMat, r.sharedMaterials.Length).ToArray();
                     }
                 }
 

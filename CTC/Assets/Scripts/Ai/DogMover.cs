@@ -23,6 +23,9 @@ namespace CTC.Runtime.Ai
         private const float GRAVITY = -18f;
         // 표적이 이만큼 움직여야 길을 다시 짠다. 매 틱 다시 짜면 경유점 진행이 리셋된다.
         private const float REPLAN_DISTANCE = 3f;
+        // 간선을 검사할 때 쏘는 몸통(프리팹의 CharacterController와 맞춘다).
+        private const float BODY_CENTER_HEIGHT = 0.4f;
+        private const float BODY_RADIUS = 0.35f;
 
         private CharacterController m_Cc;
         private DogBrain m_Brain;
@@ -36,10 +39,12 @@ namespace CTC.Runtime.Ai
         private float m_StuckSeconds;
         private Vector3 m_LastPos;
         private Vector3 m_PlannedGoal;
+        private int m_PrunedEdges;
 
         /// <summary>QA 전용 — 길찾기가 어느 층에서 끊겼는지 본다(그래프·경로·제자리 시간).</summary>
         public string DevDiagnostics =>
             $"graph={(m_Graph != null ? m_Graph.Count : -1)} " +
+            $"edges={(m_Graph != null ? m_Graph.EdgeCount : -1)} pruned={m_PrunedEdges} " +
             $"path={m_Path.Count} idx={m_PathIndex} stuck={m_StuckSeconds:F1} " +
             $"wp={(m_PathIndex < m_Path.Count ? $"{m_Path[m_PathIndex].x:F1},{m_Path[m_PathIndex].y:F1}" : "-")} " +
             $"grounded={(m_Cc != null && m_Cc.isGrounded ? 1 : 0)}";
@@ -50,8 +55,56 @@ namespace CTC.Runtime.Ai
             if (_layout == null) return;
 
             m_Graph = NavGraphLogic.Build(_layout.Rooms, _layout.Corridors);
+            PruneUnwalkableEdges();
             // 배회는 서버가 맵 시드로 굴린다 — 클라마다 다르면 안 되고, QA 재현성도 여기서 나온다.
             m_Random = new System.Random(_layout.Seed);
+        }
+
+        /// <summary>
+        /// **벽을 지나는 간선을 걷어낸다.** 이걸 안 하면 길찾기가 "이 선으로 갈 수 있다"고
+        /// 답해 놓고 실제로는 벽이 막고 있어, 강아지가 코앞 경유점을 두고 벽만 민다
+        /// (2026-08-10 실측: 1.3m 앞 경유점을 두고 z가 4.17에 못 박혔다).
+        ///
+        /// 판 시작에 한 번만 돈다(간선 100개 남짓). 몸통 굵기로 쏘므로 **끼어서 못 지나는
+        /// 틈**도 같이 걸러진다 — 점 하나로 쏘면 통과한다고 나오고 실제로는 낀다.
+        /// </summary>
+        private void PruneUnwalkableEdges()
+        {
+            m_PrunedEdges = 0;
+            if (m_Graph == null) return;
+
+            for (int a = 0; a < m_Graph.Count; a++)
+            {
+                var neighbors = new List<int>(m_Graph.NeighborsOf(a));
+                foreach (int b in neighbors)
+                {
+                    if (b < a) continue;                    // 양방향이라 한 번만 본다
+                    if (IsWalkable(m_Graph.Nodes[a], m_Graph.Nodes[b])) continue;
+
+                    m_Graph.Disconnect(a, b);
+                    m_PrunedEdges++;
+                }
+            }
+        }
+
+        private bool IsWalkable(Vector2 _a, Vector2 _b)
+        {
+            var from = new Vector3(_a.x, BODY_CENTER_HEIGHT, _a.y);
+            var to = new Vector3(_b.x, BODY_CENTER_HEIGHT, _b.y);
+            Vector3 dir = to - from;
+            float distance = dir.magnitude;
+            if (distance < 0.01f) return true;
+
+            foreach (RaycastHit hit in Physics.SphereCastAll(
+                         from, BODY_RADIUS, dir / distance, distance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                Transform root = hit.transform.root;
+                if (root == transform.root) continue;
+                // 사람·강아지는 지나갈 수 있다(비켜 준다) — 막는 건 지형과 구조물뿐이다
+                if (root.GetComponent<CharacterController>() != null) continue;
+                return false;
+            }
+            return true;
         }
 
         private void Awake()

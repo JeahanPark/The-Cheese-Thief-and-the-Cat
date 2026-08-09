@@ -56,6 +56,38 @@ def main():
     check("쥐 클라에도 강아지가 보인다", mouse.invoke("TestGetDogCount") == 1,
           f"{mouse.invoke('TestGetDogCount')}마리")
 
+    # ---------- 길찾기 ----------
+    # 레이아웃은 벽을 모른다. 그려 놓은 선이 벽을 뚫으면 길찾기가 "갈 수 있다"고 답해 놓고
+    # 강아지는 코앞 경유점을 두고 벽만 민다(2026-08-10 실측: z가 4.17에 못 박혔다).
+    pruned = cat.invoke("TestGetDogPrunedEdges")
+    check("길찾기 — 벽을 지나는 간선을 걷어냈다", pruned > 0, f"{pruned}개 제거")
+
+    # 재는 동안 고양이는 멀리 빼 둔다. 옆에 두면 12초 사이에 물려 죽고, 그러면 판이 끝나면서
+    # 강아지까지 사라져 "0m 이동"으로 읽힌다(2026-08-10에 실제로 그랬다).
+    cat.invoke("TestTeleportLocalPlayer", _x=-13.0, _z=-13.0)
+    time.sleep(1.0)
+
+    # 실제로 맵을 가로지르는가. Model 값이 아니라 **좌표가 얼마나 움직였나**를 센다 —
+    # 상태만 보면 'Chase'인데 제자리인 경우를 못 잡는다.
+    def dog_xz():
+        raw = cat.invoke("TestGetDogPos")
+        if not raw:
+            return None
+        x, z = raw.split(",")
+        return float(x), float(z)
+
+    start = dog_xz()
+    travelled = 0.0
+    prev = start
+    for _ in range(12):
+        time.sleep(1.0)
+        now = dog_xz()
+        if prev and now:
+            travelled += ((now[0] - prev[0]) ** 2 + (now[1] - prev[1]) ** 2) ** 0.5
+        prev = now
+    check("길찾기 — 강아지가 맵을 실제로 가로지른다", travelled > 12.0,
+          f"12초 동안 {travelled:.1f}m 이동")
+
     # ---------- 추격 ----------
     # 고양이를 강아지 근처로 데려간 뒤 거리가 줄어드는지 본다.
     cat.invoke("TestTeleportToDog")
@@ -68,6 +100,12 @@ def main():
           f"{first:.1f}m → {later:.1f}m")
 
     # ---------- 물기 ----------
+    # **쥐 둘을 멀리 치운다.** 옆에 있으면 강아지는 쥐를 물고 있고(어그로는 보이는 동안 안 놓는다),
+    # 덮치기도 쥐에게 맞아 장난기가 오른다 — 그러면 아래 두 항목이 강아지와 무관해진다.
+    p[1].invoke("TestTeleportLocalPlayer", _x=-13.5, _z=13.5)
+    p[2].invoke("TestTeleportLocalPlayer", _x=-12.0, _z=13.5)
+    time.sleep(6.0)   # 어그로 해제(DogAggroDropSeconds=4)보다 넉넉히
+
     hp_before = cat.invoke("TestGetLocalHp")
     for _ in range(10):
         cat.invoke("TestTeleportToDog")

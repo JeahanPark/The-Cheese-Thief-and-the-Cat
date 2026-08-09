@@ -103,6 +103,35 @@ namespace CTC.Runtime.Testing
             return $"{brain.State} {p.x:F2},{p.z:F2} {(mover != null ? mover.DevDiagnostics : "no-mover")}";
         }
 
+        /// <summary>QA: 강아지 위치 "x,z"(없으면 빈 문자열) — 실제로 맵을 가로지르는지 잰다.</summary>
+        public string TestGetDogPos()
+        {
+            var brain = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            if (brain == null) return "";
+
+            Vector3 p = brain.transform.position;
+            return $"{p.x:F2},{p.z:F2}";
+        }
+
+        /// <summary>
+        /// QA: 벽을 지나서 걷어낸 간선 수. 0이면 검증이 안 돌았다는 뜻이고,
+        /// 그러면 길찾기가 "갈 수 있다"고 답해 놓고 강아지가 벽만 민다.
+        /// </summary>
+        public int TestGetDogPrunedEdges()
+        {
+            var brain = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
+            var mover = brain != null ? brain.GetComponent<CTC.Runtime.Ai.DogMover>() : null;
+            if (mover == null) return -1;
+
+            string diag = mover.DevDiagnostics;
+            int at = diag.IndexOf("pruned=", System.StringComparison.Ordinal);
+            if (at < 0) return -1;
+
+            int end = diag.IndexOf(' ', at);
+            string value = end < 0 ? diag.Substring(at + 7) : diag.Substring(at + 7, end - at - 7);
+            return int.TryParse(value, out int parsed) ? parsed : -1;
+        }
+
         /// <summary>QA: 강아지와 로컬 플레이어의 수평 거리(둘 중 하나가 없으면 -1).</summary>
         public float TestGetDogDistance()
         {

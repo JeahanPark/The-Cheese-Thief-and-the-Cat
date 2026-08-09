@@ -33,6 +33,28 @@ namespace CTC.Runtime.Map
             if (!m_Neighbors[_a].Contains(_b)) m_Neighbors[_a].Add(_b);
             if (!m_Neighbors[_b].Contains(_a)) m_Neighbors[_b].Add(_a);
         }
+
+        /// <summary>
+        /// 간선을 끊는다. **레이아웃은 벽을 모른다** — 방과 복도로 그린 선이 실제로는
+        /// 벽을 뚫고 있을 수 있다. 그런 선을 남겨 두면 길찾기가 "갈 수 있다"고 답해 놓고
+        /// 실제로는 벽에 코를 박는다. 지오메트리를 아는 쪽(런타임)이 걷어낸다.
+        /// </summary>
+        public void Disconnect(int _a, int _b)
+        {
+            m_Neighbors[_a].Remove(_b);
+            m_Neighbors[_b].Remove(_a);
+        }
+
+        /// <summary>남아 있는 간선 수(양방향 1개로 센다) — 걷어내기가 과했는지 본다.</summary>
+        public int EdgeCount
+        {
+            get
+            {
+                int sum = 0;
+                for (int i = 0; i < m_Neighbors.Count; i++) sum += m_Neighbors[i].Count;
+                return sum / 2;
+            }
+        }
     }
 
     /// <summary>
