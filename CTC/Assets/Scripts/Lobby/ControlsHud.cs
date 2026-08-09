@@ -21,7 +21,7 @@ namespace CTC.Runtime.Lobby
     {
         // 한글 표시는 Pretendard 동적 폰트(Tools/CTC/Create Korean Font Asset) 전제
         private const string MOUSE_CONTROLS =
-            "WASD 이동   마우스 시점   좌클릭 발사   LShift 대시 (구매 후)";
+            "WASD 이동   마우스 시점   좌클릭 발사   <b>LCtrl 살금살금</b>(무음·속도 절반)   LShift 대시 (구매 후)";
         private const string CAT_CONTROLS =
             "WASD 이동   마우스 시점   좌클릭 덮치기   <b>LCtrl 살금살금</b>(무음·속도 절반)";
         private const string SPECTATOR_CONTROLS =

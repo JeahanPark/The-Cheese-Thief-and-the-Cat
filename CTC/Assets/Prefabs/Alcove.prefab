@@ -124,6 +124,7 @@ MonoBehaviour:
   m_HitSfx: 24
   m_BreakSfx: 25
   m_SfxMaxDistance: 25
+  m_HitSfxMaxDistance: 20
 --- !u!114 &3091588501085374446
 MonoBehaviour:
   m_ObjectHideFlags: 0

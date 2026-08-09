@@ -22,6 +22,7 @@ GameObject:
   - component: {fileID: 931013392751080562}
   - component: {fileID: 3634663368589302921}
   - component: {fileID: 7969670973942088240}
+  - component: {fileID: 6012691800073182655}
   - component: {fileID: 3194180182503786071}
   - component: {fileID: 2258780326856655791}
   - component: {fileID: 1160264544264784013}
@@ -266,6 +267,7 @@ MonoBehaviour:
   m_HitSfx: 8
   m_BreakSfx: 9
   m_SfxMaxDistance: 0
+  m_HitSfxMaxDistance: 0
 --- !u!114 &3634663368589302921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -295,6 +297,19 @@ MonoBehaviour:
   m_DecoyPrefab: {fileID: 6274109959196663774, guid: 450f58df589791f4d909a7da8f9933dc, type: 3}
   m_FortressPrefab: {fileID: 3525953091307173698, guid: 77dfa9cb7fe111c47b7456c5fcfceab1, type: 3}
   m_WarehousePrefab: {fileID: 2931954466690270675, guid: af09db80bdf16a04d9c393a9ce7e6ab6, type: 3}
+--- !u!114 &6012691800073182655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73572fe4891364e4c86235ee73c7b327, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.Sneak
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &3194180182503786071
 MonoBehaviour:
   m_ObjectHideFlags: 0

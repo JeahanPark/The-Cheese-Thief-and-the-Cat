@@ -14,12 +14,12 @@ namespace CTC.Runtime.Audio
 
         private Vector3 m_LastPosition;
         private float m_SmoothedSpeed;
-        private Player.CatSneak m_Sneak; // 고양이 전용 — 잠행 중엔 발소리를 내지 않는다
+        private Player.Sneak m_Sneak; // 잠행 중엔 발소리를 내지 않는다(고양이·쥐 공통)
 
         private void Start()
         {
             m_LastPosition = transform.position;
-            m_Sneak = GetComponentInParent<Player.CatSneak>();
+            m_Sneak = GetComponentInParent<Player.Sneak>();
         }
 
         private void Update()

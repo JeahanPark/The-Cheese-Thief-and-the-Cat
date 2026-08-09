@@ -48,6 +48,9 @@ namespace CTC.Editor
                 // 부수는 소리가 곧 경쟁의 초대장이다 — 파밍(20m)과 같은 급으로 멀리 보낸다
                 SetFloat(feedback, "m_SfxMaxDistance",
                     CTC.Runtime.Info.InfoManager.Instance.Balance.AlcoveBreakSoundMeters);
+                // 타격음은 더 짧게(20m) — "부수는 중"과 "다 부서졌다"는 요구하는 행동이 다르다
+                SetFloat(feedback, "m_HitSfxMaxDistance",
+                    CTC.Runtime.Info.InfoManager.Instance.Balance.AlcoveHitSoundMeters);
 
                 var alcove = root.AddComponent<Alcove>();
                 SetRef(alcove, "m_CheeseDropPrefab", _cheeseDropPrefab);

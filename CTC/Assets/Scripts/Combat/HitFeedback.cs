@@ -24,6 +24,8 @@ namespace CTC.Runtime.Combat
         [SerializeField] private Audio.SfxId m_HitSfx = Audio.SfxId.FortressHit;
         [SerializeField] private Audio.SfxId m_BreakSfx = Audio.SfxId.FortressBreak;
         [SerializeField] private float m_SfxMaxDistance;   // 0이면 SfxPlayer 기본값
+        // 타격음만 따로. 0이면 위 값을 쓴다 — 파괴음과 요구하는 행동이 달라서 갈라 놓는다.
+        [SerializeField] private float m_HitSfxMaxDistance;
 
         private Health m_Health;
         private Renderer[] m_Renderers;
@@ -83,10 +85,17 @@ namespace CTC.Runtime.Combat
             RestartFlash();
         }
 
-        // 들리는 거리는 정보 설계다 — 벽감처럼 "멀리서도 들려야" 하는 것은 사거리를 따로 준다
+        /// <summary>
+        /// 들리는 거리는 정보 설계다. **타격음과 파괴음은 요구하는 행동이 다르다** —
+        /// 타격음은 "누가 뭘 부수는 중"(20m)이고 파괴음은 "지금 달려와"(25m)다.
+        /// 거리 필드가 하나뿐이라 벽감 타격음이 파괴음 거리를 쓰고 있었다(2026-08-10 발견).
+        /// </summary>
         private void PlaySfx(Audio.SfxId _id)
         {
-            if (m_SfxMaxDistance > 0f) Audio.SfxPlayer.PlayAt(_id, transform.position, 1f, m_SfxMaxDistance);
+            bool isHit = m_OverrideSfx ? _id == m_HitSfx : _id == Audio.SfxId.FortressHit;
+            float max = isHit && m_HitSfxMaxDistance > 0f ? m_HitSfxMaxDistance : m_SfxMaxDistance;
+
+            if (max > 0f) Audio.SfxPlayer.PlayAt(_id, transform.position, 1f, max);
             else Audio.SfxPlayer.PlayAt(_id, transform.position);
         }
 

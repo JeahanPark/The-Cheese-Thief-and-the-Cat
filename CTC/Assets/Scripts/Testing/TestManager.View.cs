@@ -40,8 +40,8 @@ namespace CTC.Runtime.Testing
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
-            var sneak = local != null ? local.GetComponent<CTC.Runtime.Player.CatSneak>() : null;
-            if (sneak == null) { GameDebug.LogWarning("[TestManager] CatSneak 없음(고양이 아님)"); return; }
+            var sneak = local != null ? local.GetComponent<CTC.Runtime.Player.Sneak>() : null;
+            if (sneak == null) { GameDebug.LogWarning("[TestManager] Sneak 없음"); return; }
             sneak.DevSetSneak(_on);
         }
 
@@ -49,7 +49,7 @@ namespace CTC.Runtime.Testing
         public bool TestGetSneaking(long _clientId)
         {
             var player = NetUtil.FindPlayerObject((ulong)_clientId);
-            var sneak = player != null ? player.GetComponent<CTC.Runtime.Player.CatSneak>() : null;
+            var sneak = player != null ? player.GetComponent<CTC.Runtime.Player.Sneak>() : null;
             return sneak != null && sneak.Sneaking;
         }
 

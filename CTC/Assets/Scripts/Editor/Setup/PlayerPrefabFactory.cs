@@ -77,6 +77,11 @@ namespace CTC.Editor
                 SetRef(shop, "m_FortressPrefab", _fortressPrefab);
                 SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
 
+                // LCtrl 잠행 — 발소리 소거·이속 절반. **역할 분기 밖**이다: 2026-08-10에 쥐로
+                // 확장했는데 고양이 분기 안에 두면 쥐 프리팹에 조용히 안 붙는다(그렇게 한 번 놓쳤다).
+                // 배율은 컴포넌트가 자기 RoleTag를 보고 CSV에서 읽는다.
+                root.AddComponent<Sneak>();
+
                 if (_role == RoleId.Cat)
                 {
                     // 덮치기 수치도 CSV(PlayerInfo.csv)에서 굽는다
@@ -85,7 +90,6 @@ namespace CTC.Editor
                     SetFloat(pounce, "m_CooldownSeconds", info.PounceCooldown);
                     SetFloat(pounce, "m_Range", info.PounceRange);
                     SetFloat(pounce, "m_HalfAngleDeg", info.PounceHalfAngleDeg);
-                    root.AddComponent<CatSneak>(); // LCtrl 잠행 — 발소리 소거·이속 절반
                 }
                 else
                 {
