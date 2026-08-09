@@ -130,6 +130,13 @@ namespace CTC.Runtime.Testing
             return hud != null && hud.IsOpen;
         }
 
+        /// <summary>QA: 채팅 입력창 닫기 — 주입한 Enter가 포커스 문제로 씹혀 창이 열린 채 남았을 때 치운다.</summary>
+        public void TestCloseChat()
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            if (hud != null && hud.IsOpen) hud.Close();
+        }
+
         // ===== 옵션 (2026-08-01) =====
 
         public void TestOpenOptions()

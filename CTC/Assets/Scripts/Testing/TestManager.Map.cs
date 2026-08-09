@@ -19,27 +19,46 @@ namespace CTC.Runtime.Testing
     // TestManager의 일부 — 맵·스폰·이동 (개편 5단계 분할, 2026-07-31)
     public partial class TestManager
     {
-        /// <summary>로컬 플레이어를 다른 플레이어 바로 앞으로 순간이동(전투 QA용, CC 토글).</summary>
-        public void TestTeleportToOtherPlayer()
+        /// <summary>
+        /// 로컬 플레이어를 다른 플레이어 바로 앞으로 순간이동(전투 QA용, CC 토글).
+        ///
+        /// `_clientId`를 주면 **그 사람에게** 간다. 안 주면(-1) 스폰 순서상 처음 만나는 남에게 간다 —
+        /// 이게 기본이던 시절 qa_v37이 `_clientId`를 넘겨도 시그니처에 없어 통째로 버려졌고,
+        /// 고양이가 늘 호스트(먼저 스폰된 쥐)를 잡아 엉뚱한 쥐를 가뒀다(2026-08-09 규명).
+        /// </summary>
+        public void TestTeleportToOtherPlayer(long _clientId = -1)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             if (local == null) { GameDebug.LogWarning("[TestManager] 로컬 플레이어 없음"); return; }
+
+            if (_clientId >= 0)
+            {
+                var target = CTC.Runtime.Core.NetUtil.FindPlayerObject((ulong)_clientId);
+                if (target == null) { GameDebug.LogWarning($"[TestManager] clientId {_clientId} 플레이어 없음"); return; }
+                MoveInFrontOf(local, target);
+                return;
+            }
 
             foreach (var kv in nm.SpawnManager.SpawnedObjects)
             {
                 var other = kv.Value;
                 if (other == null || other == local || other.GetComponent<CTC.Runtime.Player.PlayerMovement>() == null) continue;
 
-                var cc = local.GetComponent<UnityEngine.CharacterController>();
-                UnityEngine.Vector3 pos = other.transform.position - other.transform.forward * 1.2f;
-                if (cc != null) cc.enabled = false;
-                local.transform.position = pos;
-                local.transform.LookAt(other.transform.position);
-                if (cc != null) cc.enabled = true;
-                GameDebug.Log($"[TestManager] TeleportToOtherPlayer → {pos}");
+                MoveInFrontOf(local, other);
                 return;
             }
+        }
+
+        private static void MoveInFrontOf(Unity.Netcode.NetworkObject _local, Unity.Netcode.NetworkObject _other)
+        {
+            var cc = _local.GetComponent<UnityEngine.CharacterController>();
+            UnityEngine.Vector3 pos = _other.transform.position - _other.transform.forward * 1.2f;
+            if (cc != null) cc.enabled = false;
+            _local.transform.position = pos;
+            _local.transform.LookAt(_other.transform.position);
+            if (cc != null) cc.enabled = true;
+            GameDebug.Log($"[TestManager] TeleportToOtherPlayer → {pos}");
         }
 
         /// <summary>로컬 플레이어를 지정 좌표로 순간이동(CC 토글) — 요새 차폐/진입 QA용.</summary>
