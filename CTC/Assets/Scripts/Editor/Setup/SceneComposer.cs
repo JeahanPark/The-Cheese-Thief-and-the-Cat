@@ -77,6 +77,11 @@ namespace CTC.Editor
             var alcoveSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.AlcoveSpawner>();
             SetRef(alcoveSpawner, "m_AlcovePrefab", _alcovePrefab);
 
+            // 상자(Worker, v3.9) — 벽감과 같은 취급. LobbyController가 GetComponent로 찾으므로
+            // **같은 오브젝트에 있어야 한다** (안 붙여서 상자가 0개 스폰된 적이 있다, 2026-08-10).
+            var boxSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.LootBoxSpawner>();
+            SetRef(boxSpawner, "m_BoxPrefab", _lootBoxPrefab);
+
             // 감옥(Worker, v3.8) — 수감·체류·구출을 서버가 여기서 돌린다.
             // m_Lobby 배선은 LobbyController가 생긴 뒤에 한다(아래).
             var jailDirector = lobbyGo.AddComponent<CTC.Runtime.Match.JailDirector>();

@@ -103,6 +103,57 @@ namespace CTC.Runtime.Testing
         public int TestGetAlcoveCount()
             => FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None).Length;
 
+        /// <summary>
+        /// QA: 씬에 서 있는 구조물(요새·창고 등) 중 HP가 가장 낮은 값. 없으면 -1.
+        /// 쥐가 **제 구조물을 못 친다**를 재는 데 쓴다 — 하나라도 깎이면 규칙이 샌 것이다.
+        /// </summary>
+        public int TestGetLowestStructureHp()
+        {
+            int lowest = -1;
+            foreach (Health h in FindObjectsByType<Health>(FindObjectsSortMode.None))
+            {
+                if (h.NetworkObject == null || h.NetworkObject.IsPlayerObject) continue;
+                if (h.GetComponent<CTC.Runtime.Map.Alcove>() != null) continue;
+                if (h.GetComponent<CTC.Runtime.Map.LootBox>() != null) continue;
+                if (h.GetComponent<CTC.Runtime.Ai.DogBrain>() != null) continue;
+
+                if (lowest < 0 || h.Hp < lowest) lowest = h.Hp;
+            }
+            return lowest;
+        }
+
+        // ===== 상자 (v3.9) =====
+
+        /// <summary>QA: 맵에 서 있는 상자 수.</summary>
+        public int TestGetBoxCount()
+            => FindObjectsByType<CTC.Runtime.Map.LootBox>(FindObjectsSortMode.None).Length;
+
+        /// <summary>QA: 맵의 상자 전부가 품은 치즈 합계 — 지점 매장량에서 뗀 몫과 같아야 한다.</summary>
+        public int TestGetBoxCheeseTotal()
+        {
+            var director = FindFirstObjectByType<CTC.Runtime.Map.MapDirector>();
+            if (director == null || director.ActiveLayout == null) return -1;
+            return CTC.Runtime.Map.LootBoxLogic.TotalCheese(director.ActiveLayout.Boxes);
+        }
+
+        /// <summary>서버 전용 — 상자 하나를 부순다. 위치를 "x,z"로 준다(없으면 빈 문자열).</summary>
+        public string TestBreakFirstBox()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return "";
+
+            foreach (var box in FindObjectsByType<CTC.Runtime.Map.LootBox>(FindObjectsSortMode.None))
+            {
+                var health = box.GetComponent<Health>();
+                if (health == null || health.IsDead) continue;
+
+                Vector3 p = box.transform.position;
+                health.TakeDamage(health.MaxHp);
+                return $"{p.x:F2},{p.z:F2}";
+            }
+            return "";
+        }
+
         /// <summary>QA: 치즈를 품은 벽감 수 — 강아지 벽감은 안 센다(총량이 새는지 본다).</summary>
         public int TestGetCheeseAlcoveCount()
         {
