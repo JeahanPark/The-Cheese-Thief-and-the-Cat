@@ -414,28 +414,28 @@ MonoBehaviour:
   - Pos: {x: -50.78463, y: 0.17693657}
     YawDeg: 90.19962
   m_Alcoves:
+  - Pos: {x: 0, y: 4.8}
+    YawDeg: 180
+    Payload: 1
+  - Pos: {x: 51.069633, y: -46.85526}
+    YawDeg: 180
+    Payload: 0
+  - Pos: {x: -50.43316, y: 56.43808}
+    YawDeg: 180
+    Payload: 0
+  - Pos: {x: 50.470207, y: 56.17864}
+    YawDeg: 180
+    Payload: 0
   - Pos: {x: -50.61567, y: -45.93183}
     YawDeg: 180
     Payload: 0
-  - Pos: {x: -33.254303, y: -46.480755}
-    YawDeg: 180
-    Payload: 0
-  - Pos: {x: -16.9423, y: -46.649513}
-    YawDeg: 180
-    Payload: 0
-  - Pos: {x: 0.05959239, y: -46.191967}
-    YawDeg: 180
-    Payload: 1
-  - Pos: {x: 17.688362, y: -46.573204}
-    YawDeg: 180
-    Payload: 0
-  - Pos: {x: 34.197403, y: -45.647938}
+  - Pos: {x: -50.78463, y: 4.9769363}
     YawDeg: 180
     Payload: 0
   m_Jails:
-  - Pos: {x: 51.069633, y: -51.65526}
-  - Pos: {x: -50.43316, y: 51.63808}
-  - Pos: {x: -50.61567, y: -50.73183}
+  - Pos: {x: -51.529163, y: 33.67007}
+  - Pos: {x: 51.49179, y: -33.645527}
+  - Pos: {x: 33.749393, y: 51.382305}
   m_Boxes:
   - Pos: {x: -45.715668, y: -46.33183}
     YawDeg: 0

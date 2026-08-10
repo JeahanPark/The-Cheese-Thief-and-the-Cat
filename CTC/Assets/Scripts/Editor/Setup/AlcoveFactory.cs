@@ -16,6 +16,8 @@ namespace CTC.Editor
         private const float ALCOVE_WALL_INSET = 0.7f;
         // 치즈 지점과 이만큼은 떨어뜨린다 — 붙어 있으면 한 자리에서 다 해결돼 이동이 사라진다
         private const float ALCOVE_MIN_CHEESE_DIST = 3.5f;
+        // 요새가 이 여유 안에 있는 방에는 감옥을 두지 않는다 — 요새 자리가 곧 쥐 스폰이다
+        private const float JAIL_FORTRESS_MARGIN = 1f;
 
         /// <summary>
         /// 벽감 프리팹. `CreateStructurePrefab`을 쓰지 않는 이유가 둘 있다 —
@@ -126,23 +128,35 @@ namespace CTC.Editor
         /// 방·복도·치즈·요새는 건드리지 않는다 — 맵을 다시 생성하면 시드가 바뀌어
         /// 검증까지 끝난 지형이 통째로 달라진다.
         ///
-        /// 규칙: 방 하나에 하나씩, 벽면에 붙여서, 치즈 지점과는 떨어뜨려서.
+        /// 규칙: 방 하나에 하나씩, 벽면에 붙여서, 치즈 지점과는 떨어뜨려서, **맵 전체에 흩어서**.
         /// 복도에 두지 않는 이유는 부수는 19초 동안 도망칠 방향이 둘뿐이라 사형선고가 되기 때문.
+        ///
+        /// 흩는 게 왜 규칙인가: 방 목록 앞에서부터 집으면 생성기가 방을 만든 순서를 따라간다.
+        /// 격자 맵은 그 순서가 한 줄씩이라 벽감 6개가 맨 아래 한 줄에 전부 몰렸다(2026-08-10 실측).
+        /// 중앙에서 시작하는 건 강아지 벽감이 진짜 한가운데에 놓이게 하려는 것이다.
         /// </summary>
         private static void PlanAlcovesInto(MapLayout _layout, int _count)
         {
             if (_layout == null || _count <= 0) return;
 
-            var placed = new List<AlcovePlacement>();
+            // 벽 자리가 나오는 방만 후보다 — 치즈와 겹치는 방은 애초에 제외된다
+            var spots = new List<(Vector2 pos, float yaw)>();
+            var anchors = new List<Vector2>();
             foreach (RoomRect room in _layout.Rooms)
             {
-                if (placed.Count >= _count) break;
                 if (!TryWallSpot(room, _layout, out Vector2 pos, out float yaw)) continue;
+                spots.Add((pos, yaw));
+                anchors.Add(room.Center);
+            }
 
+            var placed = new List<AlcovePlacement>();
+            int center = PlacementLogic.NearestTo(anchors, Vector2.zero);
+            foreach (int i in PlacementLogic.SpreadPick(anchors, _count, center))
+            {
                 placed.Add(new AlcovePlacement
                 {
-                    Pos = pos,
-                    YawDeg = yaw,
+                    Pos = spots[i].pos,
+                    YawDeg = spots[i].yaw,
                     Payload = AlcovePayload.Cheese,
                 });
             }
@@ -207,57 +221,51 @@ namespace CTC.Editor
         }
 
         /// <summary>
-        /// 감옥 자리를 레이아웃에 덧쓴다. 서로 **가장 먼** 방 두 곳의 중심을 고른다 —
+        /// 감옥 자리를 레이아웃에 덧쓴다. 서로 **멀리 떨어진** 방들의 중심을 고른다 —
         /// 붙어 있으면 고양이가 둘 다 지킬 수 있어 "어디를 지킬 것인가"라는 판단이 사라진다.
+        ///
+        /// **요새가 있는 방은 뺀다** — 단, 뺄 여유가 있을 때만. 요새 자리가 곧 쥐 스폰이라
+        /// 겹치면 감옥이 스폰 지점에 서고, 그 앞을 지키는 고양이가 스폰까지 같이 지킨다
+        /// (2026-08-10 실측: 120×120 맵에서 감옥 3개가 전부 요새 위였다).
+        ///
+        /// 여유를 따지는 이유: 기본 맵은 방 6개 중 4개가 요새 방이라 무조건 빼면 후보가 둘만 남고,
+        /// 감옥 둘이 10m 거리에 붙어 "어디를 지킬 것인가"가 사라진다 — 겹치는 것보다 그게 더 나쁘다.
         /// </summary>
         private static void PlanJailsInto(MapLayout _layout, int _count)
         {
             if (_layout == null || _count <= 0 || _layout.Rooms.Count == 0) return;
 
+            var fortresses = new List<Vector2>();
+            foreach (FortressPlacement f in _layout.Fortresses) fortresses.Add(f.Pos);
+
             var centers = new List<Vector2>();
-            foreach (RoomRect r in _layout.Rooms) centers.Add(r.Center);
-
-            // 가장 먼 두 방을 먼저 잡고, 더 필요하면 "이미 고른 것들에서 가장 먼" 방을 계속 더한다
-            var chosen = new List<int>();
-            if (_count >= 2)
+            foreach (RoomRect r in _layout.Rooms)
             {
-                float best = -1f;
-                int a = 0, b = 0;
-                for (int i = 0; i < centers.Count; i++)
-                {
-                    for (int j = i + 1; j < centers.Count; j++)
-                    {
-                        float d = Vector2.Distance(centers[i], centers[j]);
-                        if (d <= best) continue;
-                        best = d; a = i; b = j;
-                    }
-                }
-                chosen.Add(a);
-                if (b != a) chosen.Add(b);
+                if (PlacementLogic.RoomHoldsAny(r, fortresses, JAIL_FORTRESS_MARGIN)) continue;
+                centers.Add(r.Center);
             }
-            else
+            // 고를 자리가 감옥 수의 두 배는 돼야 '흩는다'는 말이 성립한다
+            if (centers.Count < _count * 2)
             {
-                chosen.Add(0);
+                centers.Clear();
+                foreach (RoomRect r in _layout.Rooms) centers.Add(r.Center);
             }
 
-            while (chosen.Count < _count && chosen.Count < centers.Count)
+            // 원점에서 가장 먼 방부터 — 감옥은 구석에 있어야 "데리러 가는 거리"가 값을 갖는다
+            int start = 0;
+            float farthest = -1f;
+            for (int i = 0; i < centers.Count; i++)
             {
-                int farthest = -1;
-                float bestMin = -1f;
-                for (int i = 0; i < centers.Count; i++)
-                {
-                    if (chosen.Contains(i)) continue;
-                    float nearest = float.MaxValue;
-                    foreach (int c in chosen) nearest = Mathf.Min(nearest, Vector2.Distance(centers[i], centers[c]));
-                    if (nearest <= bestMin) continue;
-                    bestMin = nearest; farthest = i;
-                }
-                if (farthest < 0) break;
-                chosen.Add(farthest);
+                float d = centers[i].sqrMagnitude;
+                if (d <= farthest) continue;
+                farthest = d; start = i;
             }
 
             var placed = new List<JailPlacement>();
-            foreach (int i in chosen) placed.Add(new JailPlacement { Pos = centers[i] });
+            foreach (int i in PlacementLogic.SpreadPick(centers, _count, start))
+            {
+                placed.Add(new JailPlacement { Pos = centers[i] });
+            }
 
             _layout.SetJails(placed);
             EditorUtility.SetDirty(_layout);
