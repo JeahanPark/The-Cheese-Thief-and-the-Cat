@@ -179,5 +179,34 @@ namespace CTC.Tests
             Assert.AreEqual(ShopLogic.WeaponStatsForTier(2).Damage, ShopLogic.WeaponStatsForTier(99).Damage);
             Assert.AreEqual(ShopLogic.WeaponStatsForTier(0).Damage, ShopLogic.WeaponStatsForTier(-1).Damage);
         }
+
+        [Test]
+        public void Balance_CatAdvancementIsReachableWithinOneMatch()
+        {
+            // 고양이 수입은 덮치기 하나뿐이다 — 쥐(100HP)를 잡으면 100/나눗값 + 킬 보너스.
+            // 전직(강화 두 줄 만렙)이 그 수입으로 판 안에 안 닿으면 4종 전직이 통째로
+            // 죽은 콘텐츠가 된다(2026-08-10 실측: 비용 1750 = 16킬, 720초·120×120에선 불가능).
+            //
+            // 이 판정이 없으면 강화 가격이나 킬 보너스를 만질 때마다 조용히 다시 막힌다.
+            int perCatch = 100 / FunLogic.PLAYER_DAMAGE_DIVISOR + FunLogic.KILL_BONUS;
+            int advanceCost = (ShopLogic.Find(ShopItemId.CatAttack).Cost
+                               + ShopLogic.Find(ShopItemId.CatSpeed).Cost) * ShopLogic.MAX_UPGRADE_STACKS;
+
+            Assert.LessOrEqual(advanceCost, perCatch * 10,
+                $"전직 {advanceCost} — 열 번 잡아도 못 열면 없는 기능이다");
+            // 반대로 너무 싸면 초반에 열려 남은 판이 일방적이 된다
+            Assert.Greater(advanceCost, perCatch * 5,
+                $"전직 {advanceCost} — 다섯 번 만에 열리면 후반 카드가 아니다");
+        }
+
+        [Test]
+        public void Balance_MaxUpgradeStillTakesTwoPouncesToDropAMouse()
+        {
+            // 강화를 싸게 만든 대가로 만렙 덮치기가 원샷이 되면 안 된다 —
+            // 원샷은 불 전직(×2)의 값어치다(2026-08-10).
+            int maxPounce = 60 + ShopLogic.POUNCE_DAMAGE_PER_STACK * ShopLogic.MAX_UPGRADE_STACKS;
+            Assert.Less(maxPounce, 200, "쥐 100HP를 한 방에 잡으면 전직할 이유가 없다");
+            Assert.Greater(maxPounce, 100, "만렙인데 세 방이면 강화가 무의미하다");
+        }
     }
 }

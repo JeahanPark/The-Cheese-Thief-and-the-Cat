@@ -5,5 +5,5 @@ Dash,Mouse,100
 Decoy,Mouse,50
 Fortress,Mouse,220
 Warehouse,Mouse,150
-CatAttack,Cat,200
-CatSpeed,Cat,150
+CatAttack,Cat,120
+CatSpeed,Cat,90
