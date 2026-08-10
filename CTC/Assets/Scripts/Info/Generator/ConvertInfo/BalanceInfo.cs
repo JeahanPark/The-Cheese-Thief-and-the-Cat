@@ -72,6 +72,12 @@ namespace CTC.Runtime.Info
         public int BoxDropCount;
         public float BoxHitSoundMeters;
         public float BoxBreakSoundMeters;
+        public float CatSkillSeconds;
+        public float CatSkillCooldown;
+        public float CatFireDamageMultiplier;
+        public float CatWindSpeedMultiplier;
+        public float CatDarkStrength;
+        public float CatSkillSoundMeters;
     }
 
     public partial class InfoManager

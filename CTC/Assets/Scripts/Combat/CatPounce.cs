@@ -1,3 +1,4 @@
+using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -24,6 +25,10 @@ namespace CTC.Runtime.Combat
         private double m_LastUseTime = -999.0;
 
         public int DamageStacks => m_DamageStacks.Value;
+
+        /// <summary>강화 중첩 스트림 — 전직 창이 "다 올렸나"를 폴링 없이 안다(규칙 3).</summary>
+        public R3.Observable<int> DamageStacksChanged =>
+            m_DamageStacks.AsObservableWithCurrent();
 
         /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
         public void ServerAddDamageStack()
@@ -81,7 +86,10 @@ namespace CTC.Runtime.Combat
                 // '벽 때리기가 최고 효율'이던 v3.5의 실패가 되살아난다(2026-08-09)
                 bool exempt = target.GetComponent<BountyExempt>() != null;
 
-                int dealt = target.TakeDamage(ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value));
+                int damage = ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value);
+                // 불(v3.9) — 스킬이 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
+                damage = Mathf.RoundToInt(damage * FireMultiplier());
+                int dealt = target.TakeDamage(damage);
                 // 장난기 적립(v3.6): 플레이어 실피해 ×0.5 + 킬 보너스, 구조물은 ×0.25.
                 // 요새 1채 300pt는 벽 때리기를 최고 효율 수입원으로 만들었다.
                 if (myWallet != null && !exempt)
@@ -105,6 +113,18 @@ namespace CTC.Runtime.Combat
             {
                 driver.PlayOneShot(Player.AnimationStateLogic.Attack, ATTACK_ANIM_SECONDS);
             }
+        }
+
+        // 불 전직 + 스킬 활성일 때만 1이 아니다. 컴포넌트가 없으면(구 프리팹) 항상 1이라
+        // 전직을 모르는 씬에서도 그대로 돈다.
+        private float FireMultiplier()
+        {
+            var cls = GetComponent<Player.CatClass>();
+            var skill = GetComponent<Player.CatSkill>();
+            if (cls == null || skill == null) return 1f;
+            if (cls.Value != Player.CatClassId.Fire || !skill.Active) return 1f;
+
+            return Player.CatClassLogic.FireDamageMultiplier;
         }
 
         // 차폐 판정은 SightLine이 단독으로 갖는다 — 강아지(v3.8 5번)가 같은 규칙을 써야 해서

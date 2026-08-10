@@ -354,6 +354,8 @@ namespace CTC.Editor
                 LoadClip("Ai/sfx_dog_alcove_idle"),      // DogAlcoveIdle
                 LoadClip("Economy/sfx_box_hit"),         // BoxHit
                 LoadClip("Economy/sfx_box_break"),       // BoxBreak
+                LoadClip("UI/sfx_cat_advance"),          // CatAdvance
+                LoadClip("Combat/sfx_cat_skill"),        // CatSkill
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
@@ -388,6 +390,7 @@ namespace CTC.Editor
             }
 
             BuildOptionsPopup(canvasGo, escRouter);
+            BuildCatClassPopup(canvasGo);
             BuildChatHud(canvasGo, escRouter);
             BuildJailHud(canvasGo);
 
@@ -439,6 +442,79 @@ namespace CTC.Editor
             SetRef(_esc, "m_Options", popup);
 
             panel.SetActive(false);
+        }
+
+        /// <summary>
+        /// 전직 선택 창 (v3.9). 강화를 둘 다 끝까지 올린 고양이에게만 뜬다.
+        /// 어둠 스킬의 화면 암전과 빛 스킬의 실루엣도 여기서 같이 배선한다 —
+        /// 둘 다 **보는 쪽 화면**에만 있는 것이라 캔버스에 붙는다.
+        /// </summary>
+        private static void BuildCatClassPopup(GameObject _canvasGo)
+        {
+            var panel = new GameObject("CatClassPanel", typeof(RectTransform));
+            panel.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)panel.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(720f, 300f);
+            panel.AddComponent<Image>().color = new Color(0.08f, 0.09f, 0.12f, 0.96f);
+
+            TMP_Text title = CreateTmpText("CatClassTitle", panel.transform, "전직",
+                34f, TextAlignmentOptions.Center, new Vector2(0f, -20f), new Vector2(680f, 46f));
+            title.fontStyle = FontStyles.Bold;
+
+            // 스킬 이름을 버튼에 적어 둔다 — 되돌릴 수 없는 선택이라 설명이 버튼 안에 있어야 한다
+            var labels = new[]
+            {
+                "불\n덮치기 피해 UP", "바람\n이동 속도 UP",
+                "빛\n모든 쥐 투시", "어둠\n쥐 시야 차단",
+            };
+            var buttons = new Button[4];
+            for (int i = 0; i < 4; i++)
+            {
+                float x = -255f + i * 170f;
+                buttons[i] = CreateMuipButton(panel.transform, $"CatClass{i}", labels[i],
+                    new Vector2(x, -160f), 160f);
+            }
+
+            var popup = _canvasGo.AddComponent<CTC.Runtime.UI.CatClassPopup>();
+            SetRef(popup, "m_Root", panel);
+            SetRef(popup, "m_Title", title);
+            SetRefArray(popup, "m_Buttons", buttons);
+
+            // 어둠 — 화면 전체를 덮는 검은 판. 평소엔 꺼져 있다.
+            var dark = new GameObject("DarkOverlay", typeof(RectTransform));
+            dark.transform.SetParent(_canvasGo.transform, false);
+            StretchFull((RectTransform)dark.transform);
+            var darkImage = dark.AddComponent<Image>();
+            darkImage.color = new Color(0f, 0f, 0f, 0f);
+            darkImage.raycastTarget = false;   // 클릭을 막으면 안 된다
+            darkImage.enabled = false;
+
+            var view = _canvasGo.AddComponent<CTC.Runtime.UI.CatSkillView>();
+            SetRef(view, "m_DarkOverlay", darkImage);
+            SetRef(view, "m_SilhouetteMaterial", CreateSilhouetteMaterial());
+
+            panel.SetActive(false);
+        }
+
+        // 빛 스킬의 실루엣 — 벽 너머로 보여야 하므로 **깊이 검사를 끄고 항상 위에** 그린다.
+        private static Material CreateSilhouetteMaterial()
+        {
+            const string path = MaterialsDir + "/M_Silhouette.mat";
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+
+            var mat = new Material(shader) { name = "M_Silhouette" };
+            mat.SetColor("_BaseColor", new Color(1f, 0.85f, 0.2f, 1f));
+            mat.color = new Color(1f, 0.85f, 0.2f, 1f);
+            mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            mat.SetInt("_ZWrite", 0);
+            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Overlay;
+
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
         }
 
         // 프로젝트 첫 Slider — 재사용할 프리팹이 없어 4계층(배경/채움영역/채움/손잡이)을 손으로 조립한다.

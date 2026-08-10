@@ -90,6 +90,11 @@ namespace CTC.Editor
                     SetFloat(pounce, "m_CooldownSeconds", info.PounceCooldown);
                     SetFloat(pounce, "m_Range", info.PounceRange);
                     SetFloat(pounce, "m_HalfAngleDeg", info.PounceHalfAngleDeg);
+
+                    // 전직(v3.9) — 상태와 스킬을 따로 둔다(기능 1개 = 컴포넌트 1개).
+                    // 조건(강화 만렙)은 CatClass가 보고, 쓰는 것은 CatSkill이 맡는다.
+                    root.AddComponent<CatClass>();
+                    root.AddComponent<CatSkill>();
                 }
                 else
                 {

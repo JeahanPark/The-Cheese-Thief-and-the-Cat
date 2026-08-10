@@ -1,3 +1,4 @@
+using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
@@ -29,6 +30,10 @@ namespace CTC.Runtime.Player
         private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
 
         public int SpeedStacks => m_SpeedStacks.Value;
+
+        /// <summary>강화 중첩 스트림 — 전직 창이 "다 올렸나"를 폴링 없이 안다(규칙 3).</summary>
+        public R3.Observable<int> SpeedStacksChanged =>
+            m_SpeedStacks.AsObservableWithCurrent();
 
         /// <summary>QA 전용 — 키보드 대신 이 방향으로 걷는다. 영벡터면 해제.</summary>
         public void DevSetMoveInput(Vector3 _worldDirection)
@@ -110,6 +115,7 @@ namespace CTC.Runtime.Player
 
             float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value);
             if (m_Sneak != null && m_Sneak.Sneaking) speed *= m_Sneak.SpeedMultiplier;
+            speed *= WindMultiplier();   // 바람 전직(v3.9) — 스킬 중에만 1이 아니다
 
             Vector3 motion = dir * speed;
             motion.y = m_VerticalVelocity;
@@ -133,5 +139,17 @@ namespace CTC.Runtime.Player
             return m_JailedTag != null && m_JailedTag.Jailed;
         }
 
-    }
+    
+        // 바람 전직 + 스킬 활성일 때만 1이 아니다. 컴포넌트가 없으면(쥐·구 프리팹) 항상 1이라
+        // 전직을 모르는 쪽에서도 그대로 돈다.
+        private float WindMultiplier()
+        {
+            var cls = GetComponent<CatClass>();
+            var skill = GetComponent<CatSkill>();
+            if (cls == null || skill == null) return 1f;
+            if (cls.Value != CatClassId.Wind || !skill.Active) return 1f;
+
+            return CatClassLogic.WindSpeedMultiplier;
+        }
+}
 }

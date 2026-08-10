@@ -44,6 +44,10 @@ namespace CTC.Runtime.Audio
         // 상자 파괴음은 '찾은 사람이 조용히 먹는다'(8m)라 뜻이 정반대다.
         BoxHit = 31,
         BoxBreak = 32,
+        // 고양이 전직(v3.9). 둘 다 **쥐도 들어야 한다** — 큰 효과에 소리를 붙이는 게
+        // 스킬을 액티브로 만든 이유다. 모르면 대응할 수 없다.
+        CatAdvance = 33,
+        CatSkill = 34,
     }
 
     /// <summary>
