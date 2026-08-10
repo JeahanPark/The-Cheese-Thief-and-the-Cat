@@ -116,15 +116,19 @@ namespace CTC.Editor
         /// 벽감이 벽 한가운데 노출돼 "다 같이 달려오는" 물건이라면, 상자는 구석에 있어
         /// 돌아다닌 사람만 찾는다. 규칙이 한 줄이라 레벨디자인이 바뀌어도 따라온다.
         ///
-        /// 내용물은 지금 치즈 하나뿐이다(고정 방식) — 물건이 늘면 여기서 자리마다 다르게 준다.
+        /// **맵 전체에 몇 개**다(2026-08-10, 그전엔 방마다 하나라 120×120에서 49개였다).
+        /// 상자는 직업권이 나오는 곳이라 개수가 곧 희소성이다 — 방마다 있으면 뒤지는 게 일이 되고,
+        /// 흔해지면 "찾았다"가 사건이 아니게 된다.
+        ///
+        /// 자리는 서로 멀리 흩는다. 앞에서부터 집으면 앞의 두 상자(깡패권·영웅권)가
+        /// 붙어 있어 한 사람이 둘 다 먹는다.
         /// </summary>
-        private static void PlanBoxesInto(MapLayout _layout, int _perRoom)
+        private static void PlanBoxesInto(MapLayout _layout, int _count)
         {
-            if (_layout == null || _perRoom <= 0) return;
+            if (_layout == null || _count <= 0) return;
 
-            var placed = new List<BoxPlacement>();
-            int amount = CTC.Runtime.Info.InfoManager.Instance.Balance.BoxCheese;
-
+            // 방마다 쓸 만한 모서리 하나씩 — 여기서 흩어 고른다
+            var spots = new List<Vector2>();
             foreach (RoomRect room in _layout.Rooms)
             {
                 Vector2 half = room.Size * 0.5f - Vector2.one * BOX_CORNER_INSET;
@@ -137,31 +141,46 @@ namespace CTC.Editor
                     room.Center + new Vector2(+half.x, -half.y),
                     room.Center + new Vector2(-half.x, +half.y),
                 };
-
-                int inThisRoom = 0;
                 foreach (Vector2 c in corners)
                 {
-                    if (inThisRoom >= _perRoom) break;
                     if (!IsClearOfCheese(c, _layout)) continue;
                     if (!IsClearOfAlcoves(c, _layout)) continue;
-
-                    // 직업권은 **자리마다 정해 둔다**(고정 방식). 깡패권이 하나뿐인 이유:
-                    // 둘이면 2단계에 보스가 둘이라 '보스 팀 vs 나머지'라는 구도가 깨진다.
-                    LootId id = placed.Count == 0 ? LootId.GangTicket
-                        : placed.Count == 1 ? LootId.HeroTicket
-                        : LootId.Cheese;
-
-                    placed.Add(new BoxPlacement
-                    {
-                        Pos = c,
-                        YawDeg = 0f,
-                        Contents = new List<LootEntry>
-                        {
-                            new LootEntry { Id = id, Amount = id == LootId.Cheese ? amount : 1 },
-                        },
-                    });
-                    inThisRoom++;
+                    spots.Add(c);
+                    break;
                 }
+            }
+
+            var placed = new List<BoxPlacement>();
+            int amount = CTC.Runtime.Info.InfoManager.Instance.Balance.BoxCheese;
+
+            // **원점에서 가장 먼 자리부터** 흩는다. 첫 상자가 깡패권인데 중앙에서 시작하면
+            // 그게 고양이 스폰(0,0) 코앞에 놓인다 — 쥐의 가장 큰 상품을 고양이 앞마당에 두는 꼴이다.
+            int start = 0;
+            float farthest = -1f;
+            for (int i = 0; i < spots.Count; i++)
+            {
+                if (spots[i].sqrMagnitude <= farthest) continue;
+                farthest = spots[i].sqrMagnitude;
+                start = i;
+            }
+
+            foreach (int i in PlacementLogic.SpreadPick(spots, _count, start))
+            {
+                // 직업권은 **자리마다 정해 둔다**(고정 방식). 깡패권이 하나뿐인 이유:
+                // 둘이면 2단계에 보스가 둘이라 '보스 팀 vs 나머지'라는 구도가 깨진다.
+                LootId id = placed.Count == 0 ? LootId.GangTicket
+                    : placed.Count == 1 ? LootId.HeroTicket
+                    : LootId.Cheese;
+
+                placed.Add(new BoxPlacement
+                {
+                    Pos = spots[i],
+                    YawDeg = 0f,
+                    Contents = new List<LootEntry>
+                    {
+                        new LootEntry { Id = id, Amount = id == LootId.Cheese ? amount : 1 },
+                    },
+                });
             }
 
             _layout.SetBoxes(placed);

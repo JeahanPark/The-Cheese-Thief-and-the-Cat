@@ -59,8 +59,9 @@ namespace CTC.Editor
         private const string HeroTicketPrefabPath = PrefabDir + "/HeroTicket.prefab";
         private const string GangTicketPrefabPath = PrefabDir + "/GangTicket.prefab";
 
-        // 방 하나에 상자 몇 개. 모서리에 놓으므로 4를 넘을 수 없다.
-        private const int BOXES_PER_ROOM = 1;
+        // 맵 하나에 상자 몇 개(2026-08-10, 그전엔 방마다 하나라 120×120에서 49개였다).
+        // 상자는 직업권이 나오는 곳이라 개수가 곧 희소성이다 — 흔하면 "찾았다"가 사건이 아니게 된다.
+        private const int BOXES_PER_MAP = 5;
 
         // 벽감·감옥 수는 맵 크기를 따라간다(2026-08-10, 120×120 대응).
         // 고정값이면 대형 맵(49방)에서 벽감 3개가 사실상 없는 것과 같아진다.
@@ -212,7 +213,7 @@ namespace CTC.Editor
                 if (layout == null) continue;
                 PlanAlcovesInto(layout, AlcoveCountFor(layout));
                 PlanJailsInto(layout, JailCountFor(layout));
-                PlanBoxesInto(layout, BOXES_PER_ROOM);   // 벽감 자리를 피하므로 벽감 뒤에 온다
+                PlanBoxesInto(layout, BOXES_PER_MAP);   // 벽감 자리를 피하므로 벽감 뒤에 온다
             }
             AssetDatabase.SaveAssets();
 

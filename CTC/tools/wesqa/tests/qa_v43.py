@@ -77,7 +77,7 @@ def main():
           cat.invoke("TestGetMatchResult"))
 
     remaining = cat.invoke("TestGetPhaseRemaining")
-    check("단계 — 새 시계 3분을 받는다", 170 < remaining <= 180, f"{remaining:.0f}초")
+    check("단계 — 새 시계 4분을 받는다", 230 < remaining <= 240, f"{remaining:.0f}초")
 
     # ---------- 2단계 안에서 임명 ----------
     # 다가가면 된다. **거절은 없다.**

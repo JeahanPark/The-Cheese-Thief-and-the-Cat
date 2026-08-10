@@ -90,8 +90,9 @@ namespace CTC.Tests.EditMode
         [Test]
         public void Balance_GangPhaseIsShortEnoughToStayTense()
         {
-            // 본 판(10분)보다 훨씬 짧아야 '몰아치는 마무리'가 된다.
-            Assert.Greater(MouseJobLogic.GangPhaseSeconds, 60f);
+            // 본 판보다 훨씬 짧아야 '몰아치는 마무리'가 된다. 다만 120×120에서는 3분이면
+            // 깡패 팀이 나머지 쥐를 찾지도 못한 채 시계가 끝난다 — 그래서 4분이다(2026-08-10).
+            Assert.GreaterOrEqual(MouseJobLogic.GangPhaseSeconds, 180f);
             Assert.Less(MouseJobLogic.GangPhaseSeconds, MatchFlowLogic.MATCH_DURATION_SECONDS * 0.5f);
         }
 
