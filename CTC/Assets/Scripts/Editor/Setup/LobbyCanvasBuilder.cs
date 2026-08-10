@@ -34,7 +34,8 @@ namespace CTC.Editor
         private const float SLOT_GAP = 8f;
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
-        private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match)
+        private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match,
+            CTC.Runtime.Match.PhaseDirector _phase)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -268,6 +269,8 @@ namespace CTC.Editor
             var timerHud = canvasGo.AddComponent<TimerHud>();
             SetRef(timerHud, "m_Lobby", _lobby);
             SetRef(timerHud, "m_Match", _match);
+            // 2단계는 시계가 통째로 다르다 — 이 배선이 빠지면 깡패전 4분이 화면에 안 나온다
+            SetRef(timerHud, "m_Phase", _phase);
             SetRef(timerHud, "m_Text", timerText);
 
             // 인게임 BGM (게임 시작 시 루프 재생 — BgmPlayer가 제어)
@@ -395,6 +398,7 @@ namespace CTC.Editor
             BuildCatClassPopup(canvasGo);
             BuildChatHud(canvasGo, escRouter);
             BuildJailHud(canvasGo);
+            BuildMouseJobHud(canvasGo, _phase);
 
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
@@ -588,6 +592,19 @@ namespace CTC.Editor
             text.gameObject.SetActive(false);
 
             var hud = _canvasGo.AddComponent<CTC.Runtime.UI.JailHud>();
+            SetRef(hud, "m_Text", text);
+        }
+
+        // 내 직업과 지금의 승리 조건. 감옥 안내 바로 아래 — 둘 다 "규칙이 바뀌었다"를 알리는 자리다.
+        private static void BuildMouseJobHud(GameObject _canvasGo, CTC.Runtime.Match.PhaseDirector _phase)
+        {
+            TMP_Text text = CreateTmpText("MouseJobText", _canvasGo.transform, "",
+                26f, TextAlignmentOptions.Center, new Vector2(0f, -196f), new Vector2(860f, 60f));
+            text.fontStyle = FontStyles.Bold;
+            text.gameObject.SetActive(false);
+
+            var hud = _canvasGo.AddComponent<CTC.Runtime.UI.MouseJobHud>();
+            SetRef(hud, "m_Phase", _phase);
             SetRef(hud, "m_Text", text);
         }
 

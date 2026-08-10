@@ -29,6 +29,7 @@ GameObject:
   - component: {fileID: 4175062087917428992}
   - component: {fileID: 3521756704669989981}
   - component: {fileID: 2937753257608233824}
+  - component: {fileID: 7957813808338237726}
   - component: {fileID: 2977953179673282696}
   - component: {fileID: 316232477143233120}
   - component: {fileID: 6539816911504078304}
@@ -389,6 +390,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.GangRecruit
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &7957813808338237726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ba3840d5d9eb5418a76547abfc0dd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.UI.JobBadge
 --- !u!82 &2977953179673282696
 AudioSource:
   m_ObjectHideFlags: 0

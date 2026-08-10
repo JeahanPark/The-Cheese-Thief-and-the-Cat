@@ -108,7 +108,7 @@ namespace CTC.Editor
             SetRef(cheeseDirector, "m_Lobby", lobby);
             SetRef(cheeseDirector, "m_Match", match);
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
-            BuildLobbyCanvas(lobby, match);
+            BuildLobbyCanvas(lobby, match, phaseDirector);
 
             // 로컬 플레이어 발행자 — HUD들이 매 프레임 탐색하는 대신 이 스트림을 구독한다(개편 3b)
             var binderGo = new GameObject("LocalPlayerBinder");

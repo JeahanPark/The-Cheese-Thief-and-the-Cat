@@ -108,6 +108,8 @@ namespace CTC.Editor
                     // 임명은 별도 컴포넌트다(기능 1개 = 컴포넌트 1개).
                     root.AddComponent<CTC.Runtime.Match.MouseJob>();
                     root.AddComponent<CTC.Runtime.Match.GangRecruit>();
+                    // 머리 위 편 표식 — 2단계는 쥐끼리 편이 갈리는데 표시가 없으면 누굴 쏠지 모른다
+                    root.AddComponent<CTC.Runtime.UI.JobBadge>();
                 }
 
                 // 발소리 — 3D 루프(거리 감쇠), FootstepPlayer가 이동 속도로 재생 제어

@@ -60,10 +60,25 @@ namespace CTC.Runtime.Match
             }
             if (!show) return;
 
-            m_Text.text = _result == MatchResult.MouseWin ? "MICE WIN!" : "CAT WINS!";
+            m_Text.text = LabelOf(_result);
 
             NetworkManager nm = NetworkManager.Singleton;
             m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost);
+        }
+
+        /// <summary>
+        /// 결과 문구. **삼항으로 쓰지 않는다** — 예전엔 "쥐 승이 아니면 고양이 승"이라
+        /// 깡패 팀이 이겨도 화면에 "CAT WINS!"가 떴다(2026-08-10 실측). 승자가 셋인 게임이다.
+        /// </summary>
+        public static string LabelOf(MatchResult _result)
+        {
+            switch (_result)
+            {
+                case MatchResult.MouseWin: return "MICE WIN!";
+                case MatchResult.CatWin: return "CAT WINS!";
+                case MatchResult.GangWin: return "GANG WINS!";
+                default: return "";
+            }
         }
     }
 }
