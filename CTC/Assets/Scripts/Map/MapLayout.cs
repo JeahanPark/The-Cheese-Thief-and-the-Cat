@@ -27,6 +27,8 @@ namespace CTC.Runtime.Map
         [SerializeField] private List<AlcovePlacement> m_Alcoves = new();
         // 쥐 감옥(v3.8) — 벽감과 같은 취급: 맵마다 개수·자리가 다르다
         [SerializeField] private List<JailPlacement> m_Jails = new();
+        // 상자(v3.9) — 자리마다 든 물건이 다르다. 그래서 좌표만이 아니라 내용물도 여기 있다.
+        [SerializeField] private List<BoxPlacement> m_Boxes = new();
 
         public int Seed => m_Seed;
         public string Source => m_Source;
@@ -43,6 +45,7 @@ namespace CTC.Runtime.Map
         public IReadOnlyList<FortressPlacement> Fortresses => m_Fortresses;
         public IReadOnlyList<AlcovePlacement> Alcoves => m_Alcoves;
         public IReadOnlyList<JailPlacement> Jails => m_Jails;
+        public IReadOnlyList<BoxPlacement> Boxes => m_Boxes;
 
         /// <summary>
         /// 벽감 자리만 덧쓴다(에디터 전용). 방·복도·치즈·요새는 그대로 둔다 —
@@ -57,6 +60,12 @@ namespace CTC.Runtime.Map
         public void SetJails(List<JailPlacement> _jails)
         {
             m_Jails = _jails ?? new List<JailPlacement>();
+        }
+
+        /// <summary>상자 자리와 내용물만 덧쓴다(에디터 전용) — 지형은 그대로 둔다.</summary>
+        public void SetBoxes(List<BoxPlacement> _boxes)
+        {
+            m_Boxes = _boxes ?? new List<BoxPlacement>();
         }
 
         /// <summary>생성기/툴이 결과를 채울 때 사용(에디터 전용 경로).</summary>

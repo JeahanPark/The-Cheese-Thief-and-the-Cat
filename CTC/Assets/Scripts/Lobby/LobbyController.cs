@@ -25,6 +25,7 @@ namespace CTC.Runtime.Lobby
         private PlayerSpawner m_Spawner;
         private MapDirector m_MapDirector;
         private Map.AlcoveSpawner m_AlcoveSpawner;
+        private Map.LootBoxSpawner m_BoxSpawner;
 
         private void Awake()
         {
@@ -32,6 +33,7 @@ namespace CTC.Runtime.Lobby
             m_Spawner = GetComponent<PlayerSpawner>();
             m_MapDirector = GetComponent<MapDirector>();
             m_AlcoveSpawner = GetComponent<Map.AlcoveSpawner>();
+            m_BoxSpawner = GetComponent<Map.LootBoxSpawner>();
         }
 
         // ---- 상태 조회 (View·QA가 읽는다) ----
@@ -100,6 +102,7 @@ namespace CTC.Runtime.Lobby
             if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
             // 벽감은 판이 시작할 때 맵이 깐다(요새·창고는 쥐가 산다)
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
+            if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
         }
 
         /// <summary>매치 종료 후 로비 복귀(MatchManager 재시작 스윕 뒤 호출). 역할은 유지.</summary>
@@ -107,6 +110,7 @@ namespace CTC.Runtime.Lobby
         {
             if (m_Session != null) m_Session.ServerResetToLobby();
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerDespawnAll();
+            if (m_BoxSpawner != null) m_BoxSpawner.ServerDespawnAll();
         }
 
         // ---- 스폰 공식 (소유자 클라가 자기 자리를 계산할 때) ----

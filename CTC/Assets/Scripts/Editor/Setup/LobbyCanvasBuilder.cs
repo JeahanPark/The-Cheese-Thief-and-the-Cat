@@ -352,6 +352,8 @@ namespace CTC.Editor
                 // 벽 안에서 새는 낑낑·긁는 소리. 루프라 원샷 재생에는 안 쓰이고
                 // AlcoveIdleSound가 AudioSource에 얹어 튼다.
                 LoadClip("Ai/sfx_dog_alcove_idle"),      // DogAlcoveIdle
+                LoadClip("Economy/sfx_box_hit"),         // BoxHit
+                LoadClip("Economy/sfx_box_break"),       // BoxBreak
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

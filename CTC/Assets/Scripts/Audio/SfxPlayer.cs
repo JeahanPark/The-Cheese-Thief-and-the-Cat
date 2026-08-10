@@ -40,6 +40,10 @@ namespace CTC.Runtime.Audio
         DogDeath = 29,
         /// <summary>벽 안에서 새는 소리. 이것만 루프고, 치즈 벽감은 조용하다.</summary>
         DogAlcoveIdle = 30,
+        // 상자(v3.9) — 벽감과 소리를 나눈다. 벽감 파괴음은 '달려와'(25m)고
+        // 상자 파괴음은 '찾은 사람이 조용히 먹는다'(8m)라 뜻이 정반대다.
+        BoxHit = 31,
+        BoxBreak = 32,
     }
 
     /// <summary>

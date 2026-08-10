@@ -67,6 +67,11 @@ namespace CTC.Runtime.Info
         public float DogBarkIntervalSeconds;
         public float DogBarkSoundMeters;
         public float DogAlcoveIdleSoundMeters;
+        public int BoxHp;
+        public int BoxCheese;
+        public int BoxDropCount;
+        public float BoxHitSoundMeters;
+        public float BoxBreakSoundMeters;
     }
 
     public partial class InfoManager

@@ -73,29 +73,43 @@ namespace CTC.Tests
                 Vector3.zero, Vector3.forward, new Vector3(0f, 0.8f, 1f), 2.2f, 60f));
         }
     
-        // ---- 교전 대상 (v3.8 5번 제3세력) ----
+        // ---- 교전 대상 (v3.8 제3세력 · v3.9 쥐끼리) ----
 
         [Test]
         public void CanAttack_HitsOpposingSide()
         {
-            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.Mouse));
-            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Cat));
-        }
-
-        [Test]
-        public void CanAttack_NeverHitsOwnSide()
-        {
-            // 쥐가 쥐를, 고양이가 고양이를 때리면 안 된다. 요새·미끼는 RoleId.Mouse라 여기 걸린다.
-            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Mouse));
-            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Cat, RoleId.Cat));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.Mouse, _targetIsPlayer: true));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Cat, _targetIsPlayer: true));
         }
 
         [Test]
         public void CanAttack_BothSidesCanHitThirdFaction()
         {
             // 이게 없으면 강아지를 아무도 못 죽인다 — 실제로 그렇게 만들어 놓고 qa_v40이 잡았다.
-            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.None));
-            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.None));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Cat, RoleId.None, _targetIsPlayer: false));
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.None, _targetIsPlayer: false));
         }
-}
+
+        [Test]
+        public void CanAttack_MiceCanHitEachOther()
+        {
+            // v3.9 — 깡패쥐가 판을 가르는 토대다.
+            Assert.IsTrue(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Mouse, _targetIsPlayer: true));
+        }
+
+        [Test]
+        public void CanAttack_MiceNeverHitTheirOwnStructures()
+        {
+            // 요새·미끼·창고·벽감·상자가 전부 RoleTag.Mouse다. 안 가르면 제 요새를 쏜다.
+            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Mouse, _targetIsPlayer: false));
+        }
+
+        [Test]
+        public void CanAttack_CatsNeverHitEachOther()
+        {
+            // 고양이는 끝까지 한 팀이다 — 쥐끼리를 열었다고 따라 열리면 안 된다.
+            Assert.IsFalse(CombatLogic.CanAttack(RoleId.Cat, RoleId.Cat, _targetIsPlayer: true));
+        }
+
+    }
 }

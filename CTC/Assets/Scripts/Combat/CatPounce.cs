@@ -63,7 +63,8 @@ namespace CTC.Runtime.Combat
 
                 // 쥐·구조물 + 제3세력(강아지). 제 진영만 아니면 때린다 — v3.8 5번에서 규칙을 하나로 모았다.
                 RoleTag tag = target.GetComponent<RoleTag>();
-                if (tag == null || !CombatLogic.CanAttack(RoleId.Cat, tag.Role)) continue;
+                bool targetIsPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Cat, tag.Role, targetIsPlayer)) continue;
 
                 if (!CombatLogic.IsInPounceArc(
                         transform.position, transform.forward, target.transform.position,
@@ -74,7 +75,7 @@ namespace CTC.Runtime.Combat
 
                 // 보상 대상 여부는 데미지 전에 캡처 — 사망 시 PlayerDeath가 Died 이벤트에서
                 // 동기 despawn하므로 이후에는 IsPlayerObject가 이미 false다
-                bool isPlayerTarget = target.NetworkObject.IsPlayerObject;
+                bool isPlayerTarget = targetIsPlayer;
 
                 // 맵 지형물(벽감)은 쥐가 쓴 돈이 아니라 값을 치르지 않는다 — 안 그러면
                 // '벽 때리기가 최고 효율'이던 v3.5의 실패가 되살아난다(2026-08-09)

@@ -35,12 +35,12 @@ namespace CTC.Runtime.Economy
         /// 고갈 시점 = 성장 기한을 고정하는데, 벽 치즈를 얹으면 성장이 늘어져 후반 압축이 무너진다.
         /// 인자를 기본값 없이 받는 건 호출부가 "벽 몫을 뺐는가"를 반드시 답하게 하려는 것이다.
         /// </summary>
-        public static int ReservePerSpot(int _spotCount, int _alcoveCheeseTotal)
+        public static int ReservePerSpot(int _spotCount, int _reservedCheeseTotal)
         {
             if (_spotCount <= 0) return 0;
 
-            // 배치 실수로 벽이 총량보다 많이 가져가도 지점 매장량이 음수가 되면 안 된다
-            int forSpots = Mathf.Max(0, TOTAL_MAP_CHEESE - Mathf.Max(0, _alcoveCheeseTotal));
+            // 배치 실수로 벽·상자가 총량보다 많이 가져가도 지점 매장량이 음수가 되면 안 된다
+            int forSpots = Mathf.Max(0, TOTAL_MAP_CHEESE - Mathf.Max(0, _reservedCheeseTotal));
             return forSpots / _spotCount;
         }
 

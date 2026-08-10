@@ -46,9 +46,15 @@ namespace CTC.Runtime.Combat
         /// `RoleId.None`(강아지)은 누구의 진영도 아니라 자동으로 양쪽의 표적이 된다.
         /// 요새·미끼·창고·벽감이 `RoleId.Mouse`인 것도 그대로다 — 고양이만 부순다.
         /// </summary>
-        public static bool CanAttack(Lobby.RoleId _attacker, Lobby.RoleId _target)
+        public static bool CanAttack(Lobby.RoleId _attacker, Lobby.RoleId _target, bool _targetIsPlayer)
         {
-            return _attacker != _target;
+            if (_attacker != _target) return true;
+
+            // 같은 진영이면 **쥐끼리만** 친다(v3.9 — 깡패쥐가 판을 가르는 토대).
+            // 사람만 치는 게 핵심이다: 요새·미끼·창고·벽감·상자가 전부 `RoleTag.Mouse`라
+            // 안 가르면 쥐가 제 요새를 쏜다.
+            // 고양이끼리는 안 친다 — 고양이는 끝까지 한 팀이다.
+            return _attacker == Lobby.RoleId.Mouse && _targetIsPlayer;
         }
     }
 }
