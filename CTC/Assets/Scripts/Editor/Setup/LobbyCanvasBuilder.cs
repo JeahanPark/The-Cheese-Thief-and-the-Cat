@@ -356,6 +356,8 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_box_break"),       // BoxBreak
                 LoadClip("UI/sfx_cat_advance"),          // CatAdvance
                 LoadClip("Combat/sfx_cat_skill"),        // CatSkill
+                LoadClip("Economy/sfx_shop_buy"),        // JobPickup (임시 — 상점 구매음 재사용)
+                LoadClip("UI/sfx_cat_advance"),          // GangRise (임시 — 전직음 재사용)
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

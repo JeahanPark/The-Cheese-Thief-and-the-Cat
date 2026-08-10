@@ -28,7 +28,8 @@ namespace CTC.Editor
         private static void CreateGameScene(
             GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab, GameObject _decoyPrefab,
             GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab,
-            GameObject _dogPrefab, GameObject _lootBoxPrefab)
+            GameObject _dogPrefab, GameObject _lootBoxPrefab,
+            GameObject _heroTicket, GameObject _gangTicket)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -52,7 +53,7 @@ namespace CTC.Editor
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab,
-                _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab);
+                _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
             nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
@@ -85,6 +86,10 @@ namespace CTC.Editor
             // 감옥(Worker, v3.8) — 수감·체류·구출을 서버가 여기서 돌린다.
             // m_Lobby 배선은 LobbyController가 생긴 뒤에 한다(아래).
             var jailDirector = lobbyGo.AddComponent<CTC.Runtime.Match.JailDirector>();
+
+            // 2단계 감독(Worker, v3.9) — 고양이가 죽어도 깡패가 있으면 판이 안 끝난다.
+            var phaseDirector = lobbyGo.AddComponent<CTC.Runtime.Match.PhaseDirector>();
+            SetRef(jailDirector, "m_Phase", phaseDirector);   // 2단계에는 구출이 없다
 
             var mapDirector = lobbyGo.AddComponent<CTC.Runtime.Map.MapDirector>(); // 맵(Worker)
             SetRef(mapDirector, "m_JailDirector", jailDirector);

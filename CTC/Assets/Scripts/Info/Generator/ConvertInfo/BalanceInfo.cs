@@ -78,6 +78,10 @@ namespace CTC.Runtime.Info
         public float CatWindSpeedMultiplier;
         public float CatDarkStrength;
         public float CatSkillSoundMeters;
+        public float GangPhaseSeconds;
+        public float HeroHpMultiplier;
+        public float HeroDamageMultiplier;
+        public float GangRecruitRadius;
     }
 
     public partial class InfoManager

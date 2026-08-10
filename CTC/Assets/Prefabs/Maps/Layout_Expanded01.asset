@@ -144,13 +144,13 @@ MonoBehaviour:
   - Pos: {x: 3.8000002, y: 7.2999997}
     YawDeg: 0
     Contents:
-    - Id: 0
-      Amount: 40
+    - Id: 2
+      Amount: 1
   - Pos: {x: -18.5, y: -19.2}
     YawDeg: 0
     Contents:
-    - Id: 0
-      Amount: 40
+    - Id: 1
+      Amount: 1
   - Pos: {x: 16.75, y: 19.55}
     YawDeg: 0
     Contents:

@@ -5,6 +5,8 @@ namespace CTC.Runtime.Match
         None = 0,
         MouseWin = 1,
         CatWin = 2,
+        /// <summary>깡패 팀(보스+부하) 승리 — 2단계에서만 나온다(v3.9).</summary>
+        GangWin = 3,
     }
 
     /// <summary>

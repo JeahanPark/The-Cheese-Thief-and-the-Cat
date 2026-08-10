@@ -48,6 +48,9 @@ namespace CTC.Runtime.Audio
         // 스킬을 액티브로 만든 이유다. 모르면 대응할 수 없다.
         CatAdvance = 33,
         CatSkill = 34,
+        // 쥐 직업(v3.9). 깡패 등장은 판의 전환점이라 멀리 간다 — 다른 쥐가 대비해야 한다.
+        JobPickup = 35,
+        GangRise = 36,
     }
 
     /// <summary>

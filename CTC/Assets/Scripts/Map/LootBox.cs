@@ -81,9 +81,20 @@ namespace CTC.Runtime.Map
                 var cheese = go.GetComponent<Economy.CheeseDrop>();
                 if (cheese != null) cheese.ServerSetAmount(piles[i]);
 
+                // 직업권은 "얼마나"가 없다 — 무엇인지만 새긴다.
+                var ticket = go.GetComponent<JobTicketDrop>();
+                if (ticket != null) ticket.ServerSetJob(JobOf(_entry.Id));
+
                 go.GetComponent<NetworkObject>().Spawn(true);
             }
         }
+
+        private static Match.MouseJobId JobOf(LootId _id) => _id switch
+        {
+            LootId.HeroTicket => Match.MouseJobId.Hero,
+            LootId.GangTicket => Match.MouseJobId.Gang,
+            _ => Match.MouseJobId.None,
+        };
 
         private GameObject PrefabFor(LootId _id)
         {

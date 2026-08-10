@@ -55,6 +55,10 @@ namespace CTC.Editor
         // 상자(v3.9) — 부수면 안에 든 것이 나온다
         private const string LootBoxPrefabPath = PrefabDir + "/LootBox.prefab";
 
+        // 직업권(v3.9) — 상자에서 나온다. LootId 순서와 1:1로 상자에 배선된다.
+        private const string HeroTicketPrefabPath = PrefabDir + "/HeroTicket.prefab";
+        private const string GangTicketPrefabPath = PrefabDir + "/GangTicket.prefab";
+
         // 방 하나에 상자 몇 개. 모서리에 놓으므로 4를 넘을 수 없다.
         private const int BOXES_PER_ROOM = 1;
 
@@ -151,7 +155,11 @@ namespace CTC.Editor
             GameObject cheeseDropPrefab = CreateCheeseDropPrefab();
             GameObject dogPrefab = CreateDogPrefab();
             GameObject alcovePrefab = CreateAlcovePrefab(cheeseDropPrefab, dogPrefab);
-            GameObject lootBoxPrefab = CreateLootBoxPrefab(cheeseDropPrefab);
+            GameObject heroTicket = CreateJobTicketPrefab(
+                "HeroTicket", HeroTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Hero, "Blue2");
+            GameObject gangTicket = CreateJobTicketPrefab(
+                "GangTicket", GangTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Gang, "Purple");
+            GameObject lootBoxPrefab = CreateLootBoxPrefab(cheeseDropPrefab, heroTicket, gangTicket);
 
             // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
             GameObject warehousePrefab = CreateStructurePrefab(
@@ -201,8 +209,8 @@ namespace CTC.Editor
             AssetDatabase.SaveAssets();
 
             CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab,
-                alcovePrefab, cheeseDropPrefab, dogPrefab, lootBoxPrefab);
-            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 9종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
+                alcovePrefab, cheeseDropPrefab, dogPrefab, lootBoxPrefab, heroTicket, gangTicket);
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 11종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
         }
     }
 }

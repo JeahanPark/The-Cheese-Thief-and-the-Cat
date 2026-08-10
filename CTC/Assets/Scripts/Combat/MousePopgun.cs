@@ -103,7 +103,9 @@ namespace CTC.Runtime.Combat
                 bool hitIsPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
                 if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, hitIsPlayer)) break; // 비대상이 막음
 
-                target.TakeDamage(stats.Damage);
+                // 용사쥐(v3.9)는 그냥 세진다 — 화력도 오른다. 직업이 없으면 배율이 1이라
+                // 직업을 모르는 씬에서도 그대로 돈다.
+                target.TakeDamage(Mathf.RoundToInt(stats.Damage * HeroMultiplier()));
                 break;
             }
 
@@ -140,6 +142,14 @@ namespace CTC.Runtime.Combat
             line.startColor = Color.yellow;
             line.endColor = new Color(1f, 0.9f, 0.2f, 0.2f);
             Destroy(go, 0.12f);
+        }
+
+        // 용사쥐 배율. 직업 컴포넌트가 없으면 1이라 직업을 모르는 씬에서도 그대로 돈다.
+        private float HeroMultiplier()
+        {
+            var job = GetComponent<CTC.Runtime.Match.MouseJob>();
+            if (job == null || job.Value != CTC.Runtime.Match.MouseJobId.Hero) return 1f;
+            return CTC.Runtime.Match.MouseJobLogic.HeroDamageMultiplier;
         }
 
         // 갇힌 동안은 조작을 받지 않는다(v3.8). 태그가 없는 프리팹에서는 항상 false라

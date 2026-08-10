@@ -13,6 +13,10 @@ namespace CTC.Runtime.Map
     public enum LootId
     {
         Cheese = 0,
+        /// <summary>용사쥐 직업권 — 주우면 그냥 세진다.</summary>
+        HeroTicket = 1,
+        /// <summary>깡패쥐 직업권 — 주우면 부하를 임명할 수 있고, **2단계를 여는 자리**가 된다.</summary>
+        GangTicket = 2,
     }
 
     /// <summary>상자 안에 든 물건 하나 — 무엇을 얼마나.</summary>

@@ -19,6 +19,8 @@ namespace CTC.Runtime.Match
     public class JailDirector : NetworkBehaviour
     {
         [SerializeField] private LobbyController m_Lobby;
+        // 2단계(v3.9)에는 구출이 없다 — 구출은 '쥐는 한 팀'이라는 전제 위의 장치다.
+        [SerializeField] private PhaseDirector m_Phase;
 
         // 감옥별 구출 진행도(초). 인덱스는 레이아웃 순서.
         private readonly List<float> m_RescueProgress = new List<float>();
@@ -111,6 +113,14 @@ namespace CTC.Runtime.Match
                 float left = JailLogic.AdvanceHold(prisoners[i].RemainingSeconds, _deltaSeconds);
                 prisoners[i].ServerSetRemaining(left);
                 if (JailLogic.IsHoldExpired(left)) Eliminate(prisoners[i]);
+            }
+
+            // 2단계(v3.9)에는 구출이 없다 — 서로 죽이는 판에서 적팀 쥐가 구하러 오는 그림은
+            // 성립하지 않는다. 갇히면 그대로 체류가 흘러 탈락한다.
+            if (m_Phase != null && m_Phase.IsGangPhase)
+            {
+                m_RescueProgress[_jail] = 0f;
+                return;
             }
 
             // 구출 — 성공하면 이 감옥이 통째로 열린다

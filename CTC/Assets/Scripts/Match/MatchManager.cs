@@ -22,6 +22,9 @@ namespace CTC.Runtime.Match
         // MatchResult. 서버 기록, 전원 읽기(ResultHud).
         private readonly NetworkVariable<int> m_Result = new NetworkVariable<int>();
 
+        // 2단계 감독(v3.9) — 같은 오브젝트에 동승한다.
+        private PhaseDirector m_Phase;
+
         // 남은 시간(초). 서버 기록, 전원 읽기(TimerHud). 시작 전/재시작 후엔 음수(-1)로 비활성.
         private readonly NetworkVariable<float> m_RemainingSeconds = new NetworkVariable<float>(-1f);
 
@@ -30,6 +33,11 @@ namespace CTC.Runtime.Match
         private bool m_WasStarted;
 
         public MatchResult Result => (MatchResult)m_Result.Value;
+
+        private void Awake()
+        {
+            m_Phase = GetComponent<PhaseDirector>();
+        }
 
         /// <summary>결과 스트림(View용) — 구독 즉시 현재 값이 흐른다.</summary>
         public Observable<MatchResult> ResultChanged =>
@@ -60,10 +68,29 @@ namespace CTC.Runtime.Match
             CountAlive(out int cats, out int freeMice, out int jailedMice);
             if (MatchFlowLogic.ShouldArm(started, m_Armed, cats, freeMice + jailedMice)) m_Armed = true;
 
+            // 2단계(v3.9)에 들어갔으면 판정 주체가 통째로 바뀐다 — 고양이는 이미 없다.
+            if (m_Phase != null && m_Phase.IsGangPhase)
+            {
+                MatchResult gang = m_Phase.EvaluateGangPhase();
+                if (gang == MatchResult.None) return;
+
+                m_Result.Value = (int)gang;
+                Debug.Log($"[MatchManager] 2단계 종료: {gang} (남은시간={m_Phase.Remaining:F0}s)");
+                return;
+            }
+
             MatchResult result = m_RemainingSeconds.Value <= 0f && m_Armed
                 ? MatchFlowLogic.EvaluateAtTimeUp(freeMice)
                 : MatchFlowLogic.Evaluate(m_Armed, cats, freeMice, jailedMice);
             if (result == MatchResult.None) return;
+
+            // 고양이가 죽어 쥐가 이기려는 참이다. **깡패가 있으면 판이 안 끝나고 2단계로 간다**(v3.9).
+            if (result == MatchResult.MouseWin && cats <= 0
+                && m_Phase != null && m_Phase.ServerTryEnterGangPhase())
+            {
+                Debug.Log("[MatchManager] 고양이 사망 — 깡패가 있어 2단계로 간다");
+                return;
+            }
 
             m_Result.Value = (int)result;
             Debug.Log($"[MatchManager] 매치 종료: {result} (cats={cats}, free={freeMice}, jailed={jailedMice}, 남은시간={m_RemainingSeconds.Value:F0}s)");

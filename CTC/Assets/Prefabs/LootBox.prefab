@@ -137,6 +137,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_DropPrefabs:
   - {fileID: 4089472569822400420, guid: 9778ebc4f80c95f4a94f055ee12e1cfb, type: 3}
+  - {fileID: 4335086204276622300, guid: d26417cc52dd727408b0d627b586347d, type: 3}
+  - {fileID: 7466618799031710939, guid: 7c7c9a55b74e33e4c993d93cef7b90ec, type: 3}
   m_ScatterMeters: 0.8
 --- !u!1 &7528286076523854629
 GameObject:
