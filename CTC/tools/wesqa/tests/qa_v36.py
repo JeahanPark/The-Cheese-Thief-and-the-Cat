@@ -58,48 +58,47 @@ def main():
           "%s -> %s" % (before.replace("\n", "/"), after.replace("\n", "/")))
 
     # ---------- 2. 잠행 ----------
-    # 벽에 처박히면 0.5초 만에 멈춰서 발소리가 꺼진다 → 시작 직후에 표본을 뜬다
-    def footstep_while_walking(dx):
-        cat.invoke("TestWalkDirection", _x=dx, _z=0, _seconds=1.2)
-        time.sleep(0.25)
-        v = m1.invoke("TestGetFootstepAudible", _clientId=cat_id)
-        time.sleep(1.2)
-        return v
+    # 2026-08-10부터 잠행은 **무음이 아니라 좁게 들린다** — 120×120 맵에서 완전 무음이면
+    # 구석에 웅크린 쥐가 무적이 되어 "버티면 쥐 승" 규칙이 자동 승리가 된다.
+    # 그래서 "소리가 나느냐"가 아니라 "몇 m까지 가느냐"를 잰다.
+    # 벽에 처박히면 0.5초 만에 멈춰서 발소리가 꺼진다 → 걷는 동안 여러 번 떠서 최댓값을 쓴다.
+    def footstep_range(walker, listener, walker_id, dx):
+        best = -1.0
+        for _ in range(2):
+            walker.invoke("TestWalkDirection", _x=dx, _z=0, _seconds=1.2)
+            for _ in range(4):
+                time.sleep(0.25)
+                best = max(best, float(listener.invoke("TestGetFootstepRange", _clientId=walker_id)))
+            dx = -dx
+        return best
 
-    loud = footstep_while_walking(1)
+    loud = footstep_range(cat, m1, cat_id, 1)
     cat.invoke("TestSetSneak", _on=True)
     time.sleep(0.5)
     replicated = m1.invoke("TestGetSneaking", _clientId=cat_id)
-    quiet = footstep_while_walking(-1)
+    quiet = footstep_range(cat, m1, cat_id, -1)
     cat.invoke("TestSetSneak", _on=False)
     time.sleep(0.3)
 
     check("잠행 상태 복제(원격이 관측)", replicated is True, "sneaking=%s" % replicated)
-    check("잠행 중 발소리 무음", loud is True and quiet is False,
-          "평소=%s 잠행=%s" % (loud, quiet))
+    check("잠행 중 발소리가 좁아진다(무음 아님)",
+          0 < quiet < loud, "평소=%sm 잠행=%sm" % (loud, quiet))
 
     # ---------- 2b. 쥐 잠행 (2026-08-10) ----------
     # 쥐에게도 같은 거래를 줬다 — 무음 대신 이속 절반. 고양이 쪽만 보고 있으면
     # "쥐 프리팹에 컴포넌트를 안 붙였다"를 못 잡는다(전에 실제로 고양이 전용이었다).
     m1_id = int(m1.invoke("TestGetLocalClientId"))
 
-    def mouse_footstep_while_walking(dx):
-        m1.invoke("TestWalkDirection", _x=dx, _z=0, _seconds=1.2)
-        time.sleep(0.25)
-        v = cat.invoke("TestGetFootstepAudible", _clientId=m1_id)
-        time.sleep(1.2)
-        return v
-
-    m_loud = mouse_footstep_while_walking(1)
+    m_loud = footstep_range(m1, cat, m1_id, 1)
     m1.invoke("TestSetSneak", _on=True)
     time.sleep(0.5)
     m_replicated = cat.invoke("TestGetSneaking", _clientId=m1_id)
-    m_quiet = mouse_footstep_while_walking(-1)
+    m_quiet = footstep_range(m1, cat, m1_id, -1)
     m1.invoke("TestSetSneak", _on=False)
     time.sleep(0.3)
 
-    check("잠행 — 쥐도 발소리를 죽인다", m_loud is True and m_quiet is False,
-          "평소=%s 잠행=%s" % (m_loud, m_quiet))
+    check("잠행 — 쥐도 발소리가 좁아진다",
+          0 < m_quiet < m_loud, "평소=%sm 잠행=%sm" % (m_loud, m_quiet))
     check("잠행 — 쥐 잠행도 복제된다", m_replicated is True, "sneaking=%s" % m_replicated)
 
     # ---------- 3. 미끼: 즉시 설치 ----------

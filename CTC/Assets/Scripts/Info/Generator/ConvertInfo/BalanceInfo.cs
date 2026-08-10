@@ -23,7 +23,7 @@ namespace CTC.Runtime.Info
         public int WarehouseMaxHp;
         public int WarehouseLimitPerMouse;
         public float WarehouseSoundRangeMeters;
-        public int TotalMapCheese;
+        public int CheesePerMouse;
         public int LastStandReserve;
         public int KillBonus;
         public int PlayerDamageDivisor;

@@ -23,24 +23,48 @@ namespace CTC.Runtime.Economy
         // 빨리 말라(7등급 100초 / 1등급 700초) 좋은 자리부터 사라지고, 플레이어가 점점
         // 나쁜 자리로 밀려나며 자연스럽게 압축된다. 비례로 주면 전부 동시에 말라 압축이 안 생긴다.
         //
-        // 총량을 고정하고 지점 수로 나눈다 — 맵이 넓어져 지점이 늘어도 고갈 시점이 유지된다.
+        // 총량을 지점 수로 나눈다 — 맵이 넓어져 지점이 늘어도 고갈 시점이 유지된다.
+        //
+        // **총량은 쥐 수에 비례한다**(2026-08-10, 2:8 기준 밸런스). 고정 총량이던 시절엔
+        // 3인 판에 맞춰 4900이었는데, 8인 판에서 그대로 두면 1인당 몫이 612가 돼
+        // 상점 한 바퀴(1270)도 못 돈다. 인원에 비례시키면 1인당 몫이 유지되고,
+        // 동시에 캐는 사람이 늘어 고갈 시점도 그대로다 — '성장 기한' 설계가 보존된다.
         // 수치 원본은 CSV(BalanceInfo.csv) — 2026-07-31 데이터 분리
-        public static int TOTAL_MAP_CHEESE => Info.InfoManager.Instance.Balance.TotalMapCheese;
+        public static int CheesePerMouse => Info.InfoManager.Instance.Balance.CheesePerMouse;
+
+        /// <summary>맵 전체 치즈 총량. 쥐가 0으로 보고돼도 1인분은 깔아 둔다(배선 누락 방어).</summary>
+        public static int MapTotal(int _miceCount)
+        {
+            return CheesePerMouse * Mathf.Max(1, _miceCount);
+        }
 
         /// <summary>
-        /// 지점 하나가 가질 매장량. 벽감이 없으면 7지점에 700(기준 맵), 10지점에 490.
+        /// 총량 계산에 쓸 쥐 수 — **맵의 권장 최소 인원 밑으로는 안 내려간다**(2026-08-10 실측 버그).
         ///
-        /// <paramref name="_alcoveCheeseTotal"/>은 벽감이 **총량에서 먼저 떼가는** 몫이다
+        /// 벽감·상자에 든 치즈는 맵에 이미 깔려 있는 **절대량**인데 총량만 인원에 비례시키면,
+        /// 인원이 적을 때 "깔린 치즈 > 총량"이 되어 지점 매장량이 0으로 깎인다.
+        /// 대형 맵(권장 6~8)에 쥐 1명이면 총량 1400 대 깔린 치즈 2895였다.
+        /// 맵은 자기가 설계된 인원만큼의 물건을 이미 들고 있으므로, 그 밑은 세지 않는다.
+        /// </summary>
+        public static int EffectiveMiceCount(int _miceCount, int _recommendedMiceMin)
+        {
+            return Mathf.Max(Mathf.Max(1, _miceCount), Mathf.Max(1, _recommendedMiceMin));
+        }
+
+        /// <summary>
+        /// 지점 하나가 가질 매장량. 쥐 8명·벽감 없음이면 20지점에 560.
+        ///
+        /// <paramref name="_reservedCheeseTotal"/>은 벽감·상자가 **총량에서 먼저 떼가는** 몫이다
         /// (2026-08-09). 더하지 않고 빼는 이유: 총량을 지점 수로 나누는 이 구조가
         /// 고갈 시점 = 성장 기한을 고정하는데, 벽 치즈를 얹으면 성장이 늘어져 후반 압축이 무너진다.
         /// 인자를 기본값 없이 받는 건 호출부가 "벽 몫을 뺐는가"를 반드시 답하게 하려는 것이다.
         /// </summary>
-        public static int ReservePerSpot(int _spotCount, int _reservedCheeseTotal)
+        public static int ReservePerSpot(int _spotCount, int _reservedCheeseTotal, int _miceCount)
         {
             if (_spotCount <= 0) return 0;
 
             // 배치 실수로 벽·상자가 총량보다 많이 가져가도 지점 매장량이 음수가 되면 안 된다
-            int forSpots = Mathf.Max(0, TOTAL_MAP_CHEESE - Mathf.Max(0, _reservedCheeseTotal));
+            int forSpots = Mathf.Max(0, MapTotal(_miceCount) - Mathf.Max(0, _reservedCheeseTotal));
             return forSpots / _spotCount;
         }
 
@@ -60,9 +84,9 @@ namespace CTC.Runtime.Economy
         /// 맵 전체 매장량 — 지점 수와 무관하게 고정이다(나눗셈 나머지만큼만 줄어든다).
         /// 쥐 전원이 최종 테크까지 사고도 남을 만큼이어야 고갈이 '기한'으로 작동한다.
         /// </summary>
-        public static int TotalReserve(int _spotCount, int _alcoveCheeseTotal)
+        public static int TotalReserve(int _spotCount, int _alcoveCheeseTotal, int _miceCount)
         {
-            return Mathf.Max(0, _spotCount) * ReservePerSpot(_spotCount, _alcoveCheeseTotal);
+            return Mathf.Max(0, _spotCount) * ReservePerSpot(_spotCount, _alcoveCheeseTotal, _miceCount);
         }
 
         public static int IncomePerSecond(int _grade)

@@ -143,6 +143,64 @@ namespace CTC.Tests.EditMode
             Assert.IsNotEmpty(path);
         }
 
+        [Test]
+        public void FindPathToward_UnreachableTarget_StillHeadsThatWay()
+        {
+            // 2026-08-10 실측: 간선을 걷어내면 그래프가 조각난다(기본 맵 39노드 29간선).
+            // 표적이 다른 조각에 있으면 FindPath는 빈 목록을 주고, 강아지가 그 자리에 굳었다.
+            var rooms = new List<RoomRect>
+            {
+                Room(0f, 0f, 8f, 8f),
+                Room(40f, 0f, 8f, 8f),    // 통로가 없어 닿을 수 없는 섬
+                Room(20f, 0f, 8f, 8f),    // 표적 쪽으로 가는 길 — 여기까지는 갈 수 있다
+            };
+            var corridors = new List<CorridorSeg> { Corridor(new Vector2(4f, 0f), new Vector2(16f, 0f)) };
+
+            NavGraph graph = NavGraphLogic.Build(rooms, corridors);
+            var from = new Vector2(0f, 0f);
+            var unreachable = new Vector2(40f, 0f);
+
+            Assert.IsEmpty(NavGraphLogic.FindPath(graph, from, unreachable), "전제: 길이 없어야 한다");
+
+            List<Vector2> toward = NavGraphLogic.FindPathToward(graph, from, unreachable);
+            Assert.IsNotEmpty(toward, "빈 경로를 주면 강아지가 굳는다");
+            // 끝점은 갈 수 있는 자리여야 한다 — 못 가는 표적을 그대로 얹으면 벽만 민다
+            Assert.AreNotEqual(unreachable, toward[toward.Count - 1]);
+            // 그리고 지금 자리보다는 표적에 가까워야 의미가 있다
+            Vector2 end = toward[toward.Count - 1];
+            Assert.Less((end - unreachable).magnitude, (from - unreachable).magnitude);
+        }
+
+        [Test]
+        public void FindPathToward_NowhereBetterToGo_FallsBackToABeeline()
+        {
+            // 조각 안에 더 나은 자리가 없으면 표적 쪽으로 그냥 민다 —
+            // 빈 목록을 주면 강아지가 Chase 상태로 굳는다(2026-08-10 실측).
+            var rooms = new List<RoomRect> { Room(0f, 0f, 8f, 8f), Room(20f, 0f, 8f, 8f) };
+
+            NavGraph graph = NavGraphLogic.Build(rooms, null);
+            var from = new Vector2(0f, 0f);
+            var unreachable = new Vector2(20f, 0f);
+
+            List<Vector2> toward = NavGraphLogic.FindPathToward(graph, from, unreachable);
+            Assert.IsNotEmpty(toward);
+        }
+
+        [Test]
+        public void FindPathToward_ReachableTarget_MatchesFindPath()
+        {
+            var rooms = new List<RoomRect> { Room(0f, 0f, 8f, 8f), Room(0f, 12f, 8f, 8f) };
+            var corridors = new List<CorridorSeg> { Corridor(new Vector2(0f, 4f), new Vector2(0f, 8f)) };
+
+            NavGraph graph = NavGraphLogic.Build(rooms, corridors);
+            var from = new Vector2(0f, 0f);
+            var to = new Vector2(0f, 12f);
+
+            CollectionAssert.AreEqual(
+                NavGraphLogic.FindPath(graph, from, to),
+                NavGraphLogic.FindPathToward(graph, from, to));
+        }
+
         private static int IndexOfNode(NavGraph _graph, Vector2 _pos)
         {
             for (int i = 0; i < _graph.Count; i++)

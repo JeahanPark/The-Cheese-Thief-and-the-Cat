@@ -315,7 +315,11 @@ namespace CTC.Runtime.Map
             // 상자(v3.9)도 총량에서 뗀다 — 안 떼면 총량이 늘어 고갈이 늦어진다
             int reserved = AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(_layout.Alcoves))
                            + LootBoxLogic.TotalCheese(_layout.Boxes);
-            int reserve = CheeseSpotLogic.ReservePerSpot(_layout.Cheese.Count, reserved);
+            // 맵을 짓는 시점엔 역할이 아직 바뀔 수 있다 — 권장 인원으로 깔아 두고,
+            // 매치가 시작될 때 CheeseSpotDirector.ResetAll()이 실제 쥐 수로 덮어쓴다.
+            int reserve = CheeseSpotLogic.ReservePerSpot(
+                _layout.Cheese.Count, reserved,
+                CheeseSpotLogic.EffectiveMiceCount(_layout.RecommendedMiceMax, _layout.RecommendedMiceMin));
             foreach (CheesePlacement cp in _layout.Cheese)
             {
                 var spotGo = new GameObject($"CheeseSpot_G{cp.Grade}");

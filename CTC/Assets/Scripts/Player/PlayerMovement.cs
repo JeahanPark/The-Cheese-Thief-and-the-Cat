@@ -21,6 +21,9 @@ namespace CTC.Runtime.Player
         [SerializeField] private float m_MoveSpeed = 5f;
         [SerializeField] private float m_TurnSpeedDegPerSec = 720f;
 
+        /// <summary>프리팹에 구운 기본 이속(강화·잠행 전) — QA가 CSV가 아니라 실물을 재는 데 쓴다.</summary>
+        public float BaseSpeed => m_MoveSpeed;
+
         // 이속 강화 스택(상점, 고양이). 서버 기록·소유자 적용.
         private readonly NetworkVariable<int> m_SpeedStacks = new NetworkVariable<int>();
 

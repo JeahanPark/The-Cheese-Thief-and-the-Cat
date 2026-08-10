@@ -121,10 +121,14 @@ namespace CTC.Editor
                 stepSource.spatialBlend = 1f;
                 stepSource.rolloffMode = AudioRolloffMode.Linear;
                 stepSource.minDistance = 1.5f;
-                // 고양이 15m(위협 경보 반경 — 도주가 성립하는 거리), 쥐 8m(고양이도 귀 사냥 가능)
+                // 고양이(위협 경보 반경 — 도주가 성립하는 거리), 쥐(고양이의 주 단서)
                 stepSource.maxDistance = info.FootstepRangeMeters;
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
+                // 잠행은 무음이 아니라 '좁게 들린다'(2026-08-10) — 넓은 맵에서 웅크려 버티기가
+                // 무적이 되는 것을 막는다. 두 반경 다 PlayerInfo에서 굽는다.
+                SetFloat(steps, "m_NormalRange", info.FootstepRangeMeters);
+                SetFloat(steps, "m_SneakRange", info.SneakFootstepRangeMeters);
                 // 발소리가 제일 큰 효과음이다 — 팔로워가 없으면 "효과음을 줄였는데 발소리만 그대로"가 된다
                 AddVolumeFollower(root, CTC.Runtime.Audio.AudioVolumeFollower.Category.Sfx);
 

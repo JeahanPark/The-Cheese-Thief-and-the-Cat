@@ -44,17 +44,21 @@ def main():
     # 그 몫까지 떼면 아무도 못 받는 치즈가 생겨 총량이 샌다.
     per_wall = host.invoke("TestGetAlcoveCheesePerWall")
     cheese_walls = host.invoke("TestGetCheeseAlcoveCount")
-    reserve = host.invoke("TestGetTotalCheeseReserve")
+    # 지금 남은 양이 아니라 **판 시작에 받은** 매장량을 쓴다 — 쥐가 캐는 동안 줄어든다
+    reserve = host.invoke("TestGetDesignedSpotReserve")
+    box_total = host.invoke("TestGetBoxCheeseTotal")
+    # 총량은 2026-08-10부터 고정값(4900)이 아니라 쥐 수 비례다 — 서버에게 묻는다
+    total = host.invoke("TestGetMapTotalCheese")
     check("총량 — 벽감 하나는 강아지 몫이라 치즈를 안 준다",
           0 < cheese_walls < count, f"치즈 벽감 {cheese_walls} / 전체 {count}")
 
     wall_share = per_wall * cheese_walls
-    # 지점합 + 벽 몫이 총량을 넘지 않고, 나눗셈 나머지(지점 수 미만)만 비어야 한다
-    check("총량 — 지점 매장량 + 벽 몫이 4900을 넘지 않는다",
-          reserve + wall_share <= 4900, f"{reserve} + {wall_share} = {reserve + wall_share}")
+    # 지점합 + 벽 몫 + 상자 몫이 총량을 넘지 않고, 나눈셈 나머지(지점 수 미만)만 비어야 한다
+    taken = reserve + wall_share + box_total
+    check("총량 — 지점 + 벽감 + 상자가 총량을 안 넘는다",
+          taken <= total, f"{reserve} + {wall_share} + {box_total} = {taken} / {total}")
     check("총량 — 새는 치즈가 없다(나머지뿐)",
-          4900 - (reserve + wall_share) < 10,
-          f"빈 몫 {4900 - (reserve + wall_share)} (지점 나눗셈 나머지만 허용)")
+          total - taken < 20, f"빈 몫 {total - taken}")
 
     # ---------- 장난기 면제 ----------
     # Health만 붙이면 !IsPlayerObject라 자동으로 구조물 취급 → 장난기가 붙는다.

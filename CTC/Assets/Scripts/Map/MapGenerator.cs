@@ -51,12 +51,21 @@ namespace CTC.Runtime.Map
             public readonly List<FortressSlotOption> Fortress;
             // 한 판에 채택할 방 수 범위 — 맵이 넓어지면 방도 더 써야 공터가 안 남는다
             public readonly int MinRooms, MaxRooms;
+            /// <summary>
+            /// 등급 1~7을 몇 벌 깔 것인가(2026-08-10). 넓은 맵에서 7지점만 두면 지점당 매장량이
+            /// 인원 비례 총량을 다 받아 고갈이 판보다 늦어진다 — 그러면 후반 압축이 사라진다.
+            /// </summary>
+            public readonly int CheeseSets;
+            /// <summary>배치할 요새 상한. 쥐가 많으면 스폰 자리를 공유하게 되므로 함께 올린다.</summary>
+            public readonly int MaxFortresses;
 
             public PoolData(List<RoomOption> r, List<CorridorOption> c, List<MazePreset> m,
-                List<CheeseSlotOption> ch, List<FortressSlotOption> f, int minRooms = 5, int maxRooms = 6)
+                List<CheeseSlotOption> ch, List<FortressSlotOption> f, int minRooms = 5, int maxRooms = 6,
+                int cheeseSets = 1, int maxFortresses = 6)
             {
                 Rooms = r; Corridors = c; Mazes = m; Cheese = ch; Fortress = f;
                 MinRooms = minRooms; MaxRooms = maxRooms;
+                CheeseSets = cheeseSets; MaxFortresses = maxFortresses;
             }
         }
 
@@ -76,7 +85,7 @@ namespace CTC.Runtime.Map
             {
                 var rng = new System.Random(_seed + attempt * 7919);
                 LayoutResult r = TryBuild(_pool, rng, _seed);
-                if (r != null && Validate(r)) return r;
+                if (r != null && Validate(r, _pool.CheeseSets)) return r;
             }
             return null;
         }
@@ -124,60 +133,79 @@ namespace CTC.Runtime.Map
         }
 
         // G1 고정 → G7·G6(중앙/미로) → G2~G5(외곽·중간 밴드). 등급 완전 소진 실패 시 null.
+        // 세트가 여럿이면 같은 절차를 반복한다 — 슬롯은 세트 간에 공유하지 않는다(한 자리에 하나).
         private static bool AssignCheese(PoolData _pool, HashSet<string> _chosenIds, LayoutResult _result)
         {
             var avail = _pool.Cheese.Where(s => _chosenIds.Contains(s.RoomId)).ToList();
-            var used = new HashSet<int>();
             var placed = new List<CheesePlacement>();
-
-            // 고정 슬롯
-            foreach (var s in avail.Where(s => s.Fixed))
-            {
-                placed.Add(new CheesePlacement { Pos = s.Pos, Grade = s.FixedGrade, Radius = s.Radius });
-                used.Add(s.FixedGrade);
-            }
-            // 나머지 등급 7..2 내림차순으로, 밴드 맞는 슬롯에서 배정(고등급 우선 = 중앙/미로 심부)
-            var free = avail.Where(s => !s.Fixed).ToList();
             var usedSlots = new HashSet<int>();
-            for (int g = 7; g >= 1; g--)
+            int sets = Mathf.Max(1, _pool.CheeseSets);
+
+            for (int set = 0; set < sets; set++)
             {
-                if (used.Contains(g)) continue;
-                int pick = -1;
-                for (int i = 0; i < free.Count; i++)
+                var used = new HashSet<int>();
+
+                // 고정 슬롯(G1 못박기)은 첫 세트에서만 쓴다 — 같은 자리를 두 번 깔 수 없다
+                if (set == 0)
                 {
-                    if (usedSlots.Contains(i)) continue;
-                    if (g >= free[i].MinGrade && g <= free[i].MaxGrade) { pick = i; break; }
+                    for (int i = 0; i < avail.Count; i++)
+                    {
+                        if (!avail[i].Fixed) continue;
+                        usedSlots.Add(i);
+                        placed.Add(new CheesePlacement
+                        { Pos = avail[i].Pos, Grade = avail[i].FixedGrade, Radius = avail[i].Radius });
+                        used.Add(avail[i].FixedGrade);
+                    }
                 }
-                if (pick < 0) return false; // 이 등급 채울 슬롯 없음 → 폐기
-                usedSlots.Add(pick);
-                placed.Add(new CheesePlacement { Pos = free[pick].Pos, Grade = g, Radius = free[pick].Radius });
-                used.Add(g);
+
+                // 등급 7..1 내림차순으로 밴드 맞는 슬롯에 배정(고등급 우선 = 중앙/미로 심부)
+                for (int g = MAX_GRADE; g >= MIN_GRADE; g--)
+                {
+                    if (used.Contains(g)) continue;
+                    int pick = -1;
+                    for (int i = 0; i < avail.Count; i++)
+                    {
+                        if (usedSlots.Contains(i) || avail[i].Fixed) continue;
+                        if (g >= avail[i].MinGrade && g <= avail[i].MaxGrade) { pick = i; break; }
+                    }
+                    if (pick < 0) return false; // 이 등급 채울 슬롯 없음 → 폐기
+                    usedSlots.Add(pick);
+                    placed.Add(new CheesePlacement
+                    { Pos = avail[pick].Pos, Grade = g, Radius = avail[pick].Radius });
+                    used.Add(g);
+                }
+                if (used.Count != MAX_GRADE) return false;
             }
+
             _result.Cheese = placed;
-            return used.Count == 7;
+            return true;
         }
 
-        // F0 고정 첫째 + 선택 외곽/중간 방에 라운드로빈으로 총 6개(부족분은 남은 슬롯).
+        // F0 고정 첫째 + 선택 외곽/중간 방에 라운드로빈으로 상한까지(부족분은 남은 슬롯).
         private static bool AssignFortresses(PoolData _pool, HashSet<string> _chosenIds, LayoutResult _result)
         {
             var avail = _pool.Fortress.Where(s => _chosenIds.Contains(s.RoomId)).ToList();
             var placed = new List<FortressPlacement>();
+            int cap = Mathf.Max(1, _pool.MaxFortresses);
             foreach (var s in avail.Where(s => s.Always))
                 placed.Add(new FortressPlacement { Pos = s.Pos, YawDeg = s.Yaw });
             foreach (var s in avail.Where(s => !s.Always))
             {
-                if (placed.Count >= 6) break;
+                if (placed.Count >= cap) break;
                 placed.Add(new FortressPlacement { Pos = s.Pos, YawDeg = s.Yaw });
             }
             _result.Fortresses = placed;
             return placed.Count >= 1; // 최소 F0. 쥐 수 초과분은 런타임에서 요새 공유(SpawnPosition % 개수)
         }
 
-        private static bool Validate(LayoutResult _r) =>
+        private const int MIN_GRADE = 1;
+        private const int MAX_GRADE = 7;
+
+        private static bool Validate(LayoutResult _r, int _cheeseSets) =>
             MapValidator.NoRoomOverlap(_r.Rooms)
             && MapValidator.AllConnected(_r.Rooms, _r.Corridors, "R3")
             && MapValidator.CorridorsWideEnough(_r.Corridors, MapValidator.MIN_CORRIDOR_WIDTH)
-            && MapValidator.CheeseGradesComplete(_r.Cheese)
+            && MapValidator.CheeseGradesComplete(_r.Cheese, _cheeseSets)
             && MapValidator.FortressCheeseSpacing(_r.Fortresses, _r.Cheese, MapValidator.MIN_FORTRESS_CHEESE_DIST);
     }
 }

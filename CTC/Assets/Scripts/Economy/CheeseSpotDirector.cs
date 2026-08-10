@@ -148,7 +148,13 @@ namespace CTC.Runtime.Economy
         private void ResetAll()
         {
             m_RevivedThisMatch = false;
-            int reserve = CheeseSpotLogic.ReservePerSpot(m_Spots.Count, m_AlcoveCheeseTotal);
+            // 매치 시작 시점이 쥐 수가 확정되는 유일한 순간이다 — MapBuilder가 맵을 지을 땐
+            // 아직 역할이 바뀔 수 있어 권장 인원으로 임시값을 깔아 두고, 여기서 덮어쓴다.
+            int mice = m_Lobby != null ? m_Lobby.MouseCount : 0;
+            var layout = m_Lobby != null ? m_Lobby.ActiveLayout : null;
+            int floor = layout != null ? layout.RecommendedMiceMin : 1;
+            int reserve = CheeseSpotLogic.ReservePerSpot(
+                m_Spots.Count, m_AlcoveCheeseTotal, CheeseSpotLogic.EffectiveMiceCount(mice, floor));
             EnsureStateCount();
             for (int i = 0; i < m_Spots.Count; i++)
             {

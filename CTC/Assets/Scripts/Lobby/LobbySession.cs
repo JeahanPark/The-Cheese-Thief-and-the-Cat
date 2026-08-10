@@ -15,7 +15,10 @@ namespace CTC.Runtime.Lobby
     /// </summary>
     public class LobbySession : NetworkBehaviour
     {
-        public const int CAT_CAPACITY = 1;
+        // 고양이 정원 2 (2026-08-10 밸런스). 기준 구성은 2:8 — 120×120 맵에서 고양이 하나가
+        // 담당할 면적이 14400㎡라 1마리로는 쥐를 찾는 것 자체가 성립하지 않는다.
+        // 1:6도 열어 두되 그쪽은 고양이가 불리한 구성으로 남긴다.
+        public const int CAT_CAPACITY = 2;
         private const float RECONCILE_INTERVAL_SECONDS = 1f;
 
         private NetworkList<LobbyPlayerState> m_Players;
@@ -40,6 +43,23 @@ namespace CTC.Runtime.Lobby
         public int PlayerCount => m_Players.Count;
         public LobbyPlayerState GetPlayer(int _index) => m_Players[_index];
         public bool CanStart => LobbyRoleLogic.CanStart(SnapshotRoles());
+
+        /// <summary>
+        /// 지금 쥐를 고른 사람 수. 치즈 총량이 여기 비례한다(2026-08-10) —
+        /// 총량을 고정해 두면 8인 판에서 1인당 몫이 3인 판의 1/3이 돼 아무도 강화를 못 한다.
+        /// </summary>
+        public int MouseCount
+        {
+            get
+            {
+                int mice = 0;
+                for (int i = 0; i < m_Players.Count; i++)
+                {
+                    if (m_Players[i].Role == RoleId.Mouse) mice++;
+                }
+                return mice;
+            }
+        }
 
         private void Awake()
         {

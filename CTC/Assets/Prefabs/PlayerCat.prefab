@@ -161,7 +161,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  m_MoveSpeed: 6.7
+  m_MoveSpeed: 7.8
   m_TurnSpeedDegPerSec: 720
 --- !u!114 &2931861370349972259
 MonoBehaviour:
@@ -322,10 +322,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.CatPounce
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Range: 2.2
+  m_Range: 2.8
   m_HalfAngleDeg: 60
   m_Damage: 60
-  m_CooldownSeconds: 2.5
+  m_CooldownSeconds: 2
 --- !u!114 &8188860910711169595
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -374,7 +374,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1.5
-  MaxDistance: 15
+  MaxDistance: 12
   Pan2D: 0
   rolloffMode: 1
   BypassEffects: 0
@@ -463,6 +463,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.FootstepPlayer
   m_Source: {fileID: 6558113436026960680}
   m_WalkThreshold: 0.5
+  m_NormalRange: 12
+  m_SneakRange: 3
 --- !u!114 &680282509390343821
 MonoBehaviour:
   m_ObjectHideFlags: 0

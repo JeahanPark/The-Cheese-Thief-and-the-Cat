@@ -70,6 +70,9 @@ namespace CTC.Runtime.Lobby
             }
         }
         public int PlayerCount => m_Session != null ? m_Session.PlayerCount : 0;
+
+        /// <summary>쥐를 고른 사람 수 — 치즈 총량이 여기 비례한다(2026-08-10).</summary>
+        public int MouseCount => m_Session != null ? m_Session.MouseCount : 0;
         public LobbyPlayerState GetPlayer(int _index) => m_Session.GetPlayer(_index);
         public bool CanStart => m_Session != null && m_Session.CanStart;
         public int IndexOfClient(ulong _clientId) => m_Session != null ? m_Session.IndexOf(_clientId) : -1;

@@ -120,8 +120,8 @@ MonoBehaviour:
   m_OverrideSfx: 1
   m_HitSfx: 31
   m_BreakSfx: 32
-  m_SfxMaxDistance: 8
-  m_HitSfxMaxDistance: 6
+  m_SfxMaxDistance: 12
+  m_HitSfxMaxDistance: 8
 --- !u!114 &8450476079085041380
 MonoBehaviour:
   m_ObjectHideFlags: 0

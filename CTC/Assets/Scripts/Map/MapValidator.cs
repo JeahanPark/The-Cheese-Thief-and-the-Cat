@@ -99,14 +99,23 @@ namespace CTC.Runtime.Map
             return true;
         }
 
-        // V11: 등급 다중집합 == {1..7} 정확히
-        public static bool CheeseGradesComplete(IReadOnlyList<CheesePlacement> _cheese)
+        // V11: 등급 다중집합 == {1..7} × 세트 수 정확히.
+        // 세트가 여럿인 건 넓은 맵 때문이다(2026-08-10) — 7지점만 두면 지점당 매장량이 커져
+        // 낮은 등급 자리가 판이 끝날 때까지 안 마르고, 그러면 후반 압축이 사라진다.
+        public static bool CheeseGradesComplete(IReadOnlyList<CheesePlacement> _cheese, int _sets = 1)
         {
-            if (_cheese.Count != 7) return false;
-            var seen = new HashSet<int>();
+            int sets = Mathf.Max(1, _sets);
+            if (_cheese.Count != 7 * sets) return false;
+
+            var count = new int[8];
             foreach (var c in _cheese)
-                if (c.Grade < 1 || c.Grade > 7 || !seen.Add(c.Grade)) return false;
-            return seen.Count == 7;
+            {
+                if (c.Grade < 1 || c.Grade > 7) return false;
+                count[c.Grade]++;
+            }
+            for (int g = 1; g <= 7; g++)
+                if (count[g] != sets) return false;
+            return true;
         }
 
         // V9: 모든 요새-치즈 중심거리 >= min

@@ -198,7 +198,7 @@ MonoBehaviour:
   m_OverrideSfx: 1
   m_HitSfx: 28
   m_BreakSfx: 29
-  m_SfxMaxDistance: 22
+  m_SfxMaxDistance: 40
   m_HitSfxMaxDistance: 0
 --- !u!114 &1243430986519530248
 MonoBehaviour:
@@ -278,7 +278,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerAnimationDriver
   m_WalkThreshold: 0.1
-  m_RunThreshold: 4.41
+  m_RunThreshold: 4.9
   m_CrossFadeSeconds: 0.15
   m_SpeedSmoothing: 0.25
 --- !u!1001 &699296256682628262

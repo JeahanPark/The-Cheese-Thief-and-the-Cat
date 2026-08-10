@@ -123,8 +123,8 @@ MonoBehaviour:
   m_OverrideSfx: 1
   m_HitSfx: 24
   m_BreakSfx: 25
-  m_SfxMaxDistance: 25
-  m_HitSfxMaxDistance: 20
+  m_SfxMaxDistance: 45
+  m_HitSfxMaxDistance: 30
 --- !u!114 &3091588501085374446
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,7 +162,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1.5
-  MaxDistance: 10
+  MaxDistance: 14
   Pan2D: 0
   rolloffMode: 1
   BypassEffects: 0

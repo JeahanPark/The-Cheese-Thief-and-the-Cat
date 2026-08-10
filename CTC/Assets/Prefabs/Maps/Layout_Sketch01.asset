@@ -160,14 +160,14 @@ MonoBehaviour:
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: -13.4, y: 1.1}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: 11.65, y: 13.65}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35

@@ -16,6 +16,7 @@ namespace CTC.Editor
     {
         private const string PoolPath = "Assets/Prefabs/Maps/MapCandidatePool.asset";
         public const string ExpandedPoolPath = "Assets/Prefabs/Maps/MapCandidatePool_Expanded.asset";
+        public const string LargePoolPath = "Assets/Prefabs/Maps/MapCandidatePool_Large.asset";
         private Pool m_Pool;
         private int m_Seed = 1;
         private MapGenerator.LayoutResult m_Preview;
@@ -37,6 +38,13 @@ namespace CTC.Editor
         public static void BuildExpanded()
         {
             BakeFirstValid(ExpandedPoolPath, "Assets/Prefabs/Maps/Layout_Expanded01.asset", "확장 맵");
+        }
+
+        /// <summary>대형 풀(Build Large Map Pool 산출)로 120×120 레이아웃을 굽는다 — 기준 구성 2:8.</summary>
+        [MenuItem("Tools/CTC/Build Large Map Layout")]
+        public static void BuildLarge()
+        {
+            BakeFirstValid(LargePoolPath, "Assets/Prefabs/Maps/Layout_Large01.asset", "대형 맵");
         }
 
         // 첫 유효 시드로 레이아웃을 굽는다. 풀의 캔버스 크기·표시 이름을 레이아웃에 함께 새긴다.
@@ -95,7 +103,7 @@ namespace CTC.Editor
             var fort = _p.FortressSlots.Select(f => new MapGenerator.FortressSlotOption(
                 f.RoomId, f.Pos, f.YawDeg, f.AlwaysInclude)).ToList();
             return new MapGenerator.PoolData(rooms, corr, new List<MazePreset>(_p.Mazes), cheese, fort,
-                _p.MinRooms, _p.MaxRooms);
+                _p.MinRooms, _p.MaxRooms, _p.CheeseSets, _p.MaxFortresses);
         }
 
         private void Generate(int _seed)

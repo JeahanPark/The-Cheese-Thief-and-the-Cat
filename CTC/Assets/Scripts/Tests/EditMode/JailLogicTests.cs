@@ -66,9 +66,10 @@ namespace CTC.Tests
         [Test]
         public void Rescue_ProgressDoesNotRunAway()
         {
-            // 게이지가 임계를 크게 넘어 쌓이면 다음 구출이 즉시 끝나 버린다
+            // 게이지가 임계를 크게 넘어 쌓이면 다음 구출이 즉시 끝나 버린다.
+            // 임계는 CSV(JailRescueSeconds)라 여기서 숫자를 박으면 밸런스를 만질 때마다 깨진다.
             float p = JailLogic.AdvanceRescue(2.9f, 10f, _rescuerInside: true);
-            Assert.LessOrEqual(p, 3f + 0.001f);
+            Assert.LessOrEqual(p, JailLogic.RescueSeconds + 0.001f);
         }
 
         // ---- 체류 시간 ----

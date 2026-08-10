@@ -6,7 +6,8 @@ namespace CTC.Runtime.Networking
         public const string GAME_TAG_KEY = "game";
         public const string GAME_TAG = "CTC";
         public const string NAME_KEY = "name";
-        public const int MAX_PLAYERS = 8;
+        // 10 = 기준 구성 2:8 (2026-08-10). 최소는 1:6.
+        public const int MAX_PLAYERS = 10;
 
         /// <summary>480(Spacewar)은 남의 테스트 로비가 섞임 — 우리 태그만 통과.</summary>
         public static bool IsCtcLobby(string _gameTag)

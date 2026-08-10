@@ -155,29 +155,29 @@ MonoBehaviour:
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: -2.4, y: -17.8}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: 17.8, y: -10.9}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: 18.15, y: 6.6000004}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: 2.4, y: 18.5}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35
   - Pos: {x: -13, y: 17.8}
     YawDeg: 0
     Contents:
     - Id: 0
-      Amount: 40
+      Amount: 35

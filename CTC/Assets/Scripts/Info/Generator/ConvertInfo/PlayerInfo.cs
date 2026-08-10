@@ -23,6 +23,7 @@ namespace CTC.Runtime.Info
         public float PounceHalfAngleDeg;
         public float SneakSpeedMultiplier;
         public float FootstepRangeMeters;
+        public float SneakFootstepRangeMeters;
     }
 
     public partial class InfoManager

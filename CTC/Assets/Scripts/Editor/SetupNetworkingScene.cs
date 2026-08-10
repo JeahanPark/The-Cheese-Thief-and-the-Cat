@@ -62,11 +62,17 @@ namespace CTC.Editor
         // 방 하나에 상자 몇 개. 모서리에 놓으므로 4를 넘을 수 없다.
         private const int BOXES_PER_ROOM = 1;
 
-        // 기본 맵의 벽감 수. 방 하나에 하나씩이라 방 수를 넘지 않는다.
-        private const int ALCOVES_PER_MAP = 3;
+        // 벽감·감옥 수는 맵 크기를 따라간다(2026-08-10, 120×120 대응).
+        // 고정값이면 대형 맵(49방)에서 벽감 3개가 사실상 없는 것과 같아진다.
+        private const int ROOMS_PER_ALCOVE = 8;   // 49방 → 6개, 9방 → 3개(하한)
+        private const int ROOMS_PER_JAIL = 16;    // 49방 → 3개, 9방 → 2개(하한)
 
-        // 감옥 수(v3.8 4번). 하나면 고양이가 그 앞에 서 있는 게 최적해가 된다.
-        private const int JAILS_PER_MAP = 2;
+        private static int AlcoveCountFor(MapLayout _layout) =>
+            Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_ALCOVE, 3, 8);
+
+        // 감옥이 하나면 고양이가 그 앞에 서 있는 게 최적해가 된다(v3.8 4번).
+        private static int JailCountFor(MapLayout _layout) =>
+            Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_JAIL, 2, 4);
 
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
@@ -75,6 +81,7 @@ namespace CTC.Editor
         {
             "Assets/Prefabs/Maps/Layout_Sketch01.asset",
             "Assets/Prefabs/Maps/Layout_Expanded01.asset",
+            "Assets/Prefabs/Maps/Layout_Large01.asset",
         };
 
         // 아직 굽지 않은 레이아웃은 건너뛴다 — 확장 맵 생성 전에도 Setup이 돌아야 한다
@@ -202,8 +209,9 @@ namespace CTC.Editor
             foreach (string path in MapLayoutPaths)
             {
                 MapLayout layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
-                PlanAlcovesInto(layout, ALCOVES_PER_MAP);
-                PlanJailsInto(layout, JAILS_PER_MAP);
+                if (layout == null) continue;
+                PlanAlcovesInto(layout, AlcoveCountFor(layout));
+                PlanJailsInto(layout, JailCountFor(layout));
                 PlanBoxesInto(layout, BOXES_PER_ROOM);   // 벽감 자리를 피하므로 벽감 뒤에 온다
             }
             AssetDatabase.SaveAssets();

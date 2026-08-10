@@ -159,7 +159,9 @@ namespace CTC.Runtime.Ai
 
             m_PlannedGoal = goal;
 
-            List<Vector2> next = NavGraphLogic.FindPath(m_Graph, NearestVisibleNode(), new Vector2(goal.x, goal.z));
+            // 못 닿는 표적이어도 그쪽으로는 붙는다 — 빈 경로를 받으면 강아지가 그 자리에 굳는다
+            List<Vector2> next = NavGraphLogic.FindPathToward(
+                m_Graph, NearestVisibleNode(), new Vector2(goal.x, goal.z));
 
             m_Path.Clear();
             m_Path.AddRange(next);

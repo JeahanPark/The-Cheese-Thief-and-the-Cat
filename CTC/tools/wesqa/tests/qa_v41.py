@@ -36,18 +36,21 @@ def main():
     check("상자 — 매치 시작에 맵이 깔아 둔다", boxes > 0, f"{boxes}개")
 
     # ---------- 총량 보존 ----------
-    # 상자가 품은 치즈도 4900 안에서 뗀다. 안 떼면 총량이 늘어 고갈이 늦어진다.
+    # 상자가 품은 치즈도 총량 안에서 뗀다. 안 떼면 총량이 늘어 고갈이 늦어진다.
+    # 총량은 2026-08-10부터 고정값(4900)이 아니라 쥐 수 비례라 서버에게 묻는다.
     box_total = cat.invoke("TestGetBoxCheeseTotal")
     alcove_walls = cat.invoke("TestGetCheeseAlcoveCount")
     per_wall = cat.invoke("TestGetAlcoveCheesePerWall")
-    reserve = cat.invoke("TestGetTotalCheeseReserve")
+    # 판 시작에 받은 매장량(남은 양이 아니다) — 보존은 설계값으로 재는 게 맞다
+    reserve = cat.invoke("TestGetDesignedSpotReserve")
+    total = cat.invoke("TestGetMapTotalCheese")
     taken = reserve + per_wall * alcove_walls + box_total
 
     check("총량 — 상자도 치즈를 품는다", box_total > 0, f"상자 합계 {box_total}")
-    check("총량 — 지점 + 벽감 + 상자가 4900을 넘지 않는다", taken <= 4900,
-          f"{reserve} + {per_wall * alcove_walls} + {box_total} = {taken}")
-    check("총량 — 새는 치즈가 없다(나눗셈 나머지뿐)", 4900 - taken < 10,
-          f"빈 몫 {4900 - taken}")
+    check("총량 — 지점 + 벽감 + 상자가 총량을 넘지 않는다", taken <= total,
+          f"{reserve} + {per_wall * alcove_walls} + {box_total} = {taken} / {total}")
+    check("총량 — 새는 치즈가 없다(나눗셈 나머지뿐)", total - taken < 20,
+          f"빈 몫 {total - taken}")
 
     # ---------- 부수면 나온다 ----------
     before_drops = cat.invoke("TestGetCheeseDropCount")

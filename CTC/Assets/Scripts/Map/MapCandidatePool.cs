@@ -68,9 +68,15 @@ namespace CTC.Runtime.Map
         // 권장 쥐 수 — 넓은 맵에 인원이 적으면 고양이가 못 찾는다. 굽는 레이아웃에 그대로 새긴다.
         [SerializeField] private int m_RecommendedMiceMin = 2;
         [SerializeField] private int m_RecommendedMiceMax = 3;
+        // 등급 1~7을 몇 벌 깔 것인가. 넓은 맵은 지점이 더 많아야 고갈이 판 안에 온다(2026-08-10).
+        [SerializeField] private int m_CheeseSets = 1;
+        // 요새 상한 — 쥐가 많으면 스폰 자리를 공유하게 되므로 함께 올린다.
+        [SerializeField] private int m_MaxFortresses = 6;
 
         public int MinRooms => m_MinRooms;
         public int MaxRooms => m_MaxRooms;
+        public int CheeseSets => Mathf.Max(1, m_CheeseSets);
+        public int MaxFortresses => Mathf.Max(1, m_MaxFortresses);
         public float HalfExtent => m_HalfExtent;
         public string DisplayName => m_DisplayName;
         public int RecommendedMiceMin => m_RecommendedMiceMin;
@@ -91,7 +97,7 @@ namespace CTC.Runtime.Map
 
         /// <summary>확장 풀 생성 툴이 채우는 값 — 방 수 범위·캔버스 크기·표시 이름·권장 인원.</summary>
         public void SetShape(int _minRooms, int _maxRooms, float _halfExtent, string _displayName,
-            int _recommendedMiceMin, int _recommendedMiceMax)
+            int _recommendedMiceMin, int _recommendedMiceMax, int _cheeseSets = 1, int _maxFortresses = 6)
         {
             m_MinRooms = _minRooms;
             m_MaxRooms = _maxRooms;
@@ -99,6 +105,8 @@ namespace CTC.Runtime.Map
             m_DisplayName = _displayName;
             m_RecommendedMiceMin = _recommendedMiceMin;
             m_RecommendedMiceMax = _recommendedMiceMax;
+            m_CheeseSets = _cheeseSets;
+            m_MaxFortresses = _maxFortresses;
         }
     }
 }

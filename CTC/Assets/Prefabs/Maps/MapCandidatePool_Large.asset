@@ -1,0 +1,1312 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dd7171fa64b70449a212b540a4372a8, type: 3}
+  m_Name: MapCandidatePool_Large
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapCandidatePool
+  m_Rooms:
+  - Id: R0
+    Center: {x: -50.61567, y: -50.73183}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R1
+    Center: {x: -33.254303, y: -50.280754}
+    Size: {x: 12, y: 9}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R2
+    Center: {x: -16.9423, y: -51.449512}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R3
+    Center: {x: 0.05959239, y: -50.991966}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R4
+    Center: {x: 17.688362, y: -51.373203}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R5
+    Center: {x: 34.197403, y: -50.447937}
+    Size: {x: 10, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R6
+    Center: {x: 51.069633, y: -51.65526}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R7
+    Center: {x: -50.490643, y: -34.30521}
+    Size: {x: 10, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R8
+    Center: {x: -33.88253, y: -33.654816}
+    Size: {x: 12, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R9
+    Center: {x: -16.883465, y: -34.558018}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R10
+    Center: {x: 0.65444994, y: -34.07989}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R11
+    Center: {x: 16.544426, y: -33.695312}
+    Size: {x: 12, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R12
+    Center: {x: 34.56154, y: -34.41758}
+    Size: {x: 12, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R13
+    Center: {x: 51.49179, y: -33.645527}
+    Size: {x: 10, y: 9}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R14
+    Center: {x: -50.51574, y: -16.633799}
+    Size: {x: 10, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R15
+    Center: {x: -34.32548, y: -17.57385}
+    Size: {x: 10, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R16
+    Center: {x: -17.045755, y: -16.712648}
+    Size: {x: 10, y: 11}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R17
+    Center: {x: 0.65052265, y: -16.983759}
+    Size: {x: 10, y: 11}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R18
+    Center: {x: 16.610825, y: -16.437069}
+    Size: {x: 12, y: 11}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R19
+    Center: {x: 34.492435, y: -17.178036}
+    Size: {x: 10, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R20
+    Center: {x: 50.8366, y: -16.543016}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R21
+    Center: {x: -50.78463, y: 0.17693657}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R22
+    Center: {x: -34.7415, y: 0.5129944}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R23
+    Center: {x: -17.440908, y: 0.50033486}
+    Size: {x: 10, y: 9}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R24
+    Center: {x: 0, y: 0}
+    Size: {x: 12, y: 11}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R25
+    Center: {x: 17.421194, y: 0.007073748}
+    Size: {x: 10, y: 9}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R26
+    Center: {x: 34.236145, y: -0.20470275}
+    Size: {x: 10, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R27
+    Center: {x: 50.690926, y: -0.21129432}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R28
+    Center: {x: -51.117874, y: 17.474176}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R29
+    Center: {x: -34.641434, y: 17.015928}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R30
+    Center: {x: -17.039219, y: 17.3946}
+    Size: {x: 10, y: 9}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R31
+    Center: {x: 0.2788533, y: 16.830898}
+    Size: {x: 12, y: 9}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R32
+    Center: {x: 16.707148, y: 16.391163}
+    Size: {x: 12, y: 11}
+    Tag: 2
+    AlwaysInclude: 1
+  - Id: R33
+    Center: {x: 33.36202, y: 16.994047}
+    Size: {x: 10, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R34
+    Center: {x: 51.15077, y: 16.50056}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R35
+    Center: {x: -51.529163, y: 33.67007}
+    Size: {x: 10, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R36
+    Center: {x: -34.15274, y: 33.32964}
+    Size: {x: 10, y: 11}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R37
+    Center: {x: -17.569614, y: 34.396797}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R38
+    Center: {x: -0.1561822, y: 33.733376}
+    Size: {x: 12, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R39
+    Center: {x: 16.964628, y: 34.217667}
+    Size: {x: 10, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R40
+    Center: {x: 33.702755, y: 33.25458}
+    Size: {x: 12, y: 9}
+    Tag: 1
+    AlwaysInclude: 1
+  - Id: R41
+    Center: {x: 50.761223, y: 33.839436}
+    Size: {x: 10, y: 9}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R42
+    Center: {x: -50.43316, y: 51.63808}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R43
+    Center: {x: -33.488472, y: 51.608006}
+    Size: {x: 10, y: 9}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R44
+    Center: {x: -17.253302, y: 50.54071}
+    Size: {x: 10, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R45
+    Center: {x: -0.091412775, y: 51.404625}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R46
+    Center: {x: 17.700031, y: 50.447403}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R47
+    Center: {x: 33.749393, y: 51.382305}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  - Id: R48
+    Center: {x: 50.470207, y: 51.37864}
+    Size: {x: 12, y: 11}
+    Tag: 0
+    AlwaysInclude: 1
+  m_Corridors:
+  - Id: CR26_R33
+    RoomA: R26
+    RoomB: R33
+    Waypoints:
+    - {x: 33.79908, y: 5.295297}
+    - {x: 33.79908, y: 11.494047}
+    Width: 3
+  - Id: CR36_R43
+    RoomA: R36
+    RoomB: R43
+    Waypoints:
+    - {x: -33.820606, y: 38.82964}
+    - {x: -33.820606, y: 47.108006}
+    Width: 3
+  - Id: CR22_R29
+    RoomA: R22
+    RoomB: R29
+    Waypoints:
+    - {x: -34.691467, y: 5.0129943}
+    - {x: -34.691467, y: 12.515928}
+    Width: 3
+  - Id: CR10_R11
+    RoomA: R10
+    RoomB: R11
+    Waypoints:
+    - {x: 5.65445, y: -33.887604}
+    - {x: 10.544426, y: -33.887604}
+    Width: 3
+  - Id: CR30_R31
+    RoomA: R30
+    RoomB: R31
+    Waypoints:
+    - {x: -12.039219, y: 17.11275}
+    - {x: -5.7211466, y: 17.11275}
+    Width: 3
+  - Id: CR19_R20
+    RoomA: R19
+    RoomB: R20
+    Waypoints:
+    - {x: 39.492435, y: -16.860527}
+    - {x: 44.8366, y: -16.860527}
+    Width: 3
+  - Id: CR37_R44
+    RoomA: R37
+    RoomB: R44
+    Waypoints:
+    - {x: -17.411457, y: 38.896797}
+    - {x: -17.411457, y: 45.04071}
+    Width: 3
+  - Id: CR15_R22
+    RoomA: R15
+    RoomB: R22
+    Waypoints:
+    - {x: -34.533493, y: -12.073851}
+    - {x: -34.533493, y: -3.9870057}
+    Width: 3
+  - Id: CR3_R10
+    RoomA: R3
+    RoomB: R10
+    Waypoints:
+    - {x: 0.65444994, y: -45.491966}
+    - {x: 0.65444994, y: -38.57989}
+    Width: 3
+  - Id: CR18_R19
+    RoomA: R18
+    RoomB: R19
+    Waypoints:
+    - {x: 22.610825, y: -16.807552}
+    - {x: 29.492435, y: -16.807552}
+    Width: 3
+  - Id: CR25_R26
+    RoomA: R25
+    RoomB: R26
+    Waypoints:
+    - {x: 22.421194, y: 0.0070738792}
+    - {x: 29.236145, y: 0.0070738792}
+    Width: 3
+  - Id: CR12_R13
+    RoomA: R12
+    RoomB: R13
+    Waypoints:
+    - {x: 40.56154, y: -33.645527}
+    - {x: 46.49179, y: -33.645527}
+    Width: 3
+  - Id: CR9_R16
+    RoomA: R9
+    RoomB: R16
+    Waypoints:
+    - {x: -16.964611, y: -30.058018}
+    - {x: -16.964611, y: -22.212648}
+    Width: 3
+  - Id: CR31_R32
+    RoomA: R31
+    RoomB: R32
+    Waypoints:
+    - {x: 6.2788534, y: 16.830898}
+    - {x: 10.707148, y: 16.830898}
+    Width: 3
+  - Id: CR32_R33
+    RoomA: R32
+    RoomB: R33
+    Waypoints:
+    - {x: 22.707148, y: 16.692604}
+    - {x: 28.362019, y: 16.692604}
+    Width: 3
+  - Id: CR40_R47
+    RoomA: R40
+    RoomB: R47
+    Waypoints:
+    - {x: 33.726074, y: 37.75458}
+    - {x: 33.726074, y: 45.882305}
+    Width: 3
+  - Id: CR38_R45
+    RoomA: R38
+    RoomB: R45
+    Waypoints:
+    - {x: -0.12379742, y: 38.233376}
+    - {x: -0.12379742, y: 45.904625}
+    Width: 3
+  - Id: CR7_R8
+    RoomA: R7
+    RoomB: R8
+    Waypoints:
+    - {x: -45.490643, y: -33.98001}
+    - {x: -39.88253, y: -33.98001}
+    Width: 3
+  - Id: CR29_R36
+    RoomA: R29
+    RoomB: R36
+    Waypoints:
+    - {x: -34.397087, y: 21.515928}
+    - {x: -34.397087, y: 27.82964}
+    Width: 3
+  - Id: CR2_R9
+    RoomA: R2
+    RoomB: R9
+    Waypoints:
+    - {x: -16.883465, y: -45.949512}
+    - {x: -16.883465, y: -39.058018}
+    Width: 3
+  - Id: CR11_R12
+    RoomA: R11
+    RoomB: R12
+    Waypoints:
+    - {x: 22.544426, y: -33.695312}
+    - {x: 28.561539, y: -33.695312}
+    Width: 3
+  - Id: CR7_R14
+    RoomA: R7
+    RoomB: R14
+    Waypoints:
+    - {x: -50.50319, y: -28.80521}
+    - {x: -50.50319, y: -22.133799}
+    Width: 3
+  - Id: CR24_R25
+    RoomA: R24
+    RoomB: R25
+    Waypoints:
+    - {x: 6, y: 0.0070738792}
+    - {x: 12.421194, y: 0.0070738792}
+    Width: 3
+  - Id: CR1_R8
+    RoomA: R1
+    RoomB: R8
+    Waypoints:
+    - {x: -33.568417, y: -45.780754}
+    - {x: -33.568417, y: -39.154816}
+    Width: 3
+  - Id: CR2_R3
+    RoomA: R2
+    RoomB: R3
+    Waypoints:
+    - {x: -10.942301, y: -51.22074}
+    - {x: -5.9404078, y: -51.22074}
+    Width: 3
+  - Id: CR0_R7
+    RoomA: R0
+    RoomB: R7
+    Waypoints:
+    - {x: -50.490643, y: -45.23183}
+    - {x: -50.490643, y: -39.80521}
+    Width: 3
+  - Id: CR16_R17
+    RoomA: R16
+    RoomB: R17
+    Waypoints:
+    - {x: -12.045755, y: -16.848204}
+    - {x: -4.3494773, y: -16.848204}
+    Width: 3
+  - Id: CR21_R22
+    RoomA: R21
+    RoomB: R22
+    Waypoints:
+    - {x: -44.78463, y: 0.5129943}
+    - {x: -39.7415, y: 0.5129943}
+    Width: 3
+  - Id: CR42_R43
+    RoomA: R42
+    RoomB: R43
+    Waypoints:
+    - {x: -44.43316, y: 51.608006}
+    - {x: -38.488472, y: 51.608006}
+    Width: 3
+  - Id: CR40_R41
+    RoomA: R40
+    RoomB: R41
+    Waypoints:
+    - {x: 39.702755, y: 33.54701}
+    - {x: 45.761223, y: 33.54701}
+    Width: 3
+  - Id: CR17_R24
+    RoomA: R17
+    RoomB: R24
+    Waypoints:
+    - {x: 0.6505227, y: -11.483759}
+    - {x: 0.6505227, y: -5.5}
+    Width: 3
+  - Id: CR37_R38
+    RoomA: R37
+    RoomB: R38
+    Waypoints:
+    - {x: -12.569614, y: 34.065086}
+    - {x: -6.1561823, y: 34.065086}
+    Width: 3
+  - Id: CR43_R44
+    RoomA: R43
+    RoomB: R44
+    Waypoints:
+    - {x: -28.488472, y: 51.574356}
+    - {x: -22.253302, y: 51.574356}
+    Width: 3
+  - Id: CR39_R40
+    RoomA: R39
+    RoomB: R40
+    Waypoints:
+    - {x: 21.964628, y: 33.736122}
+    - {x: 27.702755, y: 33.736122}
+    Width: 3
+  - Id: CR19_R26
+    RoomA: R19
+    RoomB: R26
+    Waypoints:
+    - {x: 34.36429, y: -11.678036}
+    - {x: 34.36429, y: -5.704703}
+    Width: 3
+  - Id: CR31_R38
+    RoomA: R31
+    RoomB: R38
+    Waypoints:
+    - {x: 0.061335564, y: 21.330898}
+    - {x: 0.061335564, y: 29.233376}
+    Width: 3
+  - Id: CR32_R39
+    RoomA: R32
+    RoomB: R39
+    Waypoints:
+    - {x: 16.964628, y: 21.891163}
+    - {x: 16.964628, y: 29.717667}
+    Width: 3
+  - Id: CR27_R34
+    RoomA: R27
+    RoomB: R34
+    Waypoints:
+    - {x: 50.920845, y: 5.288706}
+    - {x: 50.920845, y: 11.000561}
+    Width: 3
+  - Id: CR34_R41
+    RoomA: R34
+    RoomB: R41
+    Waypoints:
+    - {x: 50.761223, y: 22.00056}
+    - {x: 50.761223, y: 29.339436}
+    Width: 3
+  - Id: CR35_R36
+    RoomA: R35
+    RoomB: R36
+    Waypoints:
+    - {x: -46.529163, y: 33.499855}
+    - {x: -39.15274, y: 33.499855}
+    Width: 3
+  - Id: CR46_R47
+    RoomA: R46
+    RoomB: R47
+    Waypoints:
+    - {x: 23.700031, y: 50.914856}
+    - {x: 27.749393, y: 50.914856}
+    Width: 3
+  - Id: CR22_R23
+    RoomA: R22
+    RoomB: R23
+    Waypoints:
+    - {x: -29.7415, y: 0.5066645}
+    - {x: -22.440908, y: 0.5066645}
+    Width: 3
+  - Id: CR1_R2
+    RoomA: R1
+    RoomB: R2
+    Waypoints:
+    - {x: -27.254303, y: -50.365135}
+    - {x: -22.9423, y: -50.365135}
+    Width: 3
+  - Id: CR3_R4
+    RoomA: R3
+    RoomB: R4
+    Waypoints:
+    - {x: 6.0595922, y: -51.182587}
+    - {x: 11.688362, y: -51.182587}
+    Width: 3
+  - Id: CR5_R6
+    RoomA: R5
+    RoomB: R6
+    Waypoints:
+    - {x: 39.197403, y: -51.051598}
+    - {x: 45.069633, y: -51.051598}
+    Width: 3
+  - Id: CR28_R35
+    RoomA: R28
+    RoomB: R35
+    Waypoints:
+    - {x: -51.529163, y: 22.974176}
+    - {x: -51.529163, y: 28.17007}
+    Width: 3
+  - Id: CR4_R5
+    RoomA: R4
+    RoomB: R5
+    Waypoints:
+    - {x: 23.688362, y: -50.91057}
+    - {x: 29.197403, y: -50.91057}
+    Width: 3
+  - Id: CR47_R48
+    RoomA: R47
+    RoomB: R48
+    Waypoints:
+    - {x: 39.749393, y: 51.38047}
+    - {x: 44.470207, y: 51.38047}
+    Width: 3
+  - Id: CR25_R32
+    RoomA: R25
+    RoomB: R32
+    Waypoints:
+    - {x: 17.421194, y: 4.507074}
+    - {x: 17.421194, y: 10.891163}
+    Width: 3
+  - Id: CR10_R17
+    RoomA: R10
+    RoomB: R17
+    Waypoints:
+    - {x: 0.6524863, y: -29.579891}
+    - {x: 0.6524863, y: -22.483759}
+    Width: 3
+  - Id: CR44_R45
+    RoomA: R44
+    RoomB: R45
+    Waypoints:
+    - {x: -12.253302, y: 50.972668}
+    - {x: -6.0914125, y: 50.972668}
+    Width: 3
+  - Id: CR26_R27
+    RoomA: R26
+    RoomB: R27
+    Waypoints:
+    - {x: 39.236145, y: -0.20799851}
+    - {x: 44.690926, y: -0.20799851}
+    Width: 3
+  - Id: CR13_R20
+    RoomA: R13
+    RoomB: R20
+    Waypoints:
+    - {x: 51.49179, y: -29.145527}
+    - {x: 51.49179, y: -22.043016}
+    Width: 3
+  - Id: CR23_R30
+    RoomA: R23
+    RoomB: R30
+    Waypoints:
+    - {x: -17.240063, y: 5.0003347}
+    - {x: -17.240063, y: 12.8946}
+    Width: 3
+  - Id: CR20_R27
+    RoomA: R20
+    RoomB: R27
+    Waypoints:
+    - {x: 50.763763, y: -11.043016}
+    - {x: 50.763763, y: -5.711294}
+    Width: 3
+  - Id: CR35_R42
+    RoomA: R35
+    RoomB: R42
+    Waypoints:
+    - {x: -51.481163, y: 39.17007}
+    - {x: -51.481163, y: 46.13808}
+    Width: 3
+  - Id: CR38_R39
+    RoomA: R38
+    RoomB: R39
+    Waypoints:
+    - {x: 5.8438177, y: 33.97552}
+    - {x: 11.964628, y: 33.97552}
+    Width: 3
+  - Id: CR16_R23
+    RoomA: R16
+    RoomB: R23
+    Waypoints:
+    - {x: -17.243332, y: -11.212648}
+    - {x: -17.243332, y: -3.9996653}
+    Width: 3
+  - Id: CR24_R31
+    RoomA: R24
+    RoomB: R31
+    Waypoints:
+    - {x: 0.13942671, y: 5.5}
+    - {x: 0.13942671, y: 12.330898}
+    Width: 3
+  - Id: CR15_R16
+    RoomA: R15
+    RoomB: R16
+    Waypoints:
+    - {x: -29.325481, y: -17.14325}
+    - {x: -22.045755, y: -17.14325}
+    Width: 3
+  - Id: CR45_R46
+    RoomA: R45
+    RoomB: R46
+    Waypoints:
+    - {x: 5.9085875, y: 50.926014}
+    - {x: 11.700031, y: 50.926014}
+    Width: 3
+  - Id: CR36_R37
+    RoomA: R36
+    RoomB: R37
+    Waypoints:
+    - {x: -29.15274, y: 34.36322}
+    - {x: -22.569614, y: 34.36322}
+    Width: 3
+  m_Mazes: []
+  m_CheeseSlots:
+  - RoomId: R34
+    Pos: {x: 54.15077, y: 13.750561}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R23
+    Pos: {x: -14.940908, y: -1.7496651}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R1
+    Pos: {x: -30.254303, y: -52.530754}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R20
+    Pos: {x: 53.8366, y: -19.293016}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R8
+    Pos: {x: -30.88253, y: -36.404816}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R11
+    Pos: {x: 19.544426, y: -35.945312}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R44
+    Pos: {x: -14.753302, y: 47.79071}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R25
+    Pos: {x: 19.921194, y: -2.2429264}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R22
+    Pos: {x: -32.2415, y: -1.7370056}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R7
+    Pos: {x: -47.990643, y: -37.05521}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R26
+    Pos: {x: 36.736145, y: -2.9547029}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R4
+    Pos: {x: 20.688362, y: -54.123203}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R40
+    Pos: {x: 36.702755, y: 31.004581}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R29
+    Pos: {x: -32.141434, y: 14.765928}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R39
+    Pos: {x: 19.464628, y: 31.967667}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R36
+    Pos: {x: -31.65274, y: 30.57964}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R9
+    Pos: {x: -14.383465, y: -36.808018}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R5
+    Pos: {x: 36.697403, y: -53.197937}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R13
+    Pos: {x: 53.99179, y: -35.895527}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R30
+    Pos: {x: -14.539219, y: 15.1446}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R35
+    Pos: {x: -49.029163, y: 30.92007}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R38
+    Pos: {x: 2.8438177, y: 31.483376}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R12
+    Pos: {x: 37.56154, y: -37.16758}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R28
+    Pos: {x: -48.117874, y: 14.724176}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R14
+    Pos: {x: -48.01574, y: -19.383799}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R2
+    Pos: {x: -13.942301, y: -54.199512}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R10
+    Pos: {x: 3.15445, y: -36.32989}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R47
+    Pos: {x: 36.749393, y: 48.632305}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R37
+    Pos: {x: -15.069614, y: 32.146797}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R24
+    Pos: {x: 3, y: -2.75}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R15
+    Pos: {x: -31.825481, y: -20.32385}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R43
+    Pos: {x: -30.988472, y: 49.358006}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R17
+    Pos: {x: 3.1505227, y: -19.733759}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R19
+    Pos: {x: 36.992435, y: -19.928036}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R32
+    Pos: {x: 19.707148, y: 13.641163}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R16
+    Pos: {x: -14.545755, y: -19.462648}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R31
+    Pos: {x: 3.2788534, y: 14.580898}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R46
+    Pos: {x: 20.700031, y: 47.697403}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R18
+    Pos: {x: 19.610825, y: -19.187069}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R41
+    Pos: {x: 53.261223, y: 31.589436}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R33
+    Pos: {x: 35.86202, y: 14.244047}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R13
+    Pos: {x: 48.99179, y: -31.395527}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R15
+    Pos: {x: -36.82548, y: -14.823851}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R1
+    Pos: {x: -36.254303, y: -48.030754}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R2
+    Pos: {x: -19.9423, y: -48.699512}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R31
+    Pos: {x: -2.7211466, y: 19.080898}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R7
+    Pos: {x: -52.990643, y: -31.55521}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R43
+    Pos: {x: -35.988472, y: 53.858006}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R26
+    Pos: {x: 31.736145, y: 2.5452971}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R39
+    Pos: {x: 14.464628, y: 36.467667}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R22
+    Pos: {x: -37.2415, y: 2.7629943}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R17
+    Pos: {x: -1.8494773, y: -14.233759}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R25
+    Pos: {x: 14.921194, y: 2.2570736}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R46
+    Pos: {x: 14.700031, y: 53.197403}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R35
+    Pos: {x: -54.029163, y: 36.42007}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R4
+    Pos: {x: 14.688362, y: -48.623203}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R36
+    Pos: {x: -36.65274, y: 36.07964}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R32
+    Pos: {x: 13.707148, y: 19.141163}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R5
+    Pos: {x: 31.697403, y: -47.697937}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R47
+    Pos: {x: 30.749393, y: 54.132305}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R23
+    Pos: {x: -19.940908, y: 2.7503347}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R29
+    Pos: {x: -37.141434, y: 19.265928}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R28
+    Pos: {x: -54.117874, y: 20.224176}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R16
+    Pos: {x: -19.545755, y: -13.962648}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R8
+    Pos: {x: -36.88253, y: -30.904816}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R11
+    Pos: {x: 13.544426, y: -31.445312}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R19
+    Pos: {x: 31.992435, y: -14.428036}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R20
+    Pos: {x: 47.8366, y: -13.793016}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R30
+    Pos: {x: -19.539219, y: 19.6446}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R41
+    Pos: {x: 48.261223, y: 36.089436}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R9
+    Pos: {x: -19.383465, y: -32.308018}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R33
+    Pos: {x: 30.862019, y: 19.744047}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R18
+    Pos: {x: 13.610825, y: -13.687069}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R34
+    Pos: {x: 48.15077, y: 19.25056}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R12
+    Pos: {x: 31.561539, y: -31.66758}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R40
+    Pos: {x: 30.702755, y: 35.50458}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R24
+    Pos: {x: -3, y: 2.75}
+    MinGrade: 6
+    MaxGrade: 7
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R38
+    Pos: {x: -3.1561823, y: 35.983376}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R10
+    Pos: {x: -1.8455501, y: -31.829891}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R14
+    Pos: {x: -53.01574, y: -13.883799}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R37
+    Pos: {x: -20.069614, y: 36.646797}
+    MinGrade: 3
+    MaxGrade: 5
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  - RoomId: R44
+    Pos: {x: -19.753302, y: 53.29071}
+    MinGrade: 1
+    MaxGrade: 3
+    Fixed: 0
+    FixedGrade: 0
+    Radius: 2
+  m_FortressSlots:
+  - RoomId: R0
+    Pos: {x: -50.61567, y: -50.73183}
+    YawDeg: 44.93433
+    AlwaysInclude: 1
+  - RoomId: R3
+    Pos: {x: 0.05959239, y: -50.991966}
+    YawDeg: -0.06695939
+    AlwaysInclude: 0
+  - RoomId: R6
+    Pos: {x: 51.069633, y: -51.65526}
+    YawDeg: -44.673367
+    AlwaysInclude: 0
+  - RoomId: R27
+    Pos: {x: 50.690926, y: -0.21129432}
+    YawDeg: -89.76118
+    AlwaysInclude: 0
+  - RoomId: R48
+    Pos: {x: 50.470207, y: 51.37864}
+    YawDeg: -135.51103
+    AlwaysInclude: 0
+  - RoomId: R45
+    Pos: {x: -0.091412775, y: 51.404625}
+    YawDeg: 179.89812
+    AlwaysInclude: 0
+  - RoomId: R42
+    Pos: {x: -50.43316, y: 51.63808}
+    YawDeg: 135.67633
+    AlwaysInclude: 0
+  - RoomId: R21
+    Pos: {x: -50.78463, y: 0.17693657}
+    YawDeg: 90.19962
+    AlwaysInclude: 0
+  m_MinRooms: 49
+  m_MaxRooms: 49
+  m_HalfExtent: 60
+  m_DisplayName: "\uB300\uD615 \uB9F5 (120\xD7120)"
+  m_RecommendedMiceMin: 6
+  m_RecommendedMiceMax: 8
+  m_CheeseSets: 2
+  m_MaxFortresses: 8

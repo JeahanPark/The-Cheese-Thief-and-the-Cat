@@ -6,6 +6,10 @@ namespace CTC.Tests
 {
     public class AlcoveLogicTests
     {
+        // 기준 구성 2:8 · 120×120 맵(2026-08-10) — 치즈 총량이 쥐 수에 비례한다.
+        private const int MICE = 8;
+        private const int SPOTS = 20;
+
         // ---- 벽 몫 합계 ----
 
         [Test]
@@ -53,33 +57,34 @@ namespace CTC.Tests
         public void ReservePerSpot_AlcoveShareComesOutOfMapTotal()
         {
             int alcoveTotal = AlcoveLogic.TotalCheese(3);
-            int withAlcoves = CheeseSpotLogic.ReservePerSpot(7, alcoveTotal);
-            int without = CheeseSpotLogic.ReservePerSpot(7, 0);
+            int withAlcoves = CheeseSpotLogic.ReservePerSpot(SPOTS, alcoveTotal, MICE);
+            int without = CheeseSpotLogic.ReservePerSpot(SPOTS, 0, MICE);
 
             // 벽이 가져간 만큼 지점 몫이 줄어야 한다 — 더해지면 성장 기한이 늘어진다
             Assert.Less(withAlcoves, without);
-            Assert.LessOrEqual(withAlcoves * 7 + alcoveTotal, CheeseSpotLogic.TOTAL_MAP_CHEESE);
+            Assert.LessOrEqual(withAlcoves * SPOTS + alcoveTotal, CheeseSpotLogic.MapTotal(MICE));
         }
 
         [Test]
         public void ReservePerSpot_NoAlcovesMatchesLegacyTotal()
         {
-            // 벽감이 없으면 예전과 정확히 같아야 한다(회귀)
-            Assert.AreEqual(CheeseSpotLogic.TOTAL_MAP_CHEESE / 7, CheeseSpotLogic.ReservePerSpot(7, 0));
+            // 벽감이 없으면 총량을 지점 수로 나눈 값 그대로여야 한다(회귀)
+            Assert.AreEqual(CheeseSpotLogic.MapTotal(MICE) / SPOTS,
+                CheeseSpotLogic.ReservePerSpot(SPOTS, 0, MICE));
         }
 
         [Test]
         public void ReservePerSpot_ZeroSpotsIsSafe()
         {
-            Assert.AreEqual(0, CheeseSpotLogic.ReservePerSpot(0, 100));
+            Assert.AreEqual(0, CheeseSpotLogic.ReservePerSpot(0, 100, MICE));
         }
 
         [Test]
         public void ReservePerSpot_AlcoveShareOverTotalDoesNotGoNegative()
         {
             // 배치 실수로 벽이 총량보다 많이 가져가도 지점 매장량이 음수가 되면 안 된다
-            int absurd = CheeseSpotLogic.TOTAL_MAP_CHEESE * 2;
-            Assert.GreaterOrEqual(CheeseSpotLogic.ReservePerSpot(7, absurd), 0);
+            int absurd = CheeseSpotLogic.MapTotal(MICE) * 2;
+            Assert.GreaterOrEqual(CheeseSpotLogic.ReservePerSpot(SPOTS, absurd, MICE), 0);
         }
 
         // ---- 픽업 분할 ----

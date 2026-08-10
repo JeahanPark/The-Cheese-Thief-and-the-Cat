@@ -168,6 +168,52 @@ namespace CTC.Runtime.Map
             return path;
         }
 
+        /// <summary>
+        /// 길이 있으면 <see cref="FindPath"/>와 같고, **없으면 갈 수 있는 곳 중 표적에 가장 가까운
+        /// 노드까지** 간다(2026-08-10).
+        ///
+        /// 왜 필요한가: 그래프는 벽을 지나는 간선을 걷어내고 나면 조각조각 끊긴 채로 남는다
+        /// (기본 맵 실측 39노드 29간선 — 이어져 있으려면 최소 38개다). 그래서 표적이 다른 조각에
+        /// 있으면 길이 아예 안 나오고, 그때 빈 경로를 돌려주면 강아지가 **그 자리에 굳는다**
+        /// (2026-08-10 실측: 감지 반경을 14→20으로 올리자 Chase 상태로 path=0에 붙박였다).
+        ///
+        /// 끝까지 못 가도 그쪽으로 붙어 두면 물리 충돌과 경유점 건너뛰기가 나머지를 해결한다 —
+        /// 멈춰 있는 것보다 언제나 낫다.
+        /// </summary>
+        public static List<Vector2> FindPathToward(NavGraph _graph, Vector2 _from, Vector2 _to)
+        {
+            List<Vector2> direct = FindPath(_graph, _from, _to);
+            if (direct.Count > 0) return direct;
+
+            var path = new List<Vector2>();
+            int start = NearestNode(_graph, _from);
+            if (start < 0) { path.Add(_to); return path; }
+
+            int[] previous = DijkstraAll(_graph, start);
+
+            // 출발 조각 안에서 표적에 제일 가까운 노드를 고른다
+            int best = -1;
+            float bestSqr = (_graph.Nodes[start] - _to).sqrMagnitude;
+            for (int i = 0; i < _graph.Count; i++)
+            {
+                if (i == start || previous[i] < 0) continue;   // 못 닿는 조각
+                float sqr = (_graph.Nodes[i] - _to).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                bestSqr = sqr;
+                best = i;
+            }
+
+            // 조각 안에 더 가까운 자리가 없으면 **표적 쪽으로 그냥 민다**. 벽에 부딪히면
+            // CharacterController가 벽을 타고 미끄러지고, 그래도 안 되면 경유점 건너뛰기가
+            // 새 목적지를 잡는다 — 굳어 있는 것보다 언제나 낫다.
+            if (best < 0) { path.Add(_to); return path; }
+
+            var reversed = new List<Vector2>();
+            for (int at = best; at != start; at = previous[at]) reversed.Add(_graph.Nodes[at]);
+            for (int i = reversed.Count - 1; i >= 0; i--) path.Add(reversed[i]);
+            return path;   // `_to`는 안 붙인다 — 못 가는 자리다
+        }
+
         // 노드가 100개도 안 되므로 우선순위 큐 없이 선형 탐색으로 충분하다.
         private static int[] Dijkstra(NavGraph _graph, int _start, int _goal)
         {
@@ -199,6 +245,37 @@ namespace CTC.Runtime.Map
             }
 
             return previous[_goal] >= 0 ? previous : null;
+        }
+
+        // 조기 종료 없이 끝까지 — 어디까지 닿을 수 있는지를 알아야 '가장 가까운 대안'을 고른다.
+        private static int[] DijkstraAll(NavGraph _graph, int _start)
+        {
+            int n = _graph.Count;
+            var dist = new float[n];
+            var previous = new int[n];
+            var visited = new bool[n];
+
+            for (int i = 0; i < n; i++) { dist[i] = float.PositiveInfinity; previous[i] = -1; }
+            dist[_start] = 0f;
+
+            for (int step = 0; step < n; step++)
+            {
+                int current = -1;
+                float best = float.PositiveInfinity;
+                for (int i = 0; i < n; i++)
+                {
+                    if (!visited[i] && dist[i] < best) { best = dist[i]; current = i; }
+                }
+                if (current < 0) break;
+
+                visited[current] = true;
+                foreach (int next in _graph.NeighborsOf(current))
+                {
+                    float candidate = dist[current] + Vector2.Distance(_graph.Nodes[current], _graph.Nodes[next]);
+                    if (candidate < dist[next]) { dist[next] = candidate; previous[next] = current; }
+                }
+            }
+            return previous;
         }
 
         private static bool ContainsWithMargin(RoomRect _room, Vector2 _p)

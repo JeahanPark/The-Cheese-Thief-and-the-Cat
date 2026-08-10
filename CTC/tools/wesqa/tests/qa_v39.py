@@ -79,7 +79,7 @@ def main():
     released = False
     for jx, jz in jail_list:
         rescuer.invoke("TestTeleportLocalPlayer", _x=jx + 1.0, _z=jz)
-        time.sleep(4.5)          # 구출 3초 + 여유
+        time.sleep(7.0)          # 구출 5초(JailRescueSeconds, 2026-08-10 3→5) + 여유
         if not victim.invoke("TestGetJailed"):
             released = True
             break

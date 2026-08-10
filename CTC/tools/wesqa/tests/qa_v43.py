@@ -51,13 +51,17 @@ def main():
           m1.invoke("TestGetMouseJob"))
     check("직업 — 다른 클라에도 보인다", cat.invoke("TestGetMouseJobOf", _clientId=m1_id) == "Gang")
 
-    # 멀리 있으면 임명이 안 된다 — 거리 판정은 서버가 한다
-    m2.invoke("TestTeleportLocalPlayer", _x=13.0, _z=13.0)
-    time.sleep(0.8)
+    # 멀리 있으면 임명이 안 된다 — 거리 판정은 서버가 한다.
+    # **둘 다 자리를 지정한다.** 한쪽만 옮기면 하필 상대 스폰 옆에 떨어질 수 있다
+    # (2026-08-10 실측: 요새 스폰이 13,13 바로 옆이라 2.4m로 붙어 임명이 성립했다).
+    m1.invoke("TestTeleportLocalPlayer", _x=-12.0, _z=-12.0)
+    m2.invoke("TestTeleportLocalPlayer", _x=12.0, _z=12.0)
+    time.sleep(1.2)
+    gap = m2.invoke("TestGetDistanceTo", _x=-12.0, _z=-12.0)
     m1.invoke("TestRecruit")
     time.sleep(0.8)
     check("임명 — 멀면 안 된다", m2.invoke("TestGetMouseJob") == "None",
-          m2.invoke("TestGetMouseJob"))
+          f"{m2.invoke('TestGetMouseJob')} · 사이 {gap:.1f}m")
 
     # ---------- 2단계 진입 ----------
     # **부하는 아직 임명하지 않는다.** 쥐가 둘뿐이라 둘 다 깡패 편이면 2단계가 열리자마자
