@@ -217,6 +217,7 @@ namespace CTC.Editor
                 PlanAlcovesInto(layout, AlcoveCountFor(layout));
                 PlanJailsInto(layout, JailCountFor(layout));
                 PlanBoxesInto(layout, BOXES_PER_MAP);   // 벽감 자리를 피하므로 벽감 뒤에 온다
+                PlanObstaclesInto(layout);              // 위의 것들을 전부 피하므로 마지막이다
             }
             AssetDatabase.SaveAssets();
 

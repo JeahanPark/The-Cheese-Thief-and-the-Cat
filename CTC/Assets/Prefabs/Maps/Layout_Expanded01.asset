@@ -128,8 +128,8 @@ MonoBehaviour:
   - Pos: {x: -18.199999, y: 2.1}
     YawDeg: 90
   m_Alcoves:
-  - Pos: {x: 0, y: 7.7}
-    YawDeg: 180
+  - Pos: {x: 4.2000003, y: -1.6800001}
+    YawDeg: 270
     Payload: 1
     BoxContents: []
   - Pos: {x: -14.7, y: -19.6}
@@ -138,14 +138,14 @@ MonoBehaviour:
     BoxContents:
     - Id: 2
       Amount: 1
-  - Pos: {x: 15.4, y: -10.5}
-    YawDeg: 180
+  - Pos: {x: 15.4, y: -17.5}
+    YawDeg: 0
     Payload: 0
     BoxContents:
     - Id: 0
       Amount: 250
-  - Pos: {x: 14.7, y: 19.949999}
-    YawDeg: 180
+  - Pos: {x: 17.15, y: 16.8}
+    YawDeg: 270
     Payload: 0
     BoxContents:
     - Id: 1
@@ -154,3 +154,10 @@ MonoBehaviour:
   - Pos: {x: 14.7, y: 16.8}
   - Pos: {x: -14.7, y: -14.7}
   m_Boxes: []
+  m_Obstacles:
+  - Pos: {x: 0, y: 4.68}
+    Size: {x: 1.4, y: 1.4}
+  - Pos: {x: 15.4, y: 4.54}
+    Size: {x: 1.4, y: 1.4}
+  - Pos: {x: 0.90000004, y: 16.8}
+    Size: {x: 1.4, y: 1.4}

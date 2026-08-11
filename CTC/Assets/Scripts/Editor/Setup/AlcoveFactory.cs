@@ -16,6 +16,19 @@ namespace CTC.Editor
         private const float ALCOVE_WALL_INSET = 0.7f;
         // 치즈 지점과 이만큼은 떨어뜨린다 — 붙어 있으면 한 자리에서 다 해결돼 이동이 사라진다
         private const float ALCOVE_MIN_CHEESE_DIST = 3.5f;
+
+        /// <summary>
+        /// 문에서 이만큼은 떨어뜨린다 (2026-08-11 실측으로 얻었다).
+        ///
+        /// 격자 맵은 문이 **벽 한가운데**에 뚫린다. 그런데 벽감도 벽 한가운데에 앉혔더니
+        /// 막다른 방의 **유일한 문을 벽감이 막았다** — 그 방에서 시작한 쥐가 벽감을 부수기
+        /// 전에는 나올 수 없었고, 이동 그래프에서도 그 방이 통째로 잘려 나갔다.
+        /// 복도 폭 3m + 벽감 폭을 덮는다.
+        /// </summary>
+        private const float ALCOVE_MIN_DOOR_DIST = 4f;
+
+        // 문을 피해 벽을 따라 비껴 앉을 자리들(벽 길이 대비 비율). 0이 먼저 = 원래의 한가운데.
+        private static readonly float[] ALCOVE_WALL_SLIDES = { 0f, 0.3f, -0.3f };
         // 요새가 이 여유 안에 있는 방에는 감옥을 두지 않는다 — 요새 자리가 곧 쥐 스폰이다
         private const float JAIL_FORTRESS_MARGIN = 1f;
 
@@ -243,26 +256,45 @@ namespace CTC.Editor
             Vector2 c = _room.Center;
             Vector2 half = _room.Size * 0.5f;
 
-            // (자리, 방 안쪽을 보는 yaw) — 북·남·동·서
-            var candidates = new (Vector2 pos, float yaw)[]
+            // 벽마다 한가운데를 먼저 보고, 문에 걸리면 벽을 따라 좌우로 비껴 앉는다.
+            foreach (float slide in ALCOVE_WALL_SLIDES)
             {
-                (new Vector2(c.x, c.y + half.y - ALCOVE_WALL_INSET), 180f),
-                (new Vector2(c.x, c.y - half.y + ALCOVE_WALL_INSET), 0f),
-                (new Vector2(c.x + half.x - ALCOVE_WALL_INSET, c.y), 270f),
-                (new Vector2(c.x - half.x + ALCOVE_WALL_INSET, c.y), 90f),
-            };
+                float dx = _room.Size.x * slide;
+                float dy = _room.Size.y * slide;
 
-            foreach ((Vector2 pos, float yaw) in candidates)
-            {
-                if (!IsClearOfCheese(pos, _layout)) continue;
-                _pos = pos;
-                _yaw = yaw;
-                return true;
+                // (자리, 방 안쪽을 보는 yaw) — 북·남·동·서
+                var candidates = new (Vector2 pos, float yaw)[]
+                {
+                    (new Vector2(c.x + dx, c.y + half.y - ALCOVE_WALL_INSET), 180f),
+                    (new Vector2(c.x + dx, c.y - half.y + ALCOVE_WALL_INSET), 0f),
+                    (new Vector2(c.x + half.x - ALCOVE_WALL_INSET, c.y + dy), 270f),
+                    (new Vector2(c.x - half.x + ALCOVE_WALL_INSET, c.y + dy), 90f),
+                };
+
+                foreach ((Vector2 pos, float yaw) in candidates)
+                {
+                    if (!IsClearOfCheese(pos, _layout)) continue;
+                    if (!IsClearOfDoors(pos, _layout)) continue;
+                    _pos = pos;
+                    _yaw = yaw;
+                    return true;
+                }
             }
 
             _pos = default;
             _yaw = 0f;
             return false;
+        }
+
+        // 문은 복도 끝점이다 — 거기에 벽감을 앉히면 그 방이 잠긴다.
+        private static bool IsClearOfDoors(Vector2 _pos, MapLayout _layout)
+        {
+            foreach (CorridorSeg seg in _layout.Corridors)
+            {
+                if (Vector2.Distance(seg.From, _pos) < ALCOVE_MIN_DOOR_DIST) return false;
+                if (Vector2.Distance(seg.To, _pos) < ALCOVE_MIN_DOOR_DIST) return false;
+            }
+            return true;
         }
 
         /// <summary>

@@ -19,6 +19,8 @@ namespace CTC.Runtime.Map
         private const float CORRIDOR_WALL_HEIGHT = 1.6f;
         private const float BOUNDARY_THICK = 0.5f;
         private const float FLOOR_THICK = 0.5f;
+        // 엄폐물 높이 — 눈높이 레이(1.0m)보다 확실히 높고, 방 벽(3m)보다는 낮아 답답하지 않다
+        private const float OBSTACLE_HEIGHT = 2.2f;
 
         [SerializeField] private Material m_WallMaterial;
         [SerializeField] private Material m_FloorMaterial;
@@ -49,6 +51,7 @@ namespace CTC.Runtime.Map
             BuildFromLayout(_layout);
             BuildCheeseSpots(_layout);
             BuildJails(_layout);
+            BuildObstacles(_layout);
         }
 
         public void Clear()
@@ -300,6 +303,26 @@ namespace CTC.Runtime.Map
                     if (m_WallMaterial != null) bar.GetComponent<Renderer>().sharedMaterial = m_WallMaterial;
                     Object.Destroy(bar.GetComponent<Collider>());
                 }
+            }
+        }
+
+        /// <summary>
+        /// 방 안 엄폐물 (2026-08-11). 격자 맵의 관통 시야를 끊는다 —
+        /// 이게 없으면 한 축에 서는 순간 그 줄 전체가 사냥터라 소리가 아무 일도 하지 않는다.
+        ///
+        /// 벽과 같은 재질·같은 콜라이더다. 시야 판정(`SightLine`)은 눈높이 1.0m 레이 하나라
+        /// 이 높이(2.2m)면 확실히 끊긴다.
+        /// </summary>
+        private void BuildObstacles(MapLayout _layout)
+        {
+            var root = new GameObject("Obstacles");
+            root.transform.SetParent(m_Root.transform, false);
+
+            foreach (ObstaclePlacement o in _layout.Obstacles)
+            {
+                AddBox(root, m_WallMaterial, "Obstacle",
+                    new Vector3(o.Pos.x, OBSTACLE_HEIGHT * 0.5f, o.Pos.y),
+                    new Vector3(o.Size.x, OBSTACLE_HEIGHT, o.Size.y));
             }
         }
 

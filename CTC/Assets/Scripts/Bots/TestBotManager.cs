@@ -32,6 +32,11 @@ namespace CTC.Runtime.Bots
         [SerializeField] private GameObject m_CatPrefab;
         [SerializeField] private GameObject m_MousePrefab;
 
+        // 스폰 자리가 비었는지 볼 때 쓰는 몸통. 바닥에 안 걸리게 살짝 띄운다.
+        private const float BODY_CENTER_HEIGHT = 0.6f;
+        private const float BODY_CLEARANCE = 0.45f;
+        private const float SPAWN_STEP_METERS = 1.2f;
+
         private readonly List<BotAgent> m_Agents = new List<BotAgent>();
         private readonly SoundLog m_Sound = new SoundLog();
         private NavGraph m_Graph;
@@ -68,8 +73,8 @@ namespace CTC.Runtime.Bots
             var forts = PlayerSpawner.FortressSpots(m_Map != null ? m_Map.ActiveLayout : null);
             m_Setup = $"map={(m_Map != null ? (m_Map.ActiveLayout != null ? m_Map.ActiveLayout.name : "null-layout") : "null-map")}" +
                       $" forts={forts.Count} graph={(m_Graph != null ? m_Graph.Count : -1)}";
-            for (int i = 0; i < _mice; i++) SpawnOne(RoleId.Mouse, MouseSpawnPos(forts, i));
-            for (int i = 0; i < _cats; i++) SpawnOne(RoleId.Cat, new Vector3(i * 2f + 4f, 0.1f, 0f));
+            for (int i = 0; i < _mice; i++) SpawnOne(RoleId.Mouse, ClearSpawn(MouseSpawnPos(forts, i)));
+            for (int i = 0; i < _cats; i++) SpawnOne(RoleId.Cat, ClearSpawn(new Vector3(i * 2f + 4f, 0.1f, 0f)));
 
             // 총량이 쥐 수에 비례한다 — 봇이 늘었으니 다시 나눠야 한다
             if (m_Spots != null) m_Spots.ServerResetReserves();
@@ -155,6 +160,41 @@ namespace CTC.Runtime.Bots
             if (wave > 0) spawn += Quaternion.Euler(0f, yaw, 0f) * Vector3.right * (0.7f * wave);
             spawn.y = 0.1f;
             return spawn;
+        }
+
+        /// <summary>
+        /// **누가 이미 서 있는 자리는 비껴 준다** (2026-08-11 실측으로 얻었다).
+        ///
+        /// 역할을 고르지 않은 사람(`RoleId.None`)도 고양이가 아니라는 이유로 **요새 0 앞**에
+        /// 쥐로 세워진다. 봇 쥐 0번이 정확히 같은 좌표로 태어나면 두 캡슐이 서로를 밀어내
+        /// **30초 동안 한 발도 못 뗀다** — 그 판의 승률은 못 믿는다.
+        ///
+        /// 벽도 같이 걸러진다(아무 콜라이더나 걸리면 그 자리는 버린다) — 비껴 준 자리가
+        /// 벽 속이면 고친 게 아니다.
+        /// </summary>
+        private static Vector3 ClearSpawn(Vector3 _spawn)
+        {
+            if (!Occupied(_spawn)) return _spawn;
+
+            const int RINGS = 8;
+            for (int i = 0; i < RINGS; i++)
+            {
+                float rad = i * (Mathf.PI * 2f / RINGS);
+                Vector3 candidate = _spawn + new Vector3(Mathf.Cos(rad), 0f, Mathf.Sin(rad)) * SPAWN_STEP_METERS;
+                if (!Occupied(candidate)) return candidate;
+            }
+            return _spawn;   // 사방이 막혔다 — 제자리 감지가 빼내 준다
+        }
+
+        private static bool Occupied(Vector3 _pos)
+        {
+            Vector3 center = _pos + Vector3.up * BODY_CENTER_HEIGHT;
+            foreach (Collider hit in Physics.OverlapSphere(
+                         center, BODY_CLEARANCE, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit != null) return true;
+            }
+            return false;
         }
 
         private int CountRole(RoleId _role)

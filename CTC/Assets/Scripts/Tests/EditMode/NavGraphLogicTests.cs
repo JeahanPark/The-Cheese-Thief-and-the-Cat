@@ -34,12 +34,46 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
-        public void Build_RoomBecomesNode()
+        public void Build_SmallRoomBecomesOneNode()
         {
-            NavGraph graph = NavGraphLogic.Build(new List<RoomRect> { Room(3f, 4f, 6f, 6f) }, null);
+            // 좁은 방은 모서리가 중심과 겹쳐 노드만 늘고 얻는 게 없다 — 중심 하나로 둔다.
+            NavGraph graph = NavGraphLogic.Build(new List<RoomRect> { Room(3f, 4f, 4f, 4f) }, null);
 
             Assert.AreEqual(1, graph.Count);
             Assert.AreEqual(new Vector2(3f, 4f), graph.Nodes[0]);
+        }
+
+        [Test]
+        public void Build_RoomGetsCornerRing()
+        {
+            // 방 중심에 요새가 서면 그 방이 통째로 잘려 나간다 — 돌아갈 링이 있어야 한다.
+            NavGraph graph = NavGraphLogic.Build(new List<RoomRect> { Room(0f, 0f, 12f, 12f) }, null);
+
+            Assert.AreEqual(5, graph.Count, "중심 + 모서리 넷");
+            Assert.AreEqual(Vector2.zero, graph.Nodes[0], "중심이 먼저다");
+            Assert.AreEqual(4, graph.NeighborsOf(0).Count, "중심은 모서리 넷과 이어진다");
+        }
+
+        [Test]
+        public void Build_RingSurvivesWhenCenterIsCutOff()
+        {
+            // 요새·엄폐물이 중심 간선을 전부 끊어도 문에서 문으로 건너갈 수 있어야 한다.
+            var rooms = new List<RoomRect> { Room(0f, 0f, 12f, 12f) };
+            var corridors = new List<CorridorSeg>
+            {
+                Corridor(new Vector2(-6f, 0f), new Vector2(-14f, 0f)),   // 서쪽 문
+                Corridor(new Vector2(6f, 0f), new Vector2(14f, 0f)),     // 동쪽 문
+            };
+
+            NavGraph graph = NavGraphLogic.Build(rooms, corridors);
+
+            int center = IndexOfNode(graph, Vector2.zero);
+            var neighbors = new List<int>(graph.NeighborsOf(center));
+            foreach (int n in neighbors) graph.Disconnect(center, n);    // 중심을 통째로 막는다
+
+            List<Vector2> path = NavGraphLogic.FindPath(graph, new Vector2(-14f, 0f), new Vector2(14f, 0f));
+
+            Assert.IsNotEmpty(path, "중심이 막혔다고 방이 잠기면 안 된다");
         }
 
         [Test]
@@ -85,7 +119,7 @@ namespace CTC.Tests.EditMode
         [Test]
         public void FindPath_SameNode_GoesStraightToTarget()
         {
-            var rooms = new List<RoomRect> { Room(0f, 0f, 10f, 10f) };
+            var rooms = new List<RoomRect> { Room(0f, 0f, 4f, 4f) };
             NavGraph graph = NavGraphLogic.Build(rooms, null);
 
             List<Vector2> path = NavGraphLogic.FindPath(graph, new Vector2(1f, 1f), new Vector2(2f, 2f));
@@ -176,14 +210,16 @@ namespace CTC.Tests.EditMode
         {
             // 조각 안에 더 나은 자리가 없으면 표적 쪽으로 그냥 민다 —
             // 빈 목록을 주면 강아지가 Chase 상태로 굳는다(2026-08-10 실측).
-            var rooms = new List<RoomRect> { Room(0f, 0f, 8f, 8f), Room(20f, 0f, 8f, 8f) };
+            // 모서리 링이 없는 좁은 방이라야 "조각 안에 갈 데가 없는" 상황이 된다.
+            var rooms = new List<RoomRect> { Room(0f, 0f, 4f, 4f), Room(20f, 0f, 4f, 4f) };
 
             NavGraph graph = NavGraphLogic.Build(rooms, null);
             var from = new Vector2(0f, 0f);
             var unreachable = new Vector2(20f, 0f);
 
             List<Vector2> toward = NavGraphLogic.FindPathToward(graph, from, unreachable);
-            Assert.IsNotEmpty(toward);
+            Assert.AreEqual(1, toward.Count);
+            Assert.AreEqual(unreachable, toward[0], "갈 데가 없으면 표적 쪽으로 그냥 민다");
         }
 
         [Test]
