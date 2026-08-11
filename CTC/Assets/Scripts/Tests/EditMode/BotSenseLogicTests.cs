@@ -1,73 +1,50 @@
+using CTC.Runtime.Audio;
 using CTC.Runtime.Bots;
+using CTC.Runtime.Lobby;
 using NUnit.Framework;
-using UnityEngine;
 
 namespace CTC.Tests.EditMode
 {
     /// <summary>
-    /// 봇이 무엇을 알 수 있는가. **이 게임에서 가장 조심해야 하는 코드다** —
-    /// 여기가 헐거우면 고양이 봇이 신이 되고, 나온 승률은 "소리 밸런스가 좋다"가 아니라
+    /// 봇이 무엇을 들을 수 있는가. 여기가 무너지면 봇 승률이 밸런스가 아니라
     /// "봇이 반칙했다"를 뜻하게 된다.
     /// </summary>
     public class BotSenseLogicTests
     {
         [Test]
-        public void CanHear_UsesTheSameRadiusAsPlayback()
+        public void IsPreySound_CatIgnoresItsOwnNoise()
         {
-            Assert.IsTrue(BotSenseLogic.CanHear(Vector3.zero, new Vector3(17f, 0f, 0f), 18f));
-            Assert.IsFalse(BotSenseLogic.CanHear(Vector3.zero, new Vector3(19f, 0f, 0f), 18f));
+            // 2026-08-12 실측: 고양이가 제 덮치기·스킬 소리를 듣고 제자리를 조사하러 갔다.
+            // 스킬 소리는 45m를 울려서 두 마리가 서로의 소리에 계속 붙들렸다.
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.PounceSwing, RoleId.Mouse));
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.CatHurt, RoleId.Mouse));
         }
 
         [Test]
-        public void CanHear_IgnoresHeight()
+        public void IsPreySound_CatChasesMouseNoise()
         {
-            // 평면 맵이다 — y 차이로 소리가 끊기면 계단 하나에 청각이 사라진다
-            Assert.IsTrue(BotSenseLogic.CanHear(Vector3.zero, new Vector3(5f, 40f, 0f), 18f));
+            Assert.IsTrue(BotSenseLogic.IsPreySound(SfxId.CheeseTick, RoleId.Mouse), "파밍 소리");
+            Assert.IsTrue(BotSenseLogic.IsPreySound(SfxId.AlcoveBreak, RoleId.Mouse), "벽감 파괴");
+            Assert.IsTrue(BotSenseLogic.IsPreySound(SfxId.SlingshotFire, RoleId.Mouse), "새총");
         }
 
         [Test]
-        public void Blur_GrowsWithDistance()
+        public void IsPreySound_MouseFleesCatNoiseOnly()
         {
-            // 코앞의 소리는 거의 정확하고, 먼 소리는 방향만 남는다 — 사람의 청각과 같은 성질
-            Vector3 near = BotSenseLogic.Blur(new Vector3(2f, 0f, 0f), Vector3.zero, 0.2f, 0f);
-            Vector3 far = BotSenseLogic.Blur(new Vector3(40f, 0f, 0f), Vector3.zero, 0.2f, 0f);
-
-            Assert.AreEqual(0.4f, (near - new Vector3(2f, 0f, 0f)).magnitude, 0.01f);
-            Assert.AreEqual(8f, (far - new Vector3(40f, 0f, 0f)).magnitude, 0.01f);
+            Assert.IsTrue(BotSenseLogic.IsPreySound(SfxId.PounceSwing, RoleId.Cat));
+            // 제 파밍 소리에 놀라 도망치면 아무도 치즈를 못 캔다
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.CheeseTick, RoleId.Cat));
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.MouseDash, RoleId.Cat));
         }
 
         [Test]
-        public void Blur_ZeroErrorIsExact()
+        public void IsPreySound_IgnoresUiAndDog()
         {
-            // 0으로 두면 고양이가 소리 나는 즉시 직선으로 덮친다 — 이 값이 곧 밸런스 손잡이다
-            var heard = new Vector3(10f, 0f, 5f);
-            Assert.AreEqual(heard, BotSenseLogic.Blur(heard, Vector3.zero, 0f, 1.2f));
-        }
-
-        [Test]
-        public void IsInView_MatchesTheCameraCone()
-        {
-            // 고양이 카메라 70° → 좌우 35°
-            Assert.IsTrue(BotSenseLogic.IsInView(
-                Vector3.zero, Vector3.forward, new Vector3(0f, 0f, 10f), 70f));
-            Assert.IsTrue(BotSenseLogic.IsInView(
-                Vector3.zero, Vector3.forward, new Vector3(5f, 0f, 10f), 70f));   // 26°
-            Assert.IsFalse(BotSenseLogic.IsInView(
-                Vector3.zero, Vector3.forward, new Vector3(10f, 0f, 5f), 70f));   // 63°
-        }
-
-        [Test]
-        public void IsInView_BehindIsNeverVisible()
-        {
-            Assert.IsFalse(BotSenseLogic.IsInView(
-                Vector3.zero, Vector3.forward, new Vector3(0f, 0f, -10f), 179f));
-        }
-
-        [Test]
-        public void IsInView_SamePositionIsVisible()
-        {
-            // 겹쳐 있는데 "안 보인다"고 하면 덮치기가 성립하지 않는다
-            Assert.IsTrue(BotSenseLogic.IsInView(Vector3.zero, Vector3.forward, Vector3.zero, 55f));
+            // UI·판정음은 자리 정보가 아니고, 강아지는 봇이 모델링하지 않는 제3세력이다.
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.MatchStart, RoleId.Mouse));
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.UiClick, RoleId.Mouse));
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.DogBark, RoleId.Mouse));
+            Assert.IsFalse(BotSenseLogic.IsPreySound(SfxId.DogBark, RoleId.Cat));
         }
     }
 }

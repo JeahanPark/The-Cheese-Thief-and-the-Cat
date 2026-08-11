@@ -110,7 +110,7 @@ namespace CTC.Runtime.Bots
                 m_Route.OnStuck();
             }
 
-            if (!m_Route.TryGetDirection(_deltaSeconds, out Vector3 dir))
+            if (!m_Route.TryGetDirection(out Vector3 dir))
             {
                 m_Move.DevSetMoveInput(Vector3.zero);
                 return;

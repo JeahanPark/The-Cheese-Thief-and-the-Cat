@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using CTC.Runtime.Economy;
 using TMPro;
-using Unity.AI.Navigation;
 using UnityEngine;
 
 namespace CTC.Runtime.Map
@@ -23,6 +22,14 @@ namespace CTC.Runtime.Map
         // 엄폐물 높이 — 눈높이 레이(1.0m)보다 확실히 높고, 방 벽(3m)보다는 낮아 답답하지 않다
         private const float OBSTACLE_HEIGHT = 2.2f;
 
+        // 이동 폴리곤을 구울 때의 몸 — 프리팹의 CharacterController와 맞춘다(쥐 0.22 · 고양이 0.35).
+        // 가장 굵은 몸보다 조금 작게 잡는다. 크게 잡으면 사람이 지나는 문틈이 폴리곤에서 막히고,
+        // 너무 작게 잡으면 고양이가 못 끼는 틈을 지나라고 답한다.
+        private const float AGENT_RADIUS = 0.3f;
+        private const float AGENT_HEIGHT = 1.2f;
+        private const float AGENT_CLIMB = 0.4f;
+        private const float AGENT_SLOPE = 45f;
+
         [SerializeField] private Material m_WallMaterial;
         [SerializeField] private Material m_FloorMaterial;
         [SerializeField] private Material m_GroundMaterial;
@@ -31,6 +38,8 @@ namespace CTC.Runtime.Map
         [SerializeField] private Material m_DiscLowMaterial;    // 등급 1~3
 
         private GameObject m_Root;
+        private UnityEngine.AI.NavMeshData m_NavMesh;
+        private UnityEngine.AI.NavMeshDataInstance m_NavMeshInstance;
         private readonly List<CheeseSpot> m_Spots = new List<CheeseSpot>();
 
         /// <summary>마지막으로 지은 맵의 치즈 지점 — 레이아웃 순서와 같다(복제 인덱스의 근거).</summary>
@@ -73,19 +82,99 @@ namespace CTC.Runtime.Map
         /// </summary>
         private void BakeNavMesh()
         {
-            var surface = GetComponent<NavMeshSurface>();
-            if (surface == null) surface = gameObject.AddComponent<NavMeshSurface>();
+            RemoveNavMesh();
 
-            // 이 오브젝트 아래(= 방금 지은 GeneratedMap)만 본다. 플레이어·강아지는 안 굽는다.
-            surface.collectObjects = CollectObjects.Children;
-            surface.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
-            surface.BuildNavMesh();
+            // **몸 굵기를 직접 준다.** 유니티 기본값은 반지름 0.5인데 이 게임의 몸은
+            // 쥐 0.22 · 고양이 0.35다. 기본값으로 구우면 사람은 지나가는 문틈이 폴리곤에서
+            // 막혀 맵이 조각난다(실측: 대형 맵이 34조각, 봇이 3m 밖으로 못 나갔다).
+            UnityEngine.AI.NavMeshBuildSettings settings = UnityEngine.AI.NavMesh.GetSettingsByID(0);
+            settings.agentRadius = AGENT_RADIUS;
+            settings.agentHeight = AGENT_HEIGHT;
+            settings.agentClimb = AGENT_CLIMB;
+            settings.agentSlope = AGENT_SLOPE;
+
+            float span = CurrentLayout != null ? CurrentLayout.HalfExtent * 2f + 8f : 200f;
+            var bounds = new Bounds(Vector3.zero, new Vector3(span, 20f, span));
+
+            m_NavMesh = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(
+                settings, CollectSources(), bounds, Vector3.zero, Quaternion.identity);
+            m_NavMeshInstance = UnityEngine.AI.NavMesh.AddNavMeshData(m_NavMesh);
+        }
+
+        /// <summary>
+        /// 무엇을 지형으로 볼지 **직접 고른다** (2026-08-12).
+        ///
+        /// 셋을 판별한다.
+        /// ① **트리거는 뺀다** — 치즈 지점의 판정 영역까지 구우면 그 자리에 구멍이 뚫려
+        ///    파밍하러 온 쥐가 지점 2m 밖에서 멈춘다.
+        /// ② **덧바닥은 뺀다** — 방·복도 바닥은 전역 바닥 위 4cm에 겹쳐 까는 장식이다.
+        ///    셋을 다 구우면 거의 같은 높이의 면이 겹쳐 복셀화가 깨지고 폴리곤이 잘게 부서진다
+        ///    (실측: 고양이가 3.6×0.8m 조각에 갇혀 판 내내 못 나왔다).
+        /// ③ **벽 윗면은 걷는 면이 아니다** — 지오메트리는 남기고(막는 역할은 그대로)
+        ///    '걸을 수 없음'으로만 표시한다. 안 그러면 아무도 못 올라가는 섬이 수십 개 생기고,
+        ///    자리 보정이 목표를 그 위로 끌어올려 봇이 벽을 향해 걷는다.
+        ///
+        /// `NavMeshBuilder.CollectSources`를 쓰지 않는다 — 마크업으로 걸러도, 받은 목록을 직접
+        /// 걸러도 결과가 **한 톨도 안 바뀌었다**(콜라이더가 어느 오브젝트 것인지 안 알려준다).
+        /// 이 맵은 우리가 박스로 지었으니 그 박스를 그대로 넘기면 된다.
+        /// </summary>
+        private List<UnityEngine.AI.NavMeshBuildSource> CollectSources()
+        {
+            const int NOT_WALKABLE_AREA = 1;
+            var sources = new List<UnityEngine.AI.NavMeshBuildSource>();
+            if (m_Root == null) return sources;
+
+            foreach (BoxCollider box in m_Root.GetComponentsInChildren<BoxCollider>(true))
+            {
+                if (box.isTrigger) continue;   // ① 판정 영역은 지형이 아니다
+
+                string name = box.gameObject.name;
+                if (name.StartsWith("Floor_") || name.StartsWith("CorridorFloor")) continue;   // ② 덧바닥
+
+                bool blocking = name.StartsWith("Wall") || name.StartsWith("Boundary")
+                                || name.StartsWith("Obstacle") || name.StartsWith("Corridor");
+
+                Transform tr = box.transform;
+                sources.Add(new UnityEngine.AI.NavMeshBuildSource
+                {
+                    shape = UnityEngine.AI.NavMeshBuildSourceShape.Box,
+                    size = box.size,
+                    area = blocking ? NOT_WALKABLE_AREA : 0,   // ③ 벽 윗면은 걷는 면이 아니다
+                    transform = Matrix4x4.TRS(
+                        tr.TransformPoint(box.center), tr.rotation, tr.lossyScale),
+                });
+            }
+            return sources;
+        }
+
+        /// <summary>
+        /// **지금 당장** 지운다 (2026-08-12).
+        ///
+        /// `Destroy`는 프레임 끝에 실행된다. 그런데 이동 폴리곤은 맵을 다 지은 **같은 프레임**에
+        /// 굽는다 — 그래서 "이동 방해라 지웠다"고 적어 둔 콜라이더가 아직 살아 있는 채로 지형이
+        /// 되어 버렸다. 치즈 지점 원반은 반지름 1.5m 기둥으로 구워졌고, 파밍하러 온 쥐가 지점
+        /// 2m 밖에서 멈춰 한 판 내내 아무도 치즈를 못 캤다.
+        /// </summary>
+        private static void DestroyNow(Object _target)
+        {
+            if (_target == null) return;
+
+            if (Application.isPlaying) DestroyImmediate(_target);
+            else DestroyImmediate(_target, true);
+        }
+
+        // 맵을 다시 지을 때 옛 폴리곤을 걷어낸다 — 안 걷으면 겹쳐 쌓여 옛 맵으로 길을 찾는다.
+        private void RemoveNavMesh()
+        {
+            if (m_NavMeshInstance.valid) m_NavMeshInstance.Remove();
+            m_NavMesh = null;
         }
 
         public void Clear()
         {
             m_Spots.Clear();
             CurrentLayout = null;
+            RemoveNavMesh();
             if (m_Root == null) return;
 
             if (Application.isPlaying) Destroy(m_Root);
@@ -329,7 +418,7 @@ namespace CTC.Runtime.Map
                     bar.transform.localPosition = new Vector3(Mathf.Cos(a) * 1.2f, 0.9f, Mathf.Sin(a) * 1.2f);
                     bar.transform.localScale = new Vector3(0.15f, 1.8f, 0.15f);
                     if (m_WallMaterial != null) bar.GetComponent<Renderer>().sharedMaterial = m_WallMaterial;
-                    Object.Destroy(bar.GetComponent<Collider>());
+                    DestroyNow(bar.GetComponent<Collider>());
                 }
             }
         }
@@ -394,7 +483,7 @@ namespace CTC.Runtime.Map
 
             var disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disc.name = "Disc";
-            Destroy(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
+            DestroyNow(disc.GetComponent<CapsuleCollider>()); // 이동 방해·오버랩 오염 방지
             disc.transform.SetParent(visual.transform, false);
             disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             disc.transform.localScale = new Vector3(3f, 0.05f, 3f);

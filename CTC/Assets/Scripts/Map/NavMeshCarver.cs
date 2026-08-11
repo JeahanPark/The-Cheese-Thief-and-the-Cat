@@ -1,4 +1,3 @@
-using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
 

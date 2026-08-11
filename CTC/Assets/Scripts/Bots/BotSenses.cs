@@ -85,6 +85,9 @@ namespace CTC.Runtime.Bots
             {
                 foreach (SoundLog.Heard heard in _sound.Recent)
                 {
+                    // **제가 낸 소리를 쫓지 않는다.** 기록에는 누가 냈는지가 없어 소리 종류로 가린다 —
+                    // 안 그러면 고양이가 제 덮치기·스킬 소리(45m)를 듣고 제자리를 조사하러 간다.
+                    if (!BotSenseLogic.IsPreySound(heard.Id, prey)) continue;
                     if (!BotSenseLogic.CanHear(m_Self.position, heard.Position, heard.MaxDistance)) continue;
 
                     float distance = Vector3.Distance(m_Self.position, heard.Position);

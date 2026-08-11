@@ -133,7 +133,7 @@ namespace CTC.Runtime.Ai
 
             Vector3 horizontal = Vector3.zero;
 
-            if (m_Route != null && m_Route.TryGetDirection(_dt, out Vector3 dir))
+            if (m_Route != null && m_Route.TryGetDirection(out Vector3 dir))
             {
                 horizontal = dir * DogAiLogic.MoveSpeed;
                 transform.rotation = Quaternion.LookRotation(dir, Vector3.up);

@@ -126,6 +126,104 @@ namespace CTC.Runtime.Testing
             return tri.indices != null ? tri.indices.Length / 3 : 0;
         }
 
+        /// <summary>
+        /// QA: 이동 폴리곤이 **몇 조각으로 끊겨 있나**. "조각수 최대조각 삼각형수".
+        /// 하나여야 정상이다 — 여럿이면 그 사이는 길찾기가 못 넘어간다.
+        /// </summary>
+        public string TestNavMeshIslands()
+        {
+            UnityEngine.AI.NavMeshTriangulation tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            int triCount = tri.indices.Length / 3;
+            if (triCount == 0) return "0 폴리곤";
+
+            // 꼭짓점을 좌표로 합쳐 인접(변 공유)을 만든다 — 인덱스가 달라도 같은 자리면 같은 점이다
+            var byPos = new System.Collections.Generic.Dictionary<Vector3, int>();
+            var canon = new int[tri.vertices.Length];
+            for (int i = 0; i < tri.vertices.Length; i++)
+            {
+                Vector3 key = new Vector3(
+                    Mathf.Round(tri.vertices[i].x * 100f), Mathf.Round(tri.vertices[i].y * 100f),
+                    Mathf.Round(tri.vertices[i].z * 100f));
+                if (!byPos.TryGetValue(key, out int id)) { id = byPos.Count; byPos[key] = id; }
+                canon[i] = id;
+            }
+
+            var edgeOwner = new System.Collections.Generic.Dictionary<long, int>();
+            var parent = new int[triCount];
+            for (int i = 0; i < triCount; i++) parent[i] = i;
+
+            int Find(int _x) { while (parent[_x] != _x) { parent[_x] = parent[parent[_x]]; _x = parent[_x]; } return _x; }
+            void Union(int _a, int _b) { int ra = Find(_a), rb = Find(_b); if (ra != rb) parent[rb] = ra; }
+
+            for (int t = 0; t < triCount; t++)
+            {
+                for (int e = 0; e < 3; e++)
+                {
+                    int a = canon[tri.indices[t * 3 + e]];
+                    int b = canon[tri.indices[t * 3 + (e + 1) % 3]];
+                    long key = a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+                    if (edgeOwner.TryGetValue(key, out int other)) Union(t, other);
+                    else edgeOwner[key] = t;
+                }
+            }
+
+            var sizes = new System.Collections.Generic.Dictionary<int, int>();
+            for (int t = 0; t < triCount; t++)
+            {
+                int r = Find(t);
+                sizes[r] = sizes.TryGetValue(r, out int n) ? n + 1 : 1;
+            }
+
+            int largest = 0;
+            foreach (int n in sizes.Values) largest = Mathf.Max(largest, n);
+            return $"조각 {sizes.Count} · 최대 {largest} / 전체 {triCount}";
+        }
+
+        /// <summary>
+        /// QA: 그 자리가 폴리곤 위인지, 그 자리가 속한 폴리곤의 높이는 얼마인지.
+        /// "hit=x,y,z dist=.. " — y가 예상 밖이면 벽 위나 다른 층에 붙은 것이다.
+        /// </summary>
+        public string TestNavSample(float _x, float _z)
+        {
+            var p = new Vector3(_x, 0f, _z);
+            for (float r = 0.5f; r <= 8f; r *= 2f)
+            {
+                if (!UnityEngine.AI.NavMesh.SamplePosition(
+                        p, out UnityEngine.AI.NavMeshHit hit, r, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    continue;
+                }
+                return $"r={r} hit={hit.position.x:F2},{hit.position.y:F2},{hit.position.z:F2} " +
+                       $"dist={Vector3.Distance(p, hit.position):F2}";
+            }
+            return "8m 안에 폴리곤 없음";
+        }
+
+        /// <summary>
+        /// QA: 두 좌표 사이 길찾기를 직접 물어본다 — "샘플결과 status 코너수 첫코너".
+        /// 봇이 안 움직일 때 **어느 층에서 끊겼는지**를 이걸로 가른다(폴리곤이 없나·길이 없나).
+        /// </summary>
+        public string TestNavPath(float _x1, float _z1, float _x2, float _z2)
+        {
+            var a = new Vector3(_x1, 0f, _z1);
+            var b = new Vector3(_x2, 0f, _z2);
+
+            bool okA = UnityEngine.AI.NavMesh.SamplePosition(
+                a, out UnityEngine.AI.NavMeshHit ha, 5f, UnityEngine.AI.NavMesh.AllAreas);
+            bool okB = UnityEngine.AI.NavMesh.SamplePosition(
+                b, out UnityEngine.AI.NavMeshHit hb, 5f, UnityEngine.AI.NavMesh.AllAreas);
+            if (!okA || !okB) return $"sample a={okA} b={okB}";
+
+            var path = new UnityEngine.AI.NavMeshPath();
+            UnityEngine.AI.NavMesh.CalculatePath(
+                ha.position, hb.position, UnityEngine.AI.NavMesh.AllAreas, path);
+
+            Vector3[] c = path.corners;
+            string first = c.Length > 0 ? $"{c[0].x:F1},{c[0].z:F1}" : "-";
+            string last = c.Length > 0 ? $"{c[c.Length - 1].x:F1},{c[c.Length - 1].z:F1}" : "-";
+            return $"{path.status} corners={c.Length} {first} → {last}";
+        }
+
         /// <summary>QA: 강아지와 로컬 플레이어의 수평 거리(둘 중 하나가 없으면 -1).</summary>
         public float TestGetDogDistance()
         {

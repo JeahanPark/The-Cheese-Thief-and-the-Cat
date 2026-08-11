@@ -31,7 +31,15 @@ namespace CTC.Runtime.Ai
         /// <summary>목표가 이만큼 움직여야 다시 짠다. 매 틱 짜면 코너 진행이 리셋된다.</summary>
         private const float REPLAN_DISTANCE = 1.5f;
 
-        /// <summary>다시 짜는 최소 간격. 두뇌는 매 틱 목표를 넣는다.</summary>
+        /// <summary>
+        /// 다시 짜는 최소 간격. 두뇌는 매 틱 목표를 넣는다.
+        ///
+        /// **카운터가 아니라 시계로 잰다**(2026-08-12). 카운터를 <see cref="TryGetDirection"/>
+        /// 안에서 깎았더니, 목표에 도착해 갈 데가 없어진 순간 그 함수가 맨 앞에서 돌아가
+        /// 카운터가 영영 안 깎였다. 그러면 <see cref="SetGoal"/>이 "방금 짰다"며 계속 안 짜고
+        /// 봇이 그 자리에 선다 — 소리를 조사하러 가는 고양이는 경로가 짧아 늘 이 덫에 걸렸다
+        /// (실측: 고양이 이동 0.33m/s, 최고속은 7.8이다).
+        /// </summary>
         private const float REPLAN_COOLDOWN_SECONDS = 0.25f;
 
         /// <summary>
@@ -51,7 +59,7 @@ namespace CTC.Runtime.Ai
         private int m_Index;
         private bool m_HasGoal;
         private bool m_GaveUp;
-        private float m_ReplanCooldown;
+        private float m_NextPlanTime;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
 
@@ -96,7 +104,7 @@ namespace CTC.Runtime.Ai
                 return;
             }
 
-            if (m_ReplanCooldown > 0f)
+            if (Time.time < m_NextPlanTime)
             {
                 m_HasGoal = true;
                 return;
@@ -125,12 +133,11 @@ namespace CTC.Runtime.Ai
         }
 
         /// <summary>매 틱. 갈 방향(수평 단위벡터)을 돌려준다. 도착했거나 갈 데가 없으면 false.</summary>
-        public bool TryGetDirection(float _deltaSeconds, out Vector3 _dir)
+        public bool TryGetDirection(out Vector3 _dir)
         {
             _dir = Vector3.zero;
             if (!m_HasGoal || m_Self == null) return false;
 
-            m_ReplanCooldown -= _deltaSeconds;
             Vector3 pos = m_Self.position;
 
             while (m_Index < m_Corners.Count)
@@ -183,7 +190,7 @@ namespace CTC.Runtime.Ai
             m_Corners.Clear();
             m_Index = 0;
             m_PlannedGoal = m_Goal;
-            m_ReplanCooldown = REPLAN_COOLDOWN_SECONDS;
+            m_NextPlanTime = Time.time + REPLAN_COOLDOWN_SECONDS;
             if (m_Self == null) return;
 
             // 양 끝을 폴리곤 위로 당긴다 — 소리가 난 자리는 벽 속일 수도 있다
