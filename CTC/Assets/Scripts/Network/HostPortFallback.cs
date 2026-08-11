@@ -31,6 +31,12 @@ namespace CTC.Runtime.Networking
             for (int i = 0; i < MAX_ATTEMPTS; i++)
             {
                 ushort port = (ushort)(BASE_PORT + i);
+
+                // **먼저 열어 본다.** 그냥 StartHost로 찔러 보면 실패할 때마다 NGO가 빨간 줄을
+                // 셋 찍는데, 기본 포트 7788은 MPPM 수집기가 늘 물고 있어서 **판을 열 때마다**
+                // 그 에러가 뜬다. 진짜 문제와 구분이 안 되는 노이즈다.
+                if (!IsPortFree(port)) continue;
+
                 transport.SetConnectionData("127.0.0.1", port);
 
                 if (_nm.StartHost())
@@ -44,6 +50,24 @@ namespace CTC.Runtime.Networking
 
             Debug.LogError($"[HostPortFallback] {BASE_PORT}~{BASE_PORT + MAX_ATTEMPTS - 1} 전부 바인드 실패");
             return false;
+        }
+
+        // UDP 소켓을 잠깐 열어 본다. 열리면 비어 있는 포트다.
+        // 닫고 다시 여는 사이의 틈은 남지만, 이건 같은 PC 개발 경로 전용이라 그걸로 충분하다.
+        private static bool IsPortFree(ushort _port)
+        {
+            try
+            {
+                using (var probe = new System.Net.Sockets.UdpClient(
+                           new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), _port)))
+                {
+                    return true;
+                }
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                return false;
+            }
         }
 
         /// <summary>클라이언트용: 호스트가 기록한 포트를 트랜스포트에 적용한다.</summary>

@@ -33,6 +33,12 @@ namespace CTC.Editor
 
         private const float SLOT_GAP = 8f;
 
+        // 로비 패널 치수. 안의 것은 전부 내용 폭 안에 들어와야 한다 —
+        // 하나라도 이걸 넘으면 패널 밖으로 삐져나온다.
+        // 맵 버튼 줄도 이 폭을 나눠 쓰므로 역할 버튼과 좌우가 딱 맞는다.
+        private const float PANEL_WIDTH = 480f;
+        private const float PANEL_CONTENT_WIDTH = 380f;
+
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
         private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match,
             CTC.Runtime.Match.PhaseDirector _phase)
@@ -57,7 +63,7 @@ namespace CTC.Editor
             var panelRt = (RectTransform)panel.transform;
             panelRt.anchorMin = panelRt.anchorMax = new Vector2(0.5f, 0.5f);
             panelRt.pivot = new Vector2(0.5f, 0.5f);
-            panelRt.sizeDelta = new Vector2(480f, 620f); // 맵 선택 줄이 늘어 세로 확장
+            panelRt.sizeDelta = new Vector2(PANEL_WIDTH, 620f); // 맵 선택 줄이 늘어 세로 확장
             var panelImage = panel.AddComponent<Image>();
             panelImage.color = new Color(0.08f, 0.09f, 0.12f, 0.85f);
 
@@ -72,14 +78,17 @@ namespace CTC.Editor
             TMP_Text mapLabel = CreateTmpText("MapLabel", panel.transform, "맵",
                 22f, TextAlignmentOptions.Center, new Vector2(0f, -286f), new Vector2(420f, 30f));
             // 라벨은 런타임에 LobbyUI가 MapLayout.DisplayName으로 덮어쓴다 — 여기선 자리만 잡는다.
-            // 폭(186)+간격(8)에 맞춰 배치해야 두 버튼이 겹치지 않는다.
+            // **폭은 맵 개수에서 역산한다.** 고정 폭을 쓰면 맵이 늘어난 순간 버튼이 패널
+            // 밖으로 삐져나온다(2026-08-11: 3개 × 186 + 간격 = 574 > 내용 폭 420).
             var mapButtons = new Object[MapLayoutPaths.Length];
-            const float MAP_BUTTON_WIDTH = 186f;
+            const float MAP_BUTTON_GAP = 8f;
+            float mapButtonWidth =
+                (PANEL_CONTENT_WIDTH - MAP_BUTTON_GAP * (MapLayoutPaths.Length - 1)) / MapLayoutPaths.Length;
             for (int i = 0; i < MapLayoutPaths.Length; i++)
             {
-                float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * (MAP_BUTTON_WIDTH + 8f);
+                float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * (mapButtonWidth + MAP_BUTTON_GAP);
                 mapButtons[i] = CreateMuipButton(panel.transform, $"MapButton{i + 1}",
-                    "맵 " + (i + 1), new Vector2(x, -330f), MAP_BUTTON_WIDTH);
+                    "맵 " + (i + 1), new Vector2(x, -330f), mapButtonWidth);
             }
 
             Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "쥐로 하기", new Vector2(0f, -400f));
@@ -717,7 +726,8 @@ namespace CTC.Editor
         // 깨지는 문제(비가시 버튼)와 한글 글리프·다중 라벨 이슈가 반복돼 그레이박스 단계에선
         // 플레인 UGUI로 통일 — 본 UI 패스에서 디자인 버튼으로 교체 전제.
         private static Button CreateMuipButton(
-            Transform _parent, string _name, string _label, Vector2 _anchoredPos, float _width = 380f)
+            Transform _parent, string _name, string _label, Vector2 _anchoredPos,
+            float _width = PANEL_CONTENT_WIDTH)
         {
             var go = new GameObject(_name, typeof(RectTransform));
             go.transform.SetParent(_parent, false);

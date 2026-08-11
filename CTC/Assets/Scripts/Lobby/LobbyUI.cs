@@ -141,9 +141,22 @@ namespace CTC.Runtime.Lobby
 
                 // 버튼 라벨은 에셋 파일명이 아니라 맵의 표시 이름
                 var text = m_MapButtons[i].GetComponentInChildren<TMP_Text>();
-                string wanted = m_Lobby.MapNameAt(i);
+                string wanted = ShortMapName(m_Lobby.MapNameAt(i));
                 if (text != null && text.text != wanted) text.text = wanted;
             }
+        }
+
+        /// <summary>
+        /// 버튼에는 이름만 — 괄호 안 크기는 뗀다. 맵이 셋이면 버튼 하나가 120px인데
+        /// "대형 맵 (120×120)"을 그대로 넣으면 두 줄로 접혀 버튼 밖으로 흘러나온다.
+        /// 크기는 바로 위 "맵: ~" 줄과 좌하단 맵 설명이 이미 보여 준다.
+        /// </summary>
+        private static string ShortMapName(string _displayName)
+        {
+            if (string.IsNullOrEmpty(_displayName)) return _displayName;
+
+            int paren = _displayName.IndexOf('(');
+            return paren > 0 ? _displayName.Substring(0, paren).TrimEnd() : _displayName;
         }
     }
 }
