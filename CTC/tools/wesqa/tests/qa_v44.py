@@ -103,7 +103,7 @@ def main():
     alcoves = cat.invoke("TestGetAlcoveCount")
     boxes = cat.invoke("TestGetBoxCount")
     check("맵 — 벽감이 방 수를 따라 늘었다(6개)", alcoves == 6, f"{alcoves}개")
-    check("맵 — 상자는 맵당 5개(직업권이 나오는 곳이라 희소해야 한다)", boxes == 5, f"{boxes}개")
+    check("맵 — 상자는 바닥에 없다(전부 벽 뒤)", boxes == 0, f"{boxes}개")
 
     # ---------- 치즈 총량이 인원에 비례한다 ----------
     # 단, 맵의 권장 최소 인원이 하한이다 — 벽감·상자에 이미 깔린 치즈는 절대량이라
@@ -116,7 +116,8 @@ def main():
 
     # 판 시작에 받은 매장량 — 남은 양으로 재면 파밍 속도에 따라 실패한다
     reserve = cat.invoke("TestGetDesignedSpotReserve")
-    wall = cat.invoke("TestGetAlcoveCheesePerWall") * cat.invoke("TestGetCheeseAlcoveCount")
+    # 벽마다 내용물이 다르다(직업권 벽은 치즈 0) — 개수 × 고정액이 아니라 합으로 잰다
+    wall = cat.invoke("TestGetAlcoveCheeseTotal")
     box_total = cat.invoke("TestGetBoxCheeseTotal")
     check("총량 — 지점 + 벽감 + 상자가 총량을 안 넘는다",
           reserve + wall + box_total <= total,

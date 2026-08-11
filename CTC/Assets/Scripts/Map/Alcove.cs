@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using Unity.Netcode;
@@ -6,7 +7,11 @@ using UnityEngine;
 namespace CTC.Runtime.Map
 {
     /// <summary>
-    /// 부술 수 있는 벽(벽감) — 안에 든 것을 부숴야만 꺼낼 수 있다 (v3.8, 2026-08-09).
+    /// 부술 수 있는 벽(벽감) — **막고 있을 뿐, 보상을 품지 않는다** (v3.8 / 2026-08-11 개정).
+    ///
+    /// 부수면 뒤에 있던 게 드러난다: 상자면 그걸 **한 번 더** 부숴야 하고, 강아지면 길이 열려 나온다.
+    /// 예전엔 벽이 곧 치즈여서 부순 사람이 19초간 소리를 다 내고도 늦게 온 사람에게 뺏겼다.
+    /// 두 단계면 벽을 연 뒤에도 시간이 더 들어 **그 자리에서 붙는다** — 벽감의 원래 의도(경쟁 유발)다.
     ///
     /// **문이 아니라 함이다.** 부숴도 지형은 그대로다. 관통형(부수면 새 샛길)은 판이 진행될수록
     /// 맵이 뚫려 후반 추격이 성립하지 않는다 — "샛길이 많을수록 추격이 영원히 안 끝난다".
@@ -22,19 +27,26 @@ namespace CTC.Runtime.Map
     [RequireComponent(typeof(Health))]
     public class Alcove : NetworkBehaviour
     {
-        [SerializeField] private GameObject m_CheeseDropPrefab;
+        [SerializeField] private GameObject m_LootBoxPrefab;
         [SerializeField] private GameObject m_DogPrefab;
 
         // **복제한다.** 클라도 알아야 벽이 흘리는 소리를 낼 수 있다(강아지 벽만 낑낑거린다).
         // 스폰 전에 서버가 넣은 값이 초기값으로 함께 간다.
         private readonly NetworkVariable<AlcovePayload> m_Payload =
-            new NetworkVariable<AlcovePayload>(AlcovePayload.Cheese);
+            new NetworkVariable<AlcovePayload>(AlcovePayload.Box);
+
+        // 벽 뒤 상자가 품는 것. 복제하지 않는다 — 열기 전에는 아무도 몰라야 하고,
+        // 열고 나면 상자 자신이 들고 간다.
+        private readonly List<LootEntry> m_BoxContents = new List<LootEntry>();
 
         private Health m_Health;
         private MapLayout m_Layout;
 
         /// <summary>안에 뭐가 들었나. 벽이 내는 소리가 이걸 보고 갈린다.</summary>
         public AlcovePayload Payload => m_Payload.Value;
+
+        /// <summary>서버 전용 — 벽 뒤 상자가 품은 치즈량(QA가 '치즈 벽'을 골라 부술 때 쓴다).</summary>
+        public int BoxCheese => LootBoxLogic.CheeseIn(m_BoxContents);
 
         /// <summary>
         /// 서버 전용 — 스폰 직전에 `AlcoveSpawner`가 레이아웃 값을 새긴다.
@@ -50,6 +62,14 @@ namespace CTC.Runtime.Map
 
             var health = GetComponent<Health>();
             if (health != null) health.ServerSetMaxHp(Info.InfoManager.Instance.Balance.DogAlcoveHp);
+        }
+
+        /// <summary>서버 전용 — 벽 뒤 상자가 품을 것. 스폰 직전에 `AlcoveSpawner`가 넘긴다.</summary>
+        public void ServerSetBoxContents(IReadOnlyList<LootEntry> _contents)
+        {
+            m_BoxContents.Clear();
+            if (_contents == null) return;
+            for (int i = 0; i < _contents.Count; i++) m_BoxContents.Add(_contents[i]);
         }
 
         /// <summary>
@@ -94,8 +114,8 @@ namespace CTC.Runtime.Map
         {
             switch (m_Payload.Value)
             {
-                case AlcovePayload.Cheese:
-                    SpawnCheese();
+                case AlcovePayload.Box:
+                    SpawnBox();
                     break;
                 case AlcovePayload.Dog:
                     SpawnDog();
@@ -124,35 +144,21 @@ namespace CTC.Runtime.Map
 
         private const float DOG_SPAWN_OFFSET = 1.6f;
 
-        // 여러 덩이로 흩어 놓는 게 핵심이다. 한 덩이면 부순 쥐가 독식해 경쟁이 안 생긴다.
-        private void SpawnCheese()
+        // 벽이 있던 자리에 상자를 세운다. **여기서 보상을 뿌리지 않는다** —
+        // 뿌려 버리면 벽을 부순 19초가 곧 보상이 되어, 늦게 달려온 쪽이 줍기만 하면 된다.
+        private void SpawnBox()
         {
-            if (m_CheeseDropPrefab == null)
+            if (m_LootBoxPrefab == null)
             {
-                GameDebug.LogError("[Alcove] 치즈 드롭 프리팹 미배선 — Setup Networking Scene 재실행 필요");
+                GameDebug.LogError("[Alcove] 상자 프리팹 미배선 — Setup Networking Scene 재실행 필요");
                 return;
             }
 
-            int[] piles = AlcoveLogic.SplitDrop(AlcoveLogic.CheesePerAlcove, AlcoveLogic.DropCount);
-            float scatter = Info.InfoManager.Instance.Balance.AlcoveDropScatterMeters;
-
-            for (int i = 0; i < piles.Length; i++)
-            {
-                Vector3 pos = ScatterPosition(i, piles.Length, scatter);
-                GameObject go = Instantiate(m_CheeseDropPrefab, pos, Quaternion.identity);
-                go.GetComponent<Economy.CheeseDrop>().ServerSetAmount(piles[i]);
-                go.GetComponent<NetworkObject>().Spawn(true);
-            }
+            GameObject go = Instantiate(m_LootBoxPrefab, transform.position, transform.rotation);
+            var box = go.GetComponent<LootBox>();
+            if (box != null) box.ServerSetContents(m_BoxContents);
+            go.GetComponent<NetworkObject>().Spawn(true);
         }
 
-        // 원형으로 고르게 편다 — 한 번에 다 줍지 못해야 다른 쥐가 끼어들 틈이 생긴다.
-        // 무작위가 아닌 이유: 서버만 스폰하므로 재현성이 QA에 유리하고, 뭉치는 사고가 없다.
-        private Vector3 ScatterPosition(int _index, int _count, float _radius)
-        {
-            if (_count <= 1) return transform.position;
-
-            float angle = Mathf.PI * 2f * _index / _count;
-            return transform.position + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * _radius;
-        }
     }
 }

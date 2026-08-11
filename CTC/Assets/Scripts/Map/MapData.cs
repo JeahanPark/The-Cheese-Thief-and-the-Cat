@@ -44,9 +44,12 @@ namespace CTC.Runtime.Map
     }
 
     /// <summary>
-    /// 벽감 자리 — 위치(x,z)·벽을 등지는 yaw(도)·안에 든 것 (v3.8).
+    /// 벽감 자리 — 위치(x,z)·벽을 등지는 yaw(도)·뒤에 막혀 있는 것 (v3.8).
     /// 방 벽면에 붙인다. 복도에 두지 않는 이유: 부수는 19초 동안 한 자리에 묶이는데
     /// 복도에서는 도망칠 방향이 둘뿐이라 사형선고가 된다.
+    ///
+    /// <see cref="BoxContents"/>는 <see cref="AlcovePayload.Box"/>일 때 그 상자가 품는 것이다
+    /// (2026-08-11). 자리마다 정해 두므로 "저 벽 뒤에 깡패권이 있다"를 외울 수 있다.
     /// </summary>
     [System.Serializable]
     public struct AlcovePlacement
@@ -54,6 +57,7 @@ namespace CTC.Runtime.Map
         public Vector2 Pos;
         public float YawDeg;
         public AlcovePayload Payload;
+        public System.Collections.Generic.List<LootEntry> BoxContents;
     }
 
     /// <summary>

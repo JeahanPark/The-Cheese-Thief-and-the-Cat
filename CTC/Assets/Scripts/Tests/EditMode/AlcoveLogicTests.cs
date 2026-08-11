@@ -10,45 +10,68 @@ namespace CTC.Tests
         private const int MICE = 8;
         private const int SPOTS = 20;
 
-        // ---- 벽 몫 합계 ----
+        // ---- 벽 뒤 상자의 치즈 합계 ----
+
+        private static AlcovePlacement Box(int _cheese) => new AlcovePlacement
+        {
+            Payload = AlcovePayload.Box,
+            BoxContents = new System.Collections.Generic.List<LootEntry>
+            {
+                new LootEntry { Id = LootId.Cheese, Amount = _cheese },
+            },
+        };
+
+        private static AlcovePlacement Ticket() => new AlcovePlacement
+        {
+            Payload = AlcovePayload.Box,
+            BoxContents = new System.Collections.Generic.List<LootEntry>
+            {
+                new LootEntry { Id = LootId.GangTicket, Amount = 1 },
+            },
+        };
 
         [Test]
-        public void TotalCheese_ScalesWithCount()
+        public void TotalCheese_SumsWhatTheBoxesActuallyHold()
         {
-            int one = AlcoveLogic.TotalCheese(1);
-            Assert.Greater(one, 0);
-            Assert.AreEqual(one * 3, AlcoveLogic.TotalCheese(3));
-        }
-
-        [Test]
-        public void TotalCheese_NoAlcovesIsZero()
-        {
-            Assert.AreEqual(0, AlcoveLogic.TotalCheese(0));
-            Assert.AreEqual(0, AlcoveLogic.TotalCheese(-2));
-        }
-
-        // ---- 강아지 벽감은 치즈를 안 준다 (v3.8 5번) ----
-
-        [Test]
-        public void CountCheese_SkipsDogAlcoves()
-        {
-            // 강아지 몫까지 떼면 그 치즈는 **아무도 못 받고** 맵 총량 4900이 샌다.
+            // 벽감 수 × 고정액이 아니다(2026-08-11) — 벽은 보상을 품지 않고 뒤에 상자가 있을 뿐이라,
+            // 무엇이 얼마나 들었는지는 자리마다 다르다.
             var placements = new System.Collections.Generic.List<AlcovePlacement>
             {
-                new AlcovePlacement { Payload = AlcovePayload.Cheese },
+                Box(250), Box(250), Ticket(),
                 new AlcovePlacement { Payload = AlcovePayload.Dog },
-                new AlcovePlacement { Payload = AlcovePayload.Cheese },
             };
-
-            Assert.AreEqual(2, AlcoveLogic.CountCheese(placements));
-            Assert.AreEqual(AlcoveLogic.TotalCheese(2), AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(placements)));
+            Assert.AreEqual(500, AlcoveLogic.TotalCheese(placements));
         }
 
         [Test]
-        public void CountCheese_NullOrEmptyIsZero()
+        public void TotalCheese_TicketWallsTakeNoCheese()
         {
-            Assert.AreEqual(0, AlcoveLogic.CountCheese(null));
-            Assert.AreEqual(0, AlcoveLogic.CountCheese(new System.Collections.Generic.List<AlcovePlacement>()));
+            // 직업권만 든 벽이 치즈를 떼 가면, 아무도 못 받는 치즈가 총량에서 샌다
+            Assert.AreEqual(0, AlcoveLogic.TotalCheese(
+                new System.Collections.Generic.List<AlcovePlacement> { Ticket() }));
+        }
+
+        [Test]
+        public void TotalCheese_DogWallHoldsNothing()
+        {
+            // 강아지 벽은 상자가 없다 — 몫을 떼면 그 치즈는 아무도 못 받는다
+            Assert.AreEqual(0, AlcoveLogic.TotalCheese(
+                new System.Collections.Generic.List<AlcovePlacement>
+                { new AlcovePlacement { Payload = AlcovePayload.Dog } }));
+            Assert.AreEqual(0, AlcoveLogic.TotalCheese(null));
+        }
+
+        [Test]
+        public void CountBoxAlcoves_SkipsDogWalls()
+        {
+            var placements = new System.Collections.Generic.List<AlcovePlacement>
+            {
+                Box(250),
+                new AlcovePlacement { Payload = AlcovePayload.Dog },
+                Ticket(),
+            };
+            Assert.AreEqual(2, AlcoveLogic.CountBoxAlcoves(placements));
+            Assert.AreEqual(0, AlcoveLogic.CountBoxAlcoves(null));
         }
 
         // ---- 총량 보존: 벽 몫 + 지점 몫 ≤ 맵 총량 ----
@@ -56,7 +79,8 @@ namespace CTC.Tests
         [Test]
         public void ReservePerSpot_AlcoveShareComesOutOfMapTotal()
         {
-            int alcoveTotal = AlcoveLogic.TotalCheese(3);
+            int alcoveTotal = AlcoveLogic.TotalCheese(
+                new System.Collections.Generic.List<AlcovePlacement> { Box(250), Box(250), Ticket() });
             int withAlcoves = CheeseSpotLogic.ReservePerSpot(SPOTS, alcoveTotal, MICE);
             int without = CheeseSpotLogic.ReservePerSpot(SPOTS, 0, MICE);
 

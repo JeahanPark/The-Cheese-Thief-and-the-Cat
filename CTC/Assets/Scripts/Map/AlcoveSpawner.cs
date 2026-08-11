@@ -39,6 +39,8 @@ namespace CTC.Runtime.Map
                 if (alcove != null)
                 {
                     alcove.ServerSetPayload(a.Payload);
+                    // 벽 뒤 상자가 품을 것 — 자리마다 다르다(직업권은 두 벽에만 있다)
+                    alcove.ServerSetBoxContents(a.BoxContents);
                     alcove.ServerSetLayout(_layout);
                 }
 

@@ -80,7 +80,7 @@ namespace CTC.Runtime.Testing
             if (layout == null) return 0;
 
             int spots = TestGetCheeseSpotObjectCount();
-            int reserved = AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(layout.Alcoves))
+            int reserved = AlcoveLogic.TotalCheese(layout.Alcoves)
                            + LootBoxLogic.TotalCheese(layout.Boxes);
             int mice = CheeseSpotLogic.EffectiveMiceCount(TestGetMouseCount(), layout.RecommendedMiceMin);
             return spots * CheeseSpotLogic.ReservePerSpot(spots, reserved, mice);

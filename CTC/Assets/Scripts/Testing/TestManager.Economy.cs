@@ -154,13 +154,13 @@ namespace CTC.Runtime.Testing
             return "";
         }
 
-        /// <summary>QA: 치즈를 품은 벽감 수 — 강아지 벽감은 안 센다(총량이 새는지 본다).</summary>
+        /// <summary>QA: 상자를 막고 있는 벽감 수 — 강아지 벽감은 안 센다(총량이 새는지 본다).</summary>
         public int TestGetCheeseAlcoveCount()
         {
             int count = 0;
             foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
             {
-                if (alcove.Payload == CTC.Runtime.Map.AlcovePayload.Cheese) count++;
+                if (alcove.Payload == CTC.Runtime.Map.AlcovePayload.Box) count++;
             }
             return count;
         }
@@ -191,9 +191,10 @@ namespace CTC.Runtime.Testing
 
             foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
             {
-                // **치즈 벽감만** 부순다. 강아지 벽감을 부수면 치즈가 0덩이라 치즈 항목이 통째로
-                // 헛돈다(2026-08-09 qa_v38에서 실제로 그랬다). 강아지는 TestBreakDogAlcove가 맡는다.
-                if (alcove.Payload != CTC.Runtime.Map.AlcovePayload.Cheese) continue;
+                // **치즈가 든 벽만** 부순다. 강아지 벽은 상자가 안 나오고, 직업권 벽은 치즈가
+                // 0덩이라 치즈 항목이 통째로 헛돈다(2026-08-09·08-11 실측).
+                if (alcove.Payload != CTC.Runtime.Map.AlcovePayload.Box) continue;
+                if (alcove.BoxCheese <= 0) continue;
 
                 var health = alcove.GetComponent<Health>();
                 if (health == null || health.IsDead) continue;
@@ -220,8 +221,16 @@ namespace CTC.Runtime.Testing
             return -1;
         }
 
-        /// <summary>QA: 로컬 플레이어를 좌표로 옮겨 바닥 치즈를 줍게 한다(트리거 통과).</summary>
+        /// <summary>QA: 벽 뒤 상자 하나에 넣는 치즈 기본값.</summary>
         public int TestGetAlcoveCheesePerWall() => CTC.Runtime.Map.AlcoveLogic.CheesePerAlcove;
+
+        /// <summary>QA: 벽 뒤 상자들이 품은 치즈 합계 — 자리마다 내용물이 달라 합으로 재야 한다.</summary>
+        public int TestGetAlcoveCheeseTotal()
+        {
+            var director = FindFirstObjectByType<CTC.Runtime.Map.MapDirector>();
+            if (director == null || director.ActiveLayout == null) return -1;
+            return CTC.Runtime.Map.AlcoveLogic.TotalCheese(director.ActiveLayout.Alcoves);
+        }
 
         /// <summary>QA: 서버 전용 — 모든 지점을 즉시 고갈시켜 후반 부활을 검증한다.</summary>
         public void TestDrainAllCheeseSpots()

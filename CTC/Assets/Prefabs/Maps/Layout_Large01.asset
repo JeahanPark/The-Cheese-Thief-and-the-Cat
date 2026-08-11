@@ -417,48 +417,39 @@ MonoBehaviour:
   - Pos: {x: 0, y: 4.8}
     YawDeg: 180
     Payload: 1
+    BoxContents: []
   - Pos: {x: 51.069633, y: -46.85526}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 2
+      Amount: 1
   - Pos: {x: -50.43316, y: 56.43808}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 1
+      Amount: 1
   - Pos: {x: 50.470207, y: 56.17864}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
   - Pos: {x: -50.61567, y: -45.93183}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
   - Pos: {x: -50.78463, y: 4.9769363}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
   m_Jails:
   - Pos: {x: -51.529163, y: 33.67007}
   - Pos: {x: 51.49179, y: -33.645527}
   - Pos: {x: 33.749393, y: 51.382305}
-  m_Boxes:
-  - Pos: {x: 55.37021, y: 55.77864}
-    YawDeg: 0
-    Contents:
-    - Id: 2
-      Amount: 1
-  - Pos: {x: -45.715668, y: -46.33183}
-    YawDeg: 0
-    Contents:
-    - Id: 1
-      Amount: 1
-  - Pos: {x: 55.969635, y: -47.255257}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
-  - Pos: {x: -45.533157, y: 56.038082}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
-  - Pos: {x: 4.9, y: 4.4}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
+  m_Boxes: []

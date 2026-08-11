@@ -38,10 +38,15 @@ def main():
     check("단계 — 처음에는 1단계다", cat.invoke("TestGetPhase") == "Hunt")
 
     # ---------- 상자에서 직업권이 나온다 ----------
-    boxes_before = cat.invoke("TestGetBoxCount")
+    # 직업권은 **벽 뒤에만** 있다(2026-08-11) — 벽을 부숴 상자를 꺼내고, 그 상자를 또 부숴야 한다
+    check("상자 — 바닥에는 없다", cat.invoke("TestGetBoxCount") == 0)
+    cat.invoke("TestBreakFirstAlcove")
+    time.sleep(1.2)
+    check("벽감 — 부수면 상자가 드러난다", cat.invoke("TestGetBoxCount") == 1,
+          f"{cat.invoke('TestGetBoxCount')}개")
     cat.invoke("TestBreakFirstBox")
     time.sleep(1.2)
-    check("상자 — 첫 상자에 깡패권이 들어 있다", cat.invoke("TestGetBoxCount") == boxes_before - 1,
+    check("상자 — 부수면 자리에서 사라진다", cat.invoke("TestGetBoxCount") == 0,
           "부순 뒤 자리에서 사라짐")
 
     # ---------- 임명 ----------

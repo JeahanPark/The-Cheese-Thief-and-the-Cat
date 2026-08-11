@@ -138,7 +138,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.Alcove
   ShowTopMostFoldoutHeaderGroup: 1
-  m_CheeseDropPrefab: {fileID: 4089472569822400420, guid: 9778ebc4f80c95f4a94f055ee12e1cfb, type: 3}
+  m_LootBoxPrefab: {fileID: 3628682520528616531, guid: bfd989f3b7843ba46ab1a24dc29be88f, type: 3}
   m_DogPrefab: {fileID: 3906193502886006627, guid: 51da4209430959c45a6d48111b9db7ec, type: 3}
 --- !u!82 &487312930418897419
 AudioSource:

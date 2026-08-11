@@ -35,7 +35,8 @@ def main():
 
     # ---------- 배치 ----------
     count = host.invoke("TestGetAlcoveCount")
-    check("벽감 — 매치 시작에 맵이 깔아 둔다", count == 3, f"{count}개 (기대 3)")
+    # 하한 4 — 강아지 1 + 직업권 2를 빼고도 치즈 벽이 하나는 남아야 한다(2026-08-11)
+    check("벽감 — 매치 시작에 맵이 깔아 둔다", count == 4, f"{count}개 (기대 4)")
 
     # ---------- 총량 보존 ----------
     # 벽 몫은 총량 4900 '안에서' 뗀다 — 더하면 고갈이 늦어져 성장 기한이 무너진다.
@@ -44,15 +45,15 @@ def main():
     # 그 몫까지 떼면 아무도 못 받는 치즈가 생겨 총량이 샌다.
     per_wall = host.invoke("TestGetAlcoveCheesePerWall")
     cheese_walls = host.invoke("TestGetCheeseAlcoveCount")
+    # 벽마다 내용물이 다르다(직업권 벽은 치즈 0) — 개수 × 고정액이 아니라 합으로 잰다
+    wall_share = host.invoke("TestGetAlcoveCheeseTotal")
     # 지금 남은 양이 아니라 **판 시작에 받은** 매장량을 쓴다 — 쥐가 캐는 동안 줄어든다
     reserve = host.invoke("TestGetDesignedSpotReserve")
     box_total = host.invoke("TestGetBoxCheeseTotal")
     # 총량은 2026-08-10부터 고정값(4900)이 아니라 쥐 수 비례다 — 서버에게 묻는다
     total = host.invoke("TestGetMapTotalCheese")
-    check("총량 — 벽감 하나는 강아지 몫이라 치즈를 안 준다",
-          0 < cheese_walls < count, f"치즈 벽감 {cheese_walls} / 전체 {count}")
-
-    wall_share = per_wall * cheese_walls
+    check("총량 — 벽감 하나는 강아지라 상자가 없다",
+          0 < cheese_walls < count, f"상자 벽감 {cheese_walls} / 전체 {count}")
     # 지점합 + 벽 몫 + 상자 몫이 총량을 넘지 않고, 나눈셈 나머지(지점 수 미만)만 비어야 한다
     taken = reserve + wall_share + box_total
     check("총량 — 지점 + 벽감 + 상자가 총량을 안 넘는다",
@@ -71,20 +72,32 @@ def main():
           dealt > 0 and fun_after == fun_before,
           f"입힌 피해 {dealt} · 장난기 {fun_before} → {fun_after}")
 
-    # ---------- 부수면 나온다 ----------
+    # ---------- 벽을 부수면 상자가 드러난다 (2026-08-11) ----------
+    # **벽은 보상을 품지 않는다.** 부수면 뒤에 있던 상자가 나오고, 그걸 또 부숴야 치즈가 나온다.
+    # 한 번에 쏟아지면 부순 사람이 소리를 다 내고도 늦게 온 사람에게 뺏긴다.
+    boxes_before = host.invoke("TestGetBoxCount")
     drops_before = host.invoke("TestGetCheeseDropCount")
     pos = host.invoke("TestBreakFirstAlcove")
     time.sleep(1.2)
-    drops_after = host.invoke("TestGetCheeseDropCount")
-    dropped = drops_after - drops_before
-    check("벽감 — 부수면 치즈가 여러 덩이로 흩어진다", dropped == 3, f"{dropped}덩이 (기대 3)")
 
+    check("벽감 — 부수면 상자가 드러난다",
+          host.invoke("TestGetBoxCount") == boxes_before + 1,
+          f"상자 {boxes_before} → {host.invoke('TestGetBoxCount')}")
+    check("벽감 — 벽을 열기만 해서는 치즈가 안 나온다",
+          host.invoke("TestGetCheeseDropCount") == drops_before,
+          f"덩이 {drops_before} → {host.invoke('TestGetCheeseDropCount')}")
     check("벽감 — 부서진 자리에서 사라진다",
           host.invoke("TestGetAlcoveCount") == count - 1,
           f"{host.invoke('TestGetAlcoveCount')}개 남음")
 
+    host.invoke("TestBreakFirstBox")
+    time.sleep(1.2)
+    drops_after = host.invoke("TestGetCheeseDropCount")
+    dropped = drops_after - drops_before
+    check("상자 — 그걸 부숴야 치즈가 여러 덩이로 흩어진다", dropped == 3, f"{dropped}덩이 (기대 3)")
+
     total = host.invoke("TestGetCheeseDropTotal")
-    check("치즈 — 덩이 합계가 벽감이 품은 값과 같다(나머지를 안 버린다)",
+    check("치즈 — 덩이 합계가 상자가 품은 값과 같다(나머지를 안 버린다)",
           total == per_wall, f"합계 {total} (기대 {per_wall})")
 
     # ---------- 쥐가 먹는다 ----------

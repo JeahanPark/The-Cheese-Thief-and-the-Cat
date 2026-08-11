@@ -313,7 +313,7 @@ namespace CTC.Runtime.Map
             // 벽감이 총량에서 먼저 떼간다 — 더하면 고갈이 늦어져 '성장 기한'이 무너진다(v3.8)
             // **치즈 벽감만** 센다. 강아지 벽감 몫까지 떼면 그 치즈는 아무도 못 받고 총량이 샌다.
             // 상자(v3.9)도 총량에서 뗀다 — 안 떼면 총량이 늘어 고갈이 늦어진다
-            int reserved = AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(_layout.Alcoves))
+            int reserved = AlcoveLogic.TotalCheese(_layout.Alcoves)
                            + LootBoxLogic.TotalCheese(_layout.Boxes);
             // 맵을 짓는 시점엔 역할이 아직 바뀔 수 있다 — 권장 인원으로 깔아 두고,
             // 매치가 시작될 때 CheeseSpotDirector.ResetAll()이 실제 쥐 수로 덮어쓴다.

@@ -125,7 +125,16 @@ namespace CTC.Editor
         /// </summary>
         private static void PlanBoxesInto(MapLayout _layout, int _count)
         {
-            if (_layout == null || _count <= 0) return;
+            if (_layout == null) return;
+
+            // 0이어도 **비워야** 한다. 그냥 돌아가면 이전 배치가 레이아웃에 그대로 남는다
+            // (2026-08-11 실측: 상자를 벽 뒤로 옮겼는데 바닥 상자 5개가 살아 있었다).
+            if (_count <= 0)
+            {
+                _layout.SetBoxes(new List<BoxPlacement>());
+                EditorUtility.SetDirty(_layout);
+                return;
+            }
 
             // 방마다 쓸 만한 모서리 하나씩 — 여기서 흩어 고른다
             var spots = new List<Vector2>();

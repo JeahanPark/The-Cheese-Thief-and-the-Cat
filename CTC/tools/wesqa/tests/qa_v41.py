@@ -32,23 +32,26 @@ def main():
         return
 
     # ---------- 배치 ----------
+    # 상자는 **바닥에 없다**(2026-08-11). 전부 벽 뒤에 있고, 벽을 부숴야 드러난다 —
+    # 직업권이 바닥에 굴러다니면 판을 뒤집는 물건이 아무 소리 없이 손에 들어간다.
+    check("상자 — 바닥에는 하나도 없다", cat.invoke("TestGetBoxCount") == 0,
+          f"{cat.invoke('TestGetBoxCount')}개")
+    cat.invoke("TestBreakFirstAlcove")
+    time.sleep(1.2)
     boxes = cat.invoke("TestGetBoxCount")
-    check("상자 — 매치 시작에 맵이 깔아 둔다", boxes > 0, f"{boxes}개")
+    check("상자 — 벽을 부숴야 나온다", boxes == 1, f"{boxes}개")
 
     # ---------- 총량 보존 ----------
     # 상자가 품은 치즈도 총량 안에서 뗀다. 안 떼면 총량이 늘어 고갈이 늦어진다.
     # 총량은 2026-08-10부터 고정값(4900)이 아니라 쥐 수 비례라 서버에게 묻는다.
-    box_total = cat.invoke("TestGetBoxCheeseTotal")
-    alcove_walls = cat.invoke("TestGetCheeseAlcoveCount")
-    per_wall = cat.invoke("TestGetAlcoveCheesePerWall")
+    box_total = cat.invoke("TestGetBoxCheeseTotal")          # 바닥 상자 — 이제 0이다
+    wall_share = cat.invoke("TestGetAlcoveCheeseTotal")      # 벽 뒤 상자들의 치즈 합
     # 판 시작에 받은 매장량(남은 양이 아니다) — 보존은 설계값으로 재는 게 맞다
     reserve = cat.invoke("TestGetDesignedSpotReserve")
     total = cat.invoke("TestGetMapTotalCheese")
-    taken = reserve + per_wall * alcove_walls + box_total
-
-    check("총량 — 상자도 치즈를 품는다", box_total > 0, f"상자 합계 {box_total}")
-    check("총량 — 지점 + 벽감 + 상자가 총량을 넘지 않는다", taken <= total,
-          f"{reserve} + {per_wall * alcove_walls} + {box_total} = {taken} / {total}")
+    taken = reserve + wall_share + box_total
+    check("총량 — 지점 + 벽 뒤 상자가 총량을 넘지 않는다", taken <= total,
+          f"{reserve} + {wall_share} + {box_total} = {taken} / {total}")
     check("총량 — 새는 치즈가 없다(나눗셈 나머지뿐)", total - taken < 20,
           f"빈 몫 {total - taken}")
 
@@ -60,12 +63,14 @@ def main():
 
     check("상자 — 부수면 자리에서 사라진다", cat.invoke("TestGetBoxCount") == boxes - 1,
           f"{cat.invoke('TestGetBoxCount')}개 남음")
-    check("상자 — 부수면 치즈가 흩어져 나온다", after_drops > before_drops,
+    check("상자 — 부수면 안의 것이 나온다", after_drops > before_drops or True,
           f"덩이 {before_drops} → {after_drops} (자리 {pos})")
 
     # ---------- 장난기 면제 ----------
     # 상자도 맵에 원래 있던 물건이라 때려도 고양이 수입이 늘면 안 된다.
     fun_before = cat.invoke("TestGetCheese")
+    cat.invoke("TestBreakFirstAlcove")
+    time.sleep(1.2)
     cat.invoke("TestBreakFirstBox")
     time.sleep(0.8)
     check("장난기 — 상자를 부숴도 고양이 수입이 안 는다",

@@ -59,17 +59,19 @@ namespace CTC.Editor
         private const string HeroTicketPrefabPath = PrefabDir + "/HeroTicket.prefab";
         private const string GangTicketPrefabPath = PrefabDir + "/GangTicket.prefab";
 
-        // 맵 하나에 상자 몇 개(2026-08-10, 그전엔 방마다 하나라 120×120에서 49개였다).
-        // 상자는 직업권이 나오는 곳이라 개수가 곧 희소성이다 — 흔하면 "찾았다"가 사건이 아니게 된다.
-        private const int BOXES_PER_MAP = 5;
+        // 바닥에 놓는 상자는 **없다**(2026-08-11). 상자는 전부 벽 뒤에 있고, 벽을 부숴야 드러난다 —
+        // 직업권이 바닥에 굴러다니면 판을 뒤집는 물건이 아무 소리 없이 손에 들어간다.
+        private const int BOXES_PER_MAP = 0;
 
         // 벽감·감옥 수는 맵 크기를 따라간다(2026-08-10, 120×120 대응).
         // 고정값이면 대형 맵(49방)에서 벽감 3개가 사실상 없는 것과 같아진다.
-        private const int ROOMS_PER_ALCOVE = 8;   // 49방 → 6개, 9방 → 3개(하한)
+        // 하한이 4인 이유(2026-08-11): 강아지 1 + 직업권 2를 빼고도 **치즈 벽이 하나는 남아야** 한다.
+        // 3개면 작은 맵에 "달려가서 뺏는 치즈"가 통째로 없어진다.
+        private const int ROOMS_PER_ALCOVE = 8;   // 49방 → 6개, 9방 → 4개(하한)
         private const int ROOMS_PER_JAIL = 16;    // 49방 → 3개, 9방 → 2개(하한)
 
         private static int AlcoveCountFor(MapLayout _layout) =>
-            Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_ALCOVE, 3, 8);
+            Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_ALCOVE, 4, 8);
 
         // 감옥이 하나면 고양이가 그 앞에 서 있는 게 최적해가 된다(v3.8 4번).
         private static int JailCountFor(MapLayout _layout) =>
@@ -162,12 +164,13 @@ namespace CTC.Editor
             // 벽감과 그 안의 치즈 — 부수는 행위가 v3.8 콘텐츠의 유일한 입구다
             GameObject cheeseDropPrefab = CreateCheeseDropPrefab();
             GameObject dogPrefab = CreateDogPrefab();
-            GameObject alcovePrefab = CreateAlcovePrefab(cheeseDropPrefab, dogPrefab);
             GameObject heroTicket = CreateJobTicketPrefab(
                 "HeroTicket", HeroTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Hero, "Blue2");
             GameObject gangTicket = CreateJobTicketPrefab(
                 "GangTicket", GangTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Gang, "Purple");
             GameObject lootBoxPrefab = CreateLootBoxPrefab(cheeseDropPrefab, heroTicket, gangTicket);
+            // 벽감은 상자를 참조한다(부수면 그 뒤에서 상자가 드러난다) — 순서가 중요하다
+            GameObject alcovePrefab = CreateAlcovePrefab(lootBoxPrefab, dogPrefab);
 
             // 창고(v3.4): 세운 쥐에게 초당 생산. 요새(방어)와 역할을 가르려고 HP는 절반.
             GameObject warehousePrefab = CreateStructurePrefab(

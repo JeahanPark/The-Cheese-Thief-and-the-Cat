@@ -25,7 +25,7 @@ namespace CTC.Editor
         ///    **despawn 전에 안의 것을 꺼내야** 하므로 순서를 남에게 맡길 수 없다.
         /// ② 설치음(`PlaceSfxOnSpawn`)이 붙는다. 벽감은 누가 설치하는 게 아니라 처음부터 맵에 있다.
         /// </summary>
-        private static GameObject CreateAlcovePrefab(GameObject _cheeseDropPrefab, GameObject _dogPrefab)
+        private static GameObject CreateAlcovePrefab(GameObject _lootBoxPrefab, GameObject _dogPrefab)
         {
             var root = new GameObject("Alcove");
             try
@@ -55,7 +55,7 @@ namespace CTC.Editor
                     CTC.Runtime.Info.InfoManager.Instance.Balance.AlcoveHitSoundMeters);
 
                 var alcove = root.AddComponent<Alcove>();
-                SetRef(alcove, "m_CheeseDropPrefab", _cheeseDropPrefab);
+                SetRef(alcove, "m_LootBoxPrefab", _lootBoxPrefab);
                 SetRef(alcove, "m_DogPrefab", _dogPrefab);
 
                 // 벽이 흘리는 소리 — 강아지 벽만 낑낑거린다(치즈 벽은 조용). 안에 뭐가 있는지
@@ -157,11 +157,13 @@ namespace CTC.Editor
                 {
                     Pos = spots[i].pos,
                     YawDeg = spots[i].yaw,
-                    Payload = AlcovePayload.Cheese,
+                    Payload = AlcovePayload.Box,
+                    BoxContents = new List<LootEntry>(),
                 });
             }
 
             MarkDogAlcove(placed);
+            FillBoxContents(placed);
 
             _layout.SetAlcoves(placed);
             EditorUtility.SetDirty(_layout);
@@ -189,6 +191,49 @@ namespace CTC.Editor
             AlcovePlacement dog = _placed[best];
             dog.Payload = AlcovePayload.Dog;
             _placed[best] = dog;
+        }
+
+        /// <summary>
+        /// 벽 뒤 상자에 무엇을 넣을지. **직업권은 벽 뒤에만 있다**(2026-08-11) —
+        /// 바닥에 굴러다니면 조용히 주울 수 있어, 판을 뒤집는 물건이 아무 소리 없이 손에 들어간다.
+        ///
+        /// 깡패권과 영웅권은 **서로 가장 먼 두 벽**에 나눠 둔다. 나란히 두면 한 사람이 둘 다 먹는다.
+        /// 강아지 벽은 건너뛴다 — 거긴 상자가 없다.
+        /// </summary>
+        private static void FillBoxContents(List<AlcovePlacement> _placed)
+        {
+            var boxes = new List<int>();
+            for (int i = 0; i < _placed.Count; i++)
+            {
+                if (_placed[i].Payload == AlcovePayload.Box) boxes.Add(i);
+            }
+            if (boxes.Count == 0) return;
+
+            // 서로 가장 먼 한 쌍을 직업권 자리로
+            int a = boxes[0], b = boxes[boxes.Count > 1 ? 1 : 0];
+            float best = -1f;
+            foreach (int i in boxes)
+            {
+                foreach (int j in boxes)
+                {
+                    if (i >= j) continue;
+                    float d = Vector2.Distance(_placed[i].Pos, _placed[j].Pos);
+                    if (d <= best) continue;
+                    best = d; a = i; b = j;
+                }
+            }
+
+            int cheese = CTC.Runtime.Map.AlcoveLogic.CheesePerAlcove;
+            foreach (int i in boxes)
+            {
+                LootId id = i == a ? LootId.GangTicket : i == b ? LootId.HeroTicket : LootId.Cheese;
+                AlcovePlacement p = _placed[i];
+                p.BoxContents = new List<LootEntry>
+                {
+                    new LootEntry { Id = id, Amount = id == LootId.Cheese ? cheese : 1 },
+                };
+                _placed[i] = p;
+            }
         }
 
         // 방의 네 벽을 순서대로 시도한다. 무작위를 쓰지 않는 건 같은 레이아웃이면

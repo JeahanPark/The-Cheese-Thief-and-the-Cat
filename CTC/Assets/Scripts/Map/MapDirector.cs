@@ -80,7 +80,7 @@ namespace CTC.Runtime.Map
             {
                 m_CheeseDirector.Rebind(
                     m_MapBuilder.Spots,
-                    AlcoveLogic.TotalCheese(AlcoveLogic.CountCheese(ActiveLayout.Alcoves))
+                    AlcoveLogic.TotalCheese(ActiveLayout.Alcoves)
                     + LootBoxLogic.TotalCheese(ActiveLayout.Boxes));
             }
         }

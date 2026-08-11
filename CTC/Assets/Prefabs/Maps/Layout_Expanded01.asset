@@ -131,38 +131,26 @@ MonoBehaviour:
   - Pos: {x: 0, y: 7.7}
     YawDeg: 180
     Payload: 1
+    BoxContents: []
   - Pos: {x: -14.7, y: -19.6}
     YawDeg: 0
     Payload: 0
+    BoxContents:
+    - Id: 2
+      Amount: 1
   - Pos: {x: 15.4, y: -10.5}
     YawDeg: 180
     Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
+  - Pos: {x: 14.7, y: 19.949999}
+    YawDeg: 180
+    Payload: 0
+    BoxContents:
+    - Id: 1
+      Amount: 1
   m_Jails:
   - Pos: {x: 14.7, y: 16.8}
   - Pos: {x: -14.7, y: -14.7}
-  m_Boxes:
-  - Pos: {x: -18.5, y: -19.2}
-    YawDeg: 0
-    Contents:
-    - Id: 2
-      Amount: 1
-  - Pos: {x: 16.75, y: 19.55}
-    YawDeg: 0
-    Contents:
-    - Id: 1
-      Amount: 1
-  - Pos: {x: 13, y: -17.1}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
-  - Pos: {x: -13, y: 17.8}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
-  - Pos: {x: 3.8000002, y: 7.2999997}
-    YawDeg: 0
-    Contents:
-    - Id: 0
-      Amount: 35
+  m_Boxes: []
