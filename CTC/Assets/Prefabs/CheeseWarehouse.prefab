@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 9100507395024922531}
   - component: {fileID: 7495869324180601619}
   - component: {fileID: 6565380669857211792}
+  - component: {fileID: 1341605065786341949}
   m_Layer: 0
   m_Name: CheeseWarehouse
   m_TagString: Untagged
@@ -153,6 +154,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.WarehouseProduction
   ShowTopMostFoldoutHeaderGroup: 1
   m_ProduceVfx: {fileID: 7541787062191785291}
+--- !u!114 &1341605065786341949
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2931954466690270675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &5930380899967508334
 GameObject:
   m_ObjectHideFlags: 0

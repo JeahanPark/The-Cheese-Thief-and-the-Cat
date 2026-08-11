@@ -62,6 +62,9 @@ namespace CTC.Editor
                 body.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
                 body.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Orange");
 
+                // 판이 시작할 때 서므로 구운 폴리곤에 없다 — 제 자리를 도려낸다
+                root.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
+
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, LootBoxPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
                 AssetDatabase.SaveAssets();

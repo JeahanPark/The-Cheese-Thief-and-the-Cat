@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 843203280712023592}
   - component: {fileID: 2595640998731198332}
   - component: {fileID: 8877209306426664548}
+  - component: {fileID: 8043727623658746263}
   m_Layer: 0
   m_Name: Wall_Right
   m_TagString: Untagged
@@ -112,6 +113,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &8043727623658746263
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 770685117348600663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &876992407790642258
 GameObject:
   m_ObjectHideFlags: 0
@@ -124,6 +137,7 @@ GameObject:
   - component: {fileID: 6569261910859545124}
   - component: {fileID: 488647916679270620}
   - component: {fileID: 8891248107371549209}
+  - component: {fileID: 1343741772024232480}
   m_Layer: 0
   m_Name: Wall_Back_R
   m_TagString: Untagged
@@ -224,6 +238,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &1343741772024232480
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 876992407790642258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &2475443651918817818
 GameObject:
   m_ObjectHideFlags: 0
@@ -236,6 +262,7 @@ GameObject:
   - component: {fileID: 3123403552588098736}
   - component: {fileID: 4032590099450510647}
   - component: {fileID: 2144077129866638510}
+  - component: {fileID: 7383342556985933470}
   m_Layer: 0
   m_Name: Wall_Front_L
   m_TagString: Untagged
@@ -336,6 +363,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7383342556985933470
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2475443651918817818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &3525953091307173698
 GameObject:
   m_ObjectHideFlags: 0
@@ -506,6 +545,7 @@ GameObject:
   - component: {fileID: 3139330272041600797}
   - component: {fileID: 4081895429314212681}
   - component: {fileID: 36622499972970394}
+  - component: {fileID: 4255988009660735991}
   m_Layer: 0
   m_Name: Wall_Front_R
   m_TagString: Untagged
@@ -606,6 +646,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4255988009660735991
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3662444570894951942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &5460545484857456571
 GameObject:
   m_ObjectHideFlags: 0
@@ -618,6 +670,7 @@ GameObject:
   - component: {fileID: 4664773271901608528}
   - component: {fileID: 6396991428829294497}
   - component: {fileID: 8564403257281570803}
+  - component: {fileID: 7862928390943134476}
   m_Layer: 0
   m_Name: Wall_Left
   m_TagString: Untagged
@@ -718,6 +771,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7862928390943134476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5460545484857456571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &5510570568657550231
 GameObject:
   m_ObjectHideFlags: 0
@@ -730,6 +795,7 @@ GameObject:
   - component: {fileID: 5571243554951708864}
   - component: {fileID: 92851706556099987}
   - component: {fileID: 6865548892325911999}
+  - component: {fileID: 9058615729823692132}
   m_Layer: 0
   m_Name: Wall_Front_Lintel
   m_TagString: Untagged
@@ -830,6 +896,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &9058615729823692132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5510570568657550231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &7867560988534138123
 GameObject:
   m_ObjectHideFlags: 0
@@ -842,6 +920,7 @@ GameObject:
   - component: {fileID: 7805891267012938755}
   - component: {fileID: 652515020896291742}
   - component: {fileID: 251131915183765021}
+  - component: {fileID: 4986989352568725740}
   m_Layer: 0
   m_Name: Wall_Back_L
   m_TagString: Untagged
@@ -942,6 +1021,18 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4986989352568725740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7867560988534138123}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &9152930828838842580
 GameObject:
   m_ObjectHideFlags: 0
@@ -954,6 +1045,7 @@ GameObject:
   - component: {fileID: 8370163469365574293}
   - component: {fileID: 1542041084674316449}
   - component: {fileID: 8886174620837117329}
+  - component: {fileID: 4630300576456994291}
   m_Layer: 0
   m_Name: Wall_Back_Lintel
   m_TagString: Untagged
@@ -1054,3 +1146,15 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4630300576456994291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9152930828838842580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver

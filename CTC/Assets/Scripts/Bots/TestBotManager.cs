@@ -39,7 +39,6 @@ namespace CTC.Runtime.Bots
 
         private readonly List<BotAgent> m_Agents = new List<BotAgent>();
         private readonly SoundLog m_Sound = new SoundLog();
-        private NavGraph m_Graph;
         private bool m_Running;
         private string m_Setup = "";
 
@@ -68,11 +67,10 @@ namespace CTC.Runtime.Bots
             if (nm == null || !nm.IsServer) return;
 
             Stop();
-            BuildGraph();
 
             var forts = PlayerSpawner.FortressSpots(m_Map != null ? m_Map.ActiveLayout : null);
             m_Setup = $"map={(m_Map != null ? (m_Map.ActiveLayout != null ? m_Map.ActiveLayout.name : "null-layout") : "null-map")}" +
-                      $" forts={forts.Count} graph={(m_Graph != null ? m_Graph.Count : -1)}";
+                      $" forts={forts.Count} navmesh={NavMeshArea()}";
             for (int i = 0; i < _mice; i++) SpawnOne(RoleId.Mouse, ClearSpawn(MouseSpawnPos(forts, i)));
             for (int i = 0; i < _cats; i++) SpawnOne(RoleId.Cat, ClearSpawn(new Vector3(i * 2f + 4f, 0.1f, 0f)));
 
@@ -81,7 +79,7 @@ namespace CTC.Runtime.Bots
 
             m_Sound.Start();
             m_Running = true;
-            GameDebug.Log($"[Bots] 쥐 {_mice} · 고양이 {_cats} 세움 (그래프 노드 {(m_Graph != null ? m_Graph.Count : 0)})");
+            GameDebug.Log($"[Bots] 쥐 {_mice} · 고양이 {_cats} 세움 (폴리곤 {NavMeshArea()}개)");
         }
 
         /// <summary>서버 전용 — 봇을 걷어낸다.</summary>
@@ -114,16 +112,13 @@ namespace CTC.Runtime.Bots
             }
         }
 
-        // 이동 그래프는 매니저가 제 것을 만든다 — MapDirector·DogMover를 안 건드리기 위해서다.
-        // 규칙은 강아지와 같다(NavPruner). 지형만 보고 깎이도록 봇을 세우기 **전에** 만든다.
-        private void BuildGraph()
+        // **길찾기는 구운 폴리곤이 한다**(2026-08-12) — 매니저가 그래프를 따로 만들지 않는다.
+        // `MapBuilder`가 지형을 짓고 바로 굽는다. 여기서는 그게 실제로 있는지만 확인한다 —
+        // 0이면 봇이 한 발도 못 뗀다.
+        private static int NavMeshArea()
         {
-            MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
-            if (layout == null) { m_Graph = null; return; }
-
-            m_Graph = NavGraphLogic.Build(layout.Rooms, layout.Corridors);
-            int pruned = NavPruner.Prune(m_Graph, null);
-            GameDebug.Log($"[Bots] 그래프 노드 {m_Graph.Count} · 간선 {m_Graph.EdgeCount} (벽에 막혀 {pruned} 제거)");
+            UnityEngine.AI.NavMeshTriangulation tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            return tri.indices != null ? tri.indices.Length / 3 : 0;
         }
 
         private void SpawnOne(RoleId _role, Vector3 _pos)
@@ -145,7 +140,7 @@ namespace CTC.Runtime.Bots
                 if (wallet != null) wallet.AddCheese(Info.InfoManager.Instance.Balance.MouseStartCheese);
             }
 
-            m_Agents.Add(new BotAgent(no, _role, m_Graph));
+            m_Agents.Add(new BotAgent(no, _role));
         }
 
         // 사람과 같은 자리 규칙 — 요새 입구 앞. 스폰 밀도가 달라지면 초반 동선이 통째로 달라진다.

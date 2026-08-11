@@ -15,7 +15,8 @@
         "Unity.Addressables",
         "Unity.ResourceManager",
         "UniTask",
-        "R3.Unity"
+        "R3.Unity",
+        "Unity.AI.Navigation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

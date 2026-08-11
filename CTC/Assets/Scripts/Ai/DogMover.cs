@@ -7,12 +7,11 @@ namespace CTC.Runtime.Ai
     /// <summary>
     /// 강아지가 **어떻게 가는지** (v3.8 5번). 무엇을 쫓을지는 `DogBrain`이 정한다.
     ///
-    /// 길 고르기는 <see cref="NavRoute"/>가 한다 — **곧장 가 보고 막히면 노드로 돈다**
-    /// (2026-08-11). 봇과 같은 코드다. 한쪽만 고치면 강아지와 봇이 다른 맵을 걷는 셈이 되어
+    /// 길 고르기는 <see cref="NavRoute"/>가 한다 — `MapBuilder`가 구운 폴리곤 위를 걷는다
+    /// (2026-08-12). 봇과 같은 코드다. 한쪽만 고치면 강아지와 봇이 다른 맵을 걷는 셈이 되어
     /// 봇으로 잰 밸런스가 강아지에게 안 맞는다.
     ///
-    /// 그래프는 방향만 주고, 정확한 회피는 `CharacterController`의 물리 충돌이 맡는다.
-    /// NavMesh를 안 쓰는 이유는 <see cref="NavGraphLogic"/> 주석에 있다.
+    /// 폴리곤은 방향과 코너만 주고, 정확한 회피는 `CharacterController`의 물리 충돌이 맡는다.
     ///
     /// 서버만 움직인다. 클라에는 `NetworkTransform`이 결과만 실어 나른다.
     /// </summary>
@@ -22,12 +21,11 @@ namespace CTC.Runtime.Ai
         // 바닥에 붙여 두는 힘. 점프가 없으니 상수 하나면 된다.
         private const float GRAVITY = -18f;
 
-        // 이만큼 못 나아가면 먼저 옆으로 타 본다(길 다시 짜기는 그다음).
-        private const float RUB_SECONDS = 0.3f;
+        /// <summary>배회 목적지를 이 반경 안에서 고른다.</summary>
+        private const float WANDER_RADIUS = 40f;
 
         private CharacterController m_Cc;
         private DogBrain m_Brain;
-        private NavGraph m_Graph;
         private NavRoute m_Route;
         private System.Random m_Random;
 
@@ -35,12 +33,10 @@ namespace CTC.Runtime.Ai
         private float m_VerticalSpeed;
         private float m_StuckSeconds;
         private Vector3 m_LastPos;
-        private int m_PrunedEdges;
 
-        /// <summary>QA 전용 — 길찾기가 어느 층에서 끊겼는지 본다(그래프·경로·제자리 시간).</summary>
+        /// <summary>QA 전용 — 길찾기가 어느 층에서 끊겼는지 본다(코너·제자리 시간).</summary>
         public string DevDiagnostics =>
-            $"graph={(m_Graph != null ? m_Graph.Count : -1)} " +
-            $"edges={(m_Graph != null ? m_Graph.EdgeCount : -1)} pruned={m_PrunedEdges} " +
+            $"navmesh={NavMeshTriangles()} " +
             $"{(m_Route != null ? m_Route.Diagnostics : "route=-")} stuck={m_StuckSeconds:F1} " +
             $"grounded={(m_Cc != null && m_Cc.isGrounded ? 1 : 0)}";
 
@@ -49,9 +45,7 @@ namespace CTC.Runtime.Ai
         {
             if (_layout == null) return;
 
-            m_Graph = NavGraphLogic.Build(_layout.Rooms, _layout.Corridors);
-            m_PrunedEdges = NavPruner.Prune(m_Graph, transform);
-            m_Route = new NavRoute(transform, m_Graph);
+            m_Route = new NavRoute(transform);
             // 배회는 서버가 맵 시드로 굴린다 — 클라마다 다르면 안 되고, QA 재현성도 여기서 나온다.
             m_Random = new System.Random(_layout.Seed);
         }
@@ -70,9 +64,9 @@ namespace CTC.Runtime.Ai
             float dt = Time.deltaTime;
             m_RepathTimer -= dt;
 
-            // 표적이 보여 직진 중이면 매 틱 좌표를 갱신한다 — 길을 다시 짜는 게 아니라
-            // 방향만 트는 것이라 공짜다. 이게 없으면 쫓는 동안 0.5초 전 자리로 달린다.
-            if (m_Route != null && m_Route.IsDirect && m_Brain != null && m_Brain.Target != null)
+            // 표적을 쫓는 동안에는 매 틱 좌표를 갱신한다 — 폴리곤 길찾기는 목표가 조금 움직인
+            // 정도면 들고 있던 코너를 그대로 쓰므로 공짜다. 없으면 0.5초 전 자리로 달린다.
+            if (m_Route != null && m_Brain != null && m_Brain.Target != null)
             {
                 m_Route.SetGoal(m_Brain.Target.transform.position);
             }
@@ -87,18 +81,17 @@ namespace CTC.Runtime.Ai
         }
 
         /// <summary>
-        /// 어디로 갈지만 정한다. **어떻게 갈지는 <see cref="NavRoute"/>가 안다** —
-        /// 표적이 보이면 노드를 안 거치고 곧장 달려든다.
+        /// 어디로 갈지만 정한다. **어떻게 갈지는 <see cref="NavRoute"/>가 안다.**
         /// </summary>
         private void ChooseGoal()
         {
             if (m_Route == null) return;
 
             // 길이 도저히 안 나오면 그 목표를 놓고 딴 데로 간다. 표적이라도 마찬가지다 —
-            // 벽 너머 표적을 붙들고 있으면 벽만 밀다 판이 끝난다.
+            // 붙들고 있으면 벽만 밀다 판이 끝난다.
             if (m_Route.ConsumeGaveUp())
             {
-                m_Route.SetGoal(RandomNode());
+                Wander();
                 return;
             }
 
@@ -111,14 +104,22 @@ namespace CTC.Runtime.Ai
             // 배회 중이고 아직 갈 데가 남았다 — 목적지를 흔들지 않는다
             if (m_Route.HasGoal) return;
 
-            m_Route.SetGoal(RandomNode());
+            Wander();
+        }
+
+        private void Wander()
+        {
+            if (NavRoute.TryRandomPoint(transform.position, WANDER_RADIUS, m_Random, out Vector3 point))
+            {
+                m_Route.SetGoal(point);
+            }
         }
 
         private void Step(float _dt)
         {
-            // **막히면 스스로 빠져나온다.** 그래프는 방향만 주고 회피는 물리가 하는 구조라
-            // 직진하다 모서리에 끼거나 경유점이 벽 뒤일 수 있다. 그때 이게 없으면 벽에 붙은 채
-            // 영원히 안 움직인다(2026-08-09 실측: 배회하다 29.47m에서 굳어 12초 넘게 그대로였다).
+            // **막히면 스스로 빠져나온다.** 폴리곤은 지형만 알고 서로의 몸은 모른다 —
+            // 사람이나 다른 강아지에 막히면 이게 없으면 붙은 채로 안 움직인다
+            // (2026-08-09 실측: 배회하다 29.47m에서 굳어 12초 넘게 그대로였다).
             float moved = DogAiLogic.Flat(transform.position - m_LastPos).magnitude;
             m_LastPos = transform.position;
             m_StuckSeconds = DogAiLogic.AccumulateStuck(
@@ -128,11 +129,6 @@ namespace CTC.Runtime.Ai
             {
                 m_StuckSeconds = 0f;
                 if (m_Route != null) m_Route.OnStuck();
-            }
-            else if (m_StuckSeconds >= RUB_SECONDS && m_Route != null)
-            {
-                // 길을 다시 짜기 전에 먼저 벽을 타고 옆으로 빠져 본다
-                m_Route.OnRubbing();
             }
 
             Vector3 horizontal = Vector3.zero;
@@ -147,13 +143,11 @@ namespace CTC.Runtime.Ai
             m_Cc.Move((horizontal + Vector3.up * m_VerticalSpeed) * _dt);
         }
 
-        // 배회 목적지. 그래프가 비면 제자리.
-        private Vector3 RandomNode()
+        // 폴리곤이 실제로 구워졌는지 — 0이면 강아지가 한 발도 못 뗀다.
+        private static int NavMeshTriangles()
         {
-            if (m_Graph == null || m_Graph.Count == 0 || m_Random == null) return transform.position;
-
-            Vector2 node = m_Graph.Nodes[m_Random.Next(m_Graph.Count)];
-            return new Vector3(node.x, transform.position.y, node.y);
+            UnityEngine.AI.NavMeshTriangulation tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            return tri.indices != null ? tri.indices.Length / 3 : 0;
         }
     }
 }

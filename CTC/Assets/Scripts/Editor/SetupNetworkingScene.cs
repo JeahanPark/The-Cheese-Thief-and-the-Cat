@@ -181,6 +181,9 @@ namespace CTC.Editor
                 {
                     var production = _root.AddComponent<WarehouseProduction>();
                     SetRef(production, "m_ProduceVfx", CreateProduceVfx(_root));
+                    // 판 중에 세워지므로 구운 폴리곤에 없다 — 제 자리를 도려내야
+                    // 길찾기가 창고를 통과하라고 답하지 않는다(2026-08-11 실측의 그 창고다)
+                    _root.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
                 });
 
             // 플레이어 수치는 CSV(PlayerInfo.csv)가 원본 — 이 생성기는 굽기만 한다(2026-07-31).

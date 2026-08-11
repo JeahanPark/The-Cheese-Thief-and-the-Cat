@@ -90,7 +90,7 @@ namespace CTC.Runtime.Bots
         /// <summary>QA — 길찾기 진단.</summary>
         public string NavDiagnostics => m_Nav != null ? m_Nav.Diagnostics : "";
 
-        public BotAgent(NetworkObject _object, RoleId _role, NavGraph _graph)
+        public BotAgent(NetworkObject _object, RoleId _role)
         {
             m_Object = _object;
             m_Role = _role;
@@ -99,7 +99,7 @@ namespace CTC.Runtime.Bots
             m_Jailed = _object.GetComponent<JailedTag>();
             m_Health = _object.GetComponent<Health>();
             m_Pounce = _object.GetComponent<CatPounce>();
-            m_Nav = new BotNavigator(_object.transform, m_Move, _graph);
+            m_Nav = new BotNavigator(_object.transform, m_Move);
 
             // 시야각은 **그 역할의 카메라 그대로**다 — 봇이 못 보는 건 사람도 못 보는 것이어야 한다
             Info.PlayerInfo info = Info.InfoManager.Instance.PlayerOf(_role);

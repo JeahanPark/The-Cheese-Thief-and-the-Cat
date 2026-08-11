@@ -170,6 +170,10 @@ namespace CTC.Editor
                         new Vector3(FORTRESS_DOOR_WIDTH, lintelHeight, t));
                 }
 
+                // **벽마다 따로 구멍을 판다** — 통째로 도려내면 쥐 전용 문까지 막혀
+                // 요새 안이 갈 수 없는 곳이 된다. 문은 벽 사이의 빈칸이라 저절로 남는다.
+                CarveWalls(root);
+
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, FortressPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
                 AssetDatabase.SaveAssets();
@@ -178,6 +182,24 @@ namespace CTC.Editor
             finally
             {
                 Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>
+        /// 콜라이더가 있는 자식마다 <see cref="CTC.Runtime.Map.NavMeshCarver"/>를 붙인다 (2026-08-12).
+        ///
+        /// 이동 폴리곤은 맵을 지을 때 한 번 굽는다. 판 중에 세워지는 구조물은 거기 없어서,
+        /// 길찾기가 "그리로 걸어가면 된다"고 답하고 걷는 쪽이 구조물을 민다.
+        /// 카버가 제 자리만 도려내면 다시 굽지 않고도 해결된다.
+        /// </summary>
+        private static void CarveWalls(GameObject _root)
+        {
+            foreach (Collider col in _root.GetComponentsInChildren<Collider>(true))
+            {
+                if (col.gameObject.GetComponent<CTC.Runtime.Map.NavMeshCarver>() == null)
+                {
+                    col.gameObject.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
+                }
             }
         }
     }

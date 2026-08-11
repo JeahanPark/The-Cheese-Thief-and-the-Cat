@@ -1,6 +1,5 @@
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Ai;
-using CTC.Runtime.Map;
 using CTC.Runtime.Player;
 using UnityEngine;
 
@@ -21,17 +20,16 @@ namespace CTC.Runtime.Bots
     /// </summary>
     public class BotNavigator
     {
-        // 이 시간 동안 이만큼도 못 가면 막힌 것으로 본다 — 길을 다시 짠다
-        private const float STUCK_SECONDS = 1.2f;
+        // 이 시간 동안 이만큼도 못 가면 막힌 것으로 본다. 폴리곤 위를 걷는데 못 나아간다면
+        // 지형이 아니라 남(다른 봇의 몸)에 막힌 것이다 — 폴리곤은 서로의 몸을 모른다.
+        private const float STUCK_SECONDS = 1f;
         private const float STUCK_MIN_SPEED = 0.5f;
 
-        // 그전에 **먼저 옆으로 타 본다.** 모서리에 스친 것뿐이면 길을 다시 짤 일이 아니고,
-        // 1.2초를 벽에 대고 버리면 판마다 그 시간이 쌓인다.
-        private const float RUB_SECONDS = 0.3f;
+        /// <summary>배회 목적지를 이 반경 안에서 고른다. 맵 절반쯤은 돼야 판을 훑는다.</summary>
+        private const float WANDER_RADIUS = 60f;
 
         private readonly Transform m_Body;
         private readonly PlayerMovement m_Move;
-        private readonly NavGraph m_Graph;
         private readonly NavRoute m_Route;
 
         private float m_StuckSeconds;
@@ -42,8 +40,8 @@ namespace CTC.Runtime.Bots
 
         public bool IsMoving => m_Route != null && m_Route.HasGoal;
 
-        /// <summary>QA — 지금 벽 없이 곧장 가는 중인가(A체크 통과).</summary>
-        public bool IsDirect => m_Route != null && m_Route.IsDirect;
+        /// <summary>QA — 목표까지 곧장 가는 중인가(중간에 아무것도 없다).</summary>
+        public bool IsStraight => m_Route != null && m_Route.IsStraight;
 
         /// <summary>
         /// **여기는 도저히 못 가겠다**를 한 번만 알려준다(읽으면 지워진다).
@@ -56,16 +54,15 @@ namespace CTC.Runtime.Bots
             $"{(m_Route != null ? m_Route.Diagnostics : "-")} stuck={m_StuckSeconds:F1} " +
             $"@{(m_Body != null ? m_Body.position.x : 0f):F0},{(m_Body != null ? m_Body.position.z : 0f):F0}";
 
-        public BotNavigator(Transform _body, PlayerMovement _move, NavGraph _graph)
+        public BotNavigator(Transform _body, PlayerMovement _move)
         {
             m_Body = _body;
             m_Move = _move;
-            m_Graph = _graph;
-            m_Route = new NavRoute(_body, _graph);
+            m_Route = new NavRoute(_body);
             m_LastPos = _body != null ? _body.position : Vector3.zero;
         }
 
-        /// <summary>여기로 가라. 직진 중이면 목표가 움직여도 길을 다시 짜지 않는다.</summary>
+        /// <summary>여기로 가라. 목표가 조금 움직인 정도면 길을 다시 짜지 않는다.</summary>
         public void SetGoal(Vector3 _goal)
         {
             if (m_Route != null) m_Route.SetGoal(_goal);
@@ -78,10 +75,11 @@ namespace CTC.Runtime.Bots
         /// </summary>
         public void SetWanderGoal(System.Random _rng)
         {
-            if (m_Graph == null || m_Graph.Count == 0 || _rng == null) return;
-
-            Vector2 node = m_Graph.Nodes[_rng.Next(m_Graph.Count)];
-            SetGoal(new Vector3(node.x, 0f, node.y));
+            if (m_Body == null) return;
+            if (NavRoute.TryRandomPoint(m_Body.position, WANDER_RADIUS, _rng, out Vector3 point))
+            {
+                SetGoal(point);
+            }
         }
 
         /// <summary>멈춘다. 파밍처럼 제자리에 있어야 하는 동안 쓴다.</summary>
@@ -102,7 +100,6 @@ namespace CTC.Runtime.Bots
 
             if (!m_Route.HasGoal) return;
 
-            // 직진하다 모서리에 끼면 노드로 돌아 나가고, 노드로 가다 끼면 그 경유점을 포기한다
             m_StuckSeconds = moved / Mathf.Max(_deltaSeconds, 0.0001f) < STUCK_MIN_SPEED
                 ? m_StuckSeconds + _deltaSeconds
                 : 0f;
@@ -111,10 +108,6 @@ namespace CTC.Runtime.Bots
             {
                 m_StuckSeconds = 0f;
                 m_Route.OnStuck();
-            }
-            else if (m_StuckSeconds >= RUB_SECONDS)
-            {
-                m_Route.OnRubbing();
             }
 
             if (!m_Route.TryGetDirection(_deltaSeconds, out Vector3 dir))

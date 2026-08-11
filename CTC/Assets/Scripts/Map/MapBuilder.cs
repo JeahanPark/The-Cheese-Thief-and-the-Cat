@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CTC.Runtime.Economy;
 using TMPro;
+using Unity.AI.Navigation;
 using UnityEngine;
 
 namespace CTC.Runtime.Map
@@ -52,6 +53,33 @@ namespace CTC.Runtime.Map
             BuildCheeseSpots(_layout);
             BuildJails(_layout);
             BuildObstacles(_layout);
+            BakeNavMesh();
+        }
+
+        /// <summary>
+        /// 지형을 다 지은 뒤 **걸을 수 있는 바닥을 폴리곤으로 굽는다** (2026-08-12).
+        ///
+        /// 그전에는 방 중심·모서리·문에 점을 찍어 이은 웨이포인트 그래프였다. 점만 아니까
+        /// 목표가 점이 아닐 때(움직이는 쥐·소리가 난 자리) **마지막 한 구간을 검사 없이 직선**
+        /// 으로 때울 수밖에 없었고, 그 직선에 기둥이나 쥐가 지은 창고가 있으면 답이 없었다
+        /// (실측: 고양이 둘이 창고 앞에서 8초 동안 1mm도 못 갔다).
+        ///
+        /// 폴리곤은 바닥 **전체**를 덮으므로 그런 구멍이 없다. 판 중에 생기는 구조물은
+        /// `NavMeshObstacle`이 구멍을 파므로 다시 구울 필요도 없다.
+        ///
+        /// **`NavMeshAgent`는 쓰지 않는다.** 그건 오브젝트를 직접 옮겨 이속·잠행·발소리가
+        /// 사람과 다른 코드를 타게 만든다 — 그 순간 봇으로 잰 밸런스가 뜻을 잃는다.
+        /// 길 계산만 쓰고 이동은 사람과 같은 입구로 넣는다.
+        /// </summary>
+        private void BakeNavMesh()
+        {
+            var surface = GetComponent<NavMeshSurface>();
+            if (surface == null) surface = gameObject.AddComponent<NavMeshSurface>();
+
+            // 이 오브젝트 아래(= 방금 지은 GeneratedMap)만 본다. 플레이어·강아지는 안 굽는다.
+            surface.collectObjects = CollectObjects.Children;
+            surface.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
+            surface.BuildNavMesh();
         }
 
         public void Clear()

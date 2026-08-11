@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7797439234313544720}
   - component: {fileID: 4819082754977298670}
   - component: {fileID: 8450476079085041380}
+  - component: {fileID: 6008802116602181357}
   m_Layer: 0
   m_Name: LootBox
   m_TagString: Untagged
@@ -140,6 +141,18 @@ MonoBehaviour:
   - {fileID: 4335086204276622300, guid: d26417cc52dd727408b0d627b586347d, type: 3}
   - {fileID: 7466618799031710939, guid: 7c7c9a55b74e33e4c993d93cef7b90ec, type: 3}
   m_ScatterMeters: 0.8
+--- !u!114 &6008802116602181357
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3628682520528616531}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &7528286076523854629
 GameObject:
   m_ObjectHideFlags: 0

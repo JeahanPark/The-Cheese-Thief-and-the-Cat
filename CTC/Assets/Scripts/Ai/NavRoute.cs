@@ -1,116 +1,82 @@
 using System.Collections.Generic;
-using CTC.Runtime.Map;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace CTC.Runtime.Ai
 {
     /// <summary>
-    /// **일단 곧장 가 보고, 막히면 노드로 돈다** — 강아지와 봇이 같이 쓰는 이동 규칙 (2026-08-11).
+    /// **구운 폴리곤 위로 길을 찾는다** — 강아지와 봇이 같이 쓴다 (2026-08-12).
     ///
-    /// 그전에는 무조건 그래프 경로로만 다녔다. 그래프는 방 중심과 복도 끝점만 노드로 갖는데
-    /// 방 안에 엄폐물을 놓자 **그 노드로 들어가는 간선이 잘려** 방 하나가 통째로 못 가는 곳이
-    /// 되었다. 시야를 끊는 선과 길을 내는 선이 같은 선이라 생긴 충돌이다.
+    /// 그전에는 방 중심·모서리·문에 점을 찍어 이은 웨이포인트 그래프였다. 점만 아니까
+    /// 목표가 점이 아닐 때(움직이는 쥐·소리가 난 자리) **마지막 한 구간을 검사 없이 직선**으로
+    /// 때울 수밖에 없었고, 그 직선에 기둥이나 쥐가 판 중에 지은 창고가 있으면 답이 없었다.
+    /// 그 구멍을 메우려고 모서리 링·릴레이 노드·벽 타기를 차례로 붙였는데, 전부 땜질이었다.
     ///
-    /// 뒤집으면 풀린다. 그래프는 **막혔을 때만** 쓰는 우회로다.
-    /// <code>
-    /// 1. A체크 — 나 → 목표 직선을 몸통 굵기로 쏜다
-    /// 2. 안 막힘 → 노드 무시하고 직진
-    /// 3. 막힘   → 노드 경로로 우회
-    /// 4. 경로 노드에 닿을 때마다 → 다시 1번
-    /// </code>
+    /// 폴리곤은 걸을 수 있는 바닥 **전체**를 덮으므로 그런 구멍이 없다. 바닥 위 아무 좌표나
+    /// 물어봐도 정확한 코너 목록이 나오고, 뚫려 있으면 코너가 하나(= 곧장 가라)로 나온다.
+    /// 판 중에 생기는 구조물은 `NavMeshObstacle`이 구멍을 파므로 다시 구울 필요도 없다.
     ///
-    /// **4번이 핵심이다.** 목표가 쥐라면 매 순간 움직인다. 처음 길을 짤 때 막혀 있었어도
-    /// 모퉁이를 하나 돌면 이미 뚫려 있을 수 있고, 그때는 남은 노드를 버리고 곧장 간다.
-    /// 그래서 "노드 사이를 각지게 오가는" 움직임이 사라지고 사람처럼 질러 간다.
-    ///
-    /// MonoBehaviour가 아니다 — 강아지(`DogMover`)와 봇(`BotNavigator`)이 각자 들고 굴린다.
-    /// 방향만 돌려주고 실제 이동은 부르는 쪽이 한다(강아지는 `CC.Move`, 봇은 `DevSetMoveInput`).
+    /// **`NavMeshAgent`는 쓰지 않는다.** 그건 오브젝트를 직접 옮겨 이속·잠행·발소리가 사람과
+    /// 다른 코드를 타게 만든다 — 그 순간 봇으로 잰 밸런스가 뜻을 잃는다. 길 계산만 쓰고,
+    /// 방향은 부르는 쪽이 사람과 같은 입구로 넣는다(강아지 `CC.Move` · 봇 `DevSetMoveInput`).
     /// </summary>
     public class NavRoute
     {
-        /// <summary>이만큼 가까워지면 그 경유점은 지난 것으로 본다. 너무 작으면 모퉁이에서 맴돈다.</summary>
-        public const float WAYPOINT_REACH = 0.9f;
+        /// <summary>이만큼 가까워지면 그 코너는 지난 것으로 본다. 너무 작으면 모퉁이에서 맴돈다.</summary>
+        public const float CORNER_REACH = 0.8f;
 
         /// <summary>목표에 이만큼 붙으면 도착. 0으로 두면 목표를 밀고 다닌다.</summary>
         public const float GOAL_REACH = 0.6f;
 
-        /// <summary>
-        /// 직진 중 A체크 주기. 직진에는 "도착할 경유점"이 없어서 시계로 대신한다 —
-        /// 목표가 벽 뒤로 들어가는 순간을 이 안에 잡는다. 매 틱 쏘면 스피어캐스트가 낭비다.
-        /// </summary>
-        private const float RECHECK_SECONDS = 0.25f;
+        /// <summary>목표가 이만큼 움직여야 다시 짠다. 매 틱 짜면 코너 진행이 리셋된다.</summary>
+        private const float REPLAN_DISTANCE = 1.5f;
 
-        /// <summary>목표가 이만큼 움직여야 노드 경로를 다시 짠다(직진 중에는 안 짠다).</summary>
-        private const float REPLAN_DISTANCE = 3f;
+        /// <summary>다시 짜는 최소 간격. 두뇌는 매 틱 목표를 넣는다.</summary>
+        private const float REPLAN_COOLDOWN_SECONDS = 0.25f;
 
         /// <summary>
-        /// 릴레이 후보로 물리를 쏴 볼 노드 수. 그래프가 369개라 전부 쏘면 낭비다 —
-        /// "나까지 + 목표까지" 합이 짧은 것부터 이만큼만 본다.
+        /// 좌표가 폴리곤 밖일 때 이 반경 안에서 가장 가까운 바닥으로 당긴다.
+        /// 소리가 난 자리는 벽 속일 수도 있고, 쥐는 폴리곤 가장자리에 서 있을 수 있다.
         /// </summary>
-        private const int RELAY_CANDIDATES = 24;
+        private const float SAMPLE_RADIUS = 5f;
 
-        /// <summary>
-        /// 벽에 비빌 때 **옆으로 미끄러지는** 각도와 시간 (2026-08-11).
-        ///
-        /// 길을 다시 짜기 전에 이게 먼저다. 스피어캐스트는 굵기 0.35로 "지나갈 수 있다"고
-        /// 답하지만 모서리를 스치면 실제로는 걸린다 — 그때 사람은 벽을 타고 옆으로 빠지지
-        /// 계속 정면으로 밀지 않는다. 이게 없으면 걸릴 때마다 1.2초를 벽에 대고 버린다
-        /// (실측: 고양이 평균 속도가 최고속의 35%밖에 안 나왔다).
-        ///
-        /// 좌우를 번갈아 시도한다 — 한쪽만 고집하면 막다른 모서리에서 못 빠져나온다.
-        /// </summary>
-        private const float SLIDE_DEGREES = 65f;
-        private const float SLIDE_SECONDS = 0.45f;
-
-        /// <summary>
-        /// 이만큼 연속으로 막히면 그 목표를 놓고 부르는 쪽에 알린다.
-        /// 릴레이까지 실패하는 자리(구석에 완전히 낀 경우)를 위한 최후 안전장치다 —
-        /// 없으면 벽을 미는 채로 판이 끝난다(실측: 고양이 둘이 8초간 1mm도 못 갔다).
-        /// </summary>
-        private const int GIVE_UP_STUCKS = 3;
-
-        /// <summary>
-        /// 노드 경로를 다시 짜는 최소 간격. 두뇌는 매 틱 목표를 넣는데, 갈 수 없는 곳을
-        /// 가리키면 매 틱 새로 짜게 된다 — 출발 노드 고르기가 노드마다 스피어캐스트라
-        /// 봇 열 마리면 그것만으로 프레임이 죽는다.
-        /// </summary>
-        private const float REPLAN_COOLDOWN_SECONDS = 0.3f;
+        /// <summary>코너 버퍼. `NavMeshPath.corners`는 부를 때마다 배열을 새로 만든다.</summary>
+        private const int MAX_CORNERS = 64;
 
         private readonly Transform m_Self;
-        private NavGraph m_Graph;
+        private readonly NavMeshPath m_Path = new NavMeshPath();
+        private readonly Vector3[] m_Buffer = new Vector3[MAX_CORNERS];
+        private readonly List<Vector3> m_Corners = new List<Vector3>();
 
-        private readonly List<Vector2> m_Path = new List<Vector2>();
         private int m_Index;
-        private bool m_Direct;
         private bool m_HasGoal;
-        private float m_RecheckSeconds;
-        private float m_ReplanCooldown;
-        private int m_StuckPlans;
         private bool m_GaveUp;
-        private float m_SlideSeconds;
-        private float m_SlideSign = 1f;
+        private float m_ReplanCooldown;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
 
-        public NavRoute(Transform _self, NavGraph _graph)
+        public NavRoute(Transform _self)
         {
             m_Self = _self;
-            m_Graph = _graph;
         }
 
         /// <summary>지금 갈 데가 있는가.</summary>
         public bool HasGoal => m_HasGoal;
 
-        /// <summary>벽 없이 곧장 가는 중인가(A체크 통과). QA가 "우회 중인가"를 이걸로 본다.</summary>
-        public bool IsDirect => m_HasGoal && m_Direct;
+        /// <summary>남은 코너가 하나뿐 = 목표까지 곧장 간다(중간에 아무것도 없다).</summary>
+        public bool IsStraight => m_HasGoal && m_Corners.Count - m_Index <= 1;
 
-        public int PathCount => m_Path.Count;
-        public int PathIndex => m_Index;
         public Vector3 Goal => m_Goal;
+
+        /// <summary>QA — 어느 층에서 끊겼는지 한 줄로.</summary>
+        public string Diagnostics =>
+            $"{(IsStraight ? "straight" : "path")} corners={m_Corners.Count} idx={m_Index} " +
+            $"goal={m_Goal.x:F0},{m_Goal.z:F0} " +
+            $"wp={(m_Index < m_Corners.Count ? $"{m_Corners[m_Index].x:F0},{m_Corners[m_Index].z:F0}" : "-")}";
 
         /// <summary>
         /// **여기는 도저히 못 가겠다**를 한 번만 알려준다(읽으면 지워진다).
-        /// 두뇌가 이걸 받으면 그 단서를 버려야 한다 — 안 버리면 다음 틱에 같은 곳을 다시 준다.
+        /// 두뇌가 이걸 받으면 그 목표를 버려야 한다 — 안 버리면 같은 곳을 다시 준다.
         /// </summary>
         public bool ConsumeGaveUp()
         {
@@ -119,35 +85,17 @@ namespace CTC.Runtime.Ai
             return true;
         }
 
-        /// <summary>QA — 어느 층에서 끊겼는지 한 줄로.</summary>
-        public string Diagnostics =>
-            $"{(m_Direct ? "direct" : "path")} path={m_Path.Count} idx={m_Index} " +
-            $"goal={m_Goal.x:F0},{m_Goal.z:F0} " +
-            $"wp={(m_Index < m_Path.Count ? $"{m_Path[m_Index].x:F0},{m_Path[m_Index].y:F0}" : "-")}";
-
-        /// <summary>그래프를 갈아 끼운다(맵이 바뀔 때). 들고 있던 경로는 버린다.</summary>
-        public void SetGraph(NavGraph _graph)
-        {
-            m_Graph = _graph;
-            Clear();
-        }
-
-        /// <summary>
-        /// 여기로 가라. **직진 중이면 목표가 움직여도 그냥 따라간다** — 짤 길이 없다.
-        /// 노드로 우회하는 중일 때만, 목표가 크게 움직였으면 다시 짠다.
-        /// </summary>
+        /// <summary>여기로 가라. 목표가 조금 움직인 정도면 들고 있던 경로를 그대로 쓴다.</summary>
         public void SetGoal(Vector3 _goal)
         {
             m_Goal = _goal;
 
-            if (m_HasGoal && m_Direct) return;
-            if (m_HasGoal && m_Index < m_Path.Count
+            if (m_HasGoal && m_Index < m_Corners.Count
                 && Flat(_goal - m_PlannedGoal).magnitude < REPLAN_DISTANCE)
             {
                 return;
             }
 
-            // 방금 짰다 — 갈 수 없는 곳을 두뇌가 계속 가리켜도 매 틱 다시 짜지는 않는다
             if (m_ReplanCooldown > 0f)
             {
                 m_HasGoal = true;
@@ -155,284 +103,144 @@ namespace CTC.Runtime.Ai
             }
 
             m_HasGoal = true;
-            m_StuckPlans = 0;   // 새 목표다
-            Vector3 pos = m_Self != null ? m_Self.position : Vector3.zero;
-
-            // 처음부터 A체크 — 뚫려 있으면 그래프를 아예 안 본다.
-            if (CanGoDirect(pos))
-            {
-                TakeDirect();
-                return;
-            }
-            PlanPath(pos);
+            Replan();
         }
 
         /// <summary>멈춘다. 파밍처럼 제자리에 있어야 하는 동안 쓴다.</summary>
         public void Clear()
         {
             m_HasGoal = false;
-            m_Direct = false;
-            m_Path.Clear();
+            m_Corners.Clear();
             m_Index = 0;
-            m_StuckPlans = 0;
-            m_SlideSeconds = 0f;
         }
 
         /// <summary>
-        /// 제자리걸음일 때 부른다. 직진하다 끼었으면 **노드로 돌아 나가고**,
-        /// 노드로 가다 끼었으면 그 경유점을 포기한다.
-        ///
-        /// 직진은 몸통 굵기로 쏴서 고르지만 모서리를 스치면 여전히 낄 수 있다.
-        /// 그때 이게 없으면 기둥에 붙어 영원히 안 움직인다.
+        /// 제자리걸음일 때 부른다. 폴리곤 위를 걷는데도 못 나아간다면 남(다른 몸)에 막힌 것이다 —
+        /// 폴리곤은 지형만 알고 서로의 몸은 모른다. 코너를 하나 건너뛰고 다시 짠다.
         /// </summary>
-        /// <summary>
-        /// **살짝 걸렸다** — 길을 다시 짜기 전에 먼저 옆으로 타 본다.
-        /// 모서리에 스친 것뿐이면 이걸로 빠져나오고, 진짜 막힌 것이면 곧 <see cref="OnStuck"/>가 온다.
-        /// </summary>
-        public void OnRubbing()
-        {
-            if (m_SlideSeconds > 0f) return;   // 이미 타는 중이다
-
-            m_SlideSign = -m_SlideSign;        // 좌우를 번갈아
-            m_SlideSeconds = SLIDE_SECONDS;
-        }
-
         public void OnStuck()
         {
-            Vector3 pos = m_Self != null ? m_Self.position : Vector3.zero;
-
-            // 릴레이까지 넣었는데도 계속 막힌다 — 구석에 완전히 낀 것이다. 목표를 놓는다.
-            if (++m_StuckPlans >= GIVE_UP_STUCKS)
-            {
-                m_GaveUp = true;
-                Clear();
-                return;
-            }
-
-            if (m_Direct)
-            {
-                PlanPath(pos);
-                return;
-            }
-
             m_Index++;
-            if (m_Index >= m_Path.Count) PlanPath(pos);
+            if (m_Index >= m_Corners.Count) Replan();
         }
 
-        /// <summary>
-        /// 매 틱. 갈 방향(수평 단위벡터)을 돌려준다. 도착했거나 갈 데가 없으면 false.
-        /// </summary>
+        /// <summary>매 틱. 갈 방향(수평 단위벡터)을 돌려준다. 도착했거나 갈 데가 없으면 false.</summary>
         public bool TryGetDirection(float _deltaSeconds, out Vector3 _dir)
-        {
-            m_SlideSeconds -= _deltaSeconds;
-            if (!TryHeading(_deltaSeconds, out _dir)) return false;
-
-            // 벽에 비볐으면 그대로 정면으로 밀지 않고 옆으로 탄다
-            if (m_SlideSeconds > 0f)
-            {
-                _dir = Quaternion.Euler(0f, SLIDE_DEGREES * m_SlideSign, 0f) * _dir;
-            }
-            return true;
-        }
-
-        private bool TryHeading(float _deltaSeconds, out Vector3 _dir)
         {
             _dir = Vector3.zero;
             if (!m_HasGoal || m_Self == null) return false;
 
-            Vector3 pos = m_Self.position;
-            m_RecheckSeconds -= _deltaSeconds;
             m_ReplanCooldown -= _deltaSeconds;
+            Vector3 pos = m_Self.position;
 
-            // ── 직진 중 ──
-            if (m_Direct)
+            while (m_Index < m_Corners.Count)
             {
-                Vector3 toGoal = Flat(m_Goal - pos);
-                if (toGoal.magnitude <= GOAL_REACH)
-                {
-                    m_HasGoal = false;
-                    return false;
-                }
-
-                // 목표가 움직여 벽 뒤로 들어갔을 수 있다 — 주기마다 다시 본다
-                if (m_RecheckSeconds > 0f)
-                {
-                    _dir = toGoal.normalized;
-                    return true;
-                }
-
-                m_RecheckSeconds = RECHECK_SECONDS;
-                if (CanGoDirect(pos))
-                {
-                    _dir = toGoal.normalized;
-                    return true;
-                }
-                PlanPath(pos);   // 막혔다 → 노드로
-            }
-
-            // ── 노드로 우회 중 ──
-            while (m_Index < m_Path.Count)
-            {
-                Vector2 wp = m_Path[m_Index];
-                Vector3 delta = Flat(new Vector3(wp.x, pos.y, wp.y) - pos);
-                if (delta.magnitude > WAYPOINT_REACH)
+                Vector3 delta = Flat(m_Corners[m_Index] - pos);
+                // 마지막 코너 = 목표다. 중간 코너는 스치듯 지나가야 모퉁이에서 안 맴돈다.
+                float reach = m_Index == m_Corners.Count - 1 ? GOAL_REACH : CORNER_REACH;
+                if (delta.magnitude > reach)
                 {
                     _dir = delta.normalized;
                     return true;
                 }
-
-                // ★ 진행 노드에 닿았다 — 여기서 매번 A체크. 목표가 움직였으니 지금은 뚫렸을 수 있다.
                 m_Index++;
-                m_StuckPlans = 0;   // 실제로 나아갔다
-                if (TryTakeDirect(pos, out _dir)) return true;
             }
-
-            // 경로를 다 썼다 — 마지막으로 한 번 더. 그래도 막혔으면 갈 데가 없다.
-            if (TryTakeDirect(pos, out _dir)) return true;
 
             m_HasGoal = false;
             return false;
         }
 
-        // A체크가 통과하면 직진으로 갈아탄다. 남은 노드는 버린다.
-        private bool TryTakeDirect(Vector3 _pos, out Vector3 _dir)
+        /// <summary>
+        /// 폴리곤 위의 아무 자리. 배회 목적지를 고를 때 쓴다 —
+        /// 그냥 무작위 좌표를 잡으면 벽 속이 나온다.
+        /// </summary>
+        public static bool TryRandomPoint(
+            Vector3 _center, float _radius, System.Random _rng, out Vector3 _point)
         {
-            _dir = Vector3.zero;
-            m_RecheckSeconds = RECHECK_SECONDS;
-            if (!CanGoDirect(_pos)) return false;
+            _point = _center;
+            if (_rng == null) return false;
 
-            TakeDirect();
-
-            Vector3 toGoal = Flat(m_Goal - _pos);
-            if (toGoal.magnitude <= GOAL_REACH)
+            for (int attempt = 0; attempt < 8; attempt++)
             {
-                m_HasGoal = false;
-                return false;
+                float angle = (float)(_rng.NextDouble() * System.Math.PI * 2.0);
+                float distance = (float)(_rng.NextDouble()) * _radius;
+                Vector3 candidate = _center
+                    + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
+
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, SAMPLE_RADIUS, NavMesh.AllAreas))
+                {
+                    continue;
+                }
+
+                _point = hit.position;
+                return true;
             }
-
-            _dir = toGoal.normalized;
-            return true;
+            return false;
         }
 
-        private void TakeDirect()
+        private void Replan()
         {
-            m_Direct = true;
-            m_Path.Clear();
-            m_Index = 0;
-            m_RecheckSeconds = RECHECK_SECONDS;
-            m_StuckPlans = 0;   // 트인 길을 찾았다 — 포기 시계를 되돌린다
-        }
-
-        // 나 → 목표 직선이 몸통 굵기로 뚫려 있는가. 이게 A체크다.
-        private bool CanGoDirect(Vector3 _pos)
-        {
-            return NavPruner.IsWalkable(
-                new Vector2(_pos.x, _pos.z), new Vector2(m_Goal.x, m_Goal.z), m_Self);
-        }
-
-        private void PlanPath(Vector3 _pos)
-        {
-            m_Direct = false;
-            m_Path.Clear();
+            m_Corners.Clear();
             m_Index = 0;
             m_PlannedGoal = m_Goal;
-            m_RecheckSeconds = RECHECK_SECONDS;
             m_ReplanCooldown = REPLAN_COOLDOWN_SECONDS;
-            if (m_Graph == null) return;
+            if (m_Self == null) return;
 
-            var goal = new Vector2(m_Goal.x, m_Goal.z);
-
-            // 못 닿는 목표여도 그쪽으로는 붙는다 — 빈 경로를 받으면 그 자리에 굳는다
-            m_Path.AddRange(NavGraphLogic.FindPathToward(m_Graph, NearestVisibleNode(_pos), goal));
-
-            // **마지막 한 구간은 언제나 직선이다.** 길찾기는 출발과 목표가 같은 노드 담당이면
-            // "다 왔으니 그냥 걸어가"라고 답하는데, 그 직선 위에 방 안 물건(쥐가 판 중에 지은
-            // 창고·요새·기둥)이 있으면 걷는 쪽이 그걸 영원히 민다. 그래프는 판 시작에 한 번만
-            // 만들어서 나중에 생긴 물건을 모른다 — 길이 없는 게 아니라 **안 물어본 것**이다.
-            // (2026-08-11 실측: 고양이 둘이 쥐가 지은 창고 앞에서 8초간 1mm도 못 갔다.)
-            //
-            // 그래서 지금 자리에서 목표까지 곧장 갈 수 없고 경로도 사실상 없으면,
-            // **거쳐 갈 노드를 하나 끼운다** — 모서리 링이 그러라고 있는 것이다.
-            if (m_Path.Count > 1) return;
-            if (m_Path.Count == 1 && !IsSameSpot(m_Path[0], goal)) return;
-
-            if (TryFindRelay(_pos, goal, out Vector2 relay))
+            // 양 끝을 폴리곤 위로 당긴다 — 소리가 난 자리는 벽 속일 수도 있다
+            if (!NavMesh.SamplePosition(m_Self.position, out NavMeshHit from, SAMPLE_RADIUS, NavMesh.AllAreas)
+                || !TrySampleGoal(m_Self.position, out Vector3 to))
             {
-                m_Path.Insert(0, relay);
+                GiveUp();
+                return;
             }
+
+            if (!NavMesh.CalculatePath(from.position, to, NavMesh.AllAreas, m_Path)
+                || m_Path.status == NavMeshPathStatus.PathInvalid)
+            {
+                GiveUp();
+                return;
+            }
+
+            // 0번은 내가 선 자리다. 나머지가 실제로 밟을 코너 — 뚫려 있으면 목표 하나뿐이다.
+            int count = m_Path.GetCornersNonAlloc(m_Buffer);
+            for (int i = 1; i < count; i++) m_Corners.Add(m_Buffer[i]);
+
+            if (m_Corners.Count == 0) m_HasGoal = false;   // 이미 그 자리다
         }
 
-        private static bool IsSameSpot(Vector2 _a, Vector2 _b) => (_a - _b).sqrMagnitude < 0.01f;
-
         /// <summary>
-        /// 한 번 거쳐 가면 목표가 보이는 노드를 찾는다. **목표까지 트인 노드**가 1순위,
-        /// 없으면 나한테서 갈 수 있으면서 목표에 제일 가까운 노드다(가서 다시 A체크한다).
+        /// 목표를 폴리곤 위로 당긴다. **바로 옆에 폴리곤이 없으면 나 있는 쪽으로 당겨 가며** 찾는다
+        /// (2026-08-12).
         ///
-        /// 물리를 쏘므로 후보를 <see cref="RELAY_CANDIDATES"/>개로 줄인다 — "나까지 + 목표까지"
-        /// 합이 짧은 것부터. 노드 369개에 전부 쏘면 봇 열 마리가 프레임을 잡아먹는다.
+        /// 두뇌가 주는 목표는 늘 바닥 위가 아니다 — 도망치는 쥐는 "위협 반대쪽 18m"를 잡는데
+        /// 그게 맵 밖일 수 있다(실측: 쥐 하나가 z=67을 잡았고 맵 경계는 60이었다).
+        /// 그 자리를 못 찾으면 봇이 그냥 서 버린다. 나한테로 당기면 그 방향의 갈 수 있는
+        /// 가장 먼 자리가 나온다 — 도망치려던 의도가 그대로 산다.
         /// </summary>
-        private bool TryFindRelay(Vector3 _pos, Vector2 _goal, out Vector2 _relay)
+        private bool TrySampleGoal(Vector3 _from, out Vector3 _point)
         {
-            _relay = default;
-            var self = new Vector2(_pos.x, _pos.z);
-            if (m_Graph == null || m_Graph.Count == 0) return false;
-
-            var order = new List<int>(m_Graph.Count);
-            for (int i = 0; i < m_Graph.Count; i++) order.Add(i);
-            order.Sort((a, b) => Detour(a).CompareTo(Detour(b)));
-
-            int fallback = -1;
-            int limit = Mathf.Min(RELAY_CANDIDATES, order.Count);
-            for (int i = 0; i < limit; i++)
+            const int STEPS = 5;
+            for (int i = 0; i <= STEPS; i++)
             {
-                Vector2 node = m_Graph.Nodes[order[i]];
-                if ((node - self).sqrMagnitude < 1f) continue;              // 내가 선 자리다
-                if (!NavPruner.IsWalkable(self, node, m_Self)) continue;    // 거기까지도 못 간다
-
-                if (NavPruner.IsWalkable(node, _goal, m_Self))
+                Vector3 candidate = Vector3.Lerp(m_Goal, _from, i / (float)STEPS);
+                if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, SAMPLE_RADIUS, NavMesh.AllAreas))
                 {
-                    _relay = node;                                          // 거기서 목표가 트인다
-                    return true;
+                    continue;
                 }
-                if (fallback < 0) fallback = order[i];
+
+                _point = hit.position;
+                return true;
             }
 
-            if (fallback < 0) return false;
-            _relay = m_Graph.Nodes[fallback];
-            return true;
-
-            float Detour(int _i)
-            {
-                Vector2 n = m_Graph.Nodes[_i];
-                return (n - self).magnitude + (n - _goal).magnitude;
-            }
+            _point = _from;
+            return false;
         }
 
-        /// <summary>
-        /// 길을 어디서 시작할 것인가. **가장 가까운 노드가 아니라, 실제로 갈 수 있는 노드**다.
-        ///
-        /// 그래프는 벽을 모른다. 그냥 제일 가까운 노드를 잡으면 그게 **벽 너머**일 수 있고,
-        /// 그러면 첫 구간이 애초에 막혀 있어 벽을 밀며 제자리걸음을 한다
-        /// (2026-08-09 강아지 · 2026-08-11 봇 여섯이 같은 증상으로 굳었다).
-        /// </summary>
-        private Vector2 NearestVisibleNode(Vector3 _pos)
+        // 폴리곤 밖이거나 길이 아예 없다 — 두뇌가 다른 목표를 잡아야 한다.
+        private void GiveUp()
         {
-            var self = new Vector2(_pos.x, _pos.z);
-            if (m_Graph == null || m_Graph.Count == 0) return self;
-
-            int best = -1;
-            float bestSqr = float.MaxValue;
-            for (int i = 0; i < m_Graph.Count; i++)
-            {
-                Vector2 node = m_Graph.Nodes[i];
-                float sqr = (node - self).sqrMagnitude;
-                if (sqr >= bestSqr) continue;
-                if (!NavPruner.IsWalkable(self, node, m_Self)) continue;
-
-                bestSqr = sqr;
-                best = i;
-            }
-            return best >= 0 ? m_Graph.Nodes[best] : self;
+            m_GaveUp = true;
+            m_HasGoal = false;
         }
 
         private static Vector3 Flat(Vector3 _v)

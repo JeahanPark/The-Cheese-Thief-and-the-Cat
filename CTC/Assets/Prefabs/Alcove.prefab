@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 487312930418897419}
   - component: {fileID: 5524870247290112930}
   - component: {fileID: 6575788367149438759}
+  - component: {fileID: 6953086203162102101}
   m_Layer: 0
   m_Name: Alcove
   m_TagString: Untagged
@@ -263,6 +264,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.AudioVolumeFollower
   m_Category: 0
+--- !u!114 &6953086203162102101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1513205572188277050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5ca7a87ce21f2e4e92a1bcb1c4438e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.NavMeshCarver
 --- !u!1 &8970908541854038298
 GameObject:
   m_ObjectHideFlags: 0

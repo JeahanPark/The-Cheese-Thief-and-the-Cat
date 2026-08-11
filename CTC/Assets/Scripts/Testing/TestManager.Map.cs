@@ -114,22 +114,16 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
-        /// QA: 벽을 지나서 걷어낸 간선 수. 0이면 검증이 안 돌았다는 뜻이고,
-        /// 그러면 길찾기가 "갈 수 있다"고 답해 놓고 강아지가 벽만 민다.
+        /// QA: 구워진 이동 폴리곤 수 (2026-08-12). 0이면 길찾기가 통째로 죽은 것이고,
+        /// 그러면 강아지도 봇도 한 발을 못 뗀다.
+        ///
+        /// 예전 이름은 `TestGetDogPrunedEdges`였다 — 웨이포인트 그래프에서 벽에 막힌 간선을
+        /// 몇 개 걷어냈는지 세던 값이다. 폴리곤으로 바꾸면서 그 개념 자체가 없어졌다.
         /// </summary>
-        public int TestGetDogPrunedEdges()
+        public int TestGetNavMeshPolygons()
         {
-            var brain = FindFirstObjectByType<CTC.Runtime.Ai.DogBrain>();
-            var mover = brain != null ? brain.GetComponent<CTC.Runtime.Ai.DogMover>() : null;
-            if (mover == null) return -1;
-
-            string diag = mover.DevDiagnostics;
-            int at = diag.IndexOf("pruned=", System.StringComparison.Ordinal);
-            if (at < 0) return -1;
-
-            int end = diag.IndexOf(' ', at);
-            string value = end < 0 ? diag.Substring(at + 7) : diag.Substring(at + 7, end - at - 7);
-            return int.TryParse(value, out int parsed) ? parsed : -1;
+            UnityEngine.AI.NavMeshTriangulation tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+            return tri.indices != null ? tri.indices.Length / 3 : 0;
         }
 
         /// <summary>QA: 강아지와 로컬 플레이어의 수평 거리(둘 중 하나가 없으면 -1).</summary>
