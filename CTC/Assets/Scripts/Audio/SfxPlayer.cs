@@ -76,9 +76,20 @@ namespace CTC.Runtime.Audio
             if (s_Instance == this) s_Instance = null;
         }
 
+        /// <summary>
+        /// 3D 단발음이 났다 — 무엇이·어디서·몇 m까지. **듣는 쪽이 구독한다**(2026-08-11).
+        ///
+        /// 밸런스 측정용 봇이 "들었다"를 판단하는 유일한 근거다. 이 한 줄이 있어서
+        /// 벽감·상자·강아지·스킬 쪽 코드를 하나도 안 건드리고 소리를 관찰할 수 있다.
+        /// 구독자가 없으면(배포 빌드) 아무 일도 일어나지 않는다.
+        /// </summary>
+        public static event System.Action<SfxId, Vector3, float> Played;
+
         /// <summary>월드 위치 3D 원샷 — 리스너(자기 카메라) 거리에 따라 감쇠. maxDistance로 가청 반경 조절.</summary>
         public static void PlayAt(SfxId _id, Vector3 _position, float _volume = 1f, float _maxDistance = WORLD_MAX_DISTANCE)
         {
+            Played?.Invoke(_id, _position, _maxDistance);
+
             AudioClip clip = ClipOf(_id);
             if (clip == null) return;
 

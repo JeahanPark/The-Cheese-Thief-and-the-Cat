@@ -150,7 +150,10 @@ namespace CTC.Runtime.Economy
             m_RevivedThisMatch = false;
             // 매치 시작 시점이 쥐 수가 확정되는 유일한 순간이다 — MapBuilder가 맵을 지을 땐
             // 아직 역할이 바뀔 수 있어 권장 인원으로 임시값을 깔아 두고, 여기서 덮어쓴다.
-            int mice = m_Lobby != null ? m_Lobby.MouseCount : 0;
+            //
+            // **로비 목록이 아니라 실제로 선 몸을 센다**(2026-08-11). 로비는 사람만 알지만
+            // 총량이 비례해야 하는 건 "이 판에서 캐는 입"이다 — 측정용 봇도 캔다.
+            int mice = CountSpawnedMice();
             var layout = m_Lobby != null ? m_Lobby.ActiveLayout : null;
             int floor = layout != null ? layout.RecommendedMiceMin : 1;
             int reserve = CheeseSpotLogic.ReservePerSpot(
@@ -162,6 +165,32 @@ namespace CTC.Runtime.Economy
                 m_Spots[i].ServerSetReserve(reserve);
                 WriteState(i);
             }
+        }
+
+        /// <summary>
+        /// 서버 전용 — 매장량을 다시 계산한다. 매치가 시작된 **뒤에** 쥐가 늘어날 때 쓴다
+        /// (측정용 봇). 총량이 쥐 수에 비례하므로 다시 나눠야 한다.
+        /// </summary>
+        public void ServerResetReserves()
+        {
+            if (!IsServer) return;
+            ResetAll();
+        }
+
+        // 씬에 실제로 선 쥐의 몸. 요새·창고·벽감은 RoleTag.Mouse지만 PlayerMovement가 없다.
+        private static int CountSpawnedMice()
+        {
+            int count = 0;
+            foreach (Combat.RoleTag tag in FindObjectsByType<Combat.RoleTag>(FindObjectsSortMode.None))
+            {
+                if (tag.Role != Lobby.RoleId.Mouse) continue;
+                if (tag.GetComponent<Player.PlayerMovement>() == null) continue;
+
+                var no = tag.GetComponent<Unity.Netcode.NetworkObject>();
+                if (no == null || !no.IsSpawned) continue;
+                count++;
+            }
+            return count;
         }
 
         /// <summary>서버 전용 QA — 전 지점 즉시 고갈.</summary>

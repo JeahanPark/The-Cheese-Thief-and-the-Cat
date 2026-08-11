@@ -38,6 +38,13 @@ namespace CTC.Runtime.Economy
         public int Grade => m_Grade;
         public int Remaining => m_Remaining;
         public bool Depleted => m_Remaining <= 0;
+        /// <summary>
+        /// 지금 캐는 사람의 **NetworkObjectId**(클라이언트 id가 아니다, 2026-08-11).
+        ///
+        /// 봇은 전부 서버가 소유해서 `OwnerClientId`가 다 같다 — 그걸 열쇠로 쓰면 봇끼리
+        /// 점유가 뭉개지고, 더 나쁘게는 **호스트(클라 0)에게 봇이 캐는 지점이 전부 '내 것'으로 보인다**.
+        /// 오브젝트 id는 사람이든 봇이든 하나씩이라 그런 충돌이 없다.
+        /// </summary>
         public ulong EarnerClientId => m_Earner;
 
         /// <summary>QA — 지금 화면에 걸린 라벨 문자열. 표시가 갱신되는지 확인하는 유일한 창구다.</summary>
@@ -145,7 +152,10 @@ namespace CTC.Runtime.Economy
             if (m_Label == null) return;
 
             NetworkManager nm = NetworkManager.Singleton;
-            ulong local = nm != null ? nm.LocalClientId : CheeseSpotLogic.NO_EARNER;
+            // 내 몸의 오브젝트 id와 견준다 — 위 주석대로 열쇠가 클라 id가 아니다
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            ulong local = me != null ? me.NetworkObjectId : CheeseSpotLogic.NO_EARNER;
             CheeseSpotLogic.Occupancy occupancy = CheeseSpotLogic.OccupancyOf(m_Earner, local);
 
             m_Label.text = occupancy == CheeseSpotLogic.Occupancy.Others
@@ -180,7 +190,7 @@ namespace CTC.Runtime.Economy
                 Combat.RoleTag tag = wallet.GetComponent<Combat.RoleTag>();
                 if (tag == null || tag.Role != RoleId.Mouse) continue;
 
-                ulong owner = wallet.OwnerClientId;
+                ulong owner = wallet.NetworkObjectId;
                 if (m_Wallets.ContainsKey(owner)) continue;
 
                 m_Present.Add(owner);

@@ -66,6 +66,12 @@ namespace CTC.Runtime.Player
         {
             if (!IsOwner) return;
 
+            // **로비 참가자에게만 해당한다**(2026-08-11). 측정용 봇은 붙일 클라이언트가 없어
+            // 서버가 소유하는데, 그러면 `IndexOfClient(OwnerClientId)`가 **호스트의 자리**를
+            // 가리켜 봇 전원이 호스트 스폰 지점으로 순간이동한다(실측: 봇 셋이 원점에 겹쳤다).
+            // 봇의 자리는 세운 쪽이 이미 정해서 놓았으므로 건드리면 안 된다.
+            if (!NetworkObject.IsPlayerObject) return;
+
             var lobby = FindFirstObjectByType<Lobby.LobbyController>();
             if (lobby == null) return;
 

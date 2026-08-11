@@ -102,10 +102,15 @@ namespace CTC.Runtime.Economy
             Others = 2,
         }
 
-        public static Occupancy OccupancyOf(ulong _earner, ulong _localClientId)
+        /// <summary>
+        /// 열쇠는 **NetworkObjectId**다(2026-08-11, 그전엔 클라이언트 id였다).
+        /// 봇은 전부 서버가 소유해 클라 id가 다 같아서, 그걸 쓰면 봇끼리 점유가 뭉개지고
+        /// 호스트에게는 봇이 캐는 지점이 전부 "내 것"으로 보인다.
+        /// </summary>
+        public static Occupancy OccupancyOf(ulong _earner, ulong _localObjectId)
         {
             if (_earner == NO_EARNER) return Occupancy.Free;
-            return _earner == _localClientId ? Occupancy.Mine : Occupancy.Others;
+            return _earner == _localObjectId ? Occupancy.Mine : Occupancy.Others;
         }
 
         /// <summary>

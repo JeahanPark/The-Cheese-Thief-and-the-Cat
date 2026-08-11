@@ -109,7 +109,13 @@ namespace CTC.Runtime.Match
             foreach (RoleTag tag in FindObjectsByType<RoleTag>(FindObjectsSortMode.None))
             {
                 var no = tag.GetComponent<NetworkObject>();
-                if (no == null || !no.IsSpawned || !no.IsPlayerObject) continue;
+                if (no == null || !no.IsSpawned) continue;
+
+                // **판의 참가자 = 플레이어의 몸**(2026-08-11). 예전엔 `IsPlayerObject`로 걸렀는데
+                // 그건 "클라이언트에 붙었나"라는 네트워크 구현 사실이지 참가 여부가 아니다.
+                // 측정용 봇은 붙일 클라이언트가 없어 그 필터에 안 걸리고, 그러면 자유 쥐가 0으로
+                // 세어져 **판이 시작하자마자 끝난다**. 요새·창고·벽감·강아지는 이 컴포넌트가 없다.
+                if (tag.GetComponent<Player.PlayerMovement>() == null) continue;
 
                 Health health = tag.GetComponent<Health>();
                 if (health == null || health.IsDead) continue;

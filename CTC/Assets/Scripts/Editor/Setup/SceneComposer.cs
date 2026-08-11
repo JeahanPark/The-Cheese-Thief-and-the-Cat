@@ -110,6 +110,16 @@ namespace CTC.Editor
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
             BuildLobbyCanvas(lobby, match, phaseDirector);
 
+            // 밸런스 측정용 봇을 **밖에서** 조종하는 매니저(2026-08-11) — 개발 빌드 전용.
+            // 봇의 몸에는 아무것도 안 붙는다. 여기서 플레이어 프리팹을 그대로 세우고 손만 움직인다.
+            var botGo = new GameObject("TestBotManager");
+            var bots = botGo.AddComponent<CTC.Runtime.Bots.TestBotManager>();
+            SetRef(bots, "m_Lobby", lobby);
+            SetRef(bots, "m_Spots", cheeseDirector);
+            SetRef(bots, "m_Map", mapDirector);
+            SetRef(bots, "m_CatPrefab", _catPrefab);
+            SetRef(bots, "m_MousePrefab", _mousePrefab);
+
             // 로컬 플레이어 발행자 — HUD들이 매 프레임 탐색하는 대신 이 스트림을 구독한다(개편 3b)
             var binderGo = new GameObject("LocalPlayerBinder");
             binderGo.AddComponent<CTC.Runtime.Core.LocalPlayerBinder>();
