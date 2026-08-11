@@ -22,6 +22,9 @@ namespace CTC.Runtime.Ai
         // 바닥에 붙여 두는 힘. 점프가 없으니 상수 하나면 된다.
         private const float GRAVITY = -18f;
 
+        // 이만큼 못 나아가면 먼저 옆으로 타 본다(길 다시 짜기는 그다음).
+        private const float RUB_SECONDS = 0.3f;
+
         private CharacterController m_Cc;
         private DogBrain m_Brain;
         private NavGraph m_Graph;
@@ -125,6 +128,11 @@ namespace CTC.Runtime.Ai
             {
                 m_StuckSeconds = 0f;
                 if (m_Route != null) m_Route.OnStuck();
+            }
+            else if (m_StuckSeconds >= RUB_SECONDS && m_Route != null)
+            {
+                // 길을 다시 짜기 전에 먼저 벽을 타고 옆으로 빠져 본다
+                m_Route.OnRubbing();
             }
 
             Vector3 horizontal = Vector3.zero;

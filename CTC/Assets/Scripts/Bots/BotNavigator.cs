@@ -21,9 +21,13 @@ namespace CTC.Runtime.Bots
     /// </summary>
     public class BotNavigator
     {
-        // 이 시간 동안 이만큼도 못 가면 막힌 것으로 본다
+        // 이 시간 동안 이만큼도 못 가면 막힌 것으로 본다 — 길을 다시 짠다
         private const float STUCK_SECONDS = 1.2f;
         private const float STUCK_MIN_SPEED = 0.5f;
+
+        // 그전에 **먼저 옆으로 타 본다.** 모서리에 스친 것뿐이면 길을 다시 짤 일이 아니고,
+        // 1.2초를 벽에 대고 버리면 판마다 그 시간이 쌓인다.
+        private const float RUB_SECONDS = 0.3f;
 
         private readonly Transform m_Body;
         private readonly PlayerMovement m_Move;
@@ -107,6 +111,10 @@ namespace CTC.Runtime.Bots
             {
                 m_StuckSeconds = 0f;
                 m_Route.OnStuck();
+            }
+            else if (m_StuckSeconds >= RUB_SECONDS)
+            {
+                m_Route.OnRubbing();
             }
 
             if (!m_Route.TryGetDirection(_deltaSeconds, out Vector3 dir))

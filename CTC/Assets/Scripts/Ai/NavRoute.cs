@@ -50,6 +50,19 @@ namespace CTC.Runtime.Ai
         private const int RELAY_CANDIDATES = 24;
 
         /// <summary>
+        /// 벽에 비빌 때 **옆으로 미끄러지는** 각도와 시간 (2026-08-11).
+        ///
+        /// 길을 다시 짜기 전에 이게 먼저다. 스피어캐스트는 굵기 0.35로 "지나갈 수 있다"고
+        /// 답하지만 모서리를 스치면 실제로는 걸린다 — 그때 사람은 벽을 타고 옆으로 빠지지
+        /// 계속 정면으로 밀지 않는다. 이게 없으면 걸릴 때마다 1.2초를 벽에 대고 버린다
+        /// (실측: 고양이 평균 속도가 최고속의 35%밖에 안 나왔다).
+        ///
+        /// 좌우를 번갈아 시도한다 — 한쪽만 고집하면 막다른 모서리에서 못 빠져나온다.
+        /// </summary>
+        private const float SLIDE_DEGREES = 65f;
+        private const float SLIDE_SECONDS = 0.45f;
+
+        /// <summary>
         /// 이만큼 연속으로 막히면 그 목표를 놓고 부르는 쪽에 알린다.
         /// 릴레이까지 실패하는 자리(구석에 완전히 낀 경우)를 위한 최후 안전장치다 —
         /// 없으면 벽을 미는 채로 판이 끝난다(실측: 고양이 둘이 8초간 1mm도 못 갔다).
@@ -74,6 +87,8 @@ namespace CTC.Runtime.Ai
         private float m_ReplanCooldown;
         private int m_StuckPlans;
         private bool m_GaveUp;
+        private float m_SlideSeconds;
+        private float m_SlideSign = 1f;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
 
@@ -160,6 +175,7 @@ namespace CTC.Runtime.Ai
             m_Path.Clear();
             m_Index = 0;
             m_StuckPlans = 0;
+            m_SlideSeconds = 0f;
         }
 
         /// <summary>
@@ -169,6 +185,18 @@ namespace CTC.Runtime.Ai
         /// 직진은 몸통 굵기로 쏴서 고르지만 모서리를 스치면 여전히 낄 수 있다.
         /// 그때 이게 없으면 기둥에 붙어 영원히 안 움직인다.
         /// </summary>
+        /// <summary>
+        /// **살짝 걸렸다** — 길을 다시 짜기 전에 먼저 옆으로 타 본다.
+        /// 모서리에 스친 것뿐이면 이걸로 빠져나오고, 진짜 막힌 것이면 곧 <see cref="OnStuck"/>가 온다.
+        /// </summary>
+        public void OnRubbing()
+        {
+            if (m_SlideSeconds > 0f) return;   // 이미 타는 중이다
+
+            m_SlideSign = -m_SlideSign;        // 좌우를 번갈아
+            m_SlideSeconds = SLIDE_SECONDS;
+        }
+
         public void OnStuck()
         {
             Vector3 pos = m_Self != null ? m_Self.position : Vector3.zero;
@@ -195,6 +223,19 @@ namespace CTC.Runtime.Ai
         /// 매 틱. 갈 방향(수평 단위벡터)을 돌려준다. 도착했거나 갈 데가 없으면 false.
         /// </summary>
         public bool TryGetDirection(float _deltaSeconds, out Vector3 _dir)
+        {
+            m_SlideSeconds -= _deltaSeconds;
+            if (!TryHeading(_deltaSeconds, out _dir)) return false;
+
+            // 벽에 비볐으면 그대로 정면으로 밀지 않고 옆으로 탄다
+            if (m_SlideSeconds > 0f)
+            {
+                _dir = Quaternion.Euler(0f, SLIDE_DEGREES * m_SlideSign, 0f) * _dir;
+            }
+            return true;
+        }
+
+        private bool TryHeading(float _deltaSeconds, out Vector3 _dir)
         {
             _dir = Vector3.zero;
             if (!m_HasGoal || m_Self == null) return false;
