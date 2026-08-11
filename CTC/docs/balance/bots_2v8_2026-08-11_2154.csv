@@ -1,0 +1,3 @@
+﻿match,result,remaining,mice_left,cats_left,first_sight,jailed,phase,warning
+1,CatWin,490,1,2,0.5,2,Hunt,
+2,CatWin,553,1,2,1.0,2,Hunt,

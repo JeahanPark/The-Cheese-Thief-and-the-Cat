@@ -28,6 +28,16 @@ namespace CTC.Runtime.Testing
             Time.fixedDeltaTime = 0.02f;
         }
 
+        /// <summary>
+        /// QA: 인원 조건을 건너뛰고 판을 연다 — **봇만 도는 측정 판**용.
+        /// 사람이 하나라도 끼면 그 사람이 가만히 서 있는 것만으로 승패가 뒤집힌다.
+        /// </summary>
+        public void TestForceStartGame()
+        {
+            var lobby = FindFirstObjectByType<Lobby.LobbyController>();
+            if (lobby != null) lobby.DevForceStartGame();
+        }
+
         /// <summary>QA: 매치 남은 시간(초). 1단계 시계다.</summary>
         public float TestGetMatchRemaining()
         {

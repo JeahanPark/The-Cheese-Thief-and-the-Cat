@@ -187,7 +187,7 @@ namespace CTC.Runtime.Bots
             foreach (BotAgent a in m_Agents)
             {
                 string state = a.Role == RoleId.Cat ? a.CatState.ToString() : a.State.ToString();
-                sb.Append($"{a.Role.ToString()[0]}/{state}/{a.TravelledMeters:F0}m ");
+                sb.Append($"{a.Role.ToString()[0]}/{state}/{a.TravelledMeters:F0}m/{a.NavDiagnostics} ");
             }
             return sb.ToString().TrimEnd();
         }

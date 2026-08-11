@@ -43,11 +43,11 @@ def open_lobby(host, map_index):
     time.sleep(0.8)
     # 호스트는 고양이로 두되 **가만히 있는다** — 사람이 조작하지 않으므로 판에 개입하지 않는다.
     # 봇 고양이는 여기에 더해진다(그래서 --cats 2면 실제 고양이는 3이 아니라 2+1이다. 아래 주석 참조)
-    host.invoke("TestSelectRoleCat")
-    time.sleep(1.2)
-    host.invoke("TestStartGame")
+    # **역할을 고르지 않는다.** 사람이 판에 서면 가만히 있어도 승패가 뒤집힌다 —
+    # 쥐면 시간 만료로 쥐가 이기고, 고양이면 사냥 안 하는 고양이가 하나 더 있는 셈이다.
+    host.invoke("TestForceStartGame")
     time.sleep(4.0)
-    return host.invoke("TestGetRole") in ("Cat", "Mouse")
+    return True
 
 
 def run_one(host, args, index):
@@ -56,7 +56,7 @@ def run_one(host, args, index):
     if index > 1:
         host.invoke("TestRestartMatch")
         time.sleep(3.0)
-        host.invoke("TestStartGame")
+        host.invoke("TestForceStartGame")
         time.sleep(4.0)
 
     host.invoke("TestSpawnBots", _mice=args.mice, _cats=args.cats)

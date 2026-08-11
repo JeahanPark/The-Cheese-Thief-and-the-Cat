@@ -108,6 +108,19 @@ namespace CTC.Runtime.Lobby
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
         }
 
+#if UNITY_EDITOR
+        /// <summary>QA 전용 — 인원 조건을 건너뛰고 판을 연다(봇만 도는 측정 판).</summary>
+        public void DevForceStartGame()
+        {
+            if (!IsServer || m_Session == null) return;
+            if (!m_Session.ServerForceBeginGame()) return;
+
+            if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
+            if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
+            if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
+        }
+#endif
+
         /// <summary>매치 종료 후 로비 복귀(MatchManager 재시작 스윕 뒤 호출). 역할은 유지.</summary>
         public void ResetToLobby()
         {

@@ -127,6 +127,24 @@ namespace CTC.Runtime.Lobby
             return true;
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// **QA 전용** — 인원 조건을 건너뛰고 판을 연다 (2026-08-11).
+        ///
+        /// 봇만으로 도는 측정 판을 위한 것이다. `CanStart`는 **사람** 고양이·쥐를 각각 하나씩
+        /// 요구하는데, 봇은 로비 목록에 없어서 에디터 하나로는 판이 아예 안 열린다.
+        /// 클론을 하나 붙이면 그 사람이 가만히 서 있는 것만으로 승패가 뒤집혀 측정이 죽는다.
+        ///
+        /// 에디터에서만 존재하므로 배포 빌드의 시작 조건은 그대로다.
+        /// </summary>
+        public bool ServerForceBeginGame()
+        {
+            if (!IsServer || m_GameStarted.Value) return false;
+            m_GameStarted.Value = true;
+            return true;
+        }
+#endif
+
         /// <summary>매치 종료 후 로비 복귀(MatchManager 재시작 스윕 뒤). 역할은 유지.</summary>
         public void ServerResetToLobby()
         {
