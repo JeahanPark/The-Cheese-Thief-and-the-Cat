@@ -57,6 +57,17 @@ namespace CTC.Runtime.Lobby
         // 판정은 CursorPolicyLogic(EditMode가 덮는다) — 2026-08-08 옵션 창에서 커서가 안 보이던 버그.
         private void Update()
         {
+            // **접속 여부는 스트림으로 안 온다**(2026-08-11). 그래서 접속 전에는 Render가 한 번도
+            // 안 돌아 로비 패널이 빈 껍데기로 떠 있었다 — 맵 버튼이 "-", 참가자 목록이 공백.
+            // 매 프레임 조회가 아니라 **바뀐 순간에만** 다시 그린다(규칙 3의 취지 그대로).
+            NetworkManager netManager = NetworkManager.Singleton;
+            bool connectedNow = netManager != null && (netManager.IsClient || netManager.IsServer);
+            if (connectedNow != m_WasConnected)
+            {
+                m_WasConnected = connectedNow;
+                Render();
+            }
+
             bool inGame = m_Lobby != null && m_Lobby.IsSpawned && m_Lobby.GameStarted;
 
             if (CursorPolicyLogic.ShouldRelease(inGame, Match.ResultHud.IsShowing, Core.UiFocus.ModalOpen))
@@ -74,6 +85,8 @@ namespace CTC.Runtime.Lobby
             }
         }
 
+        private bool m_WasConnected;
+
         private void Render()
         {
             NetworkManager nm = NetworkManager.Singleton;
@@ -87,8 +100,8 @@ namespace CTC.Runtime.Lobby
             for (int i = 0; i < m_Lobby.PlayerCount; i++)
             {
                 LobbyPlayerState p = m_Lobby.GetPlayer(i);
-                string self = p.ClientId == nm.LocalClientId ? " (You)" : "";
-                sb.AppendLine($"Client {p.ClientId}{self}: {p.Role}");
+                string who = p.ClientId == nm.LocalClientId ? "나" : $"플레이어 {i + 1}";
+                sb.AppendLine($"{who} — {RoleName(p.Role)}");
             }
             m_PlayerListText.text = sb.ToString();
 
@@ -97,6 +110,17 @@ namespace CTC.Runtime.Lobby
             m_StartButton.interactable = isHost && m_Lobby.CanStart;
 
             UpdateMapButtons(isHost);
+        }
+
+        // "None"을 그대로 보여 주면 뭘 해야 하는지 알 수가 없다 — 다음 행동을 말해 준다.
+        private static string RoleName(RoleId _role)
+        {
+            switch (_role)
+            {
+                case RoleId.Cat: return "고양이";
+                case RoleId.Mouse: return "쥐";
+                default: return "아직 안 골랐다";
+            }
         }
 
         // 맵은 방장만 바꾼다(서버도 같은 가드). 비호스트에게도 어떤 맵인지는 보여야 한다.

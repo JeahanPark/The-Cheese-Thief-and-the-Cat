@@ -61,7 +61,7 @@ namespace CTC.Editor
             var panelImage = panel.AddComponent<Image>();
             panelImage.color = new Color(0.08f, 0.09f, 0.12f, 0.85f);
 
-            TMP_Text title = CreateTmpText("Title", panel.transform, "Cheese Thief Lobby",
+            TMP_Text title = CreateTmpText("Title", panel.transform, "치즈 도둑과 고양이",
                 32f, TextAlignmentOptions.Center, new Vector2(0f, -20f), new Vector2(440f, 50f));
             title.fontStyle = FontStyles.Bold;
 
@@ -79,12 +79,12 @@ namespace CTC.Editor
             {
                 float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * (MAP_BUTTON_WIDTH + 8f);
                 mapButtons[i] = CreateMuipButton(panel.transform, $"MapButton{i + 1}",
-                    "-", new Vector2(x, -330f), MAP_BUTTON_WIDTH);
+                    "맵 " + (i + 1), new Vector2(x, -330f), MAP_BUTTON_WIDTH);
             }
 
-            Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "Play as Mouse", new Vector2(0f, -400f));
-            Button catButton = CreateMuipButton(panel.transform, "CatButton", "Play as Cat", new Vector2(0f, -470f));
-            Button startButton = CreateMuipButton(panel.transform, "StartButton", "Start Game", new Vector2(0f, -550f));
+            Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "쥐로 하기", new Vector2(0f, -400f));
+            Button catButton = CreateMuipButton(panel.transform, "CatButton", "고양이로 하기", new Vector2(0f, -470f));
+            Button startButton = CreateMuipButton(panel.transform, "StartButton", "게임 시작", new Vector2(0f, -550f));
 
             var ui = canvasGo.AddComponent<LobbyUI>();
             SetRef(ui, "m_Lobby", _lobby);
