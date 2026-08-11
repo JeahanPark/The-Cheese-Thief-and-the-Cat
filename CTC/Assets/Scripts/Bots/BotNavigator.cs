@@ -71,6 +71,21 @@ namespace CTC.Runtime.Bots
             Replan();
         }
 
+        /// <summary>
+        /// 갈 데가 없으면 아무 데나 간다. **제자리에 서 있으면 안 된다** —
+        /// 배회하지 않는 고양이는 소리가 안 들리는 순간 판에서 사라진 것과 같고,
+        /// 그러면 "소리로 찾는 데 몇 초 걸리나"가 측정되지 않는다.
+        /// </summary>
+        public void SetWanderGoal(System.Random _rng)
+        {
+            if (m_Graph == null || m_Graph.Count == 0 || _rng == null) return;
+
+            Vector2 node = m_Graph.Nodes[_rng.Next(m_Graph.Count)];
+            m_PlannedGoal = new Vector3(node.x, 0f, node.y);
+            m_HasGoal = true;
+            Replan();
+        }
+
         /// <summary>멈춘다. 파밍처럼 제자리에 있어야 하는 동안 쓴다.</summary>
         public void Stop()
         {

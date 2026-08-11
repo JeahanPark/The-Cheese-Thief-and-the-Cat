@@ -21,8 +21,10 @@ namespace CTC.Runtime.Bots
             Travel = 1,
             /// <summary>지점 위에서 캐는 중.</summary>
             Farm = 2,
+            /// <summary>동료를 구하러 감옥으로 간다.</summary>
+            Rescue = 3,
             /// <summary>갈 데가 없다 — 돌아다닌다.</summary>
-            Wander = 3,
+            Wander = 4,
         }
 
         public const float ARRIVE_DISTANCE = 1.2f;
@@ -31,11 +33,35 @@ namespace CTC.Runtime.Bots
         /// 지금 뭘 할까. **위협이 언제나 먼저다** — 캐던 중이라도 멈춘다.
         /// 캐다 죽으면 그 판의 성장이 통째로 날아가서, 사람도 같은 선택을 한다.
         /// </summary>
-        public static State Decide(bool _threatHeard, bool _hasTarget, float _distanceToTarget)
+        public static State Decide(
+            bool _threatHeard, bool _allyJailed, bool _hasTarget, float _distanceToTarget)
         {
             if (_threatHeard) return State.Flee;
+
+            // **구출이 파밍보다 먼저다.** 안 그러면 잡힌 쥐가 40초 뒤 전부 영구 탈락하고
+            // 고양이가 무조건 이긴다 — 승률이 통째로 거짓이 된다(2026-08-11 실측).
+            if (_allyJailed) return State.Rescue;
+
             if (!_hasTarget) return State.Wander;
             return _distanceToTarget <= ARRIVE_DISTANCE ? State.Farm : State.Travel;
+        }
+
+        /// <summary>
+        /// 지금 살 것. **싼 것부터, 목숨 지키는 것부터**다 — 사람도 그렇게 산다.
+        /// 살 게 없으면 None.
+        /// </summary>
+        public static Economy.ShopItemId NextPurchase(
+            int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
+        {
+            if (!_hasDash && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Dash).Cost)
+                return Economy.ShopItemId.Dash;
+            if (!_hasGun && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Slingshot).Cost)
+                return Economy.ShopItemId.Slingshot;
+            if (!_hasWarehouse && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Warehouse).Cost)
+                return Economy.ShopItemId.Warehouse;
+            if (!_hasFortress && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Fortress).Cost)
+                return Economy.ShopItemId.Fortress;
+            return Economy.ShopItemId.None;
         }
 
         /// <summary>

@@ -42,6 +42,13 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.MouseCount : 0;
         }
 
+        /// <summary>QA: 고양이 봇이 쥐를 처음 본 시각(초). 못 봤으면 -1.</summary>
+        public float TestGetBotFirstSight()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.FirstSightSeconds() : -1f;
+        }
+
         /// <summary>
         /// QA: 봇 한 줄 요약 — "Mouse:Farm:37m Mouse:Travel:12m ...".
         /// **이동 거리 0인 봇을 여기서 잡는다** — 벽에 붙박인 봇은 숫자만 보면 안 보인다.

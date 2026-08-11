@@ -105,7 +105,7 @@ namespace CTC.Runtime.Bots
             for (int i = m_Agents.Count - 1; i >= 0; i--)
             {
                 if (!m_Agents[i].Alive) { m_Agents.RemoveAt(i); continue; }
-                m_Agents[i].Tick(dt, m_Spots);
+                m_Agents[i].Tick(dt, m_Spots, m_Sound);
             }
         }
 
@@ -167,13 +167,27 @@ namespace CTC.Runtime.Bots
             return count;
         }
 
+        /// <summary>
+        /// QA — 고양이 봇이 상대를 처음 본 시각(초). 못 봤으면 -1.
+        /// **소리 밸런스의 답이 이 숫자다** — 18m 발소리가 실제로 얼마나 도움이 되는가.
+        /// </summary>
+        public float FirstSightSeconds()
+        {
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role == RoleId.Cat && a.FirstSightSeconds >= 0f) return a.FirstSightSeconds;
+            }
+            return -1f;
+        }
+
         /// <summary>QA·통계 — 한 줄 요약. 벽에 붙박인 봇을 여기서 잡는다.</summary>
         public string Diagnostics()
         {
             var sb = new System.Text.StringBuilder(m_Setup + " | ");
             foreach (BotAgent a in m_Agents)
             {
-                sb.Append($"{a.State}:{a.TravelledMeters:F0}m:{a.NavDiagnostics} ");
+                string state = a.Role == RoleId.Cat ? a.CatState.ToString() : a.State.ToString();
+                sb.Append($"{a.Role.ToString()[0]}/{state}/{a.TravelledMeters:F0}m ");
             }
             return sb.ToString().TrimEnd();
         }

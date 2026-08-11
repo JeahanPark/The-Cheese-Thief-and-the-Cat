@@ -16,22 +16,46 @@ namespace CTC.Tests.EditMode
         {
             // 캐다 죽으면 그 판의 성장이 통째로 날아간다 — 사람도 멈추고 도망친다
             Assert.AreEqual(MouseBotLogic.State.Flee,
-                MouseBotLogic.Decide(_threatHeard: true, _hasTarget: true, _distanceToTarget: 0f));
+                MouseBotLogic.Decide(_threatHeard: true, _allyJailed: true, _hasTarget: true,
+                    _distanceToTarget: 0f));
+        }
+
+        [Test]
+        public void Decide_RescueBeatsFarming()
+        {
+            // 아무도 안 구하러 가면 잡힌 쥐가 40초 뒤 전부 탈락하고 고양이가 무조건 이긴다 —
+            // 승률이 통째로 거짓이 된다(2026-08-11 실측).
+            Assert.AreEqual(MouseBotLogic.State.Rescue,
+                MouseBotLogic.Decide(false, _allyJailed: true, _hasTarget: true, _distanceToTarget: 0f));
+        }
+
+        [Test]
+        public void NextPurchase_BuysSurvivalFirstThenNothingWhenBroke()
+        {
+            // 대시(도주)가 첫 구매다 — 목숨을 지키는 것부터 산다
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Dash,
+                MouseBotLogic.NextPurchase(1000, false, false, false, false));
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Slingshot,
+                MouseBotLogic.NextPurchase(1000, true, false, false, false));
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
+                MouseBotLogic.NextPurchase(0, false, false, false, false));
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
+                MouseBotLogic.NextPurchase(9999, true, true, true, true));
         }
 
         [Test]
         public void Decide_FarTargetTravelsNearTargetFarms()
         {
             Assert.AreEqual(MouseBotLogic.State.Travel,
-                MouseBotLogic.Decide(false, true, MouseBotLogic.ARRIVE_DISTANCE + 1f));
+                MouseBotLogic.Decide(false, false, true, MouseBotLogic.ARRIVE_DISTANCE + 1f));
             Assert.AreEqual(MouseBotLogic.State.Farm,
-                MouseBotLogic.Decide(false, true, MouseBotLogic.ARRIVE_DISTANCE - 0.1f));
+                MouseBotLogic.Decide(false, false, true, MouseBotLogic.ARRIVE_DISTANCE - 0.1f));
         }
 
         [Test]
         public void Decide_NoTargetWanders()
         {
-            Assert.AreEqual(MouseBotLogic.State.Wander, MouseBotLogic.Decide(false, false, 0f));
+            Assert.AreEqual(MouseBotLogic.State.Wander, MouseBotLogic.Decide(false, false, false, 0f));
         }
 
         [Test]
