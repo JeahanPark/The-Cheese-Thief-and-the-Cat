@@ -44,6 +44,19 @@ namespace CTC.Runtime.Ai
         private const float REPLAN_DISTANCE = 3f;
 
         /// <summary>
+        /// 릴레이 후보로 물리를 쏴 볼 노드 수. 그래프가 369개라 전부 쏘면 낭비다 —
+        /// "나까지 + 목표까지" 합이 짧은 것부터 이만큼만 본다.
+        /// </summary>
+        private const int RELAY_CANDIDATES = 24;
+
+        /// <summary>
+        /// 이만큼 연속으로 막히면 그 목표를 놓고 부르는 쪽에 알린다.
+        /// 릴레이까지 실패하는 자리(구석에 완전히 낀 경우)를 위한 최후 안전장치다 —
+        /// 없으면 벽을 미는 채로 판이 끝난다(실측: 고양이 둘이 8초간 1mm도 못 갔다).
+        /// </summary>
+        private const int GIVE_UP_STUCKS = 3;
+
+        /// <summary>
         /// 노드 경로를 다시 짜는 최소 간격. 두뇌는 매 틱 목표를 넣는데, 갈 수 없는 곳을
         /// 가리키면 매 틱 새로 짜게 된다 — 출발 노드 고르기가 노드마다 스피어캐스트라
         /// 봇 열 마리면 그것만으로 프레임이 죽는다.
@@ -59,6 +72,8 @@ namespace CTC.Runtime.Ai
         private bool m_HasGoal;
         private float m_RecheckSeconds;
         private float m_ReplanCooldown;
+        private int m_StuckPlans;
+        private bool m_GaveUp;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
 
@@ -77,6 +92,17 @@ namespace CTC.Runtime.Ai
         public int PathCount => m_Path.Count;
         public int PathIndex => m_Index;
         public Vector3 Goal => m_Goal;
+
+        /// <summary>
+        /// **여기는 도저히 못 가겠다**를 한 번만 알려준다(읽으면 지워진다).
+        /// 두뇌가 이걸 받으면 그 단서를 버려야 한다 — 안 버리면 다음 틱에 같은 곳을 다시 준다.
+        /// </summary>
+        public bool ConsumeGaveUp()
+        {
+            if (!m_GaveUp) return false;
+            m_GaveUp = false;
+            return true;
+        }
 
         /// <summary>QA — 어느 층에서 끊겼는지 한 줄로.</summary>
         public string Diagnostics =>
@@ -114,6 +140,7 @@ namespace CTC.Runtime.Ai
             }
 
             m_HasGoal = true;
+            m_StuckPlans = 0;   // 새 목표다
             Vector3 pos = m_Self != null ? m_Self.position : Vector3.zero;
 
             // 처음부터 A체크 — 뚫려 있으면 그래프를 아예 안 본다.
@@ -132,6 +159,7 @@ namespace CTC.Runtime.Ai
             m_Direct = false;
             m_Path.Clear();
             m_Index = 0;
+            m_StuckPlans = 0;
         }
 
         /// <summary>
@@ -144,6 +172,15 @@ namespace CTC.Runtime.Ai
         public void OnStuck()
         {
             Vector3 pos = m_Self != null ? m_Self.position : Vector3.zero;
+
+            // 릴레이까지 넣었는데도 계속 막힌다 — 구석에 완전히 낀 것이다. 목표를 놓는다.
+            if (++m_StuckPlans >= GIVE_UP_STUCKS)
+            {
+                m_GaveUp = true;
+                Clear();
+                return;
+            }
+
             if (m_Direct)
             {
                 PlanPath(pos);
@@ -205,6 +242,7 @@ namespace CTC.Runtime.Ai
 
                 // ★ 진행 노드에 닿았다 — 여기서 매번 A체크. 목표가 움직였으니 지금은 뚫렸을 수 있다.
                 m_Index++;
+                m_StuckPlans = 0;   // 실제로 나아갔다
                 if (TryTakeDirect(pos, out _dir)) return true;
             }
 
@@ -241,6 +279,7 @@ namespace CTC.Runtime.Ai
             m_Path.Clear();
             m_Index = 0;
             m_RecheckSeconds = RECHECK_SECONDS;
+            m_StuckPlans = 0;   // 트인 길을 찾았다 — 포기 시계를 되돌린다
         }
 
         // 나 → 목표 직선이 몸통 굵기로 뚫려 있는가. 이게 A체크다.
@@ -260,9 +299,72 @@ namespace CTC.Runtime.Ai
             m_ReplanCooldown = REPLAN_COOLDOWN_SECONDS;
             if (m_Graph == null) return;
 
+            var goal = new Vector2(m_Goal.x, m_Goal.z);
+
             // 못 닿는 목표여도 그쪽으로는 붙는다 — 빈 경로를 받으면 그 자리에 굳는다
-            m_Path.AddRange(NavGraphLogic.FindPathToward(
-                m_Graph, NearestVisibleNode(_pos), new Vector2(m_Goal.x, m_Goal.z)));
+            m_Path.AddRange(NavGraphLogic.FindPathToward(m_Graph, NearestVisibleNode(_pos), goal));
+
+            // **마지막 한 구간은 언제나 직선이다.** 길찾기는 출발과 목표가 같은 노드 담당이면
+            // "다 왔으니 그냥 걸어가"라고 답하는데, 그 직선 위에 방 안 물건(쥐가 판 중에 지은
+            // 창고·요새·기둥)이 있으면 걷는 쪽이 그걸 영원히 민다. 그래프는 판 시작에 한 번만
+            // 만들어서 나중에 생긴 물건을 모른다 — 길이 없는 게 아니라 **안 물어본 것**이다.
+            // (2026-08-11 실측: 고양이 둘이 쥐가 지은 창고 앞에서 8초간 1mm도 못 갔다.)
+            //
+            // 그래서 지금 자리에서 목표까지 곧장 갈 수 없고 경로도 사실상 없으면,
+            // **거쳐 갈 노드를 하나 끼운다** — 모서리 링이 그러라고 있는 것이다.
+            if (m_Path.Count > 1) return;
+            if (m_Path.Count == 1 && !IsSameSpot(m_Path[0], goal)) return;
+
+            if (TryFindRelay(_pos, goal, out Vector2 relay))
+            {
+                m_Path.Insert(0, relay);
+            }
+        }
+
+        private static bool IsSameSpot(Vector2 _a, Vector2 _b) => (_a - _b).sqrMagnitude < 0.01f;
+
+        /// <summary>
+        /// 한 번 거쳐 가면 목표가 보이는 노드를 찾는다. **목표까지 트인 노드**가 1순위,
+        /// 없으면 나한테서 갈 수 있으면서 목표에 제일 가까운 노드다(가서 다시 A체크한다).
+        ///
+        /// 물리를 쏘므로 후보를 <see cref="RELAY_CANDIDATES"/>개로 줄인다 — "나까지 + 목표까지"
+        /// 합이 짧은 것부터. 노드 369개에 전부 쏘면 봇 열 마리가 프레임을 잡아먹는다.
+        /// </summary>
+        private bool TryFindRelay(Vector3 _pos, Vector2 _goal, out Vector2 _relay)
+        {
+            _relay = default;
+            var self = new Vector2(_pos.x, _pos.z);
+            if (m_Graph == null || m_Graph.Count == 0) return false;
+
+            var order = new List<int>(m_Graph.Count);
+            for (int i = 0; i < m_Graph.Count; i++) order.Add(i);
+            order.Sort((a, b) => Detour(a).CompareTo(Detour(b)));
+
+            int fallback = -1;
+            int limit = Mathf.Min(RELAY_CANDIDATES, order.Count);
+            for (int i = 0; i < limit; i++)
+            {
+                Vector2 node = m_Graph.Nodes[order[i]];
+                if ((node - self).sqrMagnitude < 1f) continue;              // 내가 선 자리다
+                if (!NavPruner.IsWalkable(self, node, m_Self)) continue;    // 거기까지도 못 간다
+
+                if (NavPruner.IsWalkable(node, _goal, m_Self))
+                {
+                    _relay = node;                                          // 거기서 목표가 트인다
+                    return true;
+                }
+                if (fallback < 0) fallback = order[i];
+            }
+
+            if (fallback < 0) return false;
+            _relay = m_Graph.Nodes[fallback];
+            return true;
+
+            float Detour(int _i)
+            {
+                Vector2 n = m_Graph.Nodes[_i];
+                return (n - self).magnitude + (n - _goal).magnitude;
+            }
         }
 
         /// <summary>

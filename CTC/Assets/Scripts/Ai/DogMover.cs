@@ -91,6 +91,14 @@ namespace CTC.Runtime.Ai
         {
             if (m_Route == null) return;
 
+            // 길이 도저히 안 나오면 그 목표를 놓고 딴 데로 간다. 표적이라도 마찬가지다 —
+            // 벽 너머 표적을 붙들고 있으면 벽만 밀다 판이 끝난다.
+            if (m_Route.ConsumeGaveUp())
+            {
+                m_Route.SetGoal(RandomNode());
+                return;
+            }
+
             if (m_Brain != null && m_Brain.Target != null)
             {
                 m_Route.SetGoal(m_Brain.Target.transform.position);

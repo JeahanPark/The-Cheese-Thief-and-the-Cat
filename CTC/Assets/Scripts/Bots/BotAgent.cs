@@ -45,11 +45,22 @@ namespace CTC.Runtime.Bots
         /// <summary>도망칠 때 얼마나 멀리 잡을까 — 짧으면 고양이 사거리를 못 벗어난다.</summary>
         private const float FLEE_DISTANCE = 18f;
 
+        /// <summary>
+        /// 길이 안 나온 단서를 이만큼 무시한다. 안 그러면 소리가 계속 나는 동안
+        /// 같은 못 가는 자리를 매번 다시 잡는다 — 쥐가 지은 창고가 딱 그렇다.
+        /// </summary>
+        private const float BAD_LEAD_SECONDS = 15f;
+
+        /// <summary>그 단서를 이 반경 안에서는 같은 것으로 본다(소리 위치는 매번 조금씩 흔들린다).</summary>
+        private const float BAD_LEAD_RADIUS = 4f;
+
         private float m_Timer;
         private int m_SpotIndex = -1;
         private float m_LeadSince;
         private Vector3 m_Lead;
         private bool m_HasLead;
+        private Vector3 m_BadLead;
+        private float m_BadLeadUntil;
 
         private readonly List<Vector3> m_Positions = new List<Vector3>();
         private readonly List<int> m_Grades = new List<int>();
@@ -130,6 +141,13 @@ namespace CTC.Runtime.Bots
             m_Nav.Tick(_deltaSeconds);
         }
 
+        // 최근에 "거기는 못 간다"가 나온 자리인가.
+        private bool IsBadLead(Vector3 _lead)
+        {
+            if (Time.time >= m_BadLeadUntil) return false;
+            return Vector3.Distance(_lead, m_BadLead) < BAD_LEAD_RADIUS;
+        }
+
         /// <summary>판이 끝나거나 봇이 사라질 때 — 입력을 놓아 준다.</summary>
         public void Release()
         {
@@ -151,8 +169,22 @@ namespace CTC.Runtime.Bots
                 ? Vector3.Distance(m_Object.transform.position, prey.position)
                 : float.MaxValue;
 
+            // 길이 도저히 안 나오면 그 단서를 버린다. 안 버리면 다음 틱에 같은 곳을 다시 주고,
+            // 그러면 창고·기둥 앞에서 판이 끝날 때까지 벽만 민다(2026-08-11 실측).
+            if (m_Nav.GaveUp())
+            {
+                m_HasLead = false;
+                m_BadLead = m_Lead;
+                m_BadLeadUntil = Time.time + BAD_LEAD_SECONDS;
+            }
+
             // 소리 단서는 값이 떨어질 때까지 들고 간다 — 매번 새로 잡으면 제자리에서 떤다
-            if (m_Senses.HasLead) { m_Lead = m_Senses.Lead; m_HasLead = true; m_LeadSince = Time.time; }
+            if (m_Senses.HasLead && !IsBadLead(m_Senses.Lead))
+            {
+                m_Lead = m_Senses.Lead;
+                m_HasLead = true;
+                m_LeadSince = Time.time;
+            }
             else if (m_HasLead && Time.time - m_LeadSince > CatBotLogic.GIVE_UP_SECONDS) m_HasLead = false;
 
             CatState = CatBotLogic.Decide(sees, distance, m_PounceRange, m_HasLead);
@@ -191,6 +223,9 @@ namespace CTC.Runtime.Bots
         private void DecideMouse(CheeseSpotDirector _spots)
         {
             CollectSpots(_spots);
+
+            // 길이 안 나오면 그 자리는 버리고 다른 데를 고른다 — 고양이와 같은 이유다
+            if (m_Nav.GaveUp()) m_SpotIndex = -1;
 
             if (m_SpotIndex < 0 || m_SpotIndex >= m_Usable.Count || !m_Usable[m_SpotIndex])
             {

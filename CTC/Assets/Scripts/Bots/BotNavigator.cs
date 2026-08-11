@@ -41,6 +41,12 @@ namespace CTC.Runtime.Bots
         /// <summary>QA — 지금 벽 없이 곧장 가는 중인가(A체크 통과).</summary>
         public bool IsDirect => m_Route != null && m_Route.IsDirect;
 
+        /// <summary>
+        /// **여기는 도저히 못 가겠다**를 한 번만 알려준다(읽으면 지워진다).
+        /// 두뇌가 이걸 받으면 그 목표를 버려야 한다 — 안 버리면 같은 곳을 다시 준다.
+        /// </summary>
+        public bool GaveUp() => m_Route != null && m_Route.ConsumeGaveUp();
+
         /// <summary>QA — 길찾기가 어느 층에서 끊겼는지 본다.</summary>
         public string Diagnostics =>
             $"{(m_Route != null ? m_Route.Diagnostics : "-")} stuck={m_StuckSeconds:F1} " +
