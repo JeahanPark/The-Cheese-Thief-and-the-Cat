@@ -50,6 +50,30 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: 고양이 봇이 쥐를 처음 봤을 때의 **거리**(m). 못 봤으면 -1.
+        /// 맵에서 가능한 최장 직선보다 멀면 시야 판정이 새는 것이다 — 정직성 검사.
+        /// </summary>
+        public float TestGetBotFirstSightDistance()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.FirstSightDistance() : -1f;
+        }
+
+        /// <summary>QA: 쥐 봇들이 지금까지 번 치즈 합. 0이면 아무도 안 캔 것이다.</summary>
+        public int TestGetBotMouseCheese()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.MouseCheese() : 0;
+        }
+
+        /// <summary>QA: 지금 나가 있는 지휘관 명령 수. 0이면 지휘관이 안 도는 것이다.</summary>
+        public int TestGetBotOrderCount()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.OrderCount : 0;
+        }
+
+        /// <summary>
         /// QA: 봇 한 줄 요약 — "Mouse:Farm:37m Mouse:Travel:12m ...".
         /// **이동 거리 0인 봇을 여기서 잡는다** — 벽에 붙박인 봇은 숫자만 보면 안 보인다.
         /// </summary>

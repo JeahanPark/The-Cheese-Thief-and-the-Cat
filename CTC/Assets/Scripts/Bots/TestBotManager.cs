@@ -233,13 +233,40 @@ namespace CTC.Runtime.Bots
             return -1f;
         }
 
+        /// <summary>QA — 처음 봤을 때의 거리(m). 맵의 최장 직선보다 멀면 시야 판정이 새는 것이다.</summary>
+        public float FirstSightDistance()
+        {
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role == RoleId.Cat && a.FirstSightDistance >= 0f) return a.FirstSightDistance;
+            }
+            return -1f;
+        }
+
+        /// <summary>QA — 쥐 봇들이 번 치즈 합. 0이면 아무도 안 캔 것이다.</summary>
+        public int MouseCheese()
+        {
+            int sum = 0;
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role != RoleId.Mouse || a.Body == null) continue;
+
+                var wallet = a.Body.GetComponent<CheeseWallet>();
+                if (wallet != null) sum += wallet.CheeseValue;
+            }
+            return sum;
+        }
+
+        /// <summary>QA — 지금 나가 있는 지휘관 명령 수.</summary>
+        public int OrderCount => m_Commander != null ? m_Commander.OrderCount : 0;
+
         /// <summary>QA·통계 — 한 줄 요약. 벽에 붙박인 봇을 여기서 잡는다.</summary>
         public string Diagnostics()
         {
             var sb = new System.Text.StringBuilder(m_Setup + " | ");
             foreach (BotAgent a in m_Agents)
             {
-                sb.Append($"{a.Role.ToString()[0]}/{a.Activity}/{a.TravelledMeters:F0}m/{a.NavDiagnostics} ");
+                sb.Append($"#{a.Id}/{a.Role.ToString()[0]}/{a.Activity}/{a.TravelledMeters:F0}m/{a.NavDiagnostics} ");
             }
             return sb.ToString().TrimEnd();
         }

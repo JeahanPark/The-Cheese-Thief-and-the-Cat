@@ -31,6 +31,19 @@ namespace CTC.Runtime.Bots
         private readonly BtNode m_Tree;
         private readonly System.Random m_Rng;
 
+        /// <summary>
+        /// 수색 지점에 이만큼 붙으면 다 훑은 것으로 보고 새 자리를 준다.
+        /// **도착하기 전에는 안 바꾼다** — 2초마다 새 좌표를 주면 고양이가 목표만 갈아타다
+        /// 아무 데도 못 간다(2026-08-12 실측: 경로 소진 상태로 28초).
+        /// </summary>
+        private const float SEARCH_ARRIVE = 6f;
+
+        /// <summary>그래도 이만큼 지나면 새 자리를 준다 — 못 가는 자리를 붙들고 있지 않게.</summary>
+        private const float SEARCH_TIMEOUT = 20f;
+
+        private readonly Dictionary<ulong, Vector3> m_SearchPoints = new Dictionary<ulong, Vector3>();
+        private readonly Dictionary<ulong, float> m_SearchSince = new Dictionary<ulong, float>();
+
         private float m_Timer;
         private float m_HalfExtent = 60f;
         private int m_JailedMice;
@@ -55,6 +68,8 @@ namespace CTC.Runtime.Bots
                 if (cat != null && cat.Role == RoleId.Cat) m_Cats.Add(cat);
             }
             if (m_Orders != null) m_Orders.Clear();
+            m_SearchPoints.Clear();
+            m_SearchSince.Clear();
         }
 
         public void SetMapExtent(float _halfExtent)
@@ -115,10 +130,36 @@ namespace CTC.Runtime.Bots
             }
         }
 
+        /// <summary>
+        /// 맡은 구역 안에서 훑을 자리. **도착하거나 시간이 지나기 전에는 같은 자리를 유지한다** —
+        /// 명령을 2초마다 새로 뽑으면 고양이가 목표만 갈아타다 아무 데도 도착하지 못한다.
+        /// </summary>
         private Vector3 SearchPointFor(int _index)
         {
-            Vector3 zone = BotOrderLogic.ZoneCenter(_index, m_Cats.Count, m_HalfExtent);
-            return BotOrderLogic.SearchPoint(zone, m_HalfExtent, m_Cats.Count, m_Rng);
+            BotAgent cat = m_Cats[_index];
+            ulong id = cat.Id;
+
+            bool arrived = m_SearchPoints.TryGetValue(id, out Vector3 point)
+                           && cat.DistanceTo(point) <= SEARCH_ARRIVE;
+            bool stale = !m_SearchSince.TryGetValue(id, out float since)
+                         || Time.time - since >= SEARCH_TIMEOUT;
+
+            if (!m_SearchPoints.ContainsKey(id) || arrived || stale)
+            {
+                Vector3 zone = BotOrderLogic.ZoneCenter(_index, m_Cats.Count, m_HalfExtent);
+                point = BotOrderLogic.SearchPoint(zone, m_HalfExtent, m_Cats.Count, m_Rng);
+
+                // 뽑은 좌표가 벽 속일 수 있다 — 걸을 수 있는 자리로 당긴다
+                if (UnityEngine.AI.NavMesh.SamplePosition(
+                        point, out UnityEngine.AI.NavMeshHit hit, 12f, UnityEngine.AI.NavMesh.AllAreas))
+                {
+                    point = hit.position;
+                }
+
+                m_SearchPoints[id] = point;
+                m_SearchSince[id] = Time.time;
+            }
+            return point;
         }
 
         // 감옥 자리는 화면에 뜨는 정보다(맵에 고정된 구조물). 갇힌 쥐가 있는 곳을 고른다.

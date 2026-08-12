@@ -153,7 +153,8 @@ namespace CTC.Runtime.Ai
                 m_Index++;
             }
 
-            m_HasGoal = false;
+            // 다 왔다. 들고 있던 코너를 버려야 진단이 "다 간 것"과 "못 간 것"을 구분한다.
+            Clear();
             return false;
         }
 
@@ -265,10 +266,16 @@ namespace CTC.Runtime.Ai
         }
 
         // 폴리곤 밖이거나 길이 아예 없다 — 두뇌가 다른 목표를 잡아야 한다.
+        //
+        // 들고 있던 코너도 버린다. 안 버리면 **진단이 거짓말을 한다** — 갈 데가 없는데
+        // "코너 N개짜리 경로를 다 쓴 상태"로 보여서, 막힘을 재는 검사가 못 가는 것과
+        // 다 간 것을 구분하지 못한다(2026-08-12).
         private void GiveUp()
         {
             m_GaveUp = true;
             m_HasGoal = false;
+            m_Corners.Clear();
+            m_Index = 0;
         }
 
         private static Vector3 Flat(Vector3 _v)

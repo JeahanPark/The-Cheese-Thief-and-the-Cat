@@ -97,6 +97,12 @@ namespace CTC.Runtime.Bots
         /// **소리 밸런스의 답이 이 숫자다.**</summary>
         public float FirstSightSeconds { get; private set; } = -1f;
 
+        /// <summary>
+        /// 처음 봤을 때의 거리(m). 못 봤으면 -1.
+        /// **정직성 검사에 쓴다** — 맵에서 가능한 최장 직선보다 멀리서 "봤다"면 시야 판정이 새는 것이다.
+        /// </summary>
+        public float FirstSightDistance { get; private set; } = -1f;
+
         /// <summary>QA — 길찾기 진단.</summary>
         public string NavDiagnostics => m_Nav != null ? m_Nav.Diagnostics : "";
 
@@ -177,7 +183,11 @@ namespace CTC.Runtime.Bots
         public Transform VisiblePrey()
         {
             Transform prey = m_Senses.NearestVisible();
-            if (prey != null && FirstSightSeconds < 0f) FirstSightSeconds = m_Lived;
+            if (prey != null && FirstSightSeconds < 0f)
+            {
+                FirstSightSeconds = m_Lived;
+                FirstSightDistance = DistanceTo(prey.position);
+            }
             return prey;
         }
 
