@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CTC.Runtime.Ai.Bt;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -27,6 +28,7 @@ namespace CTC.Runtime.Ai
         private Health m_Target;
         private float m_SecondsSinceSeen;
         private float m_ScanTimer;
+        private BtNode m_Tree;
 
         /// <summary>서버 판정 결과. 클라는 볼 일이 없다(연출은 Rpc로 따로 간다).</summary>
         public DogState State { get; private set; } = DogState.Roam;
@@ -62,8 +64,40 @@ namespace CTC.Runtime.Ai
                 return;
             }
 
-            float distance = DogAiLogic.Flat(m_Target.transform.position - transform.position).magnitude;
-            State = DogAiLogic.NextState(true, distance, DogAiLogic.BiteRange);
+            if (m_Tree == null) m_Tree = Build();
+            m_Tree.Tick(dt);
+        }
+
+        /// <summary>
+        /// 강아지도 **봇과 같은 행동트리**를 쓴다 (2026-08-12).
+        ///
+        /// 기술소개서(리그오브레전드 7p)의 "몬스터가 달라도 행동을 공용으로 이용한다"가 그대로
+        /// 적용된다 — 노드가 서로를 몰라서 쥐·고양이·강아지가 같은 뼈대를 나눠 쓴다.
+        ///
+        /// **지휘관은 없다.** 강아지는 제3세력이고 한 마리뿐이라 명령할 상대가 없다.
+        /// <code>
+        /// Selector
+        /// ├ Seq [사거리 안] → 문다
+        /// ├ Seq [표적 있다] → 쫓는다
+        /// └ 배회
+        /// </code>
+        /// </summary>
+        private BtNode Build()
+        {
+            return new BtSelector(
+                new BtSequence(
+                    new BtCondition(() => m_Target != null && DistanceToTarget() <= DogAiLogic.BiteRange),
+                    BtAction.Once(() => State = DogState.Bite)),
+                new BtSequence(
+                    new BtCondition(() => m_Target != null),
+                    BtAction.Once(() => State = DogState.Chase)),
+                BtAction.Once(() => State = DogState.Roam));
+        }
+
+        private float DistanceToTarget()
+        {
+            if (m_Target == null) return float.MaxValue;
+            return DogAiLogic.Flat(m_Target.transform.position - transform.position).magnitude;
         }
 
         private void Forget()

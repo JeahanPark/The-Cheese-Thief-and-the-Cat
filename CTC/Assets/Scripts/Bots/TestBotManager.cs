@@ -39,6 +39,11 @@ namespace CTC.Runtime.Bots
 
         private readonly List<BotAgent> m_Agents = new List<BotAgent>();
         private readonly SoundLog m_Sound = new SoundLog();
+
+        // 예약(쥐가 뭉치지 않게) · 명령판(고양이 지휘관) — 자세한 건 각 클래스 주석에 있다
+        private readonly Ai.Reservations m_Reservations = new Ai.Reservations();
+        private readonly BotOrders m_Orders = new BotOrders();
+        private BotCommander m_Commander;
         private bool m_Running;
         private string m_Setup = "";
 
@@ -68,11 +73,17 @@ namespace CTC.Runtime.Bots
 
             Stop();
 
-            var forts = PlayerSpawner.FortressSpots(m_Map != null ? m_Map.ActiveLayout : null);
-            m_Setup = $"map={(m_Map != null ? (m_Map.ActiveLayout != null ? m_Map.ActiveLayout.name : "null-layout") : "null-map")}" +
+            MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
+            m_Commander = new BotCommander(m_Orders, layout != null ? layout.Seed : 0);
+            m_Commander.SetMapExtent(layout != null ? layout.HalfExtent : 60f);
+
+            var forts = PlayerSpawner.FortressSpots(layout);
+            m_Setup = $"map={(layout != null ? layout.name : "null-map")}" +
                       $" forts={forts.Count} navmesh={NavMeshArea()}";
             for (int i = 0; i < _mice; i++) SpawnOne(RoleId.Mouse, ClearSpawn(MouseSpawnPos(forts, i)));
             for (int i = 0; i < _cats; i++) SpawnOne(RoleId.Cat, ClearSpawn(new Vector3(i * 2f + 4f, 0.1f, 0f)));
+
+            m_Commander.SetCats(m_Agents);
 
             // 총량이 쥐 수에 비례한다 — 봇이 늘었으니 다시 나눠야 한다
             if (m_Spots != null) m_Spots.ServerResetReserves();
@@ -91,6 +102,9 @@ namespace CTC.Runtime.Bots
                 if (agent.Body != null && agent.Body.IsSpawned) agent.Body.Despawn(true);
             }
             m_Agents.Clear();
+            m_Reservations.Clear();
+            m_Orders.Clear();
+            m_Commander = null;
             m_Sound.Stop();
             m_Running = false;
         }
@@ -105,6 +119,10 @@ namespace CTC.Runtime.Bots
             m_Sound.Forget(Time.time);
 
             float dt = Time.deltaTime;
+
+            // 지휘관이 먼저 — 명령판을 갱신한 뒤에 봇들이 그걸 읽는다
+            if (m_Commander != null) m_Commander.Tick(dt);
+
             for (int i = m_Agents.Count - 1; i >= 0; i--)
             {
                 if (!m_Agents[i].Alive) { m_Agents.RemoveAt(i); continue; }
@@ -140,7 +158,7 @@ namespace CTC.Runtime.Bots
                 if (wallet != null) wallet.AddCheese(Info.InfoManager.Instance.Balance.MouseStartCheese);
             }
 
-            m_Agents.Add(new BotAgent(no, _role));
+            m_Agents.Add(new BotAgent(no, _role, m_Reservations, m_Orders));
         }
 
         // 사람과 같은 자리 규칙 — 요새 입구 앞. 스폰 밀도가 달라지면 초반 동선이 통째로 달라진다.
@@ -221,8 +239,7 @@ namespace CTC.Runtime.Bots
             var sb = new System.Text.StringBuilder(m_Setup + " | ");
             foreach (BotAgent a in m_Agents)
             {
-                string state = a.Role == RoleId.Cat ? a.CatState.ToString() : a.State.ToString();
-                sb.Append($"{a.Role.ToString()[0]}/{state}/{a.TravelledMeters:F0}m/{a.NavDiagnostics} ");
+                sb.Append($"{a.Role.ToString()[0]}/{a.Activity}/{a.TravelledMeters:F0}m/{a.NavDiagnostics} ");
             }
             return sb.ToString().TrimEnd();
         }

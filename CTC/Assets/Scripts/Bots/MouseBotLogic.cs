@@ -12,39 +12,8 @@ namespace CTC.Runtime.Bots
     /// </summary>
     public static class MouseBotLogic
     {
-        /// <summary>쥐 봇의 상태. 우선순위는 이 순서 그대로다(위가 급하다).</summary>
-        public enum State
-        {
-            /// <summary>고양이 소리가 들린다 — 반대로 뛴다.</summary>
-            Flee = 0,
-            /// <summary>치즈 지점으로 간다.</summary>
-            Travel = 1,
-            /// <summary>지점 위에서 캐는 중.</summary>
-            Farm = 2,
-            /// <summary>동료를 구하러 감옥으로 간다.</summary>
-            Rescue = 3,
-            /// <summary>갈 데가 없다 — 돌아다닌다.</summary>
-            Wander = 4,
-        }
-
+        /// <summary>지점에 이만큼 붙으면 캐기 시작한다.</summary>
         public const float ARRIVE_DISTANCE = 1.2f;
-
-        /// <summary>
-        /// 지금 뭘 할까. **위협이 언제나 먼저다** — 캐던 중이라도 멈춘다.
-        /// 캐다 죽으면 그 판의 성장이 통째로 날아가서, 사람도 같은 선택을 한다.
-        /// </summary>
-        public static State Decide(
-            bool _threatHeard, bool _allyJailed, bool _hasTarget, float _distanceToTarget)
-        {
-            if (_threatHeard) return State.Flee;
-
-            // **구출이 파밍보다 먼저다.** 안 그러면 잡힌 쥐가 40초 뒤 전부 영구 탈락하고
-            // 고양이가 무조건 이긴다 — 승률이 통째로 거짓이 된다(2026-08-11 실측).
-            if (_allyJailed) return State.Rescue;
-
-            if (!_hasTarget) return State.Wander;
-            return _distanceToTarget <= ARRIVE_DISTANCE ? State.Farm : State.Travel;
-        }
 
         /// <summary>
         /// 지금 살 것. **싼 것부터, 목숨 지키는 것부터**다 — 사람도 그렇게 산다.
