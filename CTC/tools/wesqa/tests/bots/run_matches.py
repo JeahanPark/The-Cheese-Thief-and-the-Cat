@@ -37,8 +37,16 @@ def open_lobby(host, map_index):
     if host.invoke("TestGetRole") in ("Cat", "Mouse"):
         return True
 
-    host.invoke("TestStartHost")
-    time.sleep(4.0)
+    # 이 러너의 호스트는 역할을 안 잡으므로 TestGetRole로는 호스팅 여부를 모른다.
+    # 이미 호스팅 중일 때 TestStartHost를 다시 부르면 로비 상태가 어긋나
+    # 1판이 80~100초에 cats=0으로 끝난다(2026-08-12 실측) — 판을 다시 여는 걸로 대체.
+    if host.invoke("TestGetLocalClientId") >= 0:
+        host.invoke("TestClearBots")
+        host.invoke("TestRestartMatch")
+        time.sleep(3.0)
+    else:
+        host.invoke("TestStartHost")
+        time.sleep(4.0)
     host.invoke("TestSelectMap", _index=map_index)
     time.sleep(0.8)
     # 호스트는 고양이로 두되 **가만히 있는다** — 사람이 조작하지 않으므로 판에 개입하지 않는다.
