@@ -133,8 +133,8 @@ MonoBehaviour:
   - Pos: {x: 12.5, y: 4.5}
     YawDeg: 270
   m_Alcoves:
-  - Pos: {x: 13.05, y: 2}
-    YawDeg: 270
+  - Pos: {x: -2.8, y: -1.2}
+    YawDeg: 90
     Payload: 1
     BoxContents: []
   - Pos: {x: -13.3, y: -10.5}
@@ -149,6 +149,12 @@ MonoBehaviour:
     BoxContents:
     - Id: 1
       Amount: 1
+  - Pos: {x: 13.05, y: 2}
+    YawDeg: 270
+    Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
   m_Jails:
   - Pos: {x: 10.5, y: 12}
   - Pos: {x: -10.5, y: -10.5}

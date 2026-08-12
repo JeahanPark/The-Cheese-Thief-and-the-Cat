@@ -12,23 +12,6 @@ namespace CTC.Editor
     // SetupNetworkingScene의 일부 — 벽감·치즈 드롭 프리팹과 레이아웃 배치 (v3.8, 2026-08-09)
     public static partial class SetupNetworkingScene
     {
-        // 방 벽에서 안쪽으로 얼마나 들어와 앉는가. 벽에 딱 붙이면 콜라이더가 벽을 파고든다.
-        private const float ALCOVE_WALL_INSET = 0.7f;
-        // 치즈 지점과 이만큼은 떨어뜨린다 — 붙어 있으면 한 자리에서 다 해결돼 이동이 사라진다
-        private const float ALCOVE_MIN_CHEESE_DIST = 3.5f;
-
-        /// <summary>
-        /// 문에서 이만큼은 떨어뜨린다 (2026-08-11 실측으로 얻었다).
-        ///
-        /// 격자 맵은 문이 **벽 한가운데**에 뚫린다. 그런데 벽감도 벽 한가운데에 앉혔더니
-        /// 막다른 방의 **유일한 문을 벽감이 막았다** — 그 방에서 시작한 쥐가 벽감을 부수기
-        /// 전에는 나올 수 없었고, 이동 그래프에서도 그 방이 통째로 잘려 나갔다.
-        /// 복도 폭 3m + 벽감 폭을 덮는다.
-        /// </summary>
-        private const float ALCOVE_MIN_DOOR_DIST = 4f;
-
-        // 문을 피해 벽을 따라 비껴 앉을 자리들(벽 길이 대비 비율). 0이 먼저 = 원래의 한가운데.
-        private static readonly float[] ALCOVE_WALL_SLIDES = { 0f, 0.3f, -0.3f };
         // 요새가 이 여유 안에 있는 방에는 감옥을 두지 않는다 — 요새 자리가 곧 쥐 스폰이다
         private const float JAIL_FORTRESS_MARGIN = 1f;
 
@@ -146,6 +129,7 @@ namespace CTC.Editor
         ///
         /// 규칙: 방 하나에 하나씩, 벽면에 붙여서, 치즈 지점과는 떨어뜨려서, **맵 전체에 흩어서**.
         /// 복도에 두지 않는 이유는 부수는 19초 동안 도망칠 방향이 둘뿐이라 사형선고가 되기 때문.
+        /// 거리 규칙과 하한 폴백은 `AlcoveSpotLogic`이 갖고 있다(순수 — EditMode가 덮는다).
         ///
         /// 흩는 게 왜 규칙인가: 방 목록 앞에서부터 집으면 생성기가 방을 만든 순서를 따라간다.
         /// 격자 맵은 그 순서가 한 줄씩이라 벽감 6개가 맨 아래 한 줄에 전부 몰렸다(2026-08-10 실측).
@@ -155,15 +139,12 @@ namespace CTC.Editor
         {
             if (_layout == null || _count <= 0) return;
 
-            // 벽 자리가 나오는 방만 후보다 — 치즈와 겹치는 방은 애초에 제외된다
-            var spots = new List<(Vector2 pos, float yaw)>();
+            // 벽 자리가 나오는 방만 후보다 — 하한(_count)이 안 차면 물리 최소 거리로 다시 훑는다
+            List<AlcoveSpotLogic.Spot> spots =
+                AlcoveSpotLogic.CollectSpots(_layout.Rooms, _layout.Corridors, _layout.Cheese, _count);
+
             var anchors = new List<Vector2>();
-            foreach (RoomRect room in _layout.Rooms)
-            {
-                if (!TryWallSpot(room, _layout, out Vector2 pos, out float yaw)) continue;
-                spots.Add((pos, yaw));
-                anchors.Add(room.Center);
-            }
+            foreach (AlcoveSpotLogic.Spot spot in spots) anchors.Add(spot.Anchor);
 
             var placed = new List<AlcovePlacement>();
             int center = PlacementLogic.NearestTo(anchors, Vector2.zero);
@@ -171,8 +152,8 @@ namespace CTC.Editor
             {
                 placed.Add(new AlcovePlacement
                 {
-                    Pos = spots[i].pos,
-                    YawDeg = spots[i].yaw,
+                    Pos = spots[i].Pos,
+                    YawDeg = spots[i].YawDeg,
                     Payload = AlcovePayload.Box,
                     BoxContents = new List<LootEntry>(),
                 });
@@ -252,54 +233,6 @@ namespace CTC.Editor
             }
         }
 
-        // 방의 네 벽을 순서대로 시도한다. 무작위를 쓰지 않는 건 같은 레이아웃이면
-        // 항상 같은 자리가 나와야 QA가 재현 가능하기 때문이다.
-        private static bool TryWallSpot(RoomRect _room, MapLayout _layout, out Vector2 _pos, out float _yaw)
-        {
-            Vector2 c = _room.Center;
-            Vector2 half = _room.Size * 0.5f;
-
-            // 벽마다 한가운데를 먼저 보고, 문에 걸리면 벽을 따라 좌우로 비껴 앉는다.
-            foreach (float slide in ALCOVE_WALL_SLIDES)
-            {
-                float dx = _room.Size.x * slide;
-                float dy = _room.Size.y * slide;
-
-                // (자리, 방 안쪽을 보는 yaw) — 북·남·동·서
-                var candidates = new (Vector2 pos, float yaw)[]
-                {
-                    (new Vector2(c.x + dx, c.y + half.y - ALCOVE_WALL_INSET), 180f),
-                    (new Vector2(c.x + dx, c.y - half.y + ALCOVE_WALL_INSET), 0f),
-                    (new Vector2(c.x + half.x - ALCOVE_WALL_INSET, c.y + dy), 270f),
-                    (new Vector2(c.x - half.x + ALCOVE_WALL_INSET, c.y + dy), 90f),
-                };
-
-                foreach ((Vector2 pos, float yaw) in candidates)
-                {
-                    if (!IsClearOfCheese(pos, _layout)) continue;
-                    if (!IsClearOfDoors(pos, _layout)) continue;
-                    _pos = pos;
-                    _yaw = yaw;
-                    return true;
-                }
-            }
-
-            _pos = default;
-            _yaw = 0f;
-            return false;
-        }
-
-        // 문은 복도 끝점이다 — 거기에 벽감을 앉히면 그 방이 잠긴다.
-        private static bool IsClearOfDoors(Vector2 _pos, MapLayout _layout)
-        {
-            foreach (CorridorSeg seg in _layout.Corridors)
-            {
-                if (Vector2.Distance(seg.From, _pos) < ALCOVE_MIN_DOOR_DIST) return false;
-                if (Vector2.Distance(seg.To, _pos) < ALCOVE_MIN_DOOR_DIST) return false;
-            }
-            return true;
-        }
-
         /// <summary>
         /// 감옥 자리를 레이아웃에 덧쓴다. 서로 **멀리 떨어진** 방들의 중심을 고른다 —
         /// 붙어 있으면 고양이가 둘 다 지킬 수 있어 "어디를 지킬 것인가"라는 판단이 사라진다.
@@ -351,13 +284,5 @@ namespace CTC.Editor
             EditorUtility.SetDirty(_layout);
         }
 
-        private static bool IsClearOfCheese(Vector2 _pos, MapLayout _layout)
-        {
-            foreach (CheesePlacement cp in _layout.Cheese)
-            {
-                if (Vector2.Distance(_pos, cp.Pos) < ALCOVE_MIN_CHEESE_DIST) return false;
-            }
-            return true;
-        }
     }
 }

@@ -207,5 +207,14 @@ namespace CTC.Editor
             }
             return true;
         }
+
+        private static bool IsClearOfCheese(Vector2 _p, MapLayout _layout)
+        {
+            foreach (CheesePlacement cp in _layout.Cheese)
+            {
+                if (Vector2.Distance(cp.Pos, _p) < BOX_MIN_OTHER_DIST) return false;
+            }
+            return true;
+        }
     }
 }
