@@ -132,7 +132,10 @@ def main():
 
     mouse.invoke("TestSetSneak", _on=False)
     walk_range = walk_and_measure(mouse, cat, mouse_id, 1.0, 0.0)
-    check("발소리 — 뛰면 18m까지 간다", abs(walk_range - 18.0) < 0.6, f"{walk_range}")
+    # 18 → 14 (2026-08-12): 뛰는 발소리가 고양이의 공짜 추적기였다 — 시야를 정직하게
+    # 만들고 재니 들킨 쥐가 대시·미끼·시선 끊기로도 못 벗어났다(봇 실측 12판 전패).
+    # 14m면 미끼로 고양이가 몇 초 막히는 동안 청각 추적이 끊긴다.
+    check("발소리 — 뛰면 14m까지 간다", abs(walk_range - 14.0) < 0.6, f"{walk_range}")
 
     mouse.invoke("TestSetSneak", _on=True)
     sneak_range = walk_and_measure(mouse, cat, mouse_id, -1.0, 0.0)
@@ -151,7 +154,7 @@ def main():
 
     # 고양이 발소리는 쥐보다 짧아야 한다 — '쥐가 항상 먼저 안다'를 뒤집은 부분
     cat_range = walk_and_measure(cat, mouse, cat_id, 1.0, 0.0)
-    check("발소리 — 고양이(12m)가 쥐(18m)보다 짧다", 0 < cat_range < walk_range,
+    check("발소리 — 고양이(12m)가 쥐(14m)보다 짧다", 0 < cat_range < walk_range,
           f"고양이 {cat_range} vs 쥐 {walk_range}")
 
     return summary()

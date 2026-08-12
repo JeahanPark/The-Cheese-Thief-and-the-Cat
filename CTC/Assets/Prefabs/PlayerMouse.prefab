@@ -424,7 +424,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1.5
-  MaxDistance: 18
+  MaxDistance: 14
   Pan2D: 0
   rolloffMode: 1
   BypassEffects: 0
@@ -513,7 +513,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.FootstepPlayer
   m_Source: {fileID: 2977953179673282696}
   m_WalkThreshold: 0.5
-  m_NormalRange: 18
+  m_NormalRange: 14
   m_SneakRange: 4
 --- !u!114 &6539816911504078304
 MonoBehaviour:
