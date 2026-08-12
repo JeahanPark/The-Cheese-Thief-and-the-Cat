@@ -77,6 +77,14 @@ namespace CTC.Runtime.Lobby
             for (int i = 0; i < _session.PlayerCount; i++)
             {
                 LobbyPlayerState p = _session.GetPlayer(i);
+
+                // 역할을 안 고른 사람(RoleId.None)에게는 몸을 주지 않는다 — 관전만 한다.
+                // 쥐 몸을 주면 MatchManager.CountAlive가 자유 쥐로 세어, 봇이 전멸해도 판이
+                // 시계까지 가서 "쥐 생존승"이 된다(2026-08-12 실측: 봇 승률 측정이 통째로
+                // "고양이가 이 시체를 찾느냐"를 쟀다). 실제 게임은 역할 없이 시작할 수 없어
+                // (LobbyRoleLogic.CanStart) 이 몸은 DevForceStartGame(봇 측정)에서만 생겼다.
+                if (p.Role != RoleId.Cat && p.Role != RoleId.Mouse) continue;
+
                 GameObject prefab = p.Role == RoleId.Cat ? m_CatPrefab : m_MousePrefab;
                 if (prefab == null) continue;
 
