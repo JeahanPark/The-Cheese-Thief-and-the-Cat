@@ -134,3 +134,4 @@ docs/design-vault/.obsidian/workspace.json
 .playwright-mcp/
 gemini-state.jpeg
 screenshot.png
+tools/__pycache__/
