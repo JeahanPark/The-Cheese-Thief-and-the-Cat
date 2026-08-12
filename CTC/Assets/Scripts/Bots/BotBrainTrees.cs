@@ -113,8 +113,12 @@ namespace CTC.Runtime.Bots
         public static BtNode BuildMouse(BotAgent _self)
         {
             return new BtSelector(
-                // **위협이 언제나 먼저다** — 캐던 중이라도 멈춘다.
+                // **위협이 언제나 먼저고, 만나면 무조건 도망이다**(2026-08-12).
                 // 캐다 잡히면 그 판의 성장이 통째로 날아가서, 사람도 같은 선택을 한다.
+                //
+                // **맞서 쏘지 않는다.** 그전에는 도망치며 쐈는데, 여덟 마리가 쉬지 않고 쏘니
+                // 97초 만에 고양이 둘이 죽었다(실측). 쥐의 목표는 싸움이 아니라
+                // **벌어서 크는 것**이고, 그렇게 노는 봇이라야 잰 승률이 뜻을 갖는다.
                 new BtSequence(
                     new BtCondition(() => ThreatPosition(_self, out _)),
                     BtAction.Once(() =>
@@ -125,7 +129,6 @@ namespace CTC.Runtime.Bots
                         _self.Nav.SetGoal(
                             _self.Position
                             + MouseBotLogic.FleeDirection(_self.Position, threat) * BotAgent.FLEE_DISTANCE);
-                        if (_self.Senses.NearestVisible() != null) _self.Shoot();
                         _self.BuyForMouse();
                         _self.RecruitIfGang();
                     })),

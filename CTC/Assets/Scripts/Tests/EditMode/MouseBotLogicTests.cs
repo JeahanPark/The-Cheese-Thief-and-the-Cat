@@ -12,13 +12,20 @@ namespace CTC.Tests.EditMode
     public class MouseBotLogicTests
     {
         [Test]
-        public void NextPurchase_BuysSurvivalFirstThenNothingWhenBroke()
+        public void NextPurchase_GrowthBuildBuysIncomeBeforeWeapons()
         {
-            // 대시(도주)가 첫 구매다 — 목숨을 지키는 것부터 산다
+            // 수급·성장 빌드: 대시(도주) → 창고(수입) → 요새(생존) → 새총(싸움)
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Dash,
                 MouseBotLogic.NextPurchase(1000, false, false, false, false));
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Slingshot,
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Warehouse,
                 MouseBotLogic.NextPurchase(1000, true, false, false, false));
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Fortress,
+                MouseBotLogic.NextPurchase(1000, true, false, true, false));
+
+            // **새총은 맨 뒤다.** 앞에 두면 쥐 여덟이 도망치며 쏴 고양이를 97초에 죽인다(2026-08-12).
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Slingshot,
+                MouseBotLogic.NextPurchase(1000, true, false, true, true));
+
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
                 MouseBotLogic.NextPurchase(0, false, false, false, false));
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,

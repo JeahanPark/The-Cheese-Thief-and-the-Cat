@@ -16,20 +16,26 @@ namespace CTC.Runtime.Bots
         public const float ARRIVE_DISTANCE = 1.2f;
 
         /// <summary>
-        /// 지금 살 것. **싼 것부터, 목숨 지키는 것부터**다 — 사람도 그렇게 산다.
-        /// 살 게 없으면 None.
+        /// 지금 살 것. 살 게 없으면 None.
+        ///
+        /// **수급·성장 빌드다**(2026-08-12). 도망칠 수단(대시)을 먼저 쥐고, 그다음은
+        /// **수입(창고) → 생존(요새)**이고, 싸울 것(새총)은 맨 뒤다.
+        ///
+        /// 그전에는 새총이 두 번째였다. 그랬더니 쥐 여덟이 도망치며 쉬지 않고 쏴서
+        /// **97초 만에 고양이 둘이 죽었다**(실측). 사람이 "벌어서 큰다"를 목표로 할 때
+        /// 하는 행동이 아니다 — 그런 봇으로 잰 승률은 밸런스가 아니라 봇의 화력을 잰 것이다.
         /// </summary>
         public static Economy.ShopItemId NextPurchase(
             int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
         {
             if (!_hasDash && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Dash).Cost)
                 return Economy.ShopItemId.Dash;
-            if (!_hasGun && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Slingshot).Cost)
-                return Economy.ShopItemId.Slingshot;
             if (!_hasWarehouse && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Warehouse).Cost)
                 return Economy.ShopItemId.Warehouse;
             if (!_hasFortress && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Fortress).Cost)
                 return Economy.ShopItemId.Fortress;
+            if (!_hasGun && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Slingshot).Cost)
+                return Economy.ShopItemId.Slingshot;
             return Economy.ShopItemId.None;
         }
 
