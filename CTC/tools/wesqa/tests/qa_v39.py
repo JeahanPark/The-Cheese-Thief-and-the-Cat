@@ -74,14 +74,20 @@ def main():
           "이동 시도 후에도 갇힘 유지")
 
     # ---------- 구출 ----------
-    # 갇힌 쥐가 있는 감옥으로 구조자를 보내 3초 버틴다
+    # 갇힌 쥐가 있는 감옥으로 구조자를 보내 버틴다.
+    # 고정 sleep을 쓰지 않는다 — 구출 시간은 CSV(JailRescueSeconds)라 밸런스를 만질 때마다
+    # 깨졌다(2026-08-12 실측: 5→8초로 바꾸자 7초 대기가 오진). 풀릴 때까지 상한만 두고 본다.
     jail_list = [tuple(float(v) for v in j.split(",")) for j in jails.split(";")]
     released = False
     for jx, jz in jail_list:
         rescuer.invoke("TestTeleportLocalPlayer", _x=jx + 1.0, _z=jz)
-        time.sleep(7.0)          # 구출 5초(JailRescueSeconds, 2026-08-10 3→5) + 여유
-        if not victim.invoke("TestGetJailed"):
-            released = True
+        deadline = time.time() + 12.0   # 구출 시간 + 여유. 빈 감옥이면 여기가 그대로 상한이다
+        while time.time() < deadline:
+            time.sleep(0.5)
+            if not victim.invoke("TestGetJailed"):
+                released = True
+                break
+        if released:
             break
     check("동료가 오면 풀려난다", released, f"jailed={victim.invoke('TestGetJailed')}")
 
