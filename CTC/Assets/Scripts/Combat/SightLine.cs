@@ -37,5 +37,25 @@ namespace CTC.Runtime.Combat
             }
             return false;
         }
+
+        /// <summary>
+        /// 지점끼리의 차폐 — 봇이 "저기로 가면 안 보이나"를 물을 때 쓴다.
+        /// 규칙은 위와 같다(구조물·지형만 차폐, 플레이어 몸은 무시).
+        /// </summary>
+        public static bool IsBlocked(Vector3 _from, Vector3 _to)
+        {
+            Vector3 from = _from + Vector3.up * RAY_HEIGHT;
+            Vector3 to = _to + Vector3.up * RAY_HEIGHT;
+            Vector3 dir = to - from;
+            if (dir.sqrMagnitude < 0.0001f) return false;
+
+            foreach (RaycastHit hit in Physics.RaycastAll(
+                         from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.transform.root.GetComponent<CharacterController>() != null) continue;
+                return true;
+            }
+            return false;
+        }
     }
 }

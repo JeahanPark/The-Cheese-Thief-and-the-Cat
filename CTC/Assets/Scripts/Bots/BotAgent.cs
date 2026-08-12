@@ -48,6 +48,7 @@ namespace CTC.Runtime.Bots
         private readonly JailedTag m_Jailed;
         private readonly Health m_Health;
         private readonly CatPounce m_Pounce;
+        private readonly MouseDash m_Dash;
         private readonly MousePopgun m_Gun;
         private readonly MouseJob m_Job;
         private readonly GangRecruit m_Recruit;
@@ -118,6 +119,7 @@ namespace CTC.Runtime.Bots
             m_Jailed = _object.GetComponent<JailedTag>();
             m_Health = _object.GetComponent<Health>();
             m_Pounce = _object.GetComponent<CatPounce>();
+            m_Dash = _object.GetComponent<MouseDash>();
             m_Gun = _object.GetComponent<MousePopgun>();
             m_Job = _object.GetComponent<MouseJob>();
             m_Recruit = _object.GetComponent<GangRecruit>();
@@ -153,6 +155,9 @@ namespace CTC.Runtime.Bots
                 Activity = "Jailed";
                 m_Nav.Stop();
                 m_SpotIndex = -1;
+                // 예약을 놓는다 — 구출자가 갇힌 채 감옥 예약을 쥐고 있으면
+                // 다른 쥐가 그 감옥을 영원히 안 간다(구출 교착)
+                if (m_Reservations != null) m_Reservations.Release(Id);
                 m_Nav.Tick(_deltaSeconds);
                 return;
             }
@@ -216,9 +221,32 @@ namespace CTC.Runtime.Bots
             if (m_Sneak != null) m_Sneak.DevSetSneak(_on);
         }
 
+        /// <summary>그 자리가 위협에게 안 보이는가 — 도주 목표를 고를 때 쓴다(FleeGoal의 델리게이트).</summary>
+        public static bool IsHiddenFrom(Vector3 _threat, Vector3 _goal)
+            => Combat.SightLine.IsBlocked(_threat, _goal);
+
         public void DoPounce()
         {
             if (m_Pounce != null) m_Pounce.DevPounce();
+        }
+
+        /// <summary>대시 — 안 샀거나 쿨다운이면 컴포넌트가 알아서 무시한다.</summary>
+        public void DoDash()
+        {
+            if (m_Dash != null) m_Dash.DevDash();
+        }
+
+        // 미끼는 판 값이 나가는 소모품이다 — 매 판단 틱(0.5초)마다 사면 지갑이 즉시 마른다.
+        // 사람도 한 추격에 하나 던진다. 카운터가 아니라 시계로 잰다(카운터 쿨다운의 함정).
+        private const float DECOY_COOLDOWN_SECONDS = 10f;
+        private float m_NextDecoyTime;
+
+        /// <summary>도주 중 미끼 — 전방(도망 방향)에 서서 뒤따르는 고양이만 막는다.</summary>
+        public void PlaceDecoyForFlee()
+        {
+            if (Time.time < m_NextDecoyTime) return;
+            m_NextDecoyTime = Time.time + DECOY_COOLDOWN_SECONDS;
+            m_Shopper.BuyDecoy();
         }
 
         public void UseSkill()

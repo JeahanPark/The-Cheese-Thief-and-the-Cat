@@ -78,5 +78,53 @@ namespace CTC.Tests.EditMode
             // 겹쳐 있어도 영벡터를 돌려주면 안 된다 — 그러면 제자리에서 잡힌다
             Assert.AreEqual(1f, MouseBotLogic.FleeDirection(Vector3.zero, Vector3.zero).magnitude, 0.01f);
         }
+
+        // ---- 도주 목표 — 위협에게 안 보이는 자리를 고른다 ----
+
+        [Test]
+        public void FleeGoal_StraightAway_WhenAlreadyHidden()
+        {
+            // 정반대가 숨는 자리면 그리로 — 덜 꺾을수록 위협에서 멀어진다
+            Vector3 goal = MouseBotLogic.FleeGoal(
+                new Vector3(5f, 0f, 0f), Vector3.zero, 18f, (_t, _g) => true);
+            Assert.AreEqual(23f, goal.x, 0.01f);
+            Assert.AreEqual(0f, goal.z, 0.01f);
+        }
+
+        [Test]
+        public void FleeGoal_TurnsToTheHiddenSide()
+        {
+            // 정반대는 보이고 옆은 숨는다(차폐벽 뒤) — 꺾어서 시선을 끊어야 한다
+            Vector3 self = new Vector3(5f, 0f, 0f);
+            Vector3 straight = self + Vector3.right * 18f;
+
+            Vector3 goal = MouseBotLogic.FleeGoal(
+                self, Vector3.zero, 18f,
+                (_t, _g) => Vector3.Distance(_g, straight) > 1f);   // 정반대만 노출
+
+            Assert.Greater(Vector3.Distance(goal, straight), 1f, "보이는 정반대를 골랐다");
+            Assert.Greater(Vector3.Distance(goal, self), 17f, "도주 거리가 줄었다");
+        }
+
+        [Test]
+        public void FleeGoal_FallsBackToStraight_WhenNowhereHides()
+        {
+            // 숨을 곳이 아예 없으면 정반대 — 거리라도 벌어야 한다
+            Vector3 goal = MouseBotLogic.FleeGoal(
+                new Vector3(5f, 0f, 0f), Vector3.zero, 18f, (_t, _g) => false);
+            Assert.AreEqual(23f, goal.x, 0.01f);
+
+            // 델리게이트가 없어도 죽지 않는다
+            Assert.AreEqual(23f, MouseBotLogic.FleeGoal(
+                new Vector3(5f, 0f, 0f), Vector3.zero, 18f, null).x, 0.01f);
+        }
+
+        [Test]
+        public void RescueSneak_OnlyNearTheJail()
+        {
+            // 멀리서 잠행(0.45배)으로 기어가면 체류 30초가 먼저 끝난다
+            Assert.IsTrue(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS - 1f));
+            Assert.IsFalse(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS + 1f));
+        }
     }
 }

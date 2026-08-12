@@ -53,9 +53,24 @@ namespace CTC.Runtime.Player
             if (!m_Owned.Value) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
-            if (IsJailed()) return;                  // 갇힌 쥐는 조작할 수 없다(v3.8)
             Keyboard kb = Keyboard.current;
             if (kb == null || !kb.leftShiftKey.wasPressedThisFrame) return;
+
+            TryDash();
+        }
+
+        /// <summary>
+        /// 봇·QA 전용 — 사람의 Shift와 같은 입구. 쿨다운·수감·소유 규칙이 전부 같아야
+        /// 봇으로 잰 밸런스가 뜻을 갖는다(봇이 사람보다 자주 대시하면 그건 봇의 화력이다).
+        /// </summary>
+        public void DevDash() => TryDash();
+
+        private void TryDash()
+        {
+            if (!IsOwner) return;
+            if (m_DashRemainingSeconds > 0f) return;
+            if (!m_Owned.Value) return;
+            if (IsJailed()) return;                  // 갇힌 쥐는 조작할 수 없다(v3.8)
             if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, COOLDOWN_SECONDS)) return;
 
             m_LastUseTime = Time.timeAsDouble;

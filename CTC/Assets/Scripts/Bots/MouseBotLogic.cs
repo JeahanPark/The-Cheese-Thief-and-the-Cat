@@ -16,6 +16,28 @@ namespace CTC.Runtime.Bots
         public const float ARRIVE_DISTANCE = 1.2f;
 
         /// <summary>
+        /// 감옥에 이만큼 가까우면 잠행으로 접근한다 — 뛰는 발소리(18m)가 간수를 부른다.
+        /// 멀리서는 뛴다: 잠행(0.45배)으로 맵을 건너면 체류 30초가 먼저 끝난다.
+        /// </summary>
+        public const float RESCUE_SNEAK_RADIUS = 20f;
+
+        /// <summary>구출 접근을 잠행으로 할까 — 감옥까지의 거리로 정한다.</summary>
+        public static bool ShouldSneakForRescue(float _distanceToJail)
+            => _distanceToJail <= RESCUE_SNEAK_RADIUS;
+
+        /// <summary>
+        /// 소리 위협에 도망으로 반응하는 반경 — 쥐가 고양이 발소리를 듣는 거리(12m)와 같다.
+        /// 덮치기·스킬 소리는 45m를 가는데, 그때마다 도망치면 온 맵의 쥐가 상시 잠행 도주에
+        /// 빠져 파밍이 통째로 선다(2026-08-12 실측: 최대 치즈 634→400 · 평균 이속 1.0m/s).
+        /// 먼 소리는 정보일 뿐 도망 사유가 아니다 — 사람도 멀리서 난 소리에 뛰지 않는다.
+        /// </summary>
+        public const float SOUND_THREAT_RADIUS = 12f;
+
+        /// <summary>이 소리에 도망칠까 — 보이는 위협은 거리와 무관하게 항상 도망이다.</summary>
+        public static bool IsSoundThreat(float _distanceToSound)
+            => _distanceToSound <= SOUND_THREAT_RADIUS;
+
+        /// <summary>
         /// 지금 살 것. 살 게 없으면 None.
         ///
         /// **수급·성장 빌드다**(2026-08-12). 도망칠 수단(대시)을 먼저 쥐고, 그다음은
@@ -75,6 +97,31 @@ namespace CTC.Runtime.Bots
         {
             Vector3 away = Flat(_self - _threat);
             return away.sqrMagnitude < 0.01f ? Vector3.forward : away.normalized;
+        }
+
+        // 덜 꺾을수록 위협에서 멀어진다 — 정반대를 먼저, 그다음 좌우로.
+        private static readonly float[] FLEE_ANGLES = { 0f, 45f, -45f, 90f, -90f };
+
+        /// <summary>
+        /// 도망칠 목표 지점. 위협 반대 방향을 기본으로, 좌우로 틀어서라도
+        /// **위협에게 안 보이는 자리**를 고른다 — 직선 도주는 더 빠른 고양이(7.8 vs 6.0)에게
+        /// 항상 진다(2026-08-12 실측: 첫 발견 후 2게임분 안에 8마리 전멸).
+        /// 문 차폐벽·기둥 뒤가 이 후보에 걸린다. 전부 보이면 정반대(거리라도 번다).
+        /// </summary>
+        public static Vector3 FleeGoal(
+            Vector3 _self, Vector3 _threat, float _distance,
+            System.Func<Vector3, Vector3, bool> _isHidden)
+        {
+            Vector3 away = FleeDirection(_self, _threat);
+            if (_isHidden != null)
+            {
+                foreach (float deg in FLEE_ANGLES)
+                {
+                    Vector3 goal = _self + Quaternion.Euler(0f, deg, 0f) * away * _distance;
+                    if (_isHidden(_threat, goal)) return goal;
+                }
+            }
+            return _self + away * _distance;
         }
 
         private static Vector3 Flat(Vector3 _v)

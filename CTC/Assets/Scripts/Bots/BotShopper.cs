@@ -31,6 +31,16 @@ namespace CTC.Runtime.Bots
             m_Class = _class;
         }
 
+        /// <summary>
+        /// 미끼 — 쫓기는 중에 쓰는 소모품이라 구매 순서(NextPurchase)에 안 낀다.
+        /// 즉시 설치(조준 없음)이고 전방에 떨어진다 — 도망 방향으로 놓이므로
+        /// 쥐는 통과하고 뒤따르는 고양이가 부딪힌다. 지갑이 모자라면 상점이 거른다.
+        /// </summary>
+        public void BuyDecoy()
+        {
+            if (m_Shop != null) m_Shop.Buy(ShopItemId.Decoy);
+        }
+
         /// <summary>쥐 — 살 수 있으면 산다. 설치물은 제자리에 둔다.</summary>
         public void BuyForMouse()
         {

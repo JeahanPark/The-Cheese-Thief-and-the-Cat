@@ -170,16 +170,17 @@ def main():
     check("⑥ 고양이 둘의 목표가 겹치지 않는다", ratio < 0.30, f"{same}/{total} = {ratio:.0%}")
 
     # ---------- ⑦ 움직일 때 제 속도로 움직인다 ----------
-    # 최고속: 고양이 7.8 · 쥐 6.0 (PlayerInfo.csv). 상태를 오가느라 100%는 안 나오지만
-    # 30%도 안 나오면 어딘가 막히고 있다는 뜻이다.
-    for role, top, label in (("C", 7.8, "고양이"), ("M", 6.0, "쥐")):
+    # 최고속: 고양이 7.8 · 쥐 6.0 (PlayerInfo.csv). 상태를 오가느라 100%는 안 나온다.
+    # 쥐 문턱이 고양이보다 낮은 이유(2026-08-12): 도주·구출에 잠행(0.45배)을 제대로 쓰면서
+    # 평균이 1.5m/s대로 내려왔다 — 정당한 행동이다. 끼임은 ①(굳음)·②(경로 소진)가 잡는다.
+    for role, top, floor, label in (("C", 7.8, 0.30, "고양이"), ("M", 6.0, 0.20, "쥐")):
         ids = [b for b in roles if roles[b] == role]
         if not ids:
             continue
         moved = sum(last_d[b] - first_d[b] for b in ids)
         span = sum(seen[b] for b in ids) * SAMPLE_INTERVAL / len(ids)
         speed = moved / len(ids) / max(span, 1e-3)
-        check(f"⑦ {label}가 제 속도로 움직인다", speed >= top * 0.30, f"{speed:.1f} / {top} m/s")
+        check(f"⑦ {label}가 제 속도로 움직인다", speed >= top * floor, f"{speed:.1f} / {top} m/s")
 
     # ---------- ⑧ 지휘관이 돈다 ----------
     check("⑧ 지휘관이 명령을 낸다", peak_orders > 0, f"{peak_orders}개")
