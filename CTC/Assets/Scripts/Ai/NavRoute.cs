@@ -209,8 +209,29 @@ namespace CTC.Runtime.Ai
             }
 
             // 0번은 내가 선 자리다. 나머지가 실제로 밟을 코너 — 뚫려 있으면 목표 하나뿐이다.
+            //
+            // **중간 코너는 벽에서 띄운다.** 길찾기가 주는 코너는 벽 모서리에 붙어 있어서,
+            // 그 좌표를 향해 그냥 밀면 모퉁이마다 벽을 스친다(<see cref="NavCornerLogic"/>).
+            // 마지막 코너는 목표 자체라 건드리지 않는다.
             int count = m_Path.GetCornersNonAlloc(m_Buffer);
-            for (int i = 1; i < count; i++) m_Corners.Add(m_Buffer[i]);
+            for (int i = 1; i < count; i++)
+            {
+                Vector3 corner = m_Buffer[i];
+                if (i < count - 1)
+                {
+                    corner = NavCornerLogic.Offset(m_Buffer[i - 1], corner, m_Buffer[i + 1]);
+                    // 띄운 자리가 폴리곤 밖이면(좁은 복도) 원래 자리를 쓴다 — 벽 속을 향하면 더 나쁘다
+                    if (NavMesh.SamplePosition(corner, out NavMeshHit safe, 1f, NavMesh.AllAreas))
+                    {
+                        corner = safe.position;
+                    }
+                    else
+                    {
+                        corner = m_Buffer[i];
+                    }
+                }
+                m_Corners.Add(corner);
+            }
 
             if (m_Corners.Count == 0) m_HasGoal = false;   // 이미 그 자리다
         }
