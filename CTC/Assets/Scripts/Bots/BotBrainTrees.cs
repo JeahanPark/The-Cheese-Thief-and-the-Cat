@@ -121,7 +121,7 @@ namespace CTC.Runtime.Bots
                     // 예약 가중치 게이트 — **한 감옥에 한 마리만** 간다. 전원이 달려가면
                     // 파밍이 통째로 서고 간수 앞에 먹잇감이 줄을 선다.
                     new BtCondition(() =>
-                        _self.Senses.NearestVisible() == null
+                        !CatTooCloseToRescue(_self)
                         && _self.TryGetJailWithAlly(out Vector3 jail)
                         && _self.ReservationWeight(jail) > 0.5f),
                     BtAction.Once(() =>
@@ -206,6 +206,14 @@ namespace CTC.Runtime.Bots
         {
             Transform prey = _self.VisiblePrey();
             return prey != null && _self.DistanceTo(prey.position) <= _self.PounceRange;
+        }
+
+        // 구출을 접는 기준은 "보이는 고양이가 **가까울** 때"만 — 거리 없이 접으면
+        // 간수가 감옥에 서 있기만 해도 온 맵의 구출이 죽는다.
+        private static bool CatTooCloseToRescue(BotAgent _self)
+        {
+            Transform cat = _self.Senses.NearestVisible();
+            return cat != null && _self.DistanceTo(cat.position) <= MouseBotLogic.RESCUE_ABORT_RADIUS;
         }
 
         // 위협의 자리. **보이는 고양이가 우선**, 없으면 **가까운** 소리만 —

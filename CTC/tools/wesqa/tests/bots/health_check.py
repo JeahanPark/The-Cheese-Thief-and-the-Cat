@@ -103,11 +103,13 @@ def main():
         time.sleep(SAMPLE_INTERVAL)
 
     # 봇마다 처음/마지막 본 값을 따로 모은다 — 도중에 탈락해도 그때까지의 값이 유효하다
-    roles, acts, first_d, last_d, seen = {}, {}, {}, {}, {}
+    roles, acts, act_n, first_d, last_d, seen = {}, {}, {}, {}, {}, {}
     for snapshot in samples:
         for bot, (role, act, dist, _c, _i, _g) in snapshot.items():
             roles[bot] = role
             acts.setdefault(bot, set()).add(act)
+            counts = act_n.setdefault(bot, {})
+            counts[act] = counts.get(act, 0) + 1
             first_d.setdefault(bot, dist)
             last_d[bot] = dist
             seen[bot] = seen.get(bot, 0) + 1
@@ -120,11 +122,18 @@ def main():
           f"{len(roles)} / {args.mice + args.cats}")
 
     # ---------- ① 굳은 봇 ----------
-    # 갇힌 쥐와 파밍 중인 쥐는 제자리에 있는 게 정상이라 뺀다.
-    frozen = [f"{roles[b]}#{b} {last_d[b] - first_d[b]}m"
-              for b in roles
-              if not acts[b] <= {"Jailed", "Farm"}
-              and seen[b] >= 10 and last_d[b] - first_d[b] < 15]
+    # 서 있는 게 정답인 상태(수감·파밍·구출 대기)가 표본의 80% 이상이면 정상이다 —
+    # 집합으로 거르면 파밍 90초 사이에 낀 Travel 틱 두 개 때문에 정당한 쥐가 걸린다
+    # (2026-08-13 실측: Farm/Travel 4m). 반대로 Travel만 계속인 진짜 끼임은 여전히 잡힌다.
+    STANDING_OK = {"Jailed", "Farm", "Rescue"}
+    frozen = []
+    for b in roles:
+        if seen[b] < 10 or last_d[b] - first_d[b] >= 15:
+            continue
+        standing = sum(n for a, n in act_n[b].items() if a in STANDING_OK)
+        if standing / seen[b] >= 0.8:
+            continue
+        frozen.append(f"{roles[b]}#{b} {last_d[b] - first_d[b]}m({'/'.join(sorted(acts[b]))})")
     check("① 판 내내 굳은 봇이 없다", not frozen, " · ".join(frozen))
 
     # ---------- ② 경로 소진 상태로 오래 있지 않는다 ----------
@@ -171,16 +180,18 @@ def main():
 
     # ---------- ⑦ 움직일 때 제 속도로 움직인다 ----------
     # 최고속: 고양이 7.8 · 쥐 6.0 (PlayerInfo.csv). 상태를 오가느라 100%는 안 나온다.
-    # 쥐 문턱이 고양이보다 낮은 이유(2026-08-12): 도주·구출에 잠행(0.45배)을 제대로 쓰면서
-    # 평균이 1.5m/s대로 내려왔다 — 정당한 행동이다. 끼임은 ①(굳음)·②(경로 소진)가 잡는다.
-    for role, top, floor, label in (("C", 7.8, 0.30, "고양이"), ("M", 6.0, 0.20, "쥐")):
+    # **서 있는 게 정답인 표본은 분모에서 뺀다**(2026-08-13) — 파밍·구출 대기가 길어진
+    # 판에서는 전체 시간 평균이 1.0m/s까지 내려가 정당한 판이 빨간불이 났다.
+    # 잠행(2.7m/s)이 섞여도 30%(고양이 2.3 · 쥐 1.8)는 나와야 한다 — 그 아래면 끼임이다.
+    for role, top, label in (("C", 7.8, "고양이"), ("M", 6.0, "쥐")):
         ids = [b for b in roles if roles[b] == role]
         if not ids:
             continue
         moved = sum(last_d[b] - first_d[b] for b in ids)
-        span = sum(seen[b] for b in ids) * SAMPLE_INTERVAL / len(ids)
-        speed = moved / len(ids) / max(span, 1e-3)
-        check(f"⑦ {label}가 제 속도로 움직인다", speed >= top * floor, f"{speed:.1f} / {top} m/s")
+        moving = sum(
+            n for b in ids for a, n in act_n[b].items() if a not in STANDING_IS_CORRECT)
+        speed = moved / max(moving * SAMPLE_INTERVAL, 1e-3)
+        check(f"⑦ {label}가 제 속도로 움직인다", speed >= top * 0.30, f"{speed:.1f} / {top} m/s")
 
     # ---------- ⑧ 지휘관이 돈다 ----------
     check("⑧ 지휘관이 명령을 낸다", peak_orders > 0, f"{peak_orders}개")

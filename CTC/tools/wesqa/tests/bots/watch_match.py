@@ -57,10 +57,11 @@ def main():
             for _n, role, act in ROW.findall(host.invoke("TestGetBotDiagnostics")):
                 acts[f"{role}:{act}"] = acts.get(f"{role}:{act}", 0) + 1
             cat_acts = " ".join(f"{k[2:]}x{v}" for k, v in sorted(acts.items()) if k.startswith("C"))
+            mouse_acts = " ".join(f"{k[2:]}x{v}" for k, v in sorted(acts.items()) if k.startswith("M"))
             mice_alive = sum(v for k, v in acts.items() if k.startswith("M"))
 
             print(f"[{time.time()-started:5.0f}s] 남은{remaining:>4s} 수감{jailed} "
-                  f"(누적 {jail_events}) 쥐{mice_alive} | 고양이: {cat_acts}")
+                  f"(누적 {jail_events}) 쥐{mice_alive} [{mouse_acts}] | 고양이: {cat_acts}")
             sys.stdout.flush()
 
             if result != "None":
