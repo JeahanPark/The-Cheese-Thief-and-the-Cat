@@ -87,6 +87,15 @@ namespace CTC.Runtime.Testing
             var nm = Unity.Netcode.NetworkManager.Singleton;
             if (nm == null) { GameDebug.LogError("[TestManager] NetworkManager 없음"); return; }
 
+            // 이미 호스팅/접속 중이면 조용히 무시한다 — 그대로 두면 HostPortFallback이
+            // 제가 잡은 포트에 재바인드를 시도해 "7788~7807 전부 바인드 실패"라는
+            // 가짜 에러를 띄운다(2026-08-14 실측: QA 스크립트의 중복 호출마다 반복).
+            if (nm.IsListening)
+            {
+                GameDebug.Log("[TestManager] TestStartHost — 이미 호스팅/접속 중, 무시");
+                return;
+            }
+
             bool started = Networking.HostPortFallback.StartHost(nm);
             GameDebug.Log($"[TestManager] TestStartHost → {started}");
         }
