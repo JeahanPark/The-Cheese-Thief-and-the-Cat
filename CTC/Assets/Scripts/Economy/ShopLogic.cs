@@ -92,44 +92,8 @@ namespace CTC.Runtime.Economy
             }
         }
 
-        /// <summary>
-        /// 핫바 항목 한 줄 설명 — 이름·가격만으로는 뭘 사는지 알 수 없다(특히 창고·미끼).
-        /// 수치를 그대로 적는다: 플레이어가 "얼마짜리가 얼마를 해주는가"로 판단하게.
-        /// </summary>
-        public static string DescriptionOf(ShopItemId _id)
-        {
-            switch (_id)
-            {
-                // 무기 수치는 WeaponInfo.csv가 원본 — 문자열에 복제하면 CSV를 고칠 때 안내가 조용히 거짓이 된다.
-                case ShopItemId.Slingshot:
-                {
-                    WeaponStats popgun = WeaponStatsForTier(0);
-                    WeaponStats sling = WeaponStatsForTier(1);
-                    return $"딱총을 새총으로 — {popgun.Damage}뎀 → {sling.Damage}뎀, 사거리 {sling.Range:F0}m";
-                }
-                case ShopItemId.MachineGun:
-                {
-                    WeaponStats mg = WeaponStatsForTier(2);
-                    float dps = mg.CooldownSeconds > 0f ? mg.Damage / mg.CooldownSeconds : mg.Damage;
-                    return $"연사 무기 — 초당 {dps:F0}뎀. 2정이 모이면 고양이를 잡을 수 있다";
-                }
-                case ShopItemId.Dash:
-                    return "LShift 순간 가속 — 쫓길 때 거리를 벌린다";
-                case ShopItemId.Decoy:
-                    return $"발소리를 내는 가짜 쥐 — 고양이를 {DECOY_LIFETIME_SECONDS:F0}초간 낚는다 (즉시 설치)";
-                case ShopItemId.Fortress:
-                    return $"쥐만 드나드는 벙커 — 안에서 초당 {FORTRESS_HEAL_PER_TICK} 회복, 외벽 HP {FORTRESS_HP}";
-                case ShopItemId.Warehouse:
-                    return $"{WarehouseTickSeconds:F0}초마다 치즈 {WAREHOUSE_TICK_CHEESE} 생산 — " +
-                           $"자리를 비워도 벌리지만 소리로 위치가 팔린다 (HP {WAREHOUSE_MAX_HP}, 1인 1채)";
-                case ShopItemId.CatAttack:
-                    return $"덮치기 피해 +{POUNCE_DAMAGE_PER_STACK} (최대 {MAX_UPGRADE_STACKS}중첩)";
-                case ShopItemId.CatSpeed:
-                    return $"이동 속도 +{SPEED_PER_STACK:0.0} (최대 {MAX_UPGRADE_STACKS}중첩)";
-                default:
-                    return "";
-            }
-        }
+        // DescriptionOf(수치 포함 장문 설명)는 HUD 개편(2026-08-15)으로 삭제 — 좌하단 장문이
+        // 사라지며 읽는 곳이 없어졌다. 항목 안내는 핫바 반줄 힌트 + 구매 토스트(ShopHotbar)가 맡는다.
 
         public static ShopItem Find(ShopItemId _id)
         {

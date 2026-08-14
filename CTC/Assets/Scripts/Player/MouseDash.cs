@@ -1,3 +1,4 @@
+using CTC.Runtime.Core;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,6 +27,16 @@ namespace CTC.Runtime.Player
         private double m_LastUseTime = -999.0;
 
         public bool Owned => m_Owned.Value;
+
+        /// <summary>구매 상태 스트림(HUD 칩·배지용) — 구독 즉시 현재 값이 흐른다.</summary>
+        public R3.Observable<bool> OwnedChanged => m_Owned.AsObservableWithCurrent();
+
+        /// <summary>
+        /// 남은 쿨다운(초) — 소유자 로컬 값(HUD 칩 표시용). `m_LastUseTime`이 소유자에게만
+        /// 쌓이므로 다른 클라에서는 항상 0으로 보인다(칩은 자기 화면에만 있으니 충분하다).
+        /// </summary>
+        public float CooldownRemaining => !m_Owned.Value ? 0f
+            : Mathf.Max(0f, (float)(COOLDOWN_SECONDS - (Time.timeAsDouble - m_LastUseTime)));
 
         /// <summary>서버 전용(ShopController).</summary>
         public void ServerSetOwned()

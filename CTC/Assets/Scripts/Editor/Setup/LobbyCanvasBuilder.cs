@@ -26,10 +26,10 @@ namespace CTC.Editor
     // SetupNetworkingScene의 일부 — 로비 캔버스·HUD·핫바 조립 (개편 4단계 분할, 2026-07-31)
     public static partial class SetupNetworkingScene
     {
-        // 상점 핫바 슬롯 치수(하단 중앙)
+        // 상점 핫바 슬롯 치수(하단 중앙) — 반줄 힌트가 들어가며 세로 확장(HUD 개편 2026-08-15)
         private const float SLOT_WIDTH = 132f;
 
-        private const float SLOT_HEIGHT = 68f;
+        private const float SLOT_HEIGHT = 84f;
 
         private const float SLOT_GAP = 8f;
 
@@ -108,42 +108,8 @@ namespace CTC.Editor
             SetRef(ui, "m_MapLabel", mapLabel);
             SetRefArray(ui, "m_MapButtons", mapButtons);
 
-            // 치즈 잔액 HUD (우상단, 게임 시작 후 WalletHud가 표시 제어)
-            var hudTextGo = new GameObject("WalletText");
-            hudTextGo.transform.SetParent(canvasGo.transform, false);
-            var hudText = hudTextGo.AddComponent<TextMeshProUGUI>();
-            hudText.text = "Cheese: 0";
-            hudText.fontSize = 32f;
-            hudText.alignment = TextAlignmentOptions.TopRight;
-            var hudRect = hudTextGo.GetComponent<RectTransform>();
-            hudRect.anchorMin = new Vector2(1f, 1f);
-            hudRect.anchorMax = new Vector2(1f, 1f);
-            hudRect.pivot = new Vector2(1f, 1f);
-            hudRect.anchoredPosition = new Vector2(-24f, -24f);
-            hudRect.sizeDelta = new Vector2(320f, 48f);
-            hudTextGo.SetActive(false); // WalletHud가 게임 시작 시 켬
-
-            var walletHud = canvasGo.AddComponent<WalletHud>();
-            SetRef(walletHud, "m_Text", hudText); // 로컬 플레이어는 LocalPlayerBinder 스트림에서 받는다
-
-            // 전투 HUD (좌상단 아래쪽, CombatHud가 게임 시작 시 켬)
-            var combatTextGo = new GameObject("CombatText");
-            combatTextGo.transform.SetParent(canvasGo.transform, false);
-            var combatText = combatTextGo.AddComponent<TextMeshProUGUI>();
-            combatText.text = "HP -   CAT -";
-            combatText.fontSize = 32f;
-            combatText.alignment = TextAlignmentOptions.TopLeft;
-            var combatRect = combatTextGo.GetComponent<RectTransform>();
-            combatRect.anchorMin = new Vector2(0f, 1f);
-            combatRect.anchorMax = new Vector2(0f, 1f);
-            combatRect.pivot = new Vector2(0f, 1f);
-            combatRect.anchoredPosition = new Vector2(24f, -110f); // ConnectionUI(IMGUI) 아래
-            combatRect.sizeDelta = new Vector2(480f, 48f);
-            combatTextGo.SetActive(false);
-
-            var combatHud = canvasGo.AddComponent<CombatHud>();
-            SetRef(combatHud, "m_Lobby", _lobby);
-            SetRef(combatHud, "m_Text", combatText);
+            // 우상단 상태 클러스터 — 구 WalletText(우상단)·CombatText(좌상단)를 대체(HUD 개편 2026-08-15)
+            BuildStatusCluster(canvasGo, _lobby);
 
             // 상점 핫바 (하단 중앙 상시 표시, 숫자키 즉시 구매 — UX 개정 2026-07-27)
             var hotbarRoot = new GameObject("ShopHotbar", typeof(RectTransform));
@@ -156,6 +122,7 @@ namespace CTC.Editor
 
             var slotRoots = new Object[ShopLogic.HOTBAR_SLOTS];
             var slotLabels = new Object[ShopLogic.HOTBAR_SLOTS];
+            var slotHints = new Object[ShopLogic.HOTBAR_SLOTS];
             var slotCosts = new Object[ShopLogic.HOTBAR_SLOTS];
             float totalWidth = SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
             for (int i = 0; i < ShopLogic.HOTBAR_SLOTS; i++)
@@ -172,9 +139,12 @@ namespace CTC.Editor
                 slotBg.color = new Color(0.07f, 0.055f, 0.04f, 0.82f);
 
                 slotLabels[i] = CreateTmpText($"Name{i + 1}", slot.transform, "-",
-                    22f, TextAlignmentOptions.Center, new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 28f));
+                    22f, TextAlignmentOptions.Center, new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 26f));
+                // 반줄 힌트 — "딱봤을 때 뭔지". 문구·색은 ShopHotbar가 채운다.
+                slotHints[i] = CreateTmpText($"Hint{i + 1}", slot.transform, "",
+                    12f, TextAlignmentOptions.Center, new Vector2(0f, -34f), new Vector2(SLOT_WIDTH - 8f, 18f));
                 slotCosts[i] = CreateTmpText($"Cost{i + 1}", slot.transform, "-",
-                    20f, TextAlignmentOptions.Center, new Vector2(0f, -34f), new Vector2(SLOT_WIDTH - 8f, 26f));
+                    20f, TextAlignmentOptions.Center, new Vector2(0f, -54f), new Vector2(SLOT_WIDTH - 8f, 26f));
                 slotRoots[i] = slot;
             }
 
@@ -188,6 +158,7 @@ namespace CTC.Editor
             SetRef(hotbar, "m_Root", hotbarRoot);
             SetRefArray(hotbar, "m_Slots", slotRoots);
             SetRefArray(hotbar, "m_SlotLabels", slotLabels);
+            SetRefArray(hotbar, "m_SlotHints", slotHints);
             SetRefArray(hotbar, "m_SlotCosts", slotCosts);
             SetRef(hotbar, "m_Toast", toastText);
             SetRef(hotbar, "m_GhostMaterialSource", CreateGhostMaterialAsset());
@@ -222,14 +193,13 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
 
-            // 조작키 + 핫바 항목 설명 (좌하단 — 역할별, ControlsHud가 게임 중 표시).
-            // 쥐는 6항목이라 세로가 길다 — 높이를 넉넉히 잡는다.
+            // 특수키 칩 한 줄 (좌하단 — 역할·보유 조건부, ControlsHud가 게임 중 표시).
+            // 구 장문 6줄은 HUD 개편(2026-08-15)으로 핫바 힌트·구매 토스트에 분산됐다.
             var controlsTextGo = new GameObject("ControlsText");
             controlsTextGo.transform.SetParent(canvasGo.transform, false);
             var controlsText = controlsTextGo.AddComponent<TextMeshProUGUI>();
             controlsText.text = string.Empty;
-            controlsText.fontSize = 19f;
-            controlsText.lineSpacing = 12f;
+            controlsText.fontSize = 20f;
             controlsText.alignment = TextAlignmentOptions.BottomLeft;
             controlsText.color = new Color(1f, 1f, 1f, 0.85f);
             var controlsRect = controlsTextGo.GetComponent<RectTransform>();
@@ -237,7 +207,7 @@ namespace CTC.Editor
             controlsRect.anchorMax = new Vector2(0f, 0f);
             controlsRect.pivot = new Vector2(0f, 0f);
             controlsRect.anchoredPosition = new Vector2(24f, 20f);
-            controlsRect.sizeDelta = new Vector2(900f, 220f);
+            controlsRect.sizeDelta = new Vector2(1100f, 44f);
             controlsTextGo.SetActive(false);
 
             var controlsHud = canvasGo.AddComponent<ControlsHud>();
@@ -618,6 +588,79 @@ namespace CTC.Editor
             var hud = _canvasGo.AddComponent<CTC.Runtime.UI.MouseJobHud>();
             SetRef(hud, "m_Phase", _phase);
             SetRef(hud, "m_Text", text);
+        }
+
+        // ===== 우상단 상태 클러스터 (HUD 개편 2026-08-15) =====
+        // 내 HP 바 + 고양이 HP 바(공동 목표) + 재화 + 상시 배지 — StatusHud가 표시 제어.
+        private static void BuildStatusCluster(GameObject _canvasGo, LobbyController _lobby)
+        {
+            var root = new GameObject("StatusCluster", typeof(RectTransform));
+            root.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)root.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(1f, 1f);
+            rt.anchoredPosition = new Vector2(-24f, -24f);
+            rt.sizeDelta = new Vector2(320f, 120f);
+
+            (GameObject myBar, Image myFill, TMP_Text myText) = CreateStatusBar(
+                root.transform, "MyHpBar", 0f, 26f, 16f, new Color(0.45f, 0.85f, 0.35f, 0.9f));
+            (GameObject catBar, Image catFill, TMP_Text catText) = CreateStatusBar(
+                root.transform, "CatHpBar", -32f, 18f, 12f, new Color(0.95f, 0.55f, 0.25f, 0.9f));
+
+            TMP_Text wallet = CreateTmpText("WalletText", root.transform, "-",
+                24f, TextAlignmentOptions.Right, new Vector2(0f, -58f), new Vector2(320f, 32f));
+            TMP_Text badge = CreateTmpText("BadgeText", root.transform, "",
+                16f, TextAlignmentOptions.Right, new Vector2(0f, -92f), new Vector2(320f, 24f));
+            badge.color = new Color(0.73f, 0.76f, 0.82f, 0.9f);
+
+            root.SetActive(false); // StatusHud가 게임 시작 시 켬
+
+            var hud = _canvasGo.AddComponent<CTC.Runtime.UI.StatusHud>();
+            SetRef(hud, "m_Lobby", _lobby);
+            SetRef(hud, "m_Root", root);
+            SetRef(hud, "m_MyBar", myBar);
+            SetRef(hud, "m_MyHpFill", myFill);
+            SetRef(hud, "m_MyHpText", myText);
+            SetRef(hud, "m_CatBar", catBar);
+            SetRef(hud, "m_CatHpFill", catFill);
+            SetRef(hud, "m_CatHpText", catText);
+            SetRef(hud, "m_WalletText", wallet);
+            SetRef(hud, "m_BadgeText", badge);
+        }
+
+        // 게이지 한 줄(배경 + 채움 + 겹침 라벨). 채움은 StatusHud가 anchorMax.x 비율로 그린다.
+        private static (GameObject bar, Image fill, TMP_Text label) CreateStatusBar(
+            Transform _parent, string _name, float _y, float _height, float _fontSize, Color _fillColor)
+        {
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, _y);
+            rt.sizeDelta = new Vector2(0f, _height);
+            var bg = go.AddComponent<Image>();
+            bg.color = new Color(0.06f, 0.07f, 0.1f, 0.82f);
+            bg.raycastTarget = false;
+
+            var fillGo = new GameObject("Fill", typeof(RectTransform));
+            fillGo.transform.SetParent(go.transform, false);
+            var fillRt = (RectTransform)fillGo.transform;
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.offsetMin = new Vector2(2f, 2f);
+            fillRt.offsetMax = new Vector2(-2f, -2f);
+            var fill = fillGo.AddComponent<Image>();
+            fill.color = _fillColor;
+            fill.raycastTarget = false;
+
+            TMP_Text label = CreateTmpText(_name + "Text", go.transform, "-", _fontSize,
+                TextAlignmentOptions.Center, Vector2.zero, new Vector2(0f, _height));
+            var labelRt = (RectTransform)label.transform;
+            labelRt.anchorMin = new Vector2(0f, 1f);
+            labelRt.anchorMax = new Vector2(1f, 1f);
+            return (go, fill, label);
         }
 
         private static void BuildChatHud(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)

@@ -23,6 +23,9 @@ namespace CTC.Runtime.Economy
     public class ShopHotbar : MonoBehaviour
     {
         private const float TOAST_SECONDS = 1.4f;
+        // HUD 개편(2026-08-15): 오류 토스트(1.4s)와 달리 **사용법을 가르치는** 토스트는 읽을 시간을 준다.
+        private const float TOAST_LONG_SECONDS = 3f;
+        private const float INTRO_TOAST_SECONDS = 4f;
         private const float GHOST_MIN_DISTANCE = 1.5f;
 
         // 고스트가 뻗는 최대 거리 — 서버 검증(ShopController.MAX_PLACE_DISTANCE)보다 짧아야 한다.
@@ -33,6 +36,15 @@ namespace CTC.Runtime.Economy
             "새총", "기관총", "대시", "미끼", "요새", "창고", "공격 강화", "이속 강화",
         };
 
+        // 슬롯 반줄 힌트 — "딱봤을 때 뭔지"만. 사용법 문장은 구매 토스트(UsageOf)의 몫.
+        private static readonly string[] ITEM_HINTS =
+        {
+            "더 세고 멀리", "연사 — 고양이 사냥", "LShift 순간 가속", "고양이 낚는 가짜 쥐",
+            "쥐만 드는 회복 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
+        };
+
+        private static readonly Color COLOR_HINT = new Color(0.73f, 0.76f, 0.82f, 0.8f);
+
         private static readonly Color COLOR_READY = Color.white;
         private static readonly Color COLOR_POOR = new Color(1f, 0.45f, 0.35f);
         private static readonly Color COLOR_OWNED = new Color(0.5f, 0.82f, 0.42f);
@@ -41,6 +53,7 @@ namespace CTC.Runtime.Economy
         [SerializeField] private GameObject m_Root;
         [SerializeField] private GameObject[] m_Slots;     // 슬롯 루트(표시/숨김)
         [SerializeField] private TMP_Text[] m_SlotLabels;  // "1 새총"
+        [SerializeField] private TMP_Text[] m_SlotHints;   // 반줄 힌트 "고양이 낚는 가짜 쥐"
         [SerializeField] private TMP_Text[] m_SlotCosts;   // "150" / "보유"
         [SerializeField] private TMP_Text m_Toast;
         // 설치 미리보기 원본 — 에셋으로 둬야 빌드에서 셰이더가 스트리핑되지 않는다
@@ -57,6 +70,7 @@ namespace CTC.Runtime.Economy
         private int m_Cheese;
         private bool m_GameStarted;
         private bool m_SlotsDirty;
+        private bool m_IntroShown; // 기본 조작 토스트는 매치당 1회 — 매판 반복되면 소음이다
 
         private float m_ToastUntil;
         private ShopItemId m_PlacingId = ShopItemId.None;
@@ -87,6 +101,7 @@ namespace CTC.Runtime.Economy
         private void OnGameStartedChanged(bool _started)
         {
             m_GameStarted = _started;
+            if (!_started) m_IntroShown = false;
             ApplyActive();
         }
 
@@ -123,6 +138,16 @@ namespace CTC.Runtime.Economy
             if (m_Root.activeSelf != inGame) m_Root.SetActive(inGame);
             if (inGame) m_SlotsDirty = true;
             else CancelPlacement();
+
+            // 첫 스폰 1회 기본 조작 안내(2026-08-15) — 좌하단 장문을 칩으로 줄이면서
+            // WASD류 기본 조작이 화면에서 사라졌다. 처음 한 번만 토스트로 알린다.
+            if (inGame && !m_IntroShown)
+            {
+                m_IntroShown = true;
+                string attack = m_Role == RoleId.Cat ? "덮치기" : "발사";
+                Say($"WASD 이동 · 마우스 시점 · 좌클릭 {attack} · LCtrl 살금살금 · 숫자키 구매",
+                    INTRO_TOAST_SECONDS);
+            }
         }
 
         private void Update()
@@ -164,6 +189,14 @@ namespace CTC.Runtime.Economy
                 Color color = owned ? COLOR_OWNED : affordable ? COLOR_READY : COLOR_POOR;
                 m_SlotLabels[slot].color = color;
                 m_SlotCosts[slot].color = color;
+
+                // 반줄 힌트 — 상태색을 안 따른다(정보이지 상태가 아니다).
+                // 씬 재생성 전(미배선)에도 죽지 않게 비어 있으면 건너뛴다.
+                if (m_SlotHints != null && slot < m_SlotHints.Length && m_SlotHints[slot] != null)
+                {
+                    m_SlotHints[slot].text = ITEM_HINTS[m_Indices[slot]];
+                    m_SlotHints[slot].color = COLOR_HINT;
+                }
             }
         }
 
@@ -188,8 +221,9 @@ namespace CTC.Runtime.Economy
                     return;
                 }
 
+                // 구매 토스트가 곧 사용법이다(2026-08-15) — "새총 구매"만으로는 뭐가 달라졌는지 모른다
                 if (ShopLogic.IsPlaceable(item.Id)) BeginPlacement(item.Id, name);
-                else { m_Shop.Buy(item.Id); Say($"{name} 구매"); }
+                else { m_Shop.Buy(item.Id); Say(UsageOf(item.Id), TOAST_LONG_SECONDS); }
                 return;
             }
         }
@@ -255,7 +289,10 @@ namespace CTC.Runtime.Economy
             if (!m_GhostValid) { Say("여기엔 설치할 수 없다"); return; }
 
             m_Shop.BuyAt(m_PlacingId, pos); // 차감은 서버가 설치 확정 시점에
+            // 서버 재검증 실패(드묾 — 고스트가 이미 걸렀다)면 거절음만 나고 이 토스트는 살짝 거짓이 된다
+            ShopItemId placed = m_PlacingId;
             CancelPlacement();
+            Say(UsageOf(placed), TOAST_LONG_SECONDS);
         }
 
         // 카메라 전방 지면 지점 — 플레이어 기준 1.5~4m로 클램프
@@ -310,11 +347,28 @@ namespace CTC.Runtime.Economy
             return new Material(m_GhostMaterialSource);
         }
 
-        private void Say(string _message)
+        private void Say(string _message, float _seconds = TOAST_SECONDS)
         {
             m_Toast.text = _message;
             m_Toast.gameObject.SetActive(true);
-            m_ToastUntil = Time.time + TOAST_SECONDS;
+            m_ToastUntil = Time.time + _seconds;
+        }
+
+        // 구매 직후 사용법 한 줄 — 수치는 안 적는다(칩·힌트와 달리 이건 "그래서 뭘 하면 되나"다)
+        private static string UsageOf(ShopItemId _id)
+        {
+            switch (_id)
+            {
+                case ShopItemId.Slingshot: return "새총 장착 — 좌클릭 발사가 더 세고 멀리 간다";
+                case ShopItemId.MachineGun: return "기관총 장착 — 좌클릭 연사로 고양이를 노린다";
+                case ShopItemId.Dash: return "대시 습득 — LShift로 순간 가속해 거리를 벌린다";
+                case ShopItemId.Decoy: return "미끼 설치 — 발소리로 고양이를 낚는다 · 잠시 뒤 사라진다";
+                case ShopItemId.Fortress: return "요새 설치 — 쥐만 드나들고 안에 있으면 회복된다";
+                case ShopItemId.Warehouse: return "창고 설치 — 자리를 비워도 치즈가 쌓인다 · 소리로 위치가 팔린다";
+                case ShopItemId.CatAttack: return "공격 강화 — 덮치기가 더 아프다";
+                case ShopItemId.CatSpeed: return "이속 강화 — 이동이 더 빨라진다";
+                default: return "";
+            }
         }
     }
 }

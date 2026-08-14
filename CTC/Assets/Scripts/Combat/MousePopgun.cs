@@ -1,3 +1,4 @@
+using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -20,6 +21,9 @@ namespace CTC.Runtime.Combat
         private double m_LastUseTime = -999.0;
 
         public int Tier => m_Tier.Value;
+
+        /// <summary>무기 티어 스트림(우상단 상태 배지용) — 구독 즉시 현재 값이 흐른다.</summary>
+        public R3.Observable<int> TierChanged => m_Tier.AsObservableWithCurrent();
 
         /// <summary>서버 전용(ShopController). 단방향 상승만.</summary>
         public void ServerSetTier(int _tier)

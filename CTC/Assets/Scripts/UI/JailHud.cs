@@ -14,7 +14,7 @@ namespace CTC.Runtime.UI
     /// 0이 되면 진짜 탈락이라 카운트다운 없이는 갇힌 시간이 그냥 지루해진다.
     ///
     /// 규칙 3(폴링 금지)대로 `JailedTag`의 스트림을 구독한다. 로컬 플레이어가 바뀌면
-    /// `SerialDisposable`이 이전 구독을 끊는다(`WalletHud`와 같은 꼴).
+    /// `SerialDisposable`이 이전 구독을 끊는다(`StatusHud`와 같은 꼴).
     /// </summary>
     public class JailHud : MonoBehaviour
     {
