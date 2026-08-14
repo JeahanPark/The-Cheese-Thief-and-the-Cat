@@ -145,16 +145,29 @@ namespace CTC.Runtime.Bots
                     new BtCondition(() => ThreatPosition(_self, out _)),
                     BtAction.Once(() =>
                     {
-                        _self.Activity = "Flee";
                         ThreatPosition(_self, out Vector3 threat);
                         // **보이면 달린다.** 잠행은 0.45배(2.7m/s)라 7.8m/s 고양이에게 무조건
                         // 잡힌다 — 실제로 첫 발견 후 2게임분 안에 8마리가 전멸했다(2026-08-12).
-                        // 소리만 들리면 조용히 — 발소리(18m)로 위치를 다시 알려 주지 않는다.
+                        // 소리만 들리면 조용히 — 발소리(14m)로 위치를 다시 알려 주지 않는다.
                         bool seen = _self.Senses.NearestVisible() != null;
                         _self.SetSneak(!seen);
-                        // 정반대가 아니라 **위협에게 안 보이는 자리**로 — 차폐벽·기둥 뒤가 걸린다
-                        _self.Nav.SetGoal(MouseBotLogic.FleeGoal(
-                            _self.Position, threat, BotAgent.FLEE_DISTANCE, BotAgent.IsHiddenFrom));
+
+                        // **요새가 이길 수 있는 거리에 있으면 그리로**(원작 벙커 플레이) —
+                        // 좌우 통벽·쥐 전용 문이라 고양이는 부수기 전엔 못 들어온다.
+                        // 없으면 위협에게 안 보이는 자리로 꺾는다(차폐벽·기둥 뒤).
+                        if (_self.TryGetRefugeFortress(threat, out Vector3 fort))
+                        {
+                            bool inside = _self.DistanceTo(fort) <= MouseBotLogic.ARRIVE_DISTANCE;
+                            _self.Activity = inside ? "Shelter" : "Flee";
+                            _self.Nav.SetGoal(fort);
+                        }
+                        else
+                        {
+                            _self.Activity = "Flee";
+                            _self.Nav.SetGoal(MouseBotLogic.FleeGoal(
+                                _self.Position, threat, BotAgent.FLEE_DISTANCE, BotAgent.IsHiddenFrom));
+                        }
+
                         // 눈앞에서 쫓기면 도주 수단을 쓴다 — 사서 안 쓰면 못 산 것과 같다.
                         // 미끼는 전방(도망 방향)에 서고 쥐만 통과시킨다 — 추격선 위의 벽.
                         // 시작 치즈 60이 정확히 미끼 1개분인 이유가 이거다.

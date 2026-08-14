@@ -125,7 +125,7 @@ def main():
     # 서 있는 게 정답인 상태(수감·파밍·구출 대기)가 표본의 80% 이상이면 정상이다 —
     # 집합으로 거르면 파밍 90초 사이에 낀 Travel 틱 두 개 때문에 정당한 쥐가 걸린다
     # (2026-08-13 실측: Farm/Travel 4m). 반대로 Travel만 계속인 진짜 끼임은 여전히 잡힌다.
-    STANDING_OK = {"Jailed", "Farm", "Rescue"}
+    STANDING_OK = {"Jailed", "Farm", "Rescue", "Shelter"}   # Shelter = 요새 안에서 버티기
     frozen = []
     for b in roles:
         if seen[b] < 10 or last_d[b] - first_d[b] >= 15:
@@ -141,7 +141,7 @@ def main():
     #
     # **제자리에 있는 게 정답인 상태는 뺀다** — 감옥에서 버티는 쥐(구출), 감옥 앞을 지키는
     # 고양이, 캐는 쥐, 덮치는 고양이는 서 있어야 한다. 그걸 막힘으로 세면 영원히 못 통과한다.
-    STANDING_IS_CORRECT = {"Farm", "Jailed", "Rescue", "GuardJail", "Pounce"}
+    STANDING_IS_CORRECT = {"Farm", "Jailed", "Rescue", "GuardJail", "Pounce", "Shelter"}
 
     run, worst = {}, {}
     for snapshot in samples:

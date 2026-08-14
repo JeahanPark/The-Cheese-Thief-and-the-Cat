@@ -300,6 +300,26 @@ namespace CTC.Runtime.Bots
 
         public void ForgetSpot() => m_SpotIndex = -1;
 
+        private readonly List<Vector3> m_Forts = new List<Vector3>();
+
+        /// <summary>
+        /// 도망칠 때 들어갈 요새. 서 있는 요새 중 **진입 경주에서 이길 수 있는** 가장 가까운 것 —
+        /// 규칙은 <see cref="MouseBotLogic.ChooseRefuge"/>. 요새 자리는 화면에 크게 보이는
+        /// 구조물이라 봇이 아는 게 반칙이 아니다.
+        /// </summary>
+        public bool TryGetRefugeFortress(Vector3 _threat, out Vector3 _fort)
+        {
+            m_Forts.Clear();
+            foreach (var zone in Object.FindObjectsByType<Economy.FortressHealZone>(FindObjectsSortMode.None))
+            {
+                m_Forts.Add(zone.transform.position);
+            }
+
+            int pick = MouseBotLogic.ChooseRefuge(m_Forts, Position, _threat);
+            _fort = pick >= 0 ? m_Forts[pick] : Vector3.zero;
+            return pick >= 0;
+        }
+
         /// <summary>갇힌 동료가 있는 감옥 중 가장 가까운 곳. **자리는 안다** — 맵에 고정된 구조물이다.</summary>
         public bool TryGetJailWithAlly(out Vector3 _jail)
         {

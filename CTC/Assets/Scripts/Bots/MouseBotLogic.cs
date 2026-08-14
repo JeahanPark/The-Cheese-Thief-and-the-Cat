@@ -45,6 +45,43 @@ namespace CTC.Runtime.Bots
         public static bool IsSoundThreat(float _distanceToSound)
             => _distanceToSound <= SOUND_THREAT_RADIUS;
 
+        /// <summary>도망 목적지로 요새를 고려하는 반경 — 이보다 멀면 뛰어가다 잡힌다.</summary>
+        public const float FORT_REFUGE_RADIUS = 20f;
+
+        /// <summary>
+        /// 고양이는 1.3배 빠르다 — 요새 진입 경주에서 이기려면 내가 이 배율만큼
+        /// 유리해야 한다(추가 여유는 덮치기 사거리 몫).
+        /// </summary>
+        public const float REFUGE_RACE_RATIO = 1.3f;
+        public const float REFUGE_RACE_MARGIN = 3f;
+
+        /// <summary>
+        /// 도망칠 때 들어갈 요새 인덱스. 없으면 -1.
+        ///
+        /// 조건 둘 — ① 요새가 가깝고(FORT_REFUGE_RADIUS) ② **진입 경주에서 이긴다**
+        /// (위협의 요새 거리 > 내 거리 × 1.3 + 여유). 위협 뒤편의 요새로 뛰는 건
+        /// 자살이라, 이 경주 계산이 없으면 피난 행동이 봇을 더 빨리 죽인다.
+        /// 사람도 같은 판단을 한다("집이 가깝고 고양이가 저쪽에 있으니 들어간다").
+        /// </summary>
+        public static int ChooseRefuge(
+            IReadOnlyList<Vector3> _forts, Vector3 _self, Vector3 _threat)
+        {
+            int best = -1;
+            float bestDist = FORT_REFUGE_RADIUS;
+            for (int i = 0; i < _forts.Count; i++)
+            {
+                float mine = Flat(_forts[i] - _self).magnitude;
+                if (mine > bestDist) continue;
+
+                float theirs = Flat(_forts[i] - _threat).magnitude;
+                if (theirs <= mine * REFUGE_RACE_RATIO + REFUGE_RACE_MARGIN) continue;
+
+                best = i;
+                bestDist = mine;
+            }
+            return best;
+        }
+
         /// <summary>
         /// 지금 살 것. 살 게 없으면 None.
         ///

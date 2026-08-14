@@ -126,5 +126,48 @@ namespace CTC.Tests.EditMode
             Assert.IsTrue(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS - 1f));
             Assert.IsFalse(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS + 1f));
         }
+
+        // ---- 요새 피난 — 이길 수 있는 경주만 뛴다 ----
+
+        [Test]
+        public void Refuge_PicksTheNearFort_WhenTheRaceIsWinnable()
+        {
+            // 요새 10m·고양이는 요새에서 30m — 1.3배 빨라도 못 따라온다
+            var forts = new List<Vector3> { new Vector3(10f, 0f, 0f) };
+            Assert.AreEqual(0, MouseBotLogic.ChooseRefuge(
+                forts, Vector3.zero, new Vector3(-20f, 0f, 0f)));
+        }
+
+        [Test]
+        public void Refuge_SkipsFortBehindTheCat()
+        {
+            // 위협 뒤편의 요새로 뛰는 건 자살이다 — 경주 계산이 이걸 걸러야 한다
+            var forts = new List<Vector3> { new Vector3(10f, 0f, 0f) };
+            Assert.AreEqual(-1, MouseBotLogic.ChooseRefuge(
+                forts, Vector3.zero, new Vector3(8f, 0f, 0f)));
+        }
+
+        [Test]
+        public void Refuge_IgnoresFarForts()
+        {
+            // 반경 밖 요새는 뛰어가다 잡힌다
+            var forts = new List<Vector3> { new Vector3(MouseBotLogic.FORT_REFUGE_RADIUS + 5f, 0f, 0f) };
+            Assert.AreEqual(-1, MouseBotLogic.ChooseRefuge(
+                forts, Vector3.zero, new Vector3(-50f, 0f, 0f)));
+            Assert.AreEqual(-1, MouseBotLogic.ChooseRefuge(
+                new List<Vector3>(), Vector3.zero, new Vector3(-50f, 0f, 0f)));
+        }
+
+        [Test]
+        public void Refuge_PrefersTheNearestWinnableFort()
+        {
+            var forts = new List<Vector3>
+            {
+                new Vector3(18f, 0f, 0f),    // 이길 수 있지만 멀다
+                new Vector3(6f, 0f, 6f),     // 가깝고 이긴다 — 이걸 골라야 한다
+            };
+            Assert.AreEqual(1, MouseBotLogic.ChooseRefuge(
+                forts, Vector3.zero, new Vector3(-40f, 0f, 0f)));
+        }
     }
 }

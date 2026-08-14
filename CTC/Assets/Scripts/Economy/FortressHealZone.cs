@@ -27,7 +27,12 @@ namespace CTC.Runtime.Economy
             foreach (Health target in FindObjectsByType<Health>(FindObjectsSortMode.None))
             {
                 if (target.IsDead) continue;
-                if (target.NetworkObject == null || !target.NetworkObject.IsPlayerObject) continue;
+                if (target.NetworkObject == null || !target.NetworkObject.IsSpawned) continue;
+
+                // 참가자 = 플레이어의 몸. `IsPlayerObject`는 "클라이언트에 붙었나"라는 네트워크
+                // 구현 사실이지 참가 여부가 아니다 — 측정용 봇이 그 필터에 걸려 요새 회복을
+                // 못 받으면 봇으로 잰 밸런스가 사람과 다른 규칙을 탄다(MatchManager.CountAlive와 같은 이유).
+                if (target.GetComponent<Player.PlayerMovement>() == null) continue;
 
                 RoleTag tag = target.GetComponent<RoleTag>();
                 if (tag == null || tag.Role != RoleId.Mouse) continue;
