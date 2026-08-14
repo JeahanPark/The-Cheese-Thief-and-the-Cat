@@ -26,6 +26,7 @@ namespace CTC.Runtime.Lobby
         [SerializeField] private Button m_MouseButton;
         [SerializeField] private Button m_CatButton;
         [SerializeField] private Button m_StartButton;
+        [SerializeField] private Button m_BotMatchButton;   // 개발 빌드 전용 — 혼자 봇전
         [SerializeField] private Button[] m_MapButtons;   // 인덱스 = 맵 인덱스
         [SerializeField] private TMP_Text m_MapLabel;
 
@@ -34,6 +35,14 @@ namespace CTC.Runtime.Lobby
             m_MouseButton.OnClickAsObservable().Subscribe(_ => OnClickMouse()).AddTo(this);
             m_CatButton.OnClickAsObservable().Subscribe(_ => OnClickCat()).AddTo(this);
             m_StartButton.OnClickAsObservable().Subscribe(_ => OnClickStart()).AddTo(this);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (m_BotMatchButton != null)
+                m_BotMatchButton.OnClickAsObservable().Subscribe(_ => OnClickBotMatch()).AddTo(this);
+#else
+            // 봇은 개발 빌드 전용 계측기다(TestBotManager) — 배포 빌드에선 버튼째 숨긴다
+            if (m_BotMatchButton != null) m_BotMatchButton.gameObject.SetActive(false);
+#endif
 
             for (int i = 0; i < m_MapButtons.Length; i++)
             {
@@ -52,6 +61,10 @@ namespace CTC.Runtime.Lobby
         private void OnClickCat() => m_Lobby.SelectRole(RoleId.Cat);
         private void OnClickStart() => m_Lobby.RequestStartGame();
         private void OnClickMap(int _index) => m_Lobby.SelectMap(_index);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void OnClickBotMatch() => m_Lobby.DevStartBotMatch();
+#endif
 
         // 커서만 남긴다 — ResultHud·옵션 창이 커서를 점유했다 놓는 시점은 스트림으로 오지 않는다.
         // 판정은 CursorPolicyLogic(EditMode가 덮는다) — 2026-08-08 옵션 창에서 커서가 안 보이던 버그.
@@ -97,10 +110,13 @@ namespace CTC.Runtime.Lobby
             if (!inLobby) return;
 
             var sb = new System.Text.StringBuilder();
+            bool myRolePicked = false;
             for (int i = 0; i < m_Lobby.PlayerCount; i++)
             {
                 LobbyPlayerState p = m_Lobby.GetPlayer(i);
-                string who = p.ClientId == nm.LocalClientId ? "나" : $"플레이어 {i + 1}";
+                bool mine = p.ClientId == nm.LocalClientId;
+                if (mine) myRolePicked = p.Role == RoleId.Cat || p.Role == RoleId.Mouse;
+                string who = mine ? "나" : $"플레이어 {i + 1}";
                 sb.AppendLine($"{who} — {RoleName(p.Role)}");
             }
             m_PlayerListText.text = sb.ToString();
@@ -108,6 +124,15 @@ namespace CTC.Runtime.Lobby
             bool isHost = nm.IsHost;
             m_StartButton.gameObject.SetActive(isHost);
             m_StartButton.interactable = isHost && m_Lobby.CanStart;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // 봇전은 방장이 역할을 고른 뒤에만 — 역할 없이 열면 봇끼리만 논다
+            if (m_BotMatchButton != null)
+            {
+                m_BotMatchButton.gameObject.SetActive(isHost);
+                m_BotMatchButton.interactable = isHost && myRolePicked;
+            }
+#endif
 
             UpdateMapButtons(isHost);
         }

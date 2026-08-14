@@ -63,7 +63,7 @@ namespace CTC.Editor
             var panelRt = (RectTransform)panel.transform;
             panelRt.anchorMin = panelRt.anchorMax = new Vector2(0.5f, 0.5f);
             panelRt.pivot = new Vector2(0.5f, 0.5f);
-            panelRt.sizeDelta = new Vector2(PANEL_WIDTH, 620f); // 맵 선택 줄이 늘어 세로 확장
+            panelRt.sizeDelta = new Vector2(PANEL_WIDTH, 690f); // 맵 선택·봇전 줄이 늘어 세로 확장
             var panelImage = panel.AddComponent<Image>();
             panelImage.color = new Color(0.08f, 0.09f, 0.12f, 0.85f);
 
@@ -94,6 +94,8 @@ namespace CTC.Editor
             Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "쥐로 하기", new Vector2(0f, -400f));
             Button catButton = CreateMuipButton(panel.transform, "CatButton", "고양이로 하기", new Vector2(0f, -470f));
             Button startButton = CreateMuipButton(panel.transform, "StartButton", "게임 시작", new Vector2(0f, -550f));
+            // 개발 빌드 전용 — 혼자 봇 상대 2:8. 배포 빌드에선 LobbyUI가 Awake에서 숨긴다.
+            Button botMatchButton = CreateMuipButton(panel.transform, "BotMatchButton", "봇전 시작 (개발)", new Vector2(0f, -620f));
 
             var ui = canvasGo.AddComponent<LobbyUI>();
             SetRef(ui, "m_Lobby", _lobby);
@@ -102,6 +104,7 @@ namespace CTC.Editor
             SetRef(ui, "m_MouseButton", mouseButton);
             SetRef(ui, "m_CatButton", catButton);
             SetRef(ui, "m_StartButton", startButton);
+            SetRef(ui, "m_BotMatchButton", botMatchButton);
             SetRef(ui, "m_MapLabel", mapLabel);
             SetRefArray(ui, "m_MapButtons", mapButtons);
 

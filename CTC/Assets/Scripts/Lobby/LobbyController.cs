@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using CTC.Runtime.Map;
+using Cysharp.Threading.Tasks;
 using R3;
 using Unity.Netcode;
 using UnityEngine;
@@ -108,8 +109,9 @@ namespace CTC.Runtime.Lobby
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
         }
 
-#if UNITY_EDITOR
-        /// <summary>QA 전용 — 인원 조건을 건너뛰고 판을 연다(봇만 도는 측정 판).</summary>
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>QA 전용 — 인원 조건을 건너뛰고 판을 연다(봇만 도는 측정 판).
+        /// 개발 빌드까지 열어 둔 이유: 봇전 버튼(<see cref="DevStartBotMatch"/>)이 이걸 탄다.</summary>
         public void DevForceStartGame()
         {
             if (!IsServer || m_Session == null) return;
@@ -118,6 +120,56 @@ namespace CTC.Runtime.Lobby
             if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
+        }
+
+        /// <summary>
+        /// 개발 빌드 전용 — **혼자서 봇 상대 2:8**을 연다(로비의 "봇전 시작" 버튼).
+        /// 내 역할을 읽어 반대편을 봇으로 채운다: 고양이면 봇 쥐 8 + 봇 고양이 1,
+        /// 쥐면 봇 쥐 7 + 봇 고양이 2 — 어느 쪽이든 판은 2:8이다.
+        /// </summary>
+        public void DevStartBotMatch()
+        {
+            if (!IsServer) return;
+
+            RoleId mine = LocalRole();
+            if (mine != RoleId.Cat && mine != RoleId.Mouse) return;
+
+            DevForceStartGame();
+            SpawnBotsWhenReady(
+                mine == RoleId.Cat ? 8 : 7,
+                mine == RoleId.Cat ? 1 : 2).Forget();
+        }
+
+        private RoleId LocalRole()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || m_Session == null) return RoleId.None;
+
+            for (int i = 0; i < PlayerCount; i++)
+            {
+                LobbyPlayerState p = GetPlayer(i);
+                if (p.ClientId == nm.LocalClientId) return p.Role;
+            }
+            return RoleId.None;
+        }
+
+        // 맵을 짓고 폴리곤을 굽는 데 몇 프레임 걸린다 — 폴리곤이 서기 전에 봇을 세우면
+        // 한 발도 못 뗀다. 판이 열리고 폴리곤이 잡힐 때까지 기다렸다 세운다(상한 15초).
+        private async UniTask SpawnBotsWhenReady(int _mice, int _cats)
+        {
+            var cancel = this.GetCancellationTokenOnDestroy();
+            float deadline = Time.time + 15f;
+            while (Time.time < deadline)
+            {
+                await UniTask.Delay(250, cancellationToken: cancel);
+                if (!GameStarted) continue;
+
+                UnityEngine.AI.NavMeshTriangulation tri = UnityEngine.AI.NavMesh.CalculateTriangulation();
+                if (tri.indices != null && tri.indices.Length > 0) break;
+            }
+
+            var bots = Bots.TestBotManager.Instance;
+            if (bots != null) bots.ServerSpawn(_mice, _cats);
         }
 #endif
 
