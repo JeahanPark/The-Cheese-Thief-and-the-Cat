@@ -14,7 +14,7 @@ namespace CTC.Tests.EditMode
         [Test]
         public void NextPurchase_GrowthBuildBuysIncomeBeforeWeapons()
         {
-            // 수급·성장 빌드: 대시(도주) → 창고(수입) → 요새(생존) → 새총(싸움)
+            // 수급·성장 빌드: 대시(도주) → 창고(수입) → 요새(생존)
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Dash,
                 MouseBotLogic.NextPurchase(1000, false, false, false, false));
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Warehouse,
@@ -22,8 +22,9 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Fortress,
                 MouseBotLogic.NextPurchase(1000, true, false, true, false));
 
-            // **새총은 맨 뒤다.** 앞에 두면 쥐 여덟이 도망치며 쏴 고양이를 97초에 죽인다(2026-08-12).
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Slingshot,
+            // **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않는다 — 안 쓸 총에 치즈를
+            // 태우면 미끼 살 돈이 줄어 경제 측정이 왜곡된다.
+            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
                 MouseBotLogic.NextPurchase(1000, true, false, true, true));
 
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
