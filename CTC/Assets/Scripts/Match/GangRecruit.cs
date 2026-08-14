@@ -1,6 +1,7 @@
 using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -18,6 +19,14 @@ namespace CTC.Runtime.Match
     /// </summary>
     public class GangRecruit : NetworkBehaviour
     {
+        // 첫 임명 여부 — 표식(JobBadge)이 이걸 보고 보스를 숨긴다(2026-08-14).
+        // 임명 전의 보스는 "누가 위험분자인가"가 공개 정보고,
+        // 임명을 시작한 보스는 숨어서 세를 불린다.
+        private readonly NetworkVariable<bool> m_HasRecruited = new NetworkVariable<bool>();
+
+        public bool HasRecruited => m_HasRecruited.Value;
+        public Observable<bool> HasRecruitedChanged => m_HasRecruited.AsObservableWithCurrent();
+
         private MouseJob m_Job;
 
         private void Awake()
@@ -51,6 +60,7 @@ namespace CTC.Runtime.Match
             if (nearest == null) return;
 
             nearest.ServerSetJob(MouseJobId.Minion);
+            m_HasRecruited.Value = true;
         }
 
         // 가장 가까운 '아직 깡패 편이 아닌 쥐'. 갇힌 쥐는 임명하지 않는다 —

@@ -58,6 +58,10 @@ def main():
     check("직업 HUD — 뭘 해야 하는지 같이 적는다", "부하" in boss_hud or "쓰러" in boss_hud, boss_hud)
     check("안내 — 깡패가 되면 F 안내가 붙는다", "임명" in m1.invoke("TestGetControlsText"))
 
+    # 표식은 깡패팀에게만 보인다(2026-08-14) — 깡패가 아닌 쥐(m2, 아직 평쥐)는 보스 표식을 못 본다
+    check("표식 — 깡패가 아닌 쥐에게는 안 보인다",
+          m2.invoke("TestGetJobBadgeCount") == 0, f"{m2.invoke('TestGetJobBadgeCount')}개")
+
     cat.invoke("TestSetMouseJob", _clientId=m2_id, _job="Minion")
     time.sleep(1.0)
     minion_hud = m2.invoke("TestGetJobHudText")
@@ -65,11 +69,18 @@ def main():
     check("직업 HUD — 부하가 되면 본인 화면에 뜬다", "부하" in minion_hud, minion_hud)
 
     # ---------- 머리 위 표식 ----------
+    # 규칙(2026-08-14): 깡패팀만 본다 · 보스는 첫 임명 전까지 · 부하는 임명 3초 팝업.
+    # 여기서는 임명이 TestSetMouseJob(직접 세팅)이라 보스의 '첫 임명' 플래그는 안 선다 —
+    # 보스 표식은 남고, 부하 팝업만 3초 뒤 꺼진다.
     time.sleep(0.8)
     mouse_badges = m1.invoke("TestGetJobBadgeCount")
     cat_badges = cat.invoke("TestGetJobBadgeCount")
-    check("표식 — 쥐 화면에는 깡패 편이 보인다(보스+부하 2)", mouse_badges == 2, f"{mouse_badges}개")
+    check("표식 — 깡패팀 화면에는 보인다(보스+부하 팝업)", mouse_badges == 2, f"{mouse_badges}개")
     check("표식 — 고양이 화면에는 안 보인다", cat_badges == 0, f"{cat_badges}개")
+
+    time.sleep(3.0)
+    check("표식 — 부하 팝업은 3초 뒤 꺼진다(보스만 남음)",
+          m1.invoke("TestGetJobBadgeCount") == 1, f"{m1.invoke('TestGetJobBadgeCount')}개")
 
     # ---------- 2단계 타이머 ----------
     before = cat.invoke("TestGetTimerText")
