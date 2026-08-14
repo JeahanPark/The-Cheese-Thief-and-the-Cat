@@ -53,7 +53,10 @@ namespace CTC.Runtime.Match
         public static bool CanRecruit(MouseJobId _recruiter, MouseJobId _target, float _distance, float _radius)
         {
             if (_recruiter != MouseJobId.Gang) return false;
-            if (IsGangSide(_target)) return false;
+            // **직업이 없는 쥐만** 임명된다 — 직업은 중첩되지 않는다(2026-08-15 확정).
+            // 깡패 편만 걸렀더니 용사가 표적이 됐고, 임명은 ServerSetJob에서 무시되는데
+            // '첫 임명' 플래그만 서서 보스 표식이 헛되이 꺼졌다.
+            if (_target != MouseJobId.None) return false;
             return _distance <= _radius;
         }
 

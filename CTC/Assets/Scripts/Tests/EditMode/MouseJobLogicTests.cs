@@ -35,6 +35,15 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        public void CanRecruit_JobsNeverStack()
+        {
+            // 직업은 중첩되지 않는다(2026-08-15 확정) — 용사는 부하가 될 수 없다.
+            // 이걸 안 거르면 임명이 ServerSetJob에서 무시되면서 '첫 임명' 플래그만 서고,
+            // 보스 표식이 헛되이 꺼진다.
+            Assert.IsFalse(MouseJobLogic.CanRecruit(MouseJobId.Gang, MouseJobId.Hero, 1f, 2.5f));
+        }
+
+        [Test]
         public void CanRecruit_RespectsDistance()
         {
             // 거리 판정이 없으면 맵 반대편에서도 임명한다.
