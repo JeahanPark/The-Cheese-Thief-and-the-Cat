@@ -44,17 +44,21 @@ namespace CTC.Runtime.Combat
         /// 규칙은 한 줄이다: **제 진영만 아니면 때린다.**
         ///
         /// `RoleId.None`(강아지)은 누구의 진영도 아니라 자동으로 양쪽의 표적이 된다.
-        /// 요새·미끼·창고·벽감이 `RoleId.Mouse`인 것도 그대로다 — 고양이만 부순다.
+        /// 요새·미끼·창고가 `RoleId.Mouse`인 것도 그대로다 — 고양이만 부순다.
+        ///
+        /// 예외: **맵이 깔아 둔 중립 노획물(벽감·상자)은 쥐도 부순다**(2026-08-14).
+        /// 안 열면 직업권 획득이 고양이 손에만 달려, 고양이가 벽을 안 건드리는 판에서는
+        /// 2단계(깡패전)가 영영 안 열린다. 부수는 소리(25m)가 경쟁 초대장인 건 똑같다.
         /// </summary>
-        public static bool CanAttack(Lobby.RoleId _attacker, Lobby.RoleId _target, bool _targetIsPlayer)
+        public static bool CanAttack(
+            Lobby.RoleId _attacker, Lobby.RoleId _target, bool _targetIsPlayer, bool _targetIsMapLoot = false)
         {
             if (_attacker != _target) return true;
 
-            // 같은 진영이면 **쥐끼리만** 친다(v3.9 — 깡패쥐가 판을 가르는 토대).
-            // 사람만 치는 게 핵심이다: 요새·미끼·창고·벽감·상자가 전부 `RoleTag.Mouse`라
-            // 안 가르면 쥐가 제 요새를 쏜다.
+            // 같은 진영이면 **쥐끼리(사람) + 중립 노획물**만 친다(v3.9 — 깡패쥐가 판을 가르는 토대).
+            // 제 구조물(요새·미끼·창고)은 안 친다 — 안 가르면 쥐가 제 요새를 쏜다.
             // 고양이끼리는 안 친다 — 고양이는 끝까지 한 팀이다.
-            return _attacker == Lobby.RoleId.Mouse && _targetIsPlayer;
+            return _attacker == Lobby.RoleId.Mouse && (_targetIsPlayer || _targetIsMapLoot);
         }
     }
 }

@@ -101,7 +101,12 @@ namespace CTC.Runtime.Combat
 
                 RoleTag tag = target.GetComponent<RoleTag>();
                 bool hitIsPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
-                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, hitIsPlayer)) break; // 비대상이 막음
+                // 맵이 깔아 둔 중립 노획물(벽감·상자)은 쥐 총알도 부순다(2026-08-14) —
+                // 제 구조물(요새·창고·미끼)은 여전히 비대상이다.
+                bool hitIsMapLoot = target.GetComponent<Map.Alcove>() != null
+                                    || target.GetComponent<Map.LootBox>() != null;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, hitIsPlayer, hitIsMapLoot))
+                    break; // 비대상이 막음
 
                 // 용사쥐(v3.9)는 그냥 세진다 — 화력도 오른다. 직업이 없으면 배율이 1이라
                 // 직업을 모르는 씬에서도 그대로 돈다.

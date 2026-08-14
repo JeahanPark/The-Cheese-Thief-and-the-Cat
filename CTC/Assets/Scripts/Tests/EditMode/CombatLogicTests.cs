@@ -100,8 +100,21 @@ namespace CTC.Tests
         [Test]
         public void CanAttack_MiceNeverHitTheirOwnStructures()
         {
-            // 요새·미끼·창고·벽감·상자가 전부 RoleTag.Mouse다. 안 가르면 제 요새를 쏜다.
+            // 요새·미끼·창고가 전부 RoleTag.Mouse다. 안 가르면 제 요새를 쏜다.
             Assert.IsFalse(CombatLogic.CanAttack(RoleId.Mouse, RoleId.Mouse, _targetIsPlayer: false));
+        }
+
+        [Test]
+        public void CanAttack_MiceCanBreakMapLoot()
+        {
+            // 벽감·상자(맵 중립 노획물)는 쥐도 부순다(2026-08-14) — 안 열면 직업권이
+            // 고양이 손에만 달려, 고양이가 벽을 안 건드리면 2단계가 영영 안 열린다.
+            Assert.IsTrue(CombatLogic.CanAttack(
+                RoleId.Mouse, RoleId.Mouse, _targetIsPlayer: false, _targetIsMapLoot: true));
+
+            // 고양이끼리는 노획물 플래그가 있어도 여전히 안 친다 — 벽감은 어차피 Mouse 태그다
+            Assert.IsFalse(CombatLogic.CanAttack(
+                RoleId.Cat, RoleId.Cat, _targetIsPlayer: false, _targetIsMapLoot: true));
         }
 
         [Test]
