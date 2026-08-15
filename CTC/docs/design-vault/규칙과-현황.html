@@ -1,0 +1,621 @@
+<title>치즈 도둑과 고양이 — 규칙과 현황 (2:8 밸런스)</title>
+<style>
+  :root {
+    --ground: #F7F3EA;
+    --panel: #FFFFFF;
+    --edge: #E0D6C4;
+    --ink: #241F1A;
+    --ink-soft: #6B6055;
+    --ink-faint: #9C9083;
+    --cheese: #B8860B;
+    --cheese-bg: #FBF0D2;
+    --cat: #C2502A;
+    --mouse: #4A6E8A;
+    --dog: #8A4520;
+    --gang: #6B4A8A;
+    --ok: #3F7A46;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17130F;
+      --panel: #1F1A15;
+      --edge: #352C23;
+      --ink: #F2EDE3;
+      --ink-soft: #B3A695;
+      --ink-faint: #7A6E60;
+      --cheese: #E8B93C;
+      --cheese-bg: #2B2213;
+      --cat: #E07A50;
+      --mouse: #8FA6B8;
+      --dog: #C97A45;
+      --gang: #A98AC9;
+      --ok: #6FB177;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17130F;
+    --panel: #1F1A15;
+    --edge: #352C23;
+    --ink: #F2EDE3;
+    --ink-soft: #B3A695;
+    --ink-faint: #7A6E60;
+    --cheese: #E8B93C;
+    --cheese-bg: #2B2213;
+    --cat: #E07A50;
+    --mouse: #8FA6B8;
+    --dog: #C97A45;
+    --gang: #A98AC9;
+    --ok: #6FB177;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* ── 머리 ── */
+  header {
+    padding: 72px 0 40px;
+    border-bottom: 1px solid var(--edge);
+    margin-bottom: 48px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cheese);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    margin: 0;
+    max-width: 62ch;
+  }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  /* ── 절 ── */
+  section { margin: 0 0 64px; scroll-margin-top: 24px; }
+  h2 {
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--edge);
+  }
+  h3 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 32px 0 10px;
+  }
+  h3:first-of-type { margin-top: 24px; }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  .note { color: var(--ink-soft); font-size: 15px; }
+
+  /* ── 표 ── */
+  .scroll { overflow-x: auto; margin: 20px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 0 16px 8px 0;
+    border-bottom: 1px solid var(--edge);
+    white-space: nowrap;
+  }
+  td {
+    padding: 11px 16px 11px 0;
+    border-bottom: 1px solid var(--edge);
+    vertical-align: top;
+  }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  .num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+
+  /* ── 강조 ── */
+  .cat { color: var(--cat); }
+  .mouse { color: var(--mouse); }
+  .dog { color: var(--dog); }
+  .gang { color: var(--gang); }
+
+  .callout {
+    border-left: 3px solid var(--cheese);
+    background: var(--cheese-bg);
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 10px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 22px 0; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+  .card h4 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .card p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+
+  /* ── 상태 칩 ── */
+  .chip {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--cheese-bg);
+    color: var(--cheese);
+    border: 1px solid color-mix(in srgb, var(--cheese) 30%, transparent);
+    white-space: nowrap;
+  }
+  .chip.done { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 34%, transparent); }
+
+  svg { max-width: 100%; height: auto; display: block; margin: 24px 0; }
+
+  kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  footer {
+    border-top: 1px solid var(--edge);
+    padding-top: 24px;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">CTC · v3.9 + 2:8 밸런스</p>
+  <h1>치즈 도둑과 고양이</h1>
+  <p class="lede">
+    <b>고양이 2</b>가 <b>쥐 8</b>을 쫓는 3인칭 비대칭 숨바꼭질.
+    쥐는 치즈를 캐서 무장하고, 고양이는 그 소리를 듣고 찾아온다.
+    v3.9에서 <b>쥐가 더는 한 팀이 아니게</b> 됐고, 2026-08-14에 봇 계측으로
+    <b>밸런스 패스를 마감</b>했다(쥐 승률 33% — 사람 판의 하한). 다음은 사람 플레이테스트다.
+  </p>
+</header>
+
+<section>
+  <h2>판의 흐름</h2>
+  <p>판은 12분이다. 고양이가 죽으면 보통 거기서 끝나지만, <b class="gang">깡패쥐</b>가 있으면 끝나지 않는다.</p>
+
+  <svg viewBox="0 0 800 260" role="img" aria-label="1단계에서 고양이가 죽으면 깡패 유무에 따라 쥐 승리 또는 2단계로 갈린다">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" marker-end="url(#ar)">
+      <path d="M188 60 H 292"/>
+      <path d="M400 84 V 128 H 292"/>
+      <path d="M400 84 V 128 H 508"/>
+      <path d="M612 172 H 660"/>
+    </g>
+
+    <g>
+      <rect x="16" y="34" width="172" height="52" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="102" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">1단계 · 사냥</text>
+      <text x="102" y="76" text-anchor="middle" font-size="12" fill="var(--ink-soft)">고양이 vs 쥐 전원</text>
+    </g>
+
+    <g>
+      <rect x="292" y="34" width="216" height="52" rx="8" fill="var(--panel)" stroke="var(--cat)" stroke-width="1.5"/>
+      <text x="400" y="58" text-anchor="middle" font-size="15" font-weight="700" fill="var(--cat)">고양이 사망</text>
+      <text x="400" y="76" text-anchor="middle" font-size="12" fill="var(--ink-soft)">깡패쥐가 있나?</text>
+    </g>
+
+    <g>
+      <rect x="120" y="128" width="172" height="52" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="206" y="152" text-anchor="middle" font-size="14" font-weight="700" fill="var(--mouse)">없다 → 쥐 승리</text>
+      <text x="206" y="170" text-anchor="middle" font-size="12" fill="var(--ink-soft)">지금까지의 규칙</text>
+    </g>
+
+    <g>
+      <rect x="508" y="128" width="104" height="52" rx="8" fill="var(--panel)" stroke="var(--gang)" stroke-width="1.5"/>
+      <text x="560" y="152" text-anchor="middle" font-size="14" font-weight="700" fill="var(--gang)">있다</text>
+      <text x="560" y="170" text-anchor="middle" font-size="12" fill="var(--ink-soft)">2단계로</text>
+    </g>
+
+    <g>
+      <rect x="660" y="128" width="126" height="86" rx="8" fill="var(--panel)" stroke="var(--gang)" stroke-width="1.5"/>
+      <text x="723" y="152" text-anchor="middle" font-size="14" font-weight="700" fill="var(--gang)">2단계 · 4분</text>
+      <text x="723" y="172" text-anchor="middle" font-size="12" fill="var(--ink-soft)">보스+부하</text>
+      <text x="723" y="188" text-anchor="middle" font-size="12" fill="var(--ink-soft)">vs 나머지 쥐</text>
+    </g>
+  </svg>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>이기는 쪽</th><th>조건</th></tr></thead>
+    <tbody>
+      <tr><td class="cat">고양이</td><td>자유로운 쥐가 0명 (전원 갇혔거나 탈락) · 시간이 다 됐는데 자유 쥐가 없음</td></tr>
+      <tr><td class="mouse">쥐</td><td>고양이 사망(깡패 없음) · 시간이 다 됐고 자유 쥐가 남음</td></tr>
+      <tr><td class="gang">깡패 팀</td><td><b>2단계에서 나머지 쥐를 전멸</b>시킨다. 4분을 못 채우면 나머지 쥐가 이긴다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>왜 깡패가 없으면 2단계가 안 열리나</b> — 항상 열리면 깡패권이 특별하지 않게 되고 판이 무조건 길어진다. 누군가 깡패권을 주워 판을 역전으로 끌고 간 것 자체가 보상이다.</p>
+    <p><b>왜 2단계에 새 시계를 주나</b> — 남은 시간을 쓰면 고양이가 11분에 죽었을 때 2단계가 1분이라 보스가 아무것도 못 하고 끝난다. 3분에서 4분으로 늘린 건 120×120에서 3분이면 <b>나머지 쥐를 찾지도 못한 채</b> 시계가 끝나기 때문이다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>인원과 맵</h2>
+  <p>기준은 <b>고양이 2 : 쥐 8</b>이다. 여기서 5:5 승률이 되도록 모든 수치를 맞췄다.
+  <b>1:6</b>도 열려 있지만 그쪽은 <b class="mouse">쥐가 유리한</b> 구성으로 남긴다.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>맵</th><th class="num">크기</th><th class="num">방</th><th>권장 쥐</th><th class="num">최장 직선</th></tr></thead>
+    <tbody>
+      <tr><td>기본</td><td class="num">30 × 30</td><td class="num">6</td><td>2~3</td><td class="num">28 m (차폐 예정)</td></tr>
+      <tr><td>확장</td><td class="num">42 × 42</td><td class="num">9</td><td>4~6</td><td class="num">36.5 m (차폐 예정)</td></tr>
+      <tr><td><b>대형</b></td><td class="num"><b>120 × 120</b></td><td class="num"><b>49</b></td><td><b>6~8</b></td><td class="num"><b>20.5 m</b> (94.5→20.5 완료)</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>대형 맵은 이전 최대의 <b>8.2배</b>다. 좌표를 늘리는 대신 <b>방 개수</b>로 넓이를 채웠다 —
+  ×4로 늘리면 방 하나가 40×36m짜리 빈 체육관이 된다. 7×7 격자에 방을 깔고,
+  통로는 랜덤 신장 트리 + 여분 간선으로 잇는다. 전부 이으면 어디서든 네 방향이 열려 추격이 성립하지 않고,
+  트리만 쓰면 막다른 길뿐이라 한 번 걸리면 끝이다 — <b>그 사이가 필요하다</b>.</p>
+
+  <div class="callout">
+    <p><b>넓어졌는데 규칙은 그대로다</b> — 쥐는 12분을 버티면 이긴다. 그래서 늘어난 넓이만큼
+    <b class="cat">고양이 쪽을 강화</b>했다: 둘로 늘리고, 더 빠르게 하고, <b>귀를 키웠다</b>.</p>
+    <p><b>시야는 측정으로만 믿는다</b> — 대형 맵은 "기둥으로 막았다"고 믿던 시절 실측 94.5m였다.
+    문마다 차폐벽을 세워 20.5m까지 내렸고, 이제 <code>sightscan</code>이 모든 레이아웃을 잰다.
+    소리 밸런스는 시야가 막혀야 비로소 일을 한다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>정보는 소리다</h2>
+  <p>이 게임의 중심 기둥이다. 고양이는 화면이 아니라 <b>귀</b>로 쥐를 찾는다. 그래서 새 기능을 넣을 때마다 "이 소리는 얼마나 멀리 가야 하는가"를 먼저 정한다.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>소리</th><th class="num">거리</th><th>무슨 뜻인가</th></tr></thead>
+    <tbody>
+      <tr><td>벽감 파괴</td><td class="num">45 m</td><td>"지금 달려와" — 치즈가 바닥에 흩어졌다</td></tr>
+      <tr><td>고양이 스킬 · 강아지 짖음</td><td class="num">45 · 40 m</td><td>판 전체가 알아야 하는 사건. 강아지의 <b>유일한</b> 위치 정보다</td></tr>
+      <tr><td>파밍</td><td class="num">32 m</td><td><b>고양이의 주 단서.</b> 쥐가 반드시 서 있어야 하는 자리다</td></tr>
+      <tr><td>벽감 타격</td><td class="num">30 m</td><td>"부수는 중" — "다 부서졌다"와 요구하는 행동이 다르다</td></tr>
+      <tr><td>창고</td><td class="num">24 m</td><td>설치물은 소리로 위치를 판다</td></tr>
+      <tr><td><b>쥐 발소리</b> · 미끼</td><td class="num">14 m</td><td>고양이의 귀 사냥. 미끼가 같은 소리를 흘려 속인다</td></tr>
+      <tr><td>벽 속 강아지</td><td class="num">14 m</td><td>가까이 가야 안다. 멀리서 다 들리면 투명한 것과 같다</td></tr>
+      <tr><td><b>고양이 발소리</b> · 상자 파괴</td><td class="num">12 m</td><td>쥐의 조기 경보. 상자는 벽을 연 뒤의 두 번째 단계라 소리를 더 안 낸다</td></tr>
+      <tr><td>잠행 발소리 (쥐 · 고양이)</td><td class="num">4 · 3 m</td><td>코앞이면 들린다. <b>무음이 아니다</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>쥐 발소리(14m)는 고양이 발소리(12m)보다 여전히 멀다.</b> 처음엔 반대였고(쥐 8 · 고양이 15) —
+    그러면 쥐가 항상 먼저 알아 회피가 공짜였다. 그래서 18m까지 키웠더니 이번엔 <b>고양이의 추적이
+    공짜</b>가 됐다(봇 계측 쥐 승률 0%). 14m가 봇 계측이 찾은 균형점이다 — 걸으면 잡히고,
+    잠행·대시·미끼를 쓰면 벗어난다.</p>
+    <p><b>잠행</b>(<kbd>LCtrl</kbd>)은 이제 <b>무음이 아니다.</b> 예전엔 발소리가 통째로 사라져서
+    구석에 웅크린 쥐는 단서가 0이었다 — "버티면 쥐 승"이라는 규칙과 맞물려 자동 승리가 됐다.
+    지금은 반경만 좁아진다: 스쳐 지나가면 못 듣지만 <b>같은 방 코앞이면 들킨다</b>.
+    값어치(이속 ×0.45)는 그대로다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>두 역할</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h4 class="cat">고양이</h4>
+      <p><b>둘이다.</b> HP 1000 · 이속 7.8 · 덮치기 60(2초·사거리 2.8m). 쥐를 때려 <b>장난기</b>를 벌고, 그 돈으로 강화를 산다. 강화를 다 올리면 <b>전직</b>이 열린다.</p>
+    </div>
+    <div class="card">
+      <h4 class="mouse">쥐</h4>
+      <p><b>여덟이다.</b> HP 100 · 이속 6.0. 치즈를 캐서 무기·요새·창고를 산다. 잡히면 죽지 않고 <b>감옥</b>에 갇히며, 동료가 오면 풀려난다.</p>
+    </div>
+    <div class="card">
+      <h4 class="dog">강아지 (제3세력)</h4>
+      <p>벽 뒤에 갇혀 있다. 누구든 길을 열 수 있고 <b>누구든 문다</b> — 푼 사람도 예외가 아니다. 시간 제한이 없어 쓰러뜨려야 끝난다.</p>
+    </div>
+  </div>
+
+  <h3>돈의 구조</h3>
+  <p>맵의 치즈 총량은 <b>쥐 1인당 1400</b>이다(8인 판이면 11200). 벽감과 상자가 품은 치즈도 이 안에서 먼저 떼고, 남은 것을 치즈 지점이 나눠 갖는다. 총량이 늘면 고갈이 늦어져 후반의 압축이 무너진다.</p>
+  <p class="note">고정값(4900)이던 시절엔 8인 판의 1인당 몫이 612라 상점 한 바퀴(1270)도 못 돌았다. 인원에 비례시키면 1인당 몫이 유지되고, 동시에 캐는 사람이 늘어 <b>고갈 시점은 그대로다</b> — '성장 기한'이라는 설계가 보존된다. 단 <b>맵의 권장 최소 인원이 하한</b>이다: 벽감·상자에 깔린 치즈는 절대량이라, 인원이 적다고 총량을 줄이면 깔린 치즈가 총량을 넘어 지점 매장량이 0이 된다.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>경로</th><th>누가</th><th>어떻게</th></tr></thead>
+    <tbody>
+      <tr><td>치즈 지점</td><td class="mouse">쥐</td><td>머물며 채굴. <b>소리 32m</b> · 지점당 1인 독점 · 다 캐면 사라진다. 대형 맵은 14지점(등급 1~7을 2벌)</td></tr>
+      <tr><td>즉시 치즈</td><td class="mouse">쥐</td><td>벽을 부수고 그 뒤의 상자를 또 부수면 흩어진다. 닿으면 바로 획득 — <b>먼저 닿는 놈이 임자</b></td></tr>
+      <tr><td>창고</td><td class="mouse">쥐</td><td>설치 후 2초마다 자동 생산</td></tr>
+      <tr><td>장난기</td><td class="cat">고양이</td><td>입힌 피해 기반. 쥐 ×0.5 · 구조물 ×0.25 — <b>쥐의 지출이 곧 고양이의 수입</b></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="note">맵에 원래 있던 것(벽감·상자·강아지)은 때려도 장난기를 <b>주지 않는다</b>. 안 그러면 "벽 때리기가 최고 효율"이 되어 고양이가 쥐를 안 쫓는다.</p>
+</section>
+
+<section>
+  <h2>맵에 있는 것들</h2>
+
+  <h3>벽 — 막고 있을 뿐이다</h3>
+  <p>벽감은 <b>보상을 품지 않는다</b>. 그냥 막고 있는 것이고, 부수면 뒤에 있던 게 드러난다.
+  <b>쥐도 부술 수 있다</b>(2026-08-15 확정) — 맵의 중립 노획물이라, 직업권 개방이
+  고양이 손에만 달려 있으면 안 된다.</p>
+
+  <svg viewBox="0 0 800 150" role="img" aria-label="벽을 부수면 상자가 드러나고, 상자를 부숴야 보상이 나온다. 강아지 벽은 길이 열려 강아지가 나온다">
+    <defs>
+      <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+      </marker>
+    </defs>
+    <g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" marker-end="url(#ar2)">
+      <path d="M176 40 H 250"/>
+      <path d="M406 40 H 480"/>
+      <path d="M176 110 H 480"/>
+    </g>
+    <g>
+      <rect x="16" y="16" width="160" height="48" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="96" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">벽 (120 HP)</text>
+      <rect x="250" y="16" width="156" height="48" rx="8" fill="var(--panel)" stroke="var(--cheese)" stroke-width="1.5"/>
+      <text x="328" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="var(--cheese)">상자 (40 HP)</text>
+      <rect x="480" y="16" width="200" height="48" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="580" y="46" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">치즈 · 직업권</text>
+
+      <rect x="16" y="86" width="160" height="48" rx="8" fill="var(--panel)" stroke="var(--dog)" stroke-width="1.5"/>
+      <text x="96" y="116" text-anchor="middle" font-size="14" font-weight="700" fill="var(--dog)">벽 (420 HP)</text>
+      <rect x="480" y="86" width="200" height="48" rx="8" fill="var(--panel)" stroke="var(--dog)" stroke-width="1.5"/>
+      <text x="580" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="var(--dog)">길이 열린다</text>
+      <text x="580" y="126" text-anchor="middle" font-size="12" fill="var(--ink-soft)">강아지가 걸어 나온다</text>
+    </g>
+  </svg>
+
+  <div class="callout">
+    <p><b>왜 두 단계인가</b> — 예전엔 벽이 곧 치즈여서, 부순 사람이 <b>19초간 소리를 다 내고도</b>
+    늦게 달려온 사람에게 뺏겼다. 벽을 연 뒤에도 상자를 부술 시간이 더 들면 <b>그 자리에서 붙는다</b> —
+    벽감의 원래 의도가 경쟁 유발이었는데, 한 번에 쏟아지면 그게 '줍기 경쟁'으로 납작해진다.</p>
+  </div>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th></th><th>벽</th><th>벽 뒤 상자</th></tr></thead>
+    <tbody>
+      <tr><td>역할</td><td>막는다 · <b>부수면 온 맵이 안다</b></td><td>보상을 품는다</td></tr>
+      <tr><td>HP</td><td class="num">120 (강아지 벽 420)</td><td class="num">40</td></tr>
+      <tr><td>파괴음</td><td class="num">45 m</td><td class="num">12 m</td></tr>
+      <tr><td>개수 (대형 맵)</td><td class="num">6</td><td class="num">5</td></tr>
+      <tr><td>내용물</td><td><b>상자</b> 또는 <b class="dog">강아지</b></td><td>치즈 250 (3덩이) · <b class="gang">깡패권</b> ×1 · <b>용사권</b> ×1</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="note"><b>바닥에 놓인 상자는 없다.</b> 상자는 전부 벽 뒤에 있다 — 직업권이 바닥에 굴러다니면
+  판을 뒤집는 물건이 아무 소리 없이 손에 들어간다. 깡패권과 용사권은 <b>서로 가장 먼 두 벽</b>에 나눠 두므로
+  한 사람이 둘 다 먹지 못한다.</p>
+
+  <p class="note">상자는 <b>그릇</b>이고 내용물은 데이터다 — 새 물건이 늘어도 상자 코드는 안 바뀐다.
+  내용물은 배치할 때 정해지므로 "저 벽 뒤에 깡패권이 있다"를 외울 수 있다.
+  벽감이 <b>최소 4개</b>인 것도 이 때문이다: 강아지 1 + 직업권 2를 빼고도 치즈 벽이 하나는 남아야 한다.</p>
+
+  <h3>감옥 — 쥐는 죽지 않고 갇힌다</h3>
+  <p>잡힌 쥐는 가장 가까운 감옥으로 간다. <span class="num">40초</span> 안에 동료가 <span class="num">8초</span>간 곁에 있어 주면 풀려나고(HP 절반), 아무도 안 오면 그때 진짜 탈락이다. 감옥은 <b>요새(= 쥐 스폰)가 없는 방</b>에 서로 멀리 떨어뜨려 놓는다.</p>
+  <p class="note">체류 40초·구출 8초는 봇 계측의 결과다 — 체류 30초·구출 5초일 때는 구출이 너무 싸서
+  고양이가 잡아 가둔 것이 <b>아무 일도 아니게</b> 됐다. 구출은 이제 잠행 접근까지 포함해 진짜 잠입이다.</p>
+  <p class="note"><b>2단계에는 구출이 없다.</b> 구출은 "쥐는 한 팀"이라는 전제 위의 장치라, 서로 죽이는 판에서 적팀 쥐가 구하러 오는 그림은 성립하지 않는다.</p>
+
+  <h3 class="dog">강아지 — 불리한 쪽의 무리수</h3>
+  <p>맵 중심에 가장 가까운 벽 <b>뒤에 갇혀 있다</b>. 소환되는 게 아니라 원래 거기 있었고, 벽이 부서지면 길이 열려 걸어 나온다. 그 벽은 <span class="num">420</span> HP로 훨씬 단단해서 부수는 데 오래 걸리고 크게 소리 난다 — <b>여유 있는 쪽은 그 시간을 쓸 이유가 없고, 지는 쪽만 감수한다.</b> 시간 게이트 대신 기회비용이 게이트다.</p>
+  <p>안에 뭐가 들었는지는 <b>소리로 샌다</b>. 강아지 벽은 낑낑거리고, 치즈 벽은 조용하다.</p>
+  <p class="note">길찾기는 NavMesh를 안 쓴다. 맵이 방 사각형 + 복도 선분이라 레이아웃에서 그래프를 그대로 뽑고, 판 시작에 <b>벽을 지나는 간선을 걷어낸다</b>.</p>
+</section>
+
+<section>
+  <h2 class="cat">고양이 전직</h2>
+  <p>공격 강화와 이속 강화를 <b>둘 다</b> 끝까지(5중첩) 올리면 창이 뜬다. 하나만 올려도 열리면 "전직이 곧 최적 구매"가 되어 상점의 선택이 사라진다. 되돌릴 수 없다.</p>
+  <p class="note"><b>가격을 40% 내렸다</b>(공격 200→120 · 이속 150→90). 고양이 수입은 덮치기뿐이라 전직까지 1750은 쥐를 <b>16번</b> 잡아야 하는 값이었고, 12분·120×120에 고양이가 둘이면 한 번도 안 열렸다 — 전직 4종이 통째로 죽은 콘텐츠였다. 지금은 1050, 7~8번이면 판 막바지에 열린다. 스택당 효과는 그대로라 <b>최종 파워는 같고 도달만 빨라진다</b>.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>전직</th><th>스킬 (<kbd>Q</kbd>)</th><th class="num">효과</th></tr></thead>
+    <tbody>
+      <tr><td>불</td><td>덮치기 피해 증가</td><td class="num">×2 — 쥐를 한 방에 눕힌다</td></tr>
+      <tr><td>바람</td><td>이동 속도 증가</td><td class="num">×1.35 (만렙 8.8 → 11.9)</td></tr>
+      <tr><td>빛</td><td>모든 쥐 투시 (벽 너머 실루엣)</td><td class="num">—</td></tr>
+      <tr><td>어둠</td><td>쥐들의 화면을 어둡게</td><td class="num">75%</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>전부 액티브다</b> — 지속 <span class="num">6초</span>, 쿨다운 <span class="num">35초</span>, 켤 때 <span class="num">45m</span> 소리.</p>
+    <p>상시 효과였다면 빛은 쥐의 은신을 통째로 죽이고 어둠은 쥐를 계속 장님으로 만든다. 지속과 쿨다운이 있으면 <b>"지금 쓸까"라는 판단</b>이 생기고, 쥐에게는 <b>쓰고 난 뒤의 빈 시간</b>이라는 대응 창이 남는다. 소리로 하던 정보 싸움이 타이밍 싸움으로 번역되는 것이지, 대체되는 게 아니다.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="gang">쥐 직업과 2단계</h2>
+  <p><b>벽 뒤 상자</b>에서 직업권이 나온다 — 벽을 부수고, 드러난 상자를 또 부숴야 한다. 먼저 닿는 쥐가 갖고, 이미 직업이 있는 쥐는 못 줍는다. 맵에 <b>두 장뿐</b>이라 8명 중 둘만 직업을 갖는다. 깡패권과 용사권은 서로 가장 먼 두 벽에 있어 한 사람이 둘 다 먹지 못한다.</p>
+
+  <div class="cards">
+    <div class="card">
+      <h4>용사쥐</h4>
+      <p>그냥 세진다 — HP ×2, 화력 ×1.5.</p>
+    </div>
+    <div class="card">
+      <h4 class="gang">깡패쥐</h4>
+      <p>다른 쥐에게 <span class="num">2.5m</span> 안으로 다가가 <kbd>F</kbd>로 <b>부하로 임명</b>한다. 이 자리가 2단계를 연다. 맵당 <b>한 장</b>뿐이다.</p>
+    </div>
+  </div>
+
+  <p><b>부하는 거절도 배신도 못 한다.</b> 거절할 수 있으면 아무도 부하가 되지 않아 깡패권이 죽은 콘텐츠가 되고, 승리 조건이 팀에 묶여 있어 배신할 이유도 없다.</p>
+
+  <p><b>직업은 중첩되지 않는다</b>(2026-08-15 확정) — 직업권도, 임명도 <b>직업 없는 쥐</b>에게만
+  간다. 용사가 부하가 되는 일은 없다.</p>
+
+  <p><b>표식은 깡패팀 내부 정보다</b>(2026-08-14 확정) — 보스·부하 머리 위 표식은
+  <b>깡패팀끼리만</b> 보인다. 다른 쥐·고양이·관전자에겐 안 보인다(관전 채팅이 산 쥐에게 새는 것과
+  같은 이유). 보스 표식은 <b>첫 임명 전까지만</b> 남고 — "깡패권을 주운 쥐를 찾아가라"는 유도다 —
+  부하는 임명 순간 3초 팝업이 전부다.</p>
+
+  <p class="note">쥐끼리 공격은 <b>판 시작부터 항상</b> 열려 있다. 사람과 중립 노획물(벽감·상자)까지 —
+  단 남의 편의를 봐주는 구조물(요새·미끼·창고)은 못 친다.</p>
+</section>
+
+<section>
+  <h2>조작</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>키</th><th>누가</th><th>무엇</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>WASD</kbd> / 마우스</td><td>전원</td><td>이동 · 시점</td></tr>
+      <tr><td>좌클릭</td><td class="cat">고양이</td><td>덮치기</td></tr>
+      <tr><td>좌클릭</td><td class="mouse">쥐</td><td>발사</td></tr>
+      <tr><td><kbd>LCtrl</kbd></td><td>전원</td><td>잠행 — 발소리 4m(고양이 3m), 속도 절반</td></tr>
+      <tr><td><kbd>LShift</kbd></td><td class="mouse">쥐</td><td>대시 (구매 후)</td></tr>
+      <tr><td><kbd>Q</kbd></td><td class="cat">고양이</td><td>전직 스킬</td></tr>
+      <tr><td><kbd>F</kbd></td><td class="gang">깡패쥐</td><td>부하 임명</td></tr>
+      <tr><td><kbd>1</kbd>~<kbd>9</kbd></td><td>전원</td><td>상점 핫바</td></tr>
+      <tr><td><kbd>G</kbd></td><td>관전자</td><td>따봉 (고양이에겐 안 보이는 응원)</td></tr>
+      <tr><td><kbd>Enter</kbd> / <kbd>ESC</kbd></td><td>전원</td><td>채팅 / 옵션</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>안내는 상시가 아니라 순간에 나온다</b>(HUD 개편, 2026-08-15) — 첫 스폰에 기본 조작 토스트
+    4초, 좌하단엔 <b>지금 이 사람이 쓸 수 있는 특수키 칩만</b>(대시는 사야, F는 깡패만 보인다 ·
+    쿨다운 중엔 칩이 어두워지며 초 표시), 핫바 슬롯엔 반줄 힌트, 구매하면 사용법이 3초 토스트로,
+    직업 문구는 규칙이 바뀐 순간 3초 팝업. 우상단엔 상태 클러스터(내 HP 바 · 고양이 HP 바 ·
+    재화 · 보유 배지) 하나만 상시다.</p>
+  </div>
+</section>
+
+<section>
+  <h2>진행 현황</h2>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>확장</th><th>항목</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="5">v3.8</td><td>부술 수 있는 벽(벽감)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>즉시 획득 치즈</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>쥐 감옥 + 구출</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>제3세력 강아지</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>맵 추가 확장 (120×120)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td rowspan="4">v3.9</td><td>쥐끼리 공격</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>상자 (내용물은 데이터)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>고양이 전직 4종</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>쥐 직업 + 2단계</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td rowspan="6">2:8 밸런스</td><td>수치 전면 재조정 · 인원 상한</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>직업 · 2단계 UI</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>벽 뒤 상자 (2단계 개방)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>봇 계측기 (2:8 배치 러너 · 발소리 14m·체류 40초 채택)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>대형 맵 시야 차폐 (94.5→20.5m)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>HUD 개편 (상시는 얇게)</td><td><span class="chip done">완료</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>검증</h3>
+  <p>순수 로직은 EditMode가, 실제로 돌아가는지는 3인 실플레이(MPPM)가 본다. <b>수치가 아니라 실제로 벌어지는 일</b>을 재는 것이 원칙이다 — 설정 값은 바뀌는데 소리는 그대로였던 적이 있다.</p>
+
+  <div class="scroll">
+  <table>
+    <thead><tr><th>스위트</th><th>범위</th><th class="num">결과</th></tr></thead>
+    <tbody>
+      <tr><td>EditMode</td><td>순수 로직 전부</td><td class="num">279 / 279</td></tr>
+      <tr><td>qa_v36</td><td>잠행 · 미끼 · 창고 · 따봉 · 카메라</td><td class="num">16 / 16</td></tr>
+      <tr><td>qa_v37</td><td>옵션 · 커서 · 채팅 · 사운드</td><td class="num">24 / 24</td></tr>
+      <tr><td>qa_v38</td><td>벽 → 상자 2단계 · 치즈 총량 보존</td><td class="num">13 / 13</td></tr>
+      <tr><td>qa_v39</td><td>감옥 · 구출</td><td class="num">10 / 10</td></tr>
+      <tr><td>qa_v40</td><td>강아지 · 길찾기</td><td class="num">16 / 16</td></tr>
+      <tr><td>qa_v41</td><td>벽 뒤 상자 · 쥐끼리 공격</td><td class="num">10 / 10</td></tr>
+      <tr><td>qa_v42</td><td>고양이 전직 · 스킬</td><td class="num">15 / 15</td></tr>
+      <tr><td>qa_v43</td><td>쥐 직업 · 2단계</td><td class="num">15 / 15</td></tr>
+      <tr><td>qa_v44</td><td>2:8 밸런스 · 120×120 맵 · 발소리</td><td class="num">19 / 19</td></tr>
+      <tr><td>qa_v45</td><td>직업 · 2단계 UI + 표식 가시성 (화면 글자를 읽는다)</td><td class="num">22 / 22</td></tr>
+      <tr><td><b>봇 배치 러너</b></td><td>2:8 실플레이 승률 계측 (봇은 심리전을 못 해 사람 판의 하한)</td><td class="num">쥐 4 / 12 (33%)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>남은 일</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th class="num">순서</th><th>할 일</th><th>왜 지금인가</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><b>사람 플레이테스트 1세션</b></td><td>계측기는 다 만들었는데 <b>사람이 이 게임을 한 번도 안 해 봤다</b>. 질문 3개만 잰다: 감옥이 "죽으면 할 게 없다"를 풀었나 · 2단계가 실제로 열리나 · 쥐 승률이 봇 하한(33%)보다 위인가</td></tr>
+      <tr><td class="num">2</td><td>기본·확장 맵 시야 차폐</td><td>28m·36.5m → <b>22m 이하</b>. 사람 판이 열릴 맵이 이 둘이다 — 시야가 뚫린 맵에선 소감이 밸런스가 아니라 레이아웃 얘기가 된다</td></tr>
+      <tr><td class="num">3</td><td>방에 성격 주기 · 시야 12~15m 완주</td><td>레벨디자인 패스와 함께 — 사람이 무엇을 재미없어 하는지 안 뒤에</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>밸런스는 사람 판을 봐야 안다.</b> 봇 계측은 하한(33%)을 확정했고, 더 조이는 건 사람 표본
+    없이 하면 과조정이다. 관측할 것: 2:8 승률(5:5 목표) · 판당 영구 탈락 쥐 수 · 구출 횟수 ·
+    깡패권을 주운 쪽의 승률(절반 근처) · <b>고양이가 전직까지 가는가</b>(판 막바지 기대).</p>
+  </div>
+</section>
+
+<footer>
+  Unity 6000.5.2f1 · URP · Netcode for GameObjects · 밸런스 수치는 전부 <code>Assets/Resources/CSVInfo/*.csv</code>에 있다. · 2026-08-15 기준
+</footer>
+</div>
