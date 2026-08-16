@@ -16,7 +16,7 @@ namespace CTC.Runtime.Audio
         FortressHit = 8,
         FortressBreak = 9,
         FortressPlace = 10,
-        DecoyPlace = 11,
+        // 11 = DecoyPlace(미끼) — 2026-08-15 삭제. m_Clips는 enum 값 순서와 1:1이라 번호는 비워 둔다.
         MatchStart = 12,
         MouseWin = 13,
         CatWin = 14,

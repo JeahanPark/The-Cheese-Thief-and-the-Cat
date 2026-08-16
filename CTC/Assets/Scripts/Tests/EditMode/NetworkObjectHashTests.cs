@@ -19,7 +19,6 @@ namespace CTC.Tests
             "Assets/Scenes/Game.unity",
             "Assets/Prefabs/PlayerCat.prefab",
             "Assets/Prefabs/PlayerMouse.prefab",
-            "Assets/Prefabs/MouseDecoy.prefab",
             "Assets/Prefabs/CheeseFortress.prefab",
         };
 

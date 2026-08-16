@@ -97,16 +97,12 @@ namespace CTC.Runtime.Combat
                 }
                 if (target.IsDead) continue;
 
-                // 미끼는 총알도 통과시킨다 — 몸은 안 막는데(DecoyLayers) 총알만 막으면
-                // 제가 놓은 미끼가 제 사선을 가리고, 고양이에겐 엄폐물이 된다
-                if (target.GetComponent<DecoyLifetime>() != null) continue;
-
                 end = hit.point;
 
                 RoleTag tag = target.GetComponent<RoleTag>();
                 bool hitIsPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
                 // 맵이 깔아 둔 중립 노획물(벽감·상자)은 쥐 총알도 부순다(2026-08-14) —
-                // 제 구조물(요새·창고·미끼)은 여전히 비대상이다.
+                // 제 구조물(요새·창고)은 여전히 비대상이다.
                 bool hitIsMapLoot = target.GetComponent<Map.Alcove>() != null
                                     || target.GetComponent<Map.LootBox>() != null;
                 if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, hitIsPlayer, hitIsMapLoot))

@@ -25,8 +25,9 @@ namespace CTC.Editor
     // SetupNetworkingScene의 일부 — 머티리얼·박스·SerializedObject 세터·해시 베이크 (개편 4단계 분할, 2026-07-31)
     public static partial class SetupNetworkingScene
     {
-        // 미끼·쥐 전용 레이어 — 둘의 충돌을 매트릭스에서 끊는다(DecoyLayers).
-        // 레이어가 없으면 빈 슬롯(8번 이후)에 만든다.
+        private const string MOUSE_LAYER = "Mouse";
+
+        // 프로젝트 레이어를 이름으로 확보 — 없으면 빈 슬롯(8번 이후)에 만든다.
         private static int EnsureLayer(string _layerName)
         {
             int existing = LayerMask.NameToLayer(_layerName);
@@ -35,7 +36,7 @@ namespace CTC.Editor
             var asset = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
             if (asset == null || asset.Length == 0)
             {
-                Debug.LogError("[SetupNetworkingScene] TagManager.asset을 열 수 없다 — 미끼 레이어 미생성");
+                Debug.LogError("[SetupNetworkingScene] TagManager.asset을 열 수 없다 — 레이어 미생성");
                 return -1;
             }
 
@@ -55,19 +56,6 @@ namespace CTC.Editor
 
             Debug.LogError($"[SetupNetworkingScene] 빈 레이어 슬롯이 없다 — '{_layerName}' 미생성");
             return -1;
-        }
-
-        // 쥐×미끼 충돌을 프로젝트 세팅에 굽는다(2026-08-01). 이게 **유일한** 설정 지점이다 —
-        // 런타임 적용 코드는 지웠다. 매트릭스는 레이어 *번호*로 저장되므로,
-        // 레이어 슬롯이 바뀐 사본에서도 이 메뉴만 다시 돌리면 제자리를 찾는다.
-        private static void BakeDecoyMatrix(int _decoyLayer, int _mouseLayer)
-        {
-            if (_decoyLayer < 0 || _mouseLayer < 0) return;
-            if (Physics.GetIgnoreLayerCollision(_mouseLayer, _decoyLayer)) return;
-
-            Physics.IgnoreLayerCollision(_mouseLayer, _decoyLayer, true);
-            AssetDatabase.SaveAssets();
-            Debug.Log($"[SetupNetworkingScene] 물리 매트릭스: Mouse({_mouseLayer}) × Decoy({_decoyLayer}) 충돌 해제 — 프로젝트 세팅에 저장");
         }
 
         // Quirky 원본 머티리얼의 색/텍스처를 URP SoftSurfaceGraph 머티리얼로 복사한다.

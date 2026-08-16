@@ -108,9 +108,6 @@ namespace CTC.Runtime.Networking
                 case "TestMpBuyDash":
                     BuyLocal(ShopItemId.Dash);
                     break;
-                case "TestMpBuyDecoy":
-                    BuyLocal(ShopItemId.Decoy);
-                    break;
                 case "TestMpBuyFortress":
                     BuyLocal(ShopItemId.Fortress);
                     break;
@@ -197,9 +194,9 @@ namespace CTC.Runtime.Networking
                 return;
             }
 
-            FortressHealZone nearest = null;
+            FortressShield nearest = null;
             float best = float.MaxValue;
-            foreach (var zone in FindObjectsByType<FortressHealZone>(FindObjectsSortMode.None))
+            foreach (var zone in FindObjectsByType<FortressShield>(FindObjectsSortMode.None))
             {
                 float d = (zone.transform.position - local.transform.position).sqrMagnitude;
                 if (d < best) { best = d; nearest = zone; }

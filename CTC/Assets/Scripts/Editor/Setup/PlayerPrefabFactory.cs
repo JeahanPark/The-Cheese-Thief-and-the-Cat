@@ -30,7 +30,7 @@ namespace CTC.Editor
             float _ccHeight, float _ccRadius,
             float _moveSpeed, float _runThreshold, float _fov, float _camDistance,
             RoleId _role, int _maxHp,
-            GameObject _decoyPrefab, GameObject _fortressPrefab, GameObject _warehousePrefab,
+            GameObject _fortressPrefab, GameObject _warehousePrefab,
             int _layer = -1)
         {
             if (!AssetDatabase.IsValidFolder(PrefabDir))
@@ -73,8 +73,9 @@ namespace CTC.Editor
                 root.AddComponent<LocalPlayerPublisher>(); // 스폰/디스폰을 LocalPlayerBinder에 알린다
 
                 var shop = root.AddComponent<ShopController>();
-                SetRef(shop, "m_DecoyPrefab", _decoyPrefab);
                 SetRef(shop, "m_FortressPrefab", _fortressPrefab);
+                // 요새가 내 위치 중심에 서면 겹친 남의 몸을 서버가 밀어낸다 — 소유자 RPC 수신처
+                root.AddComponent<BodyPush>();
                 SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
 
                 // LCtrl 잠행 — 발소리 소거·이속 절반. **역할 분기 밖**이다: 2026-08-10에 쥐로

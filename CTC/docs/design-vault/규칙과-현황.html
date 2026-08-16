@@ -333,7 +333,7 @@
       <tr><td>파밍</td><td class="num">32 m</td><td><b>고양이의 주 단서.</b> 쥐가 반드시 서 있어야 하는 자리다</td></tr>
       <tr><td>벽감 타격</td><td class="num">30 m</td><td>"부수는 중" — "다 부서졌다"와 요구하는 행동이 다르다</td></tr>
       <tr><td>창고</td><td class="num">24 m</td><td>설치물은 소리로 위치를 판다</td></tr>
-      <tr><td><b>쥐 발소리</b> · 미끼</td><td class="num">14 m</td><td>고양이의 귀 사냥. 미끼가 같은 소리를 흘려 속인다</td></tr>
+      <tr><td><b>쥐 발소리</b></td><td class="num">14 m</td><td>고양이의 귀 사냥</td></tr>
       <tr><td>벽 속 강아지</td><td class="num">14 m</td><td>가까이 가야 안다. 멀리서 다 들리면 투명한 것과 같다</td></tr>
       <tr><td><b>고양이 발소리</b> · 상자 파괴</td><td class="num">12 m</td><td>쥐의 조기 경보. 상자는 벽을 연 뒤의 두 번째 단계라 소리를 더 안 낸다</td></tr>
       <tr><td>잠행 발소리 (쥐 · 고양이)</td><td class="num">4 · 3 m</td><td>코앞이면 들린다. <b>무음이 아니다</b></td></tr>
@@ -345,7 +345,7 @@
     <p><b>쥐 발소리(14m)는 고양이 발소리(12m)보다 여전히 멀다.</b> 처음엔 반대였고(쥐 8 · 고양이 15) —
     그러면 쥐가 항상 먼저 알아 회피가 공짜였다. 그래서 18m까지 키웠더니 이번엔 <b>고양이의 추적이
     공짜</b>가 됐다(봇 계측 쥐 승률 0%). 14m가 봇 계측이 찾은 균형점이다 — 걸으면 잡히고,
-    잠행·대시·미끼를 쓰면 벗어난다.</p>
+    잠행·대시·요새를 쓰면 벗어난다.</p>
     <p><b>잠행</b>(<kbd>LCtrl</kbd>)은 이제 <b>무음이 아니다.</b> 예전엔 발소리가 통째로 사라져서
     구석에 웅크린 쥐는 단서가 0이었다 — "버티면 쥐 승"이라는 규칙과 맞물려 자동 승리가 됐다.
     지금은 반경만 좁아진다: 스쳐 지나가면 못 듣지만 <b>같은 방 코앞이면 들킨다</b>.
@@ -363,12 +363,30 @@
     </div>
     <div class="card">
       <h4 class="mouse">쥐</h4>
-      <p><b>여덟이다.</b> HP 100 · 이속 6.0. 치즈를 캐서 무기·요새·창고를 산다. 잡히면 죽지 않고 <b>감옥</b>에 갇히며, 동료가 오면 풀려난다.</p>
+      <p><b>여덟이다.</b> HP 100 · 이속 6.0. 치즈를 캐서 무기·대시·요새·창고를 산다. 잡히면 죽지 않고 <b>감옥</b>에 갇히며, 동료가 오면 풀려난다.</p>
     </div>
     <div class="card">
       <h4 class="dog">강아지 (제3세력)</h4>
       <p>벽 뒤에 갇혀 있다. 누구든 길을 열 수 있고 <b>누구든 문다</b> — 푼 사람도 예외가 아니다. 시간 제한이 없어 쓰러뜨려야 끝난다.</p>
     </div>
+  </div>
+
+  <h3>쥐의 상점 — 다섯 칸</h3>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>항목</th><th class="num">값</th><th>무엇</th></tr></thead>
+    <tbody>
+      <tr><td>새총 · 기관총</td><td class="num">150 · 600</td><td>무기 티어. 기관총 2정이 모이면 고양이를 잡을 수 있다</td></tr>
+      <tr><td>대시</td><td class="num">100</td><td><kbd>LShift</kbd> 순간 가속 — 쫓길 때 거리를 벌린다</td></tr>
+      <tr><td><b>요새</b></td><td class="num"><b>80</b></td><td><b>즉발 방패</b>(2026-08-15) — 누르면 <b>내 위치 중심</b>에 즉시 선다, 입구는 내가 보는 방향. 고양이는 몸이 커서 못 들어오고, 안에 있던 고양이는 <b>밖으로 밀려난다</b>. 회복은 없다. HP 180 = 노업 덮치기 <b>세 방</b></td></tr>
+      <tr><td>창고</td><td class="num">150</td><td>조준 설치. 2초마다 치즈 10 자동 생산 — 소리로 위치가 팔린다</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout">
+    <p><b>미끼는 없앴다</b>(2026-08-15). 미끼(50)와 요새(220)가 "쫓길 때 쓰는 물건" 자리를 나눠 갖고 있었는데,
+    미끼는 싸서 도배되고 요새는 조준하느라 쫓기는 순간에 못 썼다. 하나로 합쳤다 — 요새를 미끼처럼 즉시 놓는
+    3방짜리 방패로. 3방(노업 6초)이라는 짧은 수명이 "덮치기 직전 무적 회피"가 되지 않게 잡는 균형추다.</p>
   </div>
 
   <h3>돈의 구조</h3>
@@ -513,7 +531,7 @@
   부하는 임명 순간 3초 팝업이 전부다.</p>
 
   <p class="note">쥐끼리 공격은 <b>판 시작부터 항상</b> 열려 있다. 사람과 중립 노획물(벽감·상자)까지 —
-  단 남의 편의를 봐주는 구조물(요새·미끼·창고)은 못 친다.</p>
+  단 남의 편의를 봐주는 구조물(요새·창고)은 못 친다.</p>
 </section>
 
 <section>
@@ -562,12 +580,13 @@
       <tr><td>상자 (내용물은 데이터)</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>고양이 전직 4종</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>쥐 직업 + 2단계</td><td><span class="chip done">완료</span></td></tr>
-      <tr><td rowspan="6">2:8 밸런스</td><td>수치 전면 재조정 · 인원 상한</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td rowspan="7">2:8 밸런스</td><td>수치 전면 재조정 · 인원 상한</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>직업 · 2단계 UI</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>벽 뒤 상자 (2단계 개방)</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>봇 계측기 (2:8 배치 러너 · 발소리 14m·체류 40초 채택)</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>대형 맵 시야 차폐 (94.5→20.5m)</td><td><span class="chip done">완료</span></td></tr>
       <tr><td>HUD 개편 (상시는 얇게)</td><td><span class="chip done">완료</span></td></tr>
+      <tr><td>요새 즉발 방패화 · 미끼 삭제</td><td><span class="chip done">완료</span></td></tr>
     </tbody>
   </table>
   </div>
@@ -579,8 +598,8 @@
   <table>
     <thead><tr><th>스위트</th><th>범위</th><th class="num">결과</th></tr></thead>
     <tbody>
-      <tr><td>EditMode</td><td>순수 로직 전부</td><td class="num">279 / 279</td></tr>
-      <tr><td>qa_v36</td><td>잠행 · 미끼 · 창고 · 따봉 · 카메라</td><td class="num">16 / 16</td></tr>
+      <tr><td>EditMode</td><td>순수 로직 전부</td><td class="num">286 / 286</td></tr>
+      <tr><td>qa_v36</td><td>잠행 · 요새 즉발·밀어내기 · 창고 · 따봉 · 카메라</td><td class="num">18 / 18</td></tr>
       <tr><td>qa_v37</td><td>옵션 · 커서 · 채팅 · 사운드</td><td class="num">24 / 24</td></tr>
       <tr><td>qa_v38</td><td>벽 → 상자 2단계 · 치즈 총량 보존</td><td class="num">13 / 13</td></tr>
       <tr><td>qa_v39</td><td>감옥 · 구출</td><td class="num">10 / 10</td></tr>
@@ -611,7 +630,7 @@
 
   <div class="callout">
     <p><b>밸런스는 사람 판을 봐야 안다.</b> 봇 계측은 하한(33%)을 확정했고, 더 조이는 건 사람 표본
-    없이 하면 과조정이다. 관측할 것: 2:8 승률(5:5 목표) · 판당 영구 탈락 쥐 수 · 구출 횟수 ·
+    없이 하면 과조정이다. 관측할 것: 2:8 승률(5:5 목표) · 판당 영구 탈락 쥐 수 · 구출 횟수 · <b>요새를 몇 번 세우고 몇 번 살아남는가</b> ·
     깡패권을 주운 쪽의 승률(절반 근처) · <b>고양이가 전직까지 가는가</b>(판 막바지 기대).</p>
   </div>
 </section>

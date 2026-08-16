@@ -190,20 +190,20 @@ namespace CTC.Runtime.Testing
             return nm != null && nm.IsListening ? (long)nm.LocalClientId : -1;
         }
 
-        private static DecoyLifetime NearestDecoy()
+        private static FortressShield NearestFortress()
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             if (local == null) return null;
 
-            DecoyLifetime best = null;
+            FortressShield best = null;
             float bestSqr = float.MaxValue;
-            foreach (var decoy in FindObjectsByType<DecoyLifetime>())
+            foreach (var fort in FindObjectsByType<FortressShield>())
             {
-                float d = UnityEngine.Vector3.SqrMagnitude(decoy.transform.position - local.transform.position);
+                float d = UnityEngine.Vector3.SqrMagnitude(fort.transform.position - local.transform.position);
                 if (d >= bestSqr) continue;
                 bestSqr = d;
-                best = decoy;
+                best = fort;
             }
             return best;
         }

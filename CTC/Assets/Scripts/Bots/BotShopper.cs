@@ -32,13 +32,12 @@ namespace CTC.Runtime.Bots
         }
 
         /// <summary>
-        /// 미끼 — 쫓기는 중에 쓰는 소모품이라 구매 순서(NextPurchase)에 안 낀다.
-        /// 즉시 설치(조준 없음)이고 전방에 떨어진다 — 도망 방향으로 놓이므로
-        /// 쥐는 통과하고 뒤따르는 고양이가 부딪힌다. 지갑이 모자라면 상점이 거른다.
+        /// 도주 중 요새 — 즉발 방패(2026-08-15). 내 위치 중심에 즉시 서고 고양이는 밀려난다.
+        /// 지갑이 모자라면 상점이 거른다. NextPurchase의 요새 구매(파밍 중 제자리)와는 별개다.
         /// </summary>
-        public void BuyDecoy()
+        public void BuyFortressShield()
         {
-            if (m_Shop != null) m_Shop.Buy(ShopItemId.Decoy);
+            if (m_Shop != null) m_Shop.Buy(ShopItemId.Fortress);
         }
 
         /// <summary>쥐 — 살 수 있으면 산다. 설치물은 제자리에 둔다.</summary>

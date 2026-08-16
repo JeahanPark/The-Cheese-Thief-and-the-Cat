@@ -43,19 +43,13 @@ namespace CTC.Runtime.Testing
 
         public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
 
-        public void TestBuyDecoy() => BuyLocal(ShopItemId.Decoy);
-
         public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
 
         public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
 
         public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
 
-        /// <summary>위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용.</summary>
-        public void TestPlaceFortressAt(float _x, float _z) => PlaceLocal(ShopItemId.Fortress, _x, _z);
-
-        public void TestPlaceDecoyAt(float _x, float _z) => PlaceLocal(ShopItemId.Decoy, _x, _z);
-
+        /// <summary>위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용. 창고만 조준 설치다.</summary>
         public void TestPlaceWarehouseAt(float _x, float _z) => PlaceLocal(ShopItemId.Warehouse, _x, _z);
 
         /// <summary>QA: 지정 좌표에서 가장 가까운 치즈 지점을 점유한 클라이언트 ID(없으면 -1).</summary>
@@ -329,21 +323,21 @@ namespace CTC.Runtime.Testing
             return nearest;
         }
 
-        /// <summary>QA: 가장 가까운 미끼 위치 "x,z" (없으면 빈 문자열).</summary>
-        public string TestGetDecoyPos()
+        /// <summary>QA: 가장 가까운 요새 위치 "x,z" (없으면 빈 문자열).</summary>
+        public string TestGetFortressPos()
         {
-            DecoyLifetime decoy = NearestDecoy();
-            if (decoy == null) return "";
-            UnityEngine.Vector3 p = decoy.transform.position;
+            FortressShield fort = NearestFortress();
+            if (fort == null) return "";
+            UnityEngine.Vector3 p = fort.transform.position;
             return $"{p.x:F2},{p.z:F2}";
         }
 
-        /// <summary>QA: 로컬 플레이어 ↔ 가장 가까운 미끼 평면 거리 (없으면 -1).</summary>
-        public float TestGetDecoyDistance()
+        /// <summary>QA: 로컬 플레이어 ↔ 가장 가까운 요새 평면 거리 (없으면 -1).</summary>
+        public float TestGetFortressDistance()
         {
-            DecoyLifetime decoy = NearestDecoy();
-            if (decoy == null) return -1f;
-            UnityEngine.Vector3 p = decoy.transform.position;
+            FortressShield fort = NearestFortress();
+            if (fort == null) return -1f;
+            UnityEngine.Vector3 p = fort.transform.position;
             return TestGetDistanceTo(p.x, p.z);
         }
 

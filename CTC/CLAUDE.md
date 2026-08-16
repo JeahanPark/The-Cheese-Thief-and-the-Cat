@@ -31,7 +31,7 @@
 ### 데이터 (CSV — 2026-07-31)
 
 - **밸런스 수치는 코드에 박지 않는다.** 원본은 `Assets/Resources/CSVInfo/*.csv` (WES 파이프라인 이식).
-  - 표 4종: `ShopInfo`(가격) · `WeaponInfo`(무기 티어) · `PlayerInfo`(HP·이속·회전·덮치기·발소리) · `BalanceInfo`(그 외 전역 — 대시·설치 사거리·수입 노출·요새 힐 포함)
+  - 표 4종: `ShopInfo`(가격) · `WeaponInfo`(무기 티어) · `PlayerInfo`(HP·이속·회전·덮치기·발소리) · `BalanceInfo`(그 외 전역 — 대시·설치 사거리·수입 노출·요새 HP 포함)
   - 컬럼 추가·변경 후 **`Tools/CTC/Convert CSV → Info`** 실행 → `Info/Generator/ConvertInfo/*.cs` 재생성.
     헤더는 `필드명.타입` 형식(`Cost.int`, `Role.RoleId`). 생성 파일은 손으로 고치지 않는다.
   - 읽기는 `InfoManager.Instance.Balance` / `.PlayerOf(role)` / `.WeaponOf(tier)` / `.Shop`.

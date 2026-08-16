@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.PlaceSfxOnSpawn
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Sfx: 11
+  m_Sfx: 10
 --- !u!114 &6565380669857211792
 MonoBehaviour:
   m_ObjectHideFlags: 0

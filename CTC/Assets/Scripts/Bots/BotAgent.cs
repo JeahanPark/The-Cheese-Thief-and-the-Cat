@@ -236,17 +236,17 @@ namespace CTC.Runtime.Bots
             if (m_Dash != null) m_Dash.DevDash();
         }
 
-        // 미끼는 판 값이 나가는 소모품이다 — 매 판단 틱(0.5초)마다 사면 지갑이 즉시 마른다.
-        // 사람도 한 추격에 하나 던진다. 카운터가 아니라 시계로 잰다(카운터 쿨다운의 함정).
-        private const float DECOY_COOLDOWN_SECONDS = 10f;
-        private float m_NextDecoyTime;
+        // 요새는 판 값이 나가는 소모품이다 — 매 판단 틱(0.5초)마다 사면 지갑이 즉시 마른다.
+        // 사람도 한 추격에 하나 세운다. 카운터가 아니라 시계로 잰다(카운터 쿨다운의 함정).
+        private const float SHIELD_COOLDOWN_SECONDS = 10f;
+        private float m_NextShieldTime;
 
-        /// <summary>도주 중 미끼 — 전방(도망 방향)에 서서 뒤따르는 고양이만 막는다.</summary>
-        public void PlaceDecoyForFlee()
+        /// <summary>도주 중 요새 — 내 위치 중심 즉발 방패. 고양이는 밀려나고 3방 동안 시간을 번다.</summary>
+        public void PlaceFortressForFlee()
         {
-            if (Time.time < m_NextDecoyTime) return;
-            m_NextDecoyTime = Time.time + DECOY_COOLDOWN_SECONDS;
-            m_Shopper.BuyDecoy();
+            if (Time.time < m_NextShieldTime) return;
+            m_NextShieldTime = Time.time + SHIELD_COOLDOWN_SECONDS;
+            m_Shopper.BuyFortressShield();
         }
 
         public void UseSkill()
@@ -310,9 +310,9 @@ namespace CTC.Runtime.Bots
         public bool TryGetRefugeFortress(Vector3 _threat, out Vector3 _fort)
         {
             m_Forts.Clear();
-            foreach (var zone in Object.FindObjectsByType<Economy.FortressHealZone>(FindObjectsSortMode.None))
+            foreach (var fort in Object.FindObjectsByType<Economy.FortressShield>(FindObjectsSortMode.None))
             {
-                m_Forts.Add(zone.transform.position);
+                m_Forts.Add(fort.transform.position);
             }
 
             int pick = MouseBotLogic.ChooseRefuge(m_Forts, Position, _threat);

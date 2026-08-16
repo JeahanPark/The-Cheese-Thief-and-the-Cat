@@ -30,9 +30,9 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
-        public void AccruedFun_Structure_QuarterRate() // 요새 1채(300HP) = 75 — 예전엔 300이었다
+        public void AccruedFun_Structure_QuarterRate() // 요새 1채(180HP) = 45
         {
-            Assert.AreEqual(75, FunLogic.AccruedFun(ShopLogic.FORTRESS_HP, false, true));
+            Assert.AreEqual(45, FunLogic.AccruedFun(ShopLogic.FORTRESS_HP, false, true));
         }
 
         [Test]

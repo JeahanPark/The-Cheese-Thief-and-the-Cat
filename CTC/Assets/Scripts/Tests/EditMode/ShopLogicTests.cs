@@ -22,9 +22,10 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void Find_Fortress_MatchesOriginalBunker()
+        public void Find_Fortress_IsCheapInstantShield()
         {
-            Assert.AreEqual(220, ShopLogic.Find(ShopItemId.Fortress).Cost);
+            // 즉발 3방짜리 방패(2026-08-15) — 쫓기는 순간 살 수 있는 값이어야 한다
+            Assert.AreEqual(80, ShopLogic.Find(ShopItemId.Fortress).Cost);
             Assert.AreEqual(RoleId.Mouse, ShopLogic.Find(ShopItemId.Fortress).Role);
         }
 
@@ -54,13 +55,14 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void RoleCatalogIndices_MouseSixInCatalogOrder()
+        public void RoleCatalogIndices_MouseFiveInCatalogOrder()
         {
+            // 미끼 삭제(2026-08-15) — 쥐 5칸: 새총·기관총·대시·요새·창고
             var idx = ShopLogic.RoleCatalogIndices(RoleId.Mouse);
-            Assert.AreEqual(6, idx.Count);
+            Assert.AreEqual(5, idx.Count);
             Assert.AreEqual(ShopItemId.Slingshot, ShopLogic.CATALOG[idx[0]].Id);
-            Assert.AreEqual(ShopItemId.Fortress, ShopLogic.CATALOG[idx[4]].Id);
-            Assert.AreEqual(ShopItemId.Warehouse, ShopLogic.CATALOG[idx[5]].Id);
+            Assert.AreEqual(ShopItemId.Fortress, ShopLogic.CATALOG[idx[3]].Id);
+            Assert.AreEqual(ShopItemId.Warehouse, ShopLogic.CATALOG[idx[4]].Id);
         }
 
         [Test]
@@ -117,12 +119,11 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void IsPlaceable_OnlyBuildings()
+        public void IsPlaceable_OnlyWarehouse()
         {
-            Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Fortress));
             Assert.IsTrue(ShopLogic.IsPlaceable(ShopItemId.Warehouse));
-            // 미끼는 v3.6부터 즉시 설치 — 쫓기는 중에 고스트 조준을 요구할 수 없다
-            Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Decoy));
+            // 요새는 2026-08-15부터 즉시 설치(내 위치 중심) — 쫓기는 중에 고스트 조준을 요구할 수 없다
+            Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Fortress));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.Slingshot));
             Assert.IsFalse(ShopLogic.IsPlaceable(ShopItemId.CatSpeed));
         }

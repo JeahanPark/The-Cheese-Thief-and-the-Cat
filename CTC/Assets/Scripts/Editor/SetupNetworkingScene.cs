@@ -38,7 +38,6 @@ namespace CTC.Editor
 
         private const string MousePrefabPath = PrefabDir + "/PlayerMouse.prefab";
 
-        private const string DecoyPrefabPath = PrefabDir + "/MouseDecoy.prefab";
 
         private const string FortressPrefabPath = PrefabDir + "/CheeseFortress.prefab";
 
@@ -126,39 +125,13 @@ namespace CTC.Editor
             // 도메인 리로드까지 캐시를 들고 있다 → 옛 값을 프리팹·씬에 구워 버린다(2026-08-01 실측).
             CTC.Runtime.Info.InfoManager.Reload();
 
-            int decoyLayer = EnsureLayer(DecoyLayers.DECOY);
-            int mouseLayer = EnsureLayer(DecoyLayers.MOUSE);
-            BakeDecoyMatrix(decoyLayer, mouseLayer);
+            // 쥐 전용 레이어 — 원래 미끼(Decoy) 충돌 매트릭스용이었다. 미끼는 2026-08-15 삭제됐지만
+            // 프리팹 레이어를 되돌릴 이유가 없어(OccluderFader 등 마스크 전제) 그대로 둔다.
+            int mouseLayer = EnsureLayer(MOUSE_LAYER);
             Material catMat = CreateUrpMaterial("M_Cat_URP", CatSourceMatPath);
             Material mouseMat = CreateUrpMaterial("M_Mouse_URP", MouseSourceMatPath);
 
             // 설치형 프리팹을 먼저 생성 — 플레이어 프리팹(ShopController)이 참조한다
-            GameObject decoyPrefab = CreateStructurePrefab(
-                "MouseDecoy", DecoyPrefabPath, PrimitiveType.Capsule,
-                mouseMat, _maxHp: 1,
-                _scale: new Vector3(0.4f, 0.25f, 0.4f),
-                _addExtras: _root =>
-                {
-                    _root.AddComponent<DecoyLifetime>();
-                    // 미끼의 값어치는 생김새가 아니라 소리다 — 진짜 쥐와 같은 발소리를 같은
-                    // 반경(8m)으로 계속 흘려 고양이를 끌어당긴다. 소리 없는 캡슐은 아무도
-                    // 속이지 못했다("미끼가 의미가 없다" 2026-07-28).
-                    var lure = _root.AddComponent<AudioSource>();
-                    lure.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(
-                        "Assets/Audio/Movement/sfx_mouse_footstep.ogg");
-                    lure.loop = true;
-                    lure.playOnAwake = true;
-                    lure.volume = 0.6f;
-                    lure.spatialBlend = 1f;
-                    lure.rolloffMode = AudioRolloffMode.Linear;
-                    lure.minDistance = 1.5f;
-                    lure.maxDistance = 8f;
-                    AddVolumeFollower(_root, CTC.Runtime.Audio.AudioVolumeFollower.Category.Sfx);
-                },
-                // 쥐만 통과시키려면 미끼가 자기 레이어에 있어야 한다 — Mouse×Decoy 충돌 매트릭스 대상(DecoyLayers).
-                // (`excludeLayers`는 CharacterController에 안 먹혀서 폐기된 접근이다)
-                _layer: decoyLayer);
-
             GameObject fortressPrefab = CreateFortressPrefab();
 
             // 벽감과 그 안의 치즈 — 부수는 행위가 v3.8 콘텐츠의 유일한 입구다
@@ -199,7 +172,7 @@ namespace CTC.Editor
                 _moveSpeed: catInfo.MoveSpeed, _runThreshold: catInfo.RunThreshold,
                 _fov: catInfo.Fov, _camDistance: catInfo.CamDistance,
                 _role: RoleId.Cat, _maxHp: catInfo.MaxHp,
-                _decoyPrefab: decoyPrefab, _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab);
+                _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab);
 
             GameObject mousePrefab = CreatePlayerPrefab(
                 "PlayerMouse", MousePrefabPath, MouseModelPath, mouseMat,
@@ -207,9 +180,7 @@ namespace CTC.Editor
                 _moveSpeed: mouseInfo.MoveSpeed, _runThreshold: mouseInfo.RunThreshold,
                 _fov: mouseInfo.Fov, _camDistance: mouseInfo.CamDistance,
                 _role: RoleId.Mouse, _maxHp: mouseInfo.MaxHp,
-                _decoyPrefab: decoyPrefab, _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab,
-                // 쥐만 전용 레이어 — 미끼(Decoy)와의 충돌을 매트릭스에서 끊기 위해서다(DecoyLayers).
-                // 고양이는 Default에 남아 미끼에 부딪힌다.
+                _fortressPrefab: fortressPrefab, _warehousePrefab: warehousePrefab,
                 _layer: mouseLayer);
 
             // 레이아웃마다 벽감 자리를 덧붙인다(지형은 그대로 — 시드를 흔들지 않는다)
@@ -224,9 +195,9 @@ namespace CTC.Editor
             }
             AssetDatabase.SaveAssets();
 
-            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, decoyPrefab, warehousePrefab,
+            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, warehousePrefab,
                 alcovePrefab, cheeseDropPrefab, dogPrefab, lootBoxPrefab, heroTicket, gangTicket);
-            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 11종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
+            Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 10종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
         }
     }
 }

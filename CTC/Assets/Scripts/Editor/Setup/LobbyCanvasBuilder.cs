@@ -312,7 +312,7 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_fortress_hit"),    // FortressHit
                 LoadClip("Economy/sfx_fortress_break"),  // FortressBreak
                 LoadClip("Economy/sfx_fortress_place"),  // FortressPlace
-                LoadClip("Economy/sfx_decoy_place"),     // DecoyPlace
+                null,                                    // 11 = DecoyPlace(미끼) 삭제 자리 — enum 값 1:1이라 비워 둔다
                 LoadClip("UI/sfx_match_start"),          // MatchStart
                 LoadClip("UI/jingle_mouse_win"),         // MouseWin
                 LoadClip("UI/jingle_cat_win"),           // CatWin

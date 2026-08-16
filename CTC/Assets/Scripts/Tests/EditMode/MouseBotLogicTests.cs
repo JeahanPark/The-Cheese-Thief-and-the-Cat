@@ -23,7 +23,7 @@ namespace CTC.Tests.EditMode
                 MouseBotLogic.NextPurchase(1000, true, false, true, false));
 
             // **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않는다 — 안 쓸 총에 치즈를
-            // 태우면 미끼 살 돈이 줄어 경제 측정이 왜곡된다.
+            // 태우면 요새 살 돈이 줄어 경제 측정이 왜곡된다.
             Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
                 MouseBotLogic.NextPurchase(1000, true, false, true, true));
 

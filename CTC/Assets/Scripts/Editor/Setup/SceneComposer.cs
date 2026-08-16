@@ -26,7 +26,7 @@ namespace CTC.Editor
     public static partial class SetupNetworkingScene
     {
         private static void CreateGameScene(
-            GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab, GameObject _decoyPrefab,
+            GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab,
             GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab,
             GameObject _dogPrefab, GameObject _lootBoxPrefab,
             GameObject _heroTicket, GameObject _gangTicket)
@@ -52,7 +52,7 @@ namespace CTC.Editor
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
-            RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _decoyPrefab, _warehousePrefab,
+            RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _warehousePrefab,
                 _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
@@ -196,7 +196,6 @@ namespace CTC.Editor
                 .Append(_catPrefab.GetComponent<NetworkObject>())
                 .Append(_mousePrefab.GetComponent<NetworkObject>())
                 .Append(_fortressPrefab.GetComponent<NetworkObject>())
-                .Append(_decoyPrefab.GetComponent<NetworkObject>())
                 .Append(_warehousePrefab.GetComponent<NetworkObject>())
                 .ToArray());
         }

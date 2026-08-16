@@ -15,7 +15,6 @@ namespace CTC.Runtime.Economy
         private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
         private static float PLACE_FORWARD_METERS => Balance.PlaceForwardMeters;
 
-        [SerializeField] private GameObject m_DecoyPrefab;
         [SerializeField] private GameObject m_FortressPrefab;
         [SerializeField] private GameObject m_WarehousePrefab;
 
@@ -48,8 +47,6 @@ namespace CTC.Runtime.Economy
                 case ShopItemId.Dash:
                     Player.MouseDash dash = GetComponent<Player.MouseDash>();
                     return dash != null && !dash.Owned;
-                case ShopItemId.Decoy:
-                    return m_DecoyPrefab != null;
                 case ShopItemId.Fortress:
                     return m_FortressPrefab != null;
                 case ShopItemId.Warehouse:
@@ -163,8 +160,7 @@ namespace CTC.Runtime.Economy
             switch (_itemId)
             {
                 case ShopItemId.Fortress: return m_FortressPrefab;
-                case ShopItemId.Warehouse: return m_WarehousePrefab;
-                default: return m_DecoyPrefab;
+                default: return m_WarehousePrefab;
             }
         }
 
@@ -196,12 +192,10 @@ namespace CTC.Runtime.Economy
                 case ShopItemId.Dash:
                     GetComponent<Player.MouseDash>().ServerSetOwned();
                     break;
-                case ShopItemId.Decoy:
-                    SpawnStructure(_itemId, m_DecoyPrefab, Quaternion.identity);
-                    break;
                 case ShopItemId.Fortress:
-                    // 입구(로컬 +Z)가 구매자를 향하게 — 쫓기며 지어도 바로 들어갈 수 있다
-                    SpawnStructure(_itemId, m_FortressPrefab, Quaternion.LookRotation(-FlatForward()));
+                    // 즉발 방패(2026-08-15): **내 위치 중심**, 입구(로컬 +Z) = 내가 보는 방향.
+                    // 나는 이미 안에 있고, 겹친 남의 몸은 FortressShield가 밀어낸다.
+                    SpawnFortressAround(m_FortressPrefab);
                     break;
                 case ShopItemId.Warehouse:
                     SpawnStructure(_itemId, m_WarehousePrefab, Quaternion.identity);
@@ -215,16 +209,24 @@ namespace CTC.Runtime.Economy
             }
         }
 
+        // 즉시 설치(창고 폴백 경로)는 조준이 없다 — 앞이 벽이면 제 발밑으로 물러선다.
+        // 여기서 그냥 실패시키면 치즈만 먹고 아무것도 안 나오는 꼴이 된다.
         private void SpawnStructure(ShopItemId _itemId, GameObject _prefab, Quaternion _rotation)
         {
-            // 즉시 설치(미끼)는 조준이 없다 — 앞이 벽이면 제 발밑으로 물러선다.
-            // 여기서 그냥 실패시키면 치즈만 먹고 아무것도 안 나오는 꼴이 된다.
             Vector3 pos = transform.position + FlatForward() * PLACE_FORWARD_METERS;
             if (!PlacementFits(_itemId, pos)) pos = transform.position;
 
             GameObject go = Instantiate(_prefab, pos, _rotation);
             go.GetComponent<NetworkObject>().Spawn(true);
             BindWarehouseOwner(go);
+        }
+
+        // 요새는 겹침 검사를 하지 않는다 — 벽에 물려도 방패 구실은 하고, 쫓기는 순간에
+        // "여기엔 못 놓는다"는 답은 치즈만 먹은 것보다 나쁘다. 발밑 = 내 위치.
+        private void SpawnFortressAround(GameObject _prefab)
+        {
+            GameObject go = Instantiate(_prefab, transform.position, Quaternion.LookRotation(FlatForward()));
+            go.GetComponent<NetworkObject>().Spawn(true);
         }
 
         private Vector3 FlatForward()

@@ -12,7 +12,7 @@ namespace CTC.Runtime.Economy
 {
     /// <summary>
     /// 하단 상시 핫바 — 숫자키 1~6으로 즉시 구매(커서 잠금 유지, 게임 안 멈춤).
-    /// 설치물(요새·미끼·창고)은 고스트 미리보기 모드로 진입해 좌클릭 확정 / 우클릭·ESC 취소.
+    /// 창고만 고스트 미리보기 모드로 진입해 좌클릭 확정 / 우클릭·ESC 취소. 요새는 즉시(내 위치 중심).
     /// 구 B키 패널을 대체한다 (UX 개정 2026-07-27 — 쫓기는 중에도 살 수 있어야 한다).
     ///
     /// 개편 3b 마무리(2026-08-08): Update 폴링 → R3 구독. 매 프레임 로컬 플레이어를 찾고
@@ -33,14 +33,14 @@ namespace CTC.Runtime.Economy
 
         private static readonly string[] ITEM_LABELS =
         {
-            "새총", "기관총", "대시", "미끼", "요새", "창고", "공격 강화", "이속 강화",
+            "새총", "기관총", "대시", "요새", "창고", "공격 강화", "이속 강화",
         };
 
         // 슬롯 반줄 힌트 — "딱봤을 때 뭔지"만. 사용법 문장은 구매 토스트(UsageOf)의 몫.
         private static readonly string[] ITEM_HINTS =
         {
-            "더 세고 멀리", "연사 — 고양이 사냥", "LShift 순간 가속", "고양이 낚는 가짜 쥐",
-            "쥐만 드는 회복 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
+            "더 세고 멀리", "연사 — 고양이 사냥", "LShift 순간 가속",
+            "3방 버티는 즉석 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
         };
 
         private static readonly Color COLOR_HINT = new Color(0.73f, 0.76f, 0.82f, 0.8f);
@@ -362,8 +362,7 @@ namespace CTC.Runtime.Economy
                 case ShopItemId.Slingshot: return "새총 장착 — 좌클릭 발사가 더 세고 멀리 간다";
                 case ShopItemId.MachineGun: return "기관총 장착 — 좌클릭 연사로 고양이를 노린다";
                 case ShopItemId.Dash: return "대시 습득 — LShift로 순간 가속해 거리를 벌린다";
-                case ShopItemId.Decoy: return "미끼 설치 — 발소리로 고양이를 낚는다 · 잠시 뒤 사라진다";
-                case ShopItemId.Fortress: return "요새 설치 — 쥐만 드나들고 안에 있으면 회복된다";
+                case ShopItemId.Fortress: return "요새 설치 — 고양이는 못 들어온다 · 세 방이면 부서진다";
                 case ShopItemId.Warehouse: return "창고 설치 — 자리를 비워도 치즈가 쌓인다 · 소리로 위치가 팔린다";
                 case ShopItemId.CatAttack: return "공격 강화 — 덮치기가 더 아프다";
                 case ShopItemId.CatSpeed: return "이속 강화 — 이동이 더 빨라진다";

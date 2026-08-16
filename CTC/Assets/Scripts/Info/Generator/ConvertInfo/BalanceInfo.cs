@@ -14,10 +14,6 @@ namespace CTC.Runtime.Info
         public int PounceDamagePerStack;
         public float SpeedPerStack;
         public int FortressHp;
-        public int FortressHealPerTick;
-        public float FortressHealRadius;
-        public float FortressHealTickSeconds;
-        public float DecoyLifetimeSeconds;
         public int WarehouseIncomePerSecond;
         public int WarehouseTickCheese;
         public int WarehouseMaxHp;

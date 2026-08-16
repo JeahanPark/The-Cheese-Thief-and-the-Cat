@@ -8,7 +8,7 @@ namespace CTC.Runtime.Economy
         Slingshot = 1,
         MachineGun = 2,
         Dash = 3,
-        Decoy = 4,
+        // 4 = Decoy(미끼) — 2026-08-15 삭제. 값은 복제·직렬화되므로 재사용하지 않는다.
         Fortress = 5,
         CatAttack = 6,
         CatSpeed = 7,
@@ -58,10 +58,8 @@ namespace CTC.Runtime.Economy
         public static int MAX_UPGRADE_STACKS => Balance.MaxUpgradeStacks;
         public static int POUNCE_DAMAGE_PER_STACK => Balance.PounceDamagePerStack;
         public static float SPEED_PER_STACK => Balance.SpeedPerStack;
-        public static int FORTRESS_HEAL_PER_TICK => Balance.FortressHealPerTick;
-        public static int FORTRESS_HP => Balance.FortressHp; // 씬 생성기가 요새 프리팹에 굽는 값과 같다
-        public static float FORTRESS_HEAL_RADIUS => Balance.FortressHealRadius;
-        public static float DECOY_LIFETIME_SECONDS => Balance.DecoyLifetimeSeconds;
+        // 요새 = 즉발 방패(2026-08-15): 노업 덮치기 60 × 3 = 180. 회복 없음. 씬 생성기가 프리팹에 굽는다.
+        public static int FORTRESS_HP => Balance.FortressHp;
 
         // 창고(v3.4) — 파밍이 '서 있기'라 지루하다는 플레이 피드백의 답.
         // 지어두면 자리를 비워도 수입이 들어오되, 위치가 드러난 자산이라 고양이가 부술 수 있다.
@@ -139,13 +137,13 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>
-        /// 설치형(월드에 스폰) 아이템인가 — 고스트 미리보기 후 위치 지정 구매.
-        /// 미끼는 제외한다: 쫓기는 중에 쓰는 물건인데 고스트 조준을 요구하면 그 순간에 못 쓴다
-        /// ("설치기가 너무 힘들다" 2026-07-28) — 발밑에 즉시 떨군다.
+        /// 고스트 조준(위치 지정) 설치인가 — 창고뿐이다.
+        /// 요새는 2026-08-15부터 **내 위치 중심 즉시 설치**다: 쫓기는 중에 쓰는 방패인데
+        /// 고스트 조준을 요구하면 그 순간에 못 쓴다(예전 미끼가 즉시 설치였던 이유와 같다 — 미끼는 요새에 흡수됐다).
         /// </summary>
         public static bool IsPlaceable(ShopItemId _id)
         {
-            return _id == ShopItemId.Fortress || _id == ShopItemId.Warehouse;
+            return _id == ShopItemId.Warehouse;
         }
 
         /// <summary>

@@ -390,7 +390,7 @@ GameObject:
   - component: {fileID: 5418441732012166932}
   - component: {fileID: 7772771082947741418}
   - component: {fileID: 4516129377509583716}
-  - component: {fileID: 7219538302858564784}
+  - component: {fileID: 8642063849032918311}
   m_Layer: 0
   m_Name: CheeseFortress
   m_TagString: Untagged
@@ -459,7 +459,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Health
   ShowTopMostFoldoutHeaderGroup: 1
-  m_MaxHp: 300
+  m_MaxHp: 180
 --- !u!114 &3947482109565643162
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -520,7 +520,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.PlaceSfxOnSpawn
   ShowTopMostFoldoutHeaderGroup: 1
   m_Sfx: 10
---- !u!114 &7219538302858564784
+--- !u!114 &8642063849032918311
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -529,9 +529,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3525953091307173698}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 801faa46c7360174988617ffa76157f3, type: 3}
+  m_Script: {fileID: 11500000, guid: ea68b77d487204843b3fd7d6cf7148f8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.FortressHealZone
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.FortressShield
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &3662444570894951942
 GameObject:

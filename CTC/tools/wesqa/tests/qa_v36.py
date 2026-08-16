@@ -101,34 +101,39 @@ def main():
           0 < m_quiet < m_loud, "평소=%sm 잠행=%sm" % (m_loud, m_quiet))
     check("잠행 — 쥐 잠행도 복제된다", m_replicated is True, "sneaking=%s" % m_replicated)
 
-    # ---------- 3. 미끼: 즉시 설치 ----------
-    m2.invoke("TestBuyDecoy")
-    time.sleep(1.2)
-    dpos = m2.invoke("TestGetDecoyPos")
-    check("미끼 즉시 설치(조준 없음)", dpos != "", "pos=%s" % dpos)
+    # ---------- 3. 요새: 즉발 방패 (2026-08-15, 미끼 흡수) ----------
+    # 요새는 **내 위치 중심**에 즉시 선다. 그 자리에 있던 고양이는 밖으로 밀려나고,
+    # 세운 쥐는 안에 남는다. 이걸 화면 밖 값이 아니라 실제 위치로 잰다.
+    # 자리는 §8(sx+8 근처 덮치기)과 겹치지 않게 반대편 — 요새 벽이 남아 있으면 덮치기가 막힌다
+    fort_x = sx - 6.0
+    m2.invoke("TestTeleportLocalPlayer", _x=fort_x, _z=sz)
+    time.sleep(0.6)
+    # 쥐 왼쪽 0.6m(풋프린트 안). 왼쪽인 이유: 밀려난 뒤 되돌아 밀어붙이는 방향이 +x가 되어
+    # §6의 face_and_pounce(+x)와 바라보는 방향이 같다 — 0.08s 걷기론 180°를 못 돈다(실측).
+    cat.invoke("TestTeleportLocalPlayer", _x=fort_x - 0.6, _z=sz)
+    time.sleep(0.8)
+    fort_cheese_before = m2.invoke("TestGetCheese")
+    m2.invoke("TestBuyFortress")
+    time.sleep(1.5)
+    fpos = m2.invoke("TestGetFortressPos")
+    check("요새 — 즉시 설치(조준 없음)", fpos != "", "pos=%s" % fpos)
 
-    # ---------- 4. 미끼 충돌 비대칭 ----------
-    if dpos:
-        dx, dz = [float(v) for v in dpos.split(",")]
+    # ---------- 4. 요새 밀어내기 ----------
+    if fpos:
+        fx, fz = [float(v) for v in fpos.split(",")]
+        mouse_gap = m2.invoke("TestGetDistanceTo", _x=fx, _z=fz)
+        cat_gap = cat.invoke("TestGetDistanceTo", _x=fx, _z=fz)
+        print("   요새 중심까지: 쥐 %.2f / 고양이 %.2f" % (mouse_gap, cat_gap))
+        check("요새 — 세운 쥐 위치 중심에 선다(쥐는 안에)", mouse_gap < 0.7, "쥐 %.2f" % mouse_gap)
+        check("요새 — 안에 있던 고양이는 밖으로 밀린다", cat_gap > 1.4, "고양이 %.2f" % cat_gap)
 
-        def push_through(p, label):
-            """미끼 1.2m 앞에서 0.35초(≈2.2m)만 밀어붙인다.
-            판정은 **이동 거리** — 미끼까지의 거리는 부호가 없어 '앞에서 막힘'과
-            '지나쳐서 멀어짐'을 구분 못 한다. 길게 밀면 벽이 먼저 막아 계측이 오염된다."""
-            p.invoke("TestTeleportLocalPlayer", _x=dx - 1.2, _z=dz)
-            time.sleep(0.7)
-            p.invoke("TestWalkDirection", _x=1, _z=0, _seconds=0.35)
-            time.sleep(1.2)
-            moved = p.invoke("TestGetDistanceTo", _x=dx - 1.2, _z=dz)
-            to_decoy = p.invoke("TestGetDistanceTo", _x=dx, _z=dz)
-            print("   %s: 이동 %.2f / 미끼까지 %.2f" % (label, moved, to_decoy))
-            return moved, to_decoy
-
-        mouse_moved, _ = push_through(m2, "쥐")
-        cat_moved, cat_gap = push_through(cat, "고양이")
-        check("미끼 — 쥐는 통과", mouse_moved > 1.6, "이동 %.2f (미끼 자리를 지나감)" % mouse_moved)
-        check("미끼 — 고양이는 막힘", cat_moved < 1.2 and cat_gap < 0.9,
-              "이동 %.2f, 미끼 앞 %.2f에서 정지" % (cat_moved, cat_gap))
+        # 밀려난 고양이가 되돌아 밀어붙여도 못 들어간다 — 좌우 통벽 쪽으로 0.35초
+        cat.invoke("TestWalkDirection", _x=1, _z=0, _seconds=0.35)
+        time.sleep(1.0)
+        cat_gap2 = cat.invoke("TestGetDistanceTo", _x=fx, _z=fz)
+        check("요새 — 고양이는 못 들어간다", cat_gap2 > 1.2, "밀어붙인 뒤 %.2f" % cat_gap2)
+        check("요새 — 값 80이 나갔다", fort_cheese_before - m2.invoke("TestGetCheese") == 80,
+              "치즈 %s -> %s" % (fort_cheese_before, m2.invoke("TestGetCheese")))
 
     # ---------- 5. 설치 편의: 제 발밑에 창고 ----------
     m1.invoke("TestTeleportLocalPlayer", _x=sx + 2.0, _z=sz)
@@ -143,7 +148,7 @@ def main():
           "치즈 %s -> %s" % (cheese_before, cheese_after))
 
     # ---------- 6. 장난기 구조물 x0.25 (방금 지은 창고를 때린다) ----------
-    m1.invoke("TestTeleportLocalPlayer", _x=sx - 6.0, _z=sz)  # 덮치기 부채꼴에서 치운다
+    m1.invoke("TestTeleportLocalPlayer", _x=sx - 12.0, _z=sz)  # 덮치기 부채꼴에서 치운다(§3 요새 자리도 피한다)
     time.sleep(0.6)
     fun_before = cat.invoke("TestGetCheese")
     face_and_pounce(cat, sx + 2.0, sz, sx + 0.9, sz)  # 창고는 (sx+2, sz)

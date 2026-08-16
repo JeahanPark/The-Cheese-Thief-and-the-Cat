@@ -75,7 +75,6 @@ namespace CTC.Runtime.Bots
                 case Audio.SfxId.MouseDeath:
                 case Audio.SfxId.MouseDash:
                 case Audio.SfxId.FortressPlace:
-                case Audio.SfxId.DecoyPlace:
                 case Audio.SfxId.CheeseTick:
                 case Audio.SfxId.WarehouseTick:
                 case Audio.SfxId.HealTick:

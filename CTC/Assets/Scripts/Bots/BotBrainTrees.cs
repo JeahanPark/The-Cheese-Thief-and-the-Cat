@@ -169,12 +169,11 @@ namespace CTC.Runtime.Bots
                         }
 
                         // 눈앞에서 쫓기면 도주 수단을 쓴다 — 사서 안 쓰면 못 산 것과 같다.
-                        // 미끼는 전방(도망 방향)에 서고 쥐만 통과시킨다 — 추격선 위의 벽.
-                        // 시작 치즈 60이 정확히 미끼 1개분인 이유가 이거다.
+                        // 요새는 내 위치 중심에 즉시 서고 고양이를 밀어낸다(2026-08-15) — 3방 동안의 벽.
                         if (seen)
                         {
                             _self.DoDash();
-                            _self.PlaceDecoyForFlee();
+                            _self.PlaceFortressForFlee();
                         }
                         _self.BuyForMouse();
                         _self.RecruitIfGang();

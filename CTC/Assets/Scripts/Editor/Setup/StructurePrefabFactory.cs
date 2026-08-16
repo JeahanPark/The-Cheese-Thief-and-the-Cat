@@ -44,8 +44,7 @@ namespace CTC.Editor
 
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
-                var placeSfx = root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>();
-                SetInt(placeSfx, "m_Sfx", (int)CTC.Runtime.Audio.SfxId.DecoyPlace);
+                root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>(); // 기본값 FortressPlace
                 _addExtras(root);
 
                 var body = GameObject.CreatePrimitive(_primitive);
@@ -77,8 +76,8 @@ namespace CTC.Editor
 
         // v3 진입형 요새(원작 벙커): 외벽 4면 + 쥐 전용 입구(1.0×0.75 — v2 쥐구멍 실효치수).
         // 쥐 CC(0.44Ø/0.5h, skinWidth 포함 실효 0.60/0.63)만 통과, 고양이(0.86/1.03)는 차단.
-        // 지붕 없음 — 점프가 없어 벽 1.2로 충분. 내부 회복은 FortressHealZone(반경 1.0).
-        // 입구 방향 = 루트 로컬 +Z (스폰 시 yaw 회전으로 지정).
+        // 지붕 없음 — 점프가 없어 벽 1.2로 충분. 회복은 없다(2026-08-15 즉발 방패화 — FortressShield).
+        // 입구 방향 = 루트 로컬 +Z (스폰 시 yaw 회전으로 지정). 치수는 FortressPushLogic과 같아야 한다.
         private const float FORTRESS_WALL_HEIGHT = 1.2f;
 
         private const float FORTRESS_HALF = 1.2f;          // 풋프린트 2.4×2.4
@@ -143,7 +142,7 @@ namespace CTC.Editor
                 root.AddComponent<PlayerDeath>();
                 root.AddComponent<HitFeedback>();
                 root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>(); // 기본값 FortressPlace
-                root.AddComponent<FortressHealZone>();
+                root.AddComponent<FortressShield>(); // 서는 순간 겹친 몸을 밀어낸다
 
                 float h = FORTRESS_WALL_HEIGHT;
                 float half = FORTRESS_HALF;
