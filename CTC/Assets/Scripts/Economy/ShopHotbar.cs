@@ -181,7 +181,8 @@ namespace CTC.Runtime.Economy
                 if (!used) continue;
 
                 ShopItem item = ShopLogic.CATALOG[m_Indices[slot]];
-                bool owned = !m_Shop.CanApply(item.Id);
+                // 요새는 소유 개념이 없다(위치 조건뿐) — 슬롯은 항상 가격을 보여 준다
+                bool owned = item.Id != ShopItemId.Fortress && !m_Shop.CanApply(item.Id);
                 bool affordable = ShopLogic.CanBuy(m_Cheese, item.Cost);
 
                 m_SlotLabels[slot].text = $"{slot + 1}  {ITEM_LABELS[m_Indices[slot]]}";
@@ -213,7 +214,12 @@ namespace CTC.Runtime.Economy
                 ShopItem item = ShopLogic.CATALOG[m_Indices[slot]];
                 string name = ITEM_LABELS[m_Indices[slot]];
 
-                if (!m_Shop.CanApply(item.Id)) { Say($"{name} 이미 보유"); return; }
+                if (!m_Shop.CanApply(item.Id))
+                {
+                    // 요새는 "보유"가 아니라 "지금 이 자리"의 문제다 — 문구가 거짓이면 안 된다
+                    Say(item.Id == ShopItemId.Fortress ? "요새 안에서는 못 세운다 — 밖으로 나가서" : $"{name} 이미 보유");
+                    return;
+                }
                 if (!ShopLogic.CanBuy(m_Cheese, item.Cost))
                 {
                     // 재화 이름은 역할별 — 고양이는 치즈를 캐지 않는다

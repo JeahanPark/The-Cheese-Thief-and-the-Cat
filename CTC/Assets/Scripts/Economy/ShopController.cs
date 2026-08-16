@@ -48,7 +48,8 @@ namespace CTC.Runtime.Economy
                     Player.MouseDash dash = GetComponent<Player.MouseDash>();
                     return dash != null && !dash.Owned;
                 case ShopItemId.Fortress:
-                    return m_FortressPrefab != null;
+                    // 서 있는 요새 안에서는 못 세운다 — 겹치기 금지(FortressShield.AnyContains 주석)
+                    return m_FortressPrefab != null && !FortressShield.AnyContains(transform.position);
                 case ShopItemId.Warehouse:
                     // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.

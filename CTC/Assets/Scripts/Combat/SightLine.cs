@@ -9,6 +9,11 @@ namespace CTC.Runtime.Combat
     /// 두 당사자 자신의 콜라이더는 차폐로 안 친다: 요새 자체를 때릴 때 그 요새 외벽에 막히면 안 된다.
     /// 플레이어 계층(CharacterController 루트)도 차폐가 아니다 — 요새 안 쥐가 몸으로 레이를 가려
     /// 요새가 무적이 되는 것을 막는다. 차폐는 구조물·지형만이다.
+    ///
+    /// **가장 가까운 것이 결정한다**(2026-08-16): 레이가 처음 닿는(당사자·플레이어 제외) 것이 표적이면
+    /// 보이는 것이고, 남이면 가린 것이다. 예전엔 "무엇이든 하나라도 닿으면 차폐"였는데, 요새를 한 자리에
+    /// 겹쳐 세우면 A를 노려도 B 벽에, B를 노려도 A 벽에 막혀 **전부 무적**이 됐다(실플레이 발견).
+    /// 이제 겹친 요새는 레이가 먼저 닿는 것부터 하나씩 깨진다.
     /// </summary>
     public static class SightLine
     {
@@ -27,13 +32,16 @@ namespace CTC.Runtime.Combat
             Vector3 dir = to - from;
             if (dir.sqrMagnitude < 0.0001f) return false;
 
-            foreach (RaycastHit hit in Physics.RaycastAll(
-                         from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore))
+            RaycastHit[] hits = Physics.RaycastAll(
+                from, dir.normalized, dir.magnitude, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (_a, _b) => _a.distance.CompareTo(_b.distance));
+
+            foreach (RaycastHit hit in hits)
             {
                 Transform hitRoot = hit.transform.root;
-                if (hitRoot == _from.root || hitRoot == _to.root) continue;
+                if (hitRoot == _from.root) continue;
                 if (hitRoot.GetComponent<CharacterController>() != null) continue;
-                return true;
+                return hitRoot != _to.root;   // 처음 닿은 것이 표적이면 보인다, 남이면 가렸다
             }
             return false;
         }

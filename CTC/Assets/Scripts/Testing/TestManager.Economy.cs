@@ -116,6 +116,50 @@ namespace CTC.Runtime.Testing
             return lowest;
         }
 
+        /// <summary>
+        /// QA: 로컬 고양이 기준으로 서 있는 구조물(요새·창고)마다 덮치기 판정 단계를 적는다 —
+        /// "왜 안 맞나"를 서버 판정과 같은 규칙으로 되짚는다(사거리·부채꼴·차폐).
+        /// </summary>
+        public string TestDebugPounceTargets()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var pounce = local != null ? local.GetComponent<CatPounce>() : null;
+            if (pounce == null) return "no cat";
+
+            var sb = new System.Text.StringBuilder();
+            foreach (Health h in FindObjectsByType<Health>(FindObjectsSortMode.None))
+            {
+                if (h.NetworkObject == null || h.NetworkObject.IsPlayerObject) continue;
+                if (h.GetComponent<CTC.Runtime.Map.Alcove>() != null) continue;
+                if (h.GetComponent<CTC.Runtime.Map.LootBox>() != null) continue;
+                if (h.GetComponent<CTC.Runtime.Ai.DogBrain>() != null) continue;
+
+                UnityEngine.Vector3 to = h.transform.position - local.transform.position;
+                to.y = 0f;
+                float dist = to.magnitude;
+                float ang = UnityEngine.Vector3.Angle(new UnityEngine.Vector3(local.transform.forward.x, 0f, local.transform.forward.z), to);
+                bool blocked = SightLine.IsBlocked(local.transform, h.transform);
+                string blocker = "";
+                if (blocked)
+                {
+                    UnityEngine.Vector3 from = local.transform.position + UnityEngine.Vector3.up * SightLine.RAY_HEIGHT;
+                    UnityEngine.Vector3 dst = h.transform.position + UnityEngine.Vector3.up * SightLine.RAY_HEIGHT;
+                    UnityEngine.Vector3 dir = dst - from;
+                    foreach (UnityEngine.RaycastHit hit in UnityEngine.Physics.RaycastAll(from, dir.normalized, dir.magnitude, ~0, UnityEngine.QueryTriggerInteraction.Ignore))
+                    {
+                        var root = hit.transform.root;
+                        if (root == local.transform.root || root == h.transform.root) continue;
+                        if (root.GetComponent<UnityEngine.CharacterController>() != null) continue;
+                        blocker = hit.transform.name + "@" + root.name;
+                        break;
+                    }
+                }
+                sb.Append($"{h.name}: hp={h.Hp} dist={dist:F2} angle={ang:F0} blocked={blocked} {blocker}; ");
+            }
+            return sb.ToString();
+        }
+
         // ===== 상자 (v3.9) =====
 
         /// <summary>QA: 맵에 서 있는 상자 수.</summary>

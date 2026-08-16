@@ -135,6 +135,13 @@ def main():
         check("요새 — 값 80이 나갔다", fort_cheese_before - m2.invoke("TestGetCheese") == 80,
               "치즈 %s -> %s" % (fort_cheese_before, m2.invoke("TestGetCheese")))
 
+        # 요새 안에서 또 사면 거부된다(2026-08-16) — 겹치면 벽끼리 서로를 가려 무적이 됐었다
+        stack_before = m2.invoke("TestGetCheese")
+        m2.invoke("TestBuyFortress")
+        time.sleep(1.0)
+        check("요새 — 요새 안에서는 겹쳐 못 세운다", m2.invoke("TestGetCheese") == stack_before,
+              "치즈 %s -> %s" % (stack_before, m2.invoke("TestGetCheese")))
+
     # ---------- 5. 설치 편의: 제 발밑에 창고 ----------
     m1.invoke("TestTeleportLocalPlayer", _x=sx + 2.0, _z=sz)
     time.sleep(0.6)

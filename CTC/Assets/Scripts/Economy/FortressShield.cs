@@ -19,6 +19,24 @@ namespace CTC.Runtime.Economy
         // 판별 반경 — 고양이 CC 반경(0.43)이 제일 크다. 이 밖은 벽에 닿을 수 없다.
         private const float MAX_BODY_RADIUS = 0.5f;
 
+        /// <summary>
+        /// 이 지점이 서 있는 요새 안인가 — **요새 안에서는 요새를 못 세운다**(2026-08-16).
+        /// 겹쳐 세우면 3방짜리 방패가 9방·12방이 되고, 겹친 벽끼리 서로를 가려 한때는 전부 무적이었다.
+        /// 지금 것이 부서지면 그때 다시 사면 된다 — 80치즈에 3방씩이라는 경제가 그대로 선다.
+        /// </summary>
+        public static bool AnyContains(Vector3 _point)
+        {
+            foreach (FortressShield fort in FindObjectsByType<FortressShield>(FindObjectsSortMode.None))
+            {
+                if (!fort.IsSpawned) continue;
+                Vector3 local = Quaternion.Euler(0f, -fort.transform.eulerAngles.y, 0f)
+                                * (_point - fort.transform.position);
+                if (Mathf.Abs(local.x) < FortressPushLogic.HALF && Mathf.Abs(local.z) < FortressPushLogic.HALF)
+                    return true;
+            }
+            return false;
+        }
+
         public override void OnNetworkSpawn()
         {
             if (!IsServer) return;
