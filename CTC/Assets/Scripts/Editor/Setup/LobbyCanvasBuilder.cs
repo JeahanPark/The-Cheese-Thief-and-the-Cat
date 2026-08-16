@@ -473,20 +473,77 @@ namespace CTC.Editor
             SetRef(popup, "m_Title", title);
             SetRefArray(popup, "m_Buttons", buttons);
 
-            // 어둠 — 화면 전체를 덮는 검은 판. 평소엔 꺼져 있다.
-            var dark = new GameObject("DarkOverlay", typeof(RectTransform));
-            dark.transform.SetParent(_canvasGo.transform, false);
-            StretchFull((RectTransform)dark.transform);
-            var darkImage = dark.AddComponent<Image>();
-            darkImage.color = new Color(0f, 0f, 0f, 0f);
-            darkImage.raycastTarget = false;   // 클릭을 막으면 안 된다
-            darkImage.enabled = false;
+            // 어둠 — 화면 후처리(깊이 기반, 내 쥐로부터 멀수록 검게). 렌더러 에셋에 피처를 한 번 등록한다.
+            EnsureDarknessFeature();
 
             var view = _canvasGo.AddComponent<CTC.Runtime.UI.CatSkillView>();
-            SetRef(view, "m_DarkOverlay", darkImage);
             SetRef(view, "m_SilhouetteMaterial", CreateSilhouetteMaterial());
 
             panel.SetActive(false);
+        }
+
+        // 어둠 후처리 피처를 PC 렌더러 에셋에 등록한다(없을 때만). URP는 피처 목록을 에셋에 직렬화하므로
+        // ScriptableRendererDataEditor.AddComponent과 같은 손질을 코드로 한다 — 리스트 + 로컬ID 맵.
+        private const string PC_RENDERER_PATH = "Assets/Settings/PC_Renderer.asset";
+
+        private static void EnsureDarknessFeature()
+        {
+            var data = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.Universal.ScriptableRendererData>(PC_RENDERER_PATH);
+            if (data == null)
+            {
+                Debug.LogError($"[SetupNetworkingScene] 렌더러 에셋 없음: {PC_RENDERER_PATH} — 어둠 스킬이 안 그려진다");
+                return;
+            }
+
+            Material mat = CreateDarknessMaterial();
+            CTC.Runtime.Rendering.DarknessFeature existing = null;
+            foreach (var f in data.rendererFeatures)
+            {
+                if (f is CTC.Runtime.Rendering.DarknessFeature d) { existing = d; break; }
+            }
+
+            if (existing == null)
+            {
+                existing = ScriptableObject.CreateInstance<CTC.Runtime.Rendering.DarknessFeature>();
+                existing.name = "CTCDarkness";
+                AssetDatabase.AddObjectToAsset(existing, data);
+
+                var so = new SerializedObject(data);
+                SerializedProperty list = so.FindProperty("m_RendererFeatures");
+                list.arraySize++;
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = existing;
+                SerializedProperty map = so.FindProperty("m_RendererFeatureMap");
+                AssetDatabase.TryGetGUIDAndLocalFileIdentifier(existing, out _, out long localId);
+                map.arraySize++;
+                map.GetArrayElementAtIndex(map.arraySize - 1).longValue = localId;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Debug.Log("[SetupNetworkingScene] PC_Renderer에 CTCDarkness 피처 등록");
+            }
+
+            var fso = new SerializedObject(existing);
+            fso.FindProperty("m_Material").objectReferenceValue = mat;
+            fso.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(existing);
+            EditorUtility.SetDirty(data);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static Material CreateDarknessMaterial()
+        {
+            const string path = MaterialsDir + "/M_Darkness.mat";
+            var shader = Shader.Find("CTC/Darkness");
+            if (shader == null)
+            {
+                Debug.LogError("[SetupNetworkingScene] CTC/Darkness 셰이더 없음 — Assets/Shaders/CTC_Darkness.shader 확인");
+                return null;
+            }
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null && existing.shader == shader) return existing;
+
+            var mat = new Material(shader) { name = "M_Darkness" };
+            AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(mat, path);
+            return mat;
         }
 
         // 빛 스킬의 실루엣 — 벽 너머로 보여야 하므로 **깊이 검사를 끄고 항상 위에** 그린다.

@@ -4,7 +4,6 @@ using CTC.Runtime.Lobby;
 using CTC.Runtime.Player;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CTC.Runtime.UI
 {
@@ -13,7 +12,8 @@ namespace CTC.Runtime.UI
     /// 보는 쪽이 각자 그린다 — `CatSkill.Active`와 `CatClass`는 복제되니 판단 근거는 같다.
     ///
     /// - **빛**: 내가 빛 고양이면, 살아 있는 쥐를 벽 너머로 비춰 준다(항상 위에 그리는 실루엣).
-    /// - **어둠**: 어둠 고양이의 스킬이 켜져 있으면, **쥐 화면만** 어두워진다.
+    /// - **어둠**: 어둠 고양이의 스킬이 켜져 있으면, **쥐 화면만** 어두워진다 — 균일 암전이 아니라
+    ///   내 쥐로부터 멀수록 검어지는 깊이 기반 후처리(`Rendering/DarknessFeature`, 2026-08-17 개편).
     ///
     /// 불·바람과 달리 여기 있는 이유: 저 둘은 서버가 계산하는 수치고, 이 둘은 **시야**라서
     /// 각 클라이언트의 카메라 앞에서만 의미가 있다.
@@ -25,8 +25,11 @@ namespace CTC.Runtime.UI
         // 실루엣이 원본보다 이만큼 크다. 너무 키우면 벽을 뚫고 나온 것처럼 보인다.
         private const float SILHOUETTE_SCALE = 1.06f;
 
-        [SerializeField] private Image m_DarkOverlay;
         [SerializeField] private Material m_SilhouetteMaterial;
+
+        // 어둠 페이드 — 켜질 때 0.5초에 걸쳐 어두워지고 꺼질 때 다시 밝아진다(서서히)
+        private const float DARK_FADE_SECONDS = 0.5f;
+        private float m_DarkStrength;
 
         private readonly List<GameObject> m_Silhouettes = new List<GameObject>();
         private bool m_LightOn;
@@ -125,21 +128,19 @@ namespace CTC.Runtime.UI
         }
 
         // ── 어둠 ── 쥐 화면만 어두워진다. 고양이 자신은 멀쩡해야 사냥이 성립한다.
+        // 내 쥐 위치를 중심으로 멀수록 검게 — 반경·먼 곳 밝기는 CSV(CatDarkNear/FarMeters·CatDarkStrength).
         private void ApplyDark(NetworkObject _me)
         {
-            if (m_DarkOverlay == null) return;
-
             bool amMouse = _me != null
                            && _me.GetComponent<RoleTag>() is { } tag && tag.Role == RoleId.Mouse;
 
-            float alpha = amMouse && AnyDarkSkillActive() ? CatClassLogic.DarkStrength : 0f;
-            if (!Mathf.Approximately(m_DarkOverlay.color.a, alpha))
-            {
-                Color c = m_DarkOverlay.color;
-                c.a = alpha;
-                m_DarkOverlay.color = c;
-            }
-            m_DarkOverlay.enabled = alpha > 0f;
+            float target = amMouse && AnyDarkSkillActive() ? 1f : 0f;
+            m_DarkStrength = Mathf.MoveTowards(m_DarkStrength, target, Time.deltaTime / DARK_FADE_SECONDS);
+
+            Vector3 center = _me != null ? _me.transform.position : Vector3.zero;
+            Rendering.DarknessFeature.Apply(center,
+                CatClassLogic.DarkNearMeters, CatClassLogic.DarkFarMeters,
+                1f - CatClassLogic.DarkStrength, m_DarkStrength);
         }
 
         private static bool AnyDarkSkillActive()

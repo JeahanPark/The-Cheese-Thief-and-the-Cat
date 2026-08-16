@@ -71,6 +71,8 @@ namespace CTC.Runtime.Info
         public float CatFireDamageMultiplier;
         public float CatWindSpeedMultiplier;
         public float CatDarkStrength;
+        public float CatDarkNearMeters;
+        public float CatDarkFarMeters;
         public float CatSkillSoundMeters;
         public float GangPhaseSeconds;
         public float HeroHpMultiplier;

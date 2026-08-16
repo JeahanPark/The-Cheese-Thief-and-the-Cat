@@ -38,8 +38,14 @@ namespace CTC.Runtime.Player
         /// <summary>바람 — 스킬 중 이동 속도 배율.</summary>
         public static float WindSpeedMultiplier => Balance.CatWindSpeedMultiplier;
 
-        /// <summary>어둠 — 쥐 화면이 얼마나 어두워지나(0=그대로, 1=완전 암전).</summary>
+        /// <summary>어둠 — 먼 곳이 얼마나 어두워지나(0=그대로, 1=완전 암전). 가까운 곳은 그대로다.</summary>
         public static float DarkStrength => Balance.CatDarkStrength;
+
+        /// <summary>어둠 — 내 쥐로부터 이 거리(m)까지는 밝다.</summary>
+        public static float DarkNearMeters => Balance.CatDarkNearMeters;
+
+        /// <summary>어둠 — 이 거리(m)부터는 먼 곳 밝기까지 다 어두워진다.</summary>
+        public static float DarkFarMeters => Balance.CatDarkFarMeters;
 
         /// <summary>
         /// 전직할 수 있는가. **모든 강화를 끝까지 올려야** 한다 — 하나만 올린 채로 열리면
