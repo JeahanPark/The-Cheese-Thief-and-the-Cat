@@ -1,4 +1,3 @@
-using System;
 using CTC.Runtime.Core;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
@@ -14,33 +13,26 @@ namespace CTC.Runtime.UI
     /// <summary>
     /// 우상단 상태 클러스터 (HUD 개편 2026-08-15) — 흩어져 있던 좌상단 `HP/CAT` 텍스트와
     /// 우상단 `치즈:` 텍스트를 한 덩이로 합쳤다. CombatHud·WalletHud를 대체한다:
-    /// 내 HP 바 + 고양이 HP 바(쥐 전원의 공동 목표 게이지) + 재화 + 상시 배지 한 줄.
+    /// 내 HP 바 + 재화 + 상시 배지 한 줄.
     ///
     /// 배지 줄은 "내가 지금 가진 것"의 단어 나열이다(쥐: 무기 티어·대시·직업 / 고양이: 강화
     /// 스택·전직). 문장 설명은 구매 토스트(3초)와 MouseJobHud 팝업(3초)의 몫 — "상시는 얇게".
     ///
-    /// 관전자에게는 고양이 바만 남긴다 — 판의 공동 목표는 죽어서도 보여야 관전이 읽힌다.
+    /// **고양이 HP는 쥐에게 보여주지 않는다**(2026-08-15 확정). 상대 체력이 보이면 "지금 몇 발
+    /// 남았나"가 계산이 되고, 고양이가 얼마나 다쳤는지는 소리·행동으로 읽어야 하는 정보다.
+    /// 관전자는 표시할 게 없어 클러스터 자체가 숨는다.
     /// </summary>
     public class StatusHud : MonoBehaviour
     {
-        private const float CAT_BIND_RETRY_SECONDS = 0.5f;
-        private const int CAT_BIND_RETRY_COUNT = 20;
-
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Root;
-        [SerializeField] private GameObject m_MyBar;
         [SerializeField] private Image m_MyHpFill;
         [SerializeField] private TMP_Text m_MyHpText;
-        [SerializeField] private GameObject m_CatBar;   // 고양이 화면에선 숨김 — 제 HP 바와 같은 값이다
-        [SerializeField] private Image m_CatHpFill;
-        [SerializeField] private TMP_Text m_CatHpText;
         [SerializeField] private TMP_Text m_WalletText;
         [SerializeField] private TMP_Text m_BadgeText;
 
         private readonly SerialDisposable m_HpSub = new SerialDisposable();
         private readonly SerialDisposable m_WalletSub = new SerialDisposable();
-        private readonly SerialDisposable m_CatSub = new SerialDisposable();
-        private readonly SerialDisposable m_CatRetry = new SerialDisposable();
         private readonly SerialDisposable m_WeaponSub = new SerialDisposable();
         private readonly SerialDisposable m_DashSub = new SerialDisposable();
         private readonly SerialDisposable m_JobSub = new SerialDisposable();
@@ -65,8 +57,6 @@ namespace CTC.Runtime.UI
             m_Root.SetActive(false);
             m_HpSub.AddTo(this);
             m_WalletSub.AddTo(this);
-            m_CatSub.AddTo(this);
-            m_CatRetry.AddTo(this);
             m_WeaponSub.AddTo(this);
             m_DashSub.AddTo(this);
             m_JobSub.AddTo(this);
@@ -81,12 +71,6 @@ namespace CTC.Runtime.UI
         private void OnGameStartedChanged(bool _started)
         {
             m_GameStarted = _started;
-            if (_started) RetryBindCat();
-            else
-            {
-                m_CatSub.Disposable = null;
-                m_CatRetry.Disposable = null;
-            }
             ApplyActive();
         }
 
@@ -148,57 +132,17 @@ namespace CTC.Runtime.UI
             RedrawBadge();
         }
 
+        // 게임 중 + 내 몸이 있을 때만 — 관전자는 보여줄 상태가 없다
         private void ApplyActive()
         {
-            bool show = m_GameStarted;
+            bool show = m_GameStarted && m_HasPlayer;
             if (m_Root.activeSelf != show) m_Root.SetActive(show);
-            if (!show) return;
-
-            m_MyBar.SetActive(m_HasPlayer);
-            m_WalletText.gameObject.SetActive(m_HasPlayer);
-            m_BadgeText.gameObject.SetActive(m_HasPlayer);
-            m_CatBar.SetActive(m_Role != RoleId.Cat); // 쥐·관전자에게만 — 공동 목표 게이지
         }
 
         private void DrawMyHp(int _hp, int _maxHp)
         {
             m_MyHpText.text = $"HP {_hp}/{_maxHp}";
             SetFill(m_MyHpFill, _maxHp > 0 ? _hp / (float)_maxHp : 0f);
-        }
-
-        // 시작 신호가 스폰보다 먼저 오는 경우가 있어(CombatHud 실측) 잡힐 때까지 재시도한다.
-        // 폴링으로 되돌아간 게 아니라 **찾을 때까지만** 도는 한시적 스트림이다.
-        private void RetryBindCat()
-        {
-            if (BindCat()) return;
-
-            m_CatRetry.Disposable = Observable
-                .Interval(TimeSpan.FromSeconds(CAT_BIND_RETRY_SECONDS), UnityTimeProvider.Update)
-                .Take(CAT_BIND_RETRY_COUNT)
-                .Subscribe(_ =>
-                {
-                    if (BindCat()) m_CatRetry.Disposable = null;
-                });
-        }
-
-        // 고양이는 매치당 한 마리 — 찾으면 붙이고 true를 돌려준다
-        private bool BindCat()
-        {
-            foreach (Health h in FindObjectsByType<Health>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
-            {
-                RoleTag tag = h.GetComponent<RoleTag>();
-                if (tag == null || tag.Role != RoleId.Cat) continue;
-
-                m_CatSub.Disposable = h.HpChangedRx.Subscribe(hp =>
-                {
-                    m_CatHpText.text = $"고양이 {hp}/{h.MaxHp}";
-                    SetFill(m_CatHpFill, h.MaxHp > 0 ? hp / (float)h.MaxHp : 0f);
-                });
-                return true;
-            }
-            m_CatHpText.text = "고양이 -";
-            SetFill(m_CatHpFill, 0f);
-            return false;
         }
 
         // 채움은 앵커 비율로 그린다 — Filled 타입은 스프라이트 유무에 따라 동작이 갈려서 안 쓴다

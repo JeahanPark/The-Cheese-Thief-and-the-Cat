@@ -28,14 +28,14 @@ namespace CTC.Runtime.Testing
         public string TestGetControlsText() => HudText(FindFirstObjectByType<ControlsHud>(), "m_Text");
 
         /// <summary>
-        /// QA: 우상단 상태 클러스터 — "내HP | 고양이HP | 재화 | 배지". 꺼진 조각은 빈 칸으로
-        /// 나온다(관전자는 고양이 바만 남는다). HUD 개편(2026-08-15)으로 구 Wallet/Combat 텍스트 대체.
+        /// QA: 우상단 상태 클러스터 — "내HP | 재화 | 배지". 관전자는 클러스터가 꺼져 빈 칸이다.
+        /// HUD 개편(2026-08-15)으로 구 Wallet/Combat 텍스트 대체. 고양이 HP는 쥐에게 안 보여준다.
         /// </summary>
         public string TestGetStatusText()
         {
             var hud = FindFirstObjectByType<StatusHud>();
-            return HudText(hud, "m_MyHpText") + " | " + HudText(hud, "m_CatHpText")
-                 + " | " + HudText(hud, "m_WalletText") + " | " + HudText(hud, "m_BadgeText");
+            return HudText(hud, "m_MyHpText") + " | " + HudText(hud, "m_WalletText")
+                 + " | " + HudText(hud, "m_BadgeText");
         }
 
         /// <summary>

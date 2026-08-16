@@ -591,7 +591,7 @@ namespace CTC.Editor
         }
 
         // ===== 우상단 상태 클러스터 (HUD 개편 2026-08-15) =====
-        // 내 HP 바 + 고양이 HP 바(공동 목표) + 재화 + 상시 배지 — StatusHud가 표시 제어.
+        // 내 HP 바 + 재화 + 상시 배지 — StatusHud가 표시 제어. 고양이 HP는 쥐에게 안 보여준다.
         private static void BuildStatusCluster(GameObject _canvasGo, LobbyController _lobby)
         {
             var root = new GameObject("StatusCluster", typeof(RectTransform));
@@ -600,17 +600,15 @@ namespace CTC.Editor
             rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f);
             rt.pivot = new Vector2(1f, 1f);
             rt.anchoredPosition = new Vector2(-24f, -24f);
-            rt.sizeDelta = new Vector2(320f, 120f);
+            rt.sizeDelta = new Vector2(320f, 90f);
 
-            (GameObject myBar, Image myFill, TMP_Text myText) = CreateStatusBar(
+            (GameObject _, Image myFill, TMP_Text myText) = CreateStatusBar(
                 root.transform, "MyHpBar", 0f, 26f, 16f, new Color(0.45f, 0.85f, 0.35f, 0.9f));
-            (GameObject catBar, Image catFill, TMP_Text catText) = CreateStatusBar(
-                root.transform, "CatHpBar", -32f, 18f, 12f, new Color(0.95f, 0.55f, 0.25f, 0.9f));
 
             TMP_Text wallet = CreateTmpText("WalletText", root.transform, "-",
-                24f, TextAlignmentOptions.Right, new Vector2(0f, -58f), new Vector2(320f, 32f));
+                24f, TextAlignmentOptions.Right, new Vector2(0f, -32f), new Vector2(320f, 32f));
             TMP_Text badge = CreateTmpText("BadgeText", root.transform, "",
-                16f, TextAlignmentOptions.Right, new Vector2(0f, -92f), new Vector2(320f, 24f));
+                16f, TextAlignmentOptions.Right, new Vector2(0f, -66f), new Vector2(320f, 24f));
             badge.color = new Color(0.73f, 0.76f, 0.82f, 0.9f);
 
             root.SetActive(false); // StatusHud가 게임 시작 시 켬
@@ -618,12 +616,8 @@ namespace CTC.Editor
             var hud = _canvasGo.AddComponent<CTC.Runtime.UI.StatusHud>();
             SetRef(hud, "m_Lobby", _lobby);
             SetRef(hud, "m_Root", root);
-            SetRef(hud, "m_MyBar", myBar);
             SetRef(hud, "m_MyHpFill", myFill);
             SetRef(hud, "m_MyHpText", myText);
-            SetRef(hud, "m_CatBar", catBar);
-            SetRef(hud, "m_CatHpFill", catFill);
-            SetRef(hud, "m_CatHpText", catText);
             SetRef(hud, "m_WalletText", wallet);
             SetRef(hud, "m_BadgeText", badge);
         }
