@@ -48,6 +48,7 @@
 - 빌드 메뉴 2종: `Tools/CTC/Build Windows (개발용 — 로그·콘솔 켜짐)` → `Builds/Windows-Dev`,
   `Tools/CTC/Build Windows (배포용)` → `Builds/Windows`.
 - 인게임 로그 콘솔(` 키)은 `DebugConsoleGate`가 **개발용 빌드에서만** 켠다 — `GameDebug`와 같은 기준.
+- 좌상단 FPS·프레임 타임(`Core/FrameStatsOverlay`, IMGUI, ConnectionUI 오른쪽)도 같은 기준 — 배포 빌드에선 안 그린다(2026-08-15).
 - **적용 범위**: **전 파일 적용 완료**(2026-07-31, [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 1~5단계 + 잔여 3건). 예외 없이 위 규칙대로 쓴다.
 
 ## unity-scanner (에셋 YAML 탐색 — 토큰 절약)

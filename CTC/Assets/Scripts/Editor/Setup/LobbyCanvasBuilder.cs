@@ -376,6 +376,9 @@ namespace CTC.Editor
                 Debug.LogWarning("[Setup] IngameDebugConsole 프리팹 없음 — 패키지 확인");
             }
 
+            // FPS · 프레임 타임 (좌상단, ConnectionUI 오른쪽) — 개발용 빌드·에디터에서만 그린다
+            new GameObject("FrameStatsOverlay").AddComponent<CTC.Runtime.Core.FrameStatsOverlay>();
+
             BuildOptionsPopup(canvasGo, escRouter);
             BuildCatClassPopup(canvasGo);
             BuildChatHud(canvasGo, escRouter);
