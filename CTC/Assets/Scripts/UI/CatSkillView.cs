@@ -29,7 +29,18 @@ namespace CTC.Runtime.UI
 
         // 어둠 페이드 — 켜질 때 0.5초에 걸쳐 어두워지고 꺼질 때 다시 밝아진다(서서히)
         private const float DARK_FADE_SECONDS = 0.5f;
+        // 어둠 중엔 햇빛·환경광도 죽인다(2026-08-17) — 후처리만으로는 코앞이 대낮이라 "밤"이 안 된다.
+        // 대신 내 쥐에 랜턴을 하나 붙여 제 주변만 따뜻하게. 전부 **내 화면의 조명**이라 남에겐 안 보인다.
+        private const float DARK_SUN_FACTOR = 0.12f;
+        private const float DARK_AMBIENT_FACTOR = 0.2f;
+        private const float LANTERN_RANGE = 5f;
+        private const float LANTERN_INTENSITY = 2.2f;
+        private static readonly Color LANTERN_COLOR = new Color(1f, 0.86f, 0.62f);
         private float m_DarkStrength;
+        private Light m_Sun;
+        private float m_SunIntensity;
+        private float m_AmbientIntensity;
+        private Light m_Lantern;
 
         private readonly List<GameObject> m_Silhouettes = new List<GameObject>();
         private bool m_LightOn;
@@ -141,6 +152,51 @@ namespace CTC.Runtime.UI
             Rendering.DarknessFeature.Apply(center,
                 CatClassLogic.DarkNearMeters, CatClassLogic.DarkFarMeters,
                 1f - CatClassLogic.DarkStrength, m_DarkStrength);
+            ApplyDarkLighting(_me, m_DarkStrength);
+        }
+
+        // 햇빛·환경광을 강도만큼 죽이고, 내 쥐에 랜턴을 켠다. 강도 0이면 전부 원상복구.
+        private void ApplyDarkLighting(NetworkObject _me, float _strength)
+        {
+            if (m_Sun == null && _strength > 0f)
+            {
+                m_Sun = RenderSettings.sun;
+                if (m_Sun == null)
+                {
+                    foreach (Light l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+                    {
+                        if (l.type == LightType.Directional) { m_Sun = l; break; }
+                    }
+                }
+                if (m_Sun != null) m_SunIntensity = m_Sun.intensity;
+                m_AmbientIntensity = RenderSettings.ambientIntensity;
+            }
+            if (m_Sun == null) return;
+
+            m_Sun.intensity = m_SunIntensity * Mathf.Lerp(1f, DARK_SUN_FACTOR, _strength);
+            RenderSettings.ambientIntensity = m_AmbientIntensity * Mathf.Lerp(1f, DARK_AMBIENT_FACTOR, _strength);
+
+            bool wantLantern = _strength > 0.001f && _me != null;
+            if (wantLantern && m_Lantern == null)
+            {
+                var go = new GameObject("DarkLantern");
+                m_Lantern = go.AddComponent<Light>();
+                m_Lantern.type = LightType.Point;
+                m_Lantern.range = LANTERN_RANGE;
+                m_Lantern.color = LANTERN_COLOR;
+                m_Lantern.shadows = LightShadows.None;
+            }
+            if (m_Lantern != null)
+            {
+                if (!wantLantern)
+                {
+                    Destroy(m_Lantern.gameObject);
+                    m_Lantern = null;
+                    return;
+                }
+                m_Lantern.transform.position = _me.transform.position + Vector3.up * 1.2f;
+                m_Lantern.intensity = LANTERN_INTENSITY * _strength;
+            }
         }
 
         private static bool AnyDarkSkillActive()
