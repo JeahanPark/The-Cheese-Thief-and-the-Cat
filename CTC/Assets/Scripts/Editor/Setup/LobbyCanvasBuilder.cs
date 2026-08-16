@@ -490,18 +490,21 @@ namespace CTC.Editor
         }
 
         // 빛 스킬의 실루엣 — 벽 너머로 보여야 하므로 **깊이 검사를 끄고 항상 위에** 그린다.
+        // 전용 셰이더(Assets/Shaders/CTC_Silhouette.shader)를 쓴다: URP Unlit에는 _ZTest가 없어
+        // SetInt("_ZTest")가 조용히 무시되고 렌더큐도 2000으로 되돌아갔다(2026-08-16 실측 —
+        // 실루엣이 벽 뒤에 가려져 "빛 스킬이 안 보였다"). ZTest Always·Queue Overlay는 셰이더에 박혀 있다.
         private static Material CreateSilhouetteMaterial()
         {
             const string path = MaterialsDir + "/M_Silhouette.mat";
-            var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null) shader = Shader.Find("Sprites/Default");
+            var shader = Shader.Find("CTC/Silhouette");
+            if (shader == null)
+            {
+                Debug.LogError("[SetupNetworkingScene] CTC/Silhouette 셰이더 없음 — Assets/Shaders/CTC_Silhouette.shader 확인");
+                shader = Shader.Find("Universal Render Pipeline/Unlit");
+            }
 
             var mat = new Material(shader) { name = "M_Silhouette" };
             mat.SetColor("_BaseColor", new Color(1f, 0.85f, 0.2f, 1f));
-            mat.color = new Color(1f, 0.85f, 0.2f, 1f);
-            mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-            mat.SetInt("_ZWrite", 0);
-            mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Overlay;
 
             AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(mat, path);
