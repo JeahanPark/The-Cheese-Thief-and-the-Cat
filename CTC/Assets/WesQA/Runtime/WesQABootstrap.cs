@@ -2,12 +2,18 @@ using UnityEngine;
 
 namespace WesQA
 {
-    /// <summary>플레이모드 진입 시 WesPocoServer를 자동 기동. Editor 전용 어셈블리(릴리스 빌드 미포함).</summary>
+    /// <summary>
+    /// 플레이모드 진입 시 WesPocoServer를 자동 기동.
+    /// **에디터·개발용 빌드에서만 기동한다**(2026-08-15) — 배포 빌드가 포트 5001을 열고 서 있으면 안 된다.
+    /// 어셈블리는 그대로 두고 기동점만 막는다(GameDebug·봇·봇전 버튼과 같은 기준: DEVELOPMENT_BUILD).
+    /// </summary>
     public static class WesQABootstrap
     {
         private static WesPocoServer _server;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+#endif
         private static void Boot()
         {
             // 이전 세션 좀비 리스너 정리 — teardown 없이 플레이가 끝나면(예외/도메인 리로드 꺼짐)
