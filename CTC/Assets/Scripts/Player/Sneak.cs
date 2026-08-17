@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace CTC.Runtime.Player
 {
     /// <summary>
-    /// 살금살금(LCtrl 홀드). 발소리를 완전히 죽이는 대신 이동 속도를 절반 이하로 낮춘다.
+    /// 살금살금(LShift 홀드). 발소리를 완전히 죽이는 대신 이동 속도를 절반 이하로 낮춘다.
     /// **고양이·쥐 둘 다 쓴다** (2026-08-10에 쥐로 확장, 그전까지는 고양이 전용 `CatSneak`이었다).
     ///
     /// 고양이 쪽 근거: 접근을 발소리(15m)가 항상 먼저 알려서 기습이라는 선택지가 없었다
@@ -56,9 +56,9 @@ namespace CTC.Runtime.Player
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
 
-            // 커서가 풀린 동안(로비·인게임 콘솔)은 조작으로 치지 않는다 — 다른 창에서 Ctrl 조합을 누를 때
+            // 커서가 풀린 동안(로비·인게임 콘솔)은 조작으로 치지 않는다 — 다른 창에서 Shift 조합을 누를 때
             bool held = m_DevForced
-                        || (Cursor.lockState == CursorLockMode.Locked && kb.leftCtrlKey.isPressed);
+                        || (Cursor.lockState == CursorLockMode.Locked && kb.leftShiftKey.isPressed);
             if (m_Sneaking.Value != held) m_Sneaking.Value = held;
         }
     }

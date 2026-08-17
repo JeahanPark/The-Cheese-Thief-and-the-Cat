@@ -39,7 +39,7 @@ namespace CTC.Runtime.Economy
         // 슬롯 반줄 힌트 — "딱봤을 때 뭔지"만. 사용법 문장은 구매 토스트(UsageOf)의 몫.
         private static readonly string[] ITEM_HINTS =
         {
-            "더 세고 멀리", "연사 — 고양이 사냥", "LShift 순간 가속",
+            "더 세고 멀리", "연사 — 고양이 사냥", "Space 순간 가속",
             "3방 버티는 즉석 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
         };
 
@@ -145,7 +145,7 @@ namespace CTC.Runtime.Economy
             {
                 m_IntroShown = true;
                 string attack = m_Role == RoleId.Cat ? "덮치기" : "발사";
-                Say($"WASD 이동 · 마우스 시점 · 좌클릭 {attack} · LCtrl 살금살금 · 숫자키 구매",
+                Say($"WASD 이동 · 마우스 시점 · 좌클릭 {attack} · LShift 살금살금 · 숫자키 구매",
                     INTRO_TOAST_SECONDS);
             }
         }
@@ -367,7 +367,7 @@ namespace CTC.Runtime.Economy
             {
                 case ShopItemId.Slingshot: return "새총 장착 — 좌클릭 발사가 더 세고 멀리 간다";
                 case ShopItemId.MachineGun: return "기관총 장착 — 좌클릭 연사로 고양이를 노린다";
-                case ShopItemId.Dash: return "대시 습득 — LShift로 순간 가속해 거리를 벌린다";
+                case ShopItemId.Dash: return "대시 습득 — Space로 순간 가속해 거리를 벌린다";
                 case ShopItemId.Fortress: return "요새 설치 — 고양이는 못 들어온다 · 세 방이면 부서진다";
                 case ShopItemId.Warehouse: return "창고 설치 — 자리를 비워도 치즈가 쌓인다 · 소리로 위치가 팔린다";
                 case ShopItemId.CatAttack: return "공격 강화 — 덮치기가 더 아프다";

@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace CTC.Runtime.Player
 {
     /// <summary>
-    /// 대시(상점 구매 영구 능력). 소유자가 Shift를 누르면 몸 전방으로 짧게 돌진.
+    /// 대시(상점 구매 영구 능력). 소유자가 Space를 누르면 몸 전방으로 짧게 돌진.
     /// 이동은 소유자 권위(ClientNetworkTransform)라 CC.Move로 로컬 실행만 하면 동기화된다.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
@@ -65,13 +65,13 @@ namespace CTC.Runtime.Player
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             Keyboard kb = Keyboard.current;
-            if (kb == null || !kb.leftShiftKey.wasPressedThisFrame) return;
+            if (kb == null || !kb.spaceKey.wasPressedThisFrame) return;
 
             TryDash();
         }
 
         /// <summary>
-        /// 봇·QA 전용 — 사람의 Shift와 같은 입구. 쿨다운·수감·소유 규칙이 전부 같아야
+        /// 봇·QA 전용 — 사람의 Space와 같은 입구. 쿨다운·수감·소유 규칙이 전부 같아야
         /// 봇으로 잰 밸런스가 뜻을 갖는다(봇이 사람보다 자주 대시하면 그건 봇의 화력이다).
         /// </summary>
         public void DevDash() => TryDash();
