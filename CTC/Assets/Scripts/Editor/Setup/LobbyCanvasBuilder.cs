@@ -33,6 +33,13 @@ namespace CTC.Editor
 
         private const float SLOT_GAP = 8f;
 
+        // 능력 칸(핫바 아래 줄, 하단 중앙 — 2026-08-17). 핫바는 이만큼 위로 올라간다.
+        private const float ABILITY_SLOT = 84f;
+        private const float ABILITY_GAP = 12f;
+        private const int ABILITY_SLOTS = 2;
+        private const float ABILITY_Y = 28f;
+        private const float HOTBAR_Y = ABILITY_Y + ABILITY_SLOT + 12f;
+
         // 로비 패널 치수. 안의 것은 전부 내용 폭 안에 들어와야 한다 —
         // 하나라도 이걸 넘으면 패널 밖으로 삐져나온다.
         // 맵 버튼 줄도 이 폭을 나눠 쓰므로 역할 버튼과 좌우가 딱 맞는다.
@@ -117,7 +124,7 @@ namespace CTC.Editor
             var hotbarRt = (RectTransform)hotbarRoot.transform;
             hotbarRt.anchorMin = hotbarRt.anchorMax = new Vector2(0.5f, 0f);
             hotbarRt.pivot = new Vector2(0.5f, 0f);
-            hotbarRt.anchoredPosition = new Vector2(0f, 28f);
+            hotbarRt.anchoredPosition = new Vector2(0f, HOTBAR_Y);   // 아래 줄은 능력 칸
             hotbarRt.sizeDelta = new Vector2(SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * 4f, SLOT_HEIGHT);
 
             var slotRoots = new Object[ShopLogic.HOTBAR_SLOTS];
@@ -193,28 +200,10 @@ namespace CTC.Editor
             SetRef(resultHud, "m_Text", resultText);
             SetRef(resultHud, "m_RestartButton", restartButton);
 
-            // 특수키 칩 한 줄 (좌하단 — 역할·보유 조건부, ControlsHud가 게임 중 표시).
-            // 구 장문 6줄은 HUD 개편(2026-08-15)으로 핫바 힌트·구매 토스트에 분산됐다.
-            var controlsTextGo = new GameObject("ControlsText");
-            controlsTextGo.transform.SetParent(canvasGo.transform, false);
-            var controlsText = controlsTextGo.AddComponent<TextMeshProUGUI>();
-            controlsText.text = string.Empty;
-            controlsText.fontSize = 20f;
-            controlsText.alignment = TextAlignmentOptions.BottomLeft;
-            controlsText.color = new Color(1f, 1f, 1f, 0.85f);
-            var controlsRect = controlsTextGo.GetComponent<RectTransform>();
-            controlsRect.anchorMin = new Vector2(0f, 0f);
-            controlsRect.anchorMax = new Vector2(0f, 0f);
-            controlsRect.pivot = new Vector2(0f, 0f);
-            controlsRect.anchoredPosition = new Vector2(24f, 20f);
-            controlsRect.sizeDelta = new Vector2(1100f, 44f);
-            controlsTextGo.SetActive(false);
+            // 능력 칸 (핫바 아래 줄, 하단 중앙 — 2026-08-17). 구 좌하단 특수키 칩(ControlsHud)을 대체.
+            BuildAbilityBar(canvasGo, _lobby);
 
-            var controlsHud = canvasGo.AddComponent<ControlsHud>();
-            SetRef(controlsHud, "m_Lobby", _lobby);
-            SetRef(controlsHud, "m_Text", controlsText);
-
-            // 맵 설명 (좌하단 — 로비에서만. 게임이 시작되면 같은 자리를 조작키가 채운다)
+            // 맵 설명 (좌하단 — 로비에서만)
             var mapInfoGo = new GameObject("MapInfoText");
             mapInfoGo.transform.SetParent(canvasGo.transform, false);
             var mapInfoText = mapInfoGo.AddComponent<TextMeshProUGUI>();
@@ -627,7 +616,7 @@ namespace CTC.Editor
         }
 
         // ===== 채팅 (2026-08-01 건의) =====
-        // 좌측 중단이 비어 있다 — 좌하단은 ControlsHud·MapInfoHud, 하단 중앙은 ShopHotbar가 쓴다.
+        // 좌측 중단이 비어 있다 — 좌하단은 MapInfoHud(로비), 하단 중앙은 ShopHotbar·AbilityBar가 쓴다.
         // 갇힌 본인의 카운트다운. 화면 위쪽 가운데 — 갇힌 동안은 이게 유일한 정보다.
         private static void BuildJailHud(GameObject _canvasGo)
         {
@@ -651,6 +640,140 @@ namespace CTC.Editor
             var hud = _canvasGo.AddComponent<CTC.Runtime.UI.MouseJobHud>();
             SetRef(hud, "m_Phase", _phase);
             SetRef(hud, "m_Text", text);
+        }
+
+        // ===== 능력 칸 (2026-08-17) — 핫바 아래 줄, 하단 중앙. 좌하단 글자 칩(ControlsHud) 대체 =====
+        // 쿨다운 연출: 밝은 타일 + 검은 덮개(Radial360, 12시부터 시계방향으로 걷힘) + 가장자리 선 + 최상단 남은 초.
+        private static void BuildAbilityBar(GameObject _canvasGo, LobbyController _lobby)
+        {
+            var root = new GameObject("AbilityBar", typeof(RectTransform));
+            root.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)root.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = new Vector2(0f, ABILITY_Y);
+            rt.sizeDelta = new Vector2(ABILITY_SLOT * ABILITY_SLOTS + ABILITY_GAP * (ABILITY_SLOTS - 1), ABILITY_SLOT);
+
+            var views = new Object[ABILITY_SLOTS];
+            for (int i = 0; i < ABILITY_SLOTS; i++)
+            {
+                views[i] = BuildAbilitySlot(root.transform, i);
+            }
+            root.SetActive(false); // AbilityBar가 게임 시작 시 켬
+
+            var bar = _canvasGo.AddComponent<AbilityBar>();
+            SetRef(bar, "m_Lobby", _lobby);
+            SetRef(bar, "m_Root", root);
+            SetRefArray(bar, "m_Slots", views);
+        }
+
+        private static AbilitySlotView BuildAbilitySlot(Transform _parent, int _index)
+        {
+            // 위치는 AbilityBar가 쓰는 칸 수에 맞춰 가운데 정렬로 다시 놓는다 — 여기선 자리만
+            var go = new GameObject($"Ability{_index + 1}", typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = new Vector2((_index - (ABILITY_SLOTS - 1) * 0.5f) * (ABILITY_SLOT + ABILITY_GAP), 0f);
+            rt.sizeDelta = new Vector2(ABILITY_SLOT, ABILITY_SLOT);
+            var group = go.AddComponent<CanvasGroup>();
+
+            var frame = go.AddComponent<Image>();
+            frame.color = new Color(0.54f, 0.45f, 0.32f, 1f);
+            frame.raycastTarget = false;
+
+            Image tile = FullRectImage(go.transform, "Tile", 2f, new Color(0.36f, 0.30f, 0.21f, 0.95f));
+            Image cover = FullRectImage(go.transform, "Cover", 2f, new Color(0f, 0f, 0f, 0.84f));
+            cover.type = Image.Type.Filled;
+            cover.fillMethod = Image.FillMethod.Radial360;
+            cover.fillOrigin = (int)Image.Origin360.Top;
+            cover.fillClockwise = false;   // 걷히는 가장자리가 시계방향으로 돌게(AbilitySlotView 참조)
+            cover.fillAmount = 0f;
+
+            // 걷히는 가장자리 선 — 중심에서 위쪽으로 뻗는 막대, 중심 기준으로 회전
+            var edgeGo = new GameObject("Edge", typeof(RectTransform));
+            edgeGo.transform.SetParent(go.transform, false);
+            var edgeRt = (RectTransform)edgeGo.transform;
+            edgeRt.anchorMin = edgeRt.anchorMax = new Vector2(0.5f, 0.5f);
+            edgeRt.pivot = new Vector2(0.5f, 0f);
+            edgeRt.anchoredPosition = Vector2.zero;
+            edgeRt.sizeDelta = new Vector2(2f, ABILITY_SLOT * 0.5f - 2f);
+            var edge = edgeGo.AddComponent<Image>();
+            edge.color = new Color(1f, 0.86f, 0.59f, 0.9f);
+            edge.raycastTarget = false;
+            edgeGo.SetActive(false);
+
+            TMP_Text name = CreateTmpText("Name", go.transform, "", 16f, TextAlignmentOptions.Center,
+                new Vector2(0f, -(ABILITY_SLOT - 24f)), new Vector2(ABILITY_SLOT - 6f, 22f));
+            name.fontStyle = FontStyles.Bold;
+            TMP_Text sub = CreateTmpText("Sub", go.transform, "", 14f, TextAlignmentOptions.Center,
+                new Vector2(0f, -22f), new Vector2(ABILITY_SLOT - 6f, 40f));
+            sub.color = new Color(0.93f, 0.88f, 0.78f, 1f);
+            TMP_Text seconds = CreateTmpText("Seconds", go.transform, "", 40f, TextAlignmentOptions.Center,
+                new Vector2(0f, -14f), new Vector2(ABILITY_SLOT, 56f));
+            seconds.fontStyle = FontStyles.Bold;
+
+            // 키캡 — 좌상단 모서리에 걸친 밝은 칩(가장 위)
+            var keyGo = new GameObject("KeyCap", typeof(RectTransform));
+            keyGo.transform.SetParent(go.transform, false);
+            var keyRt = (RectTransform)keyGo.transform;
+            keyRt.anchorMin = keyRt.anchorMax = new Vector2(0f, 1f);
+            keyRt.pivot = new Vector2(0f, 1f);
+            keyRt.anchoredPosition = new Vector2(-6f, 9f);
+            keyRt.sizeDelta = new Vector2(52f, 20f);
+            var keyBg = keyGo.AddComponent<Image>();
+            keyBg.color = new Color(0.91f, 0.86f, 0.76f, 1f);
+            keyBg.raycastTarget = false;
+            TMP_Text key = CreateTmpText("KeyText", keyGo.transform, "", 13f, TextAlignmentOptions.Center,
+                Vector2.zero, new Vector2(52f, 20f));
+            key.color = new Color(0.13f, 0.12f, 0.1f, 1f);
+            key.fontStyle = FontStyles.Bold;
+
+            // 지속 잔여 바 — 맨 아래
+            var barGo = new GameObject("ActiveBar", typeof(RectTransform));
+            barGo.transform.SetParent(go.transform, false);
+            var barRt = (RectTransform)barGo.transform;
+            barRt.anchorMin = new Vector2(0f, 0f);
+            barRt.anchorMax = new Vector2(1f, 0f);
+            barRt.pivot = new Vector2(0.5f, 0f);
+            barRt.anchoredPosition = new Vector2(0f, 4f);
+            barRt.sizeDelta = new Vector2(-12f, 4f);
+            var bar = barGo.AddComponent<Image>();
+            bar.color = new Color(1f, 0.82f, 0.48f, 1f);
+            bar.type = Image.Type.Filled;
+            bar.fillMethod = Image.FillMethod.Horizontal;
+            bar.fillOrigin = 0;
+            bar.raycastTarget = false;
+            barGo.SetActive(false);
+
+            var view = go.AddComponent<AbilitySlotView>();
+            SetRef(view, "m_Frame", frame);
+            SetRef(view, "m_Tile", tile);
+            SetRef(view, "m_Cover", cover);
+            SetRef(view, "m_Edge", edgeRt);
+            SetRef(view, "m_ActiveBar", bar);
+            SetRef(view, "m_KeyText", key);
+            SetRef(view, "m_NameText", name);
+            SetRef(view, "m_SecondsText", seconds);
+            SetRef(view, "m_SubText", sub);
+            SetRef(view, "m_Group", group);
+            return view;
+        }
+
+        private static Image FullRectImage(Transform _parent, string _name, float _inset, Color _color)
+        {
+            var go = new GameObject(_name, typeof(RectTransform));
+            go.transform.SetParent(_parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = new Vector2(_inset, _inset);
+            rt.offsetMax = new Vector2(-_inset, -_inset);
+            var img = go.AddComponent<Image>();
+            img.color = _color;
+            img.raycastTarget = false;
+            return img;
         }
 
         // ===== 우상단 상태 클러스터 (HUD 개편 2026-08-15) =====

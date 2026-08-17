@@ -45,7 +45,7 @@ namespace CTC.Runtime.UI
 
         private void Start()
         {
-            // Start인 이유: ChatManager.Instance가 Awake에서 잡힌다(LobbyUI·ControlsHud와 같은 규약)
+            // Start인 이유: ChatManager.Instance가 Awake에서 잡힌다(LobbyUI·AbilityBar와 같은 규약)
             if (m_Input != null) m_Input.gameObject.SetActive(false);
             if (m_Log != null) m_Log.text = "";
 

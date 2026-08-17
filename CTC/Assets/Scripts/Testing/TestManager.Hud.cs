@@ -24,8 +24,21 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 결과 패널 문구(안 떴으면 빈 문자열) — 승자가 셋인데 둘로 찍던 버그를 막는다.</summary>
         public string TestGetResultText() => HudText(FindFirstObjectByType<ResultHud>(), "m_Text");
 
-        /// <summary>QA: 좌하단 조작 안내 문구.</summary>
-        public string TestGetControlsText() => HudText(FindFirstObjectByType<ControlsHud>(), "m_Text");
+        /// <summary>QA: 능력 바 — 슬롯마다 "키:이름:상태:남은초(올림)"를 '|'로 잇는다. 바가 꺼져 있으면 빈 문자열.</summary>
+        public string TestGetAbilityBar()
+        {
+            var bar = FindFirstObjectByType<AbilityBar>();
+            if (bar == null) return "";
+            var views = bar.GetComponentsInChildren<AbilitySlotView>(false);
+            var sb = new System.Text.StringBuilder();
+            foreach (var v in views)
+            {
+                if (sb.Length > 0) sb.Append('|');
+                sb.Append(v.Key).Append(':').Append(v.Name).Append(':').Append(v.State)
+                  .Append(':').Append(Mathf.CeilToInt(v.SecondsShown));
+            }
+            return sb.ToString();
+        }
 
         /// <summary>
         /// QA: 우상단 상태 클러스터 — "내HP | 재화 | 배지". 관전자는 클러스터가 꺼져 빈 칸이다.
