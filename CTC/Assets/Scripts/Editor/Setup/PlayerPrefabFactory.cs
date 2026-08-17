@@ -113,12 +113,11 @@ namespace CTC.Editor
                     root.AddComponent<CTC.Runtime.UI.JobBadge>();
                 }
 
-                // 발소리 — 3D 루프(거리 감쇠), FootstepPlayer가 이동 속도로 재생 제어
+                // 발소리 — 3D 한 걸음씩(거리 감쇠). FootstepPlayer가 이동 거리 누적으로 박자를 낸다(2026-08-17).
+                // 한 걸음 클립 3종은 예전 루프(sfx_*_footstep.ogg)에서 잘라낸 것 — 보폭은 그 루프의 박자
+                // (쥐 3.4걸음/s · 고양이 2.5걸음/s)를 기준 이속에서 그대로 재현하는 값이다.
                 var stepSource = root.AddComponent<AudioSource>();
-                stepSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(_role == RoleId.Cat
-                    ? "Assets/Audio/Movement/sfx_cat_footstep.ogg"
-                    : "Assets/Audio/Movement/sfx_mouse_footstep.ogg");
-                stepSource.loop = true;
+                stepSource.loop = false;
                 stepSource.playOnAwake = false;
                 stepSource.volume = 0.6f;
                 stepSource.spatialBlend = 1f;
@@ -128,6 +127,15 @@ namespace CTC.Editor
                 stepSource.maxDistance = info.FootstepRangeMeters;
                 var steps = root.AddComponent<CTC.Runtime.Audio.FootstepPlayer>();
                 SetRef(steps, "m_Source", stepSource);
+                string stepPrefix = _role == RoleId.Cat ? "sfx_cat_step" : "sfx_mouse_step";
+                SetRefArray(steps, "m_StepClips", new Object[]
+                {
+                    AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Movement/{stepPrefix}1.ogg"),
+                    AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Movement/{stepPrefix}2.ogg"),
+                    AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Movement/{stepPrefix}3.ogg"),
+                });
+                SetFloat(steps, "m_StrideMeters", CTC.Runtime.Audio.FootstepLogic.StrideOf(
+                    info.MoveSpeed, _role == RoleId.Cat ? 2.5f : 3.4f));
                 // 잠행은 무음이 아니라 '좁게 들린다'(2026-08-10) — 넓은 맵에서 웅크려 버티기가
                 // 무적이 되는 것을 막는다. 두 반경 다 PlayerInfo에서 굽는다.
                 SetFloat(steps, "m_NormalRange", info.FootstepRangeMeters);

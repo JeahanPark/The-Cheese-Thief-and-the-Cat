@@ -20,12 +20,10 @@ namespace CTC.Runtime.Testing
             var player = NetUtil.FindPlayerObject((ulong)_clientId);
             if (player == null) return -1f;
 
-            foreach (AudioSource source in player.GetComponentsInChildren<AudioSource>())
-            {
-                if (!source.loop || !source.isPlaying) continue;
-                return source.maxDistance;
-            }
-            return -1f;
+            // 한 걸음씩 재생(2026-08-17)이라 isPlaying은 걸음 사이에 false다 — FootstepPlayer 상태를 읽는다
+            var steps = player.GetComponentInChildren<CTC.Runtime.Audio.FootstepPlayer>();
+            if (steps == null || !steps.IsStepping) return -1f;
+            return steps.CurrentRange;
         }
 
         /// <summary>QA: 지금 쥐를 고른 사람 수 — 치즈 총량이 여기 비례한다.</summary>

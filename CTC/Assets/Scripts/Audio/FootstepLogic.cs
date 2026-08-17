@@ -25,5 +25,31 @@ namespace CTC.Runtime.Audio
         {
             return _smoothedSpeed >= _walkThreshold;
         }
+
+        /// <summary>
+        /// 한 걸음씩 재생(2026-08-17): 이동 거리를 누적해 보폭을 넘을 때마다 한 걸음 — 박자가 **속도에
+        /// 비례**한다. 살금(×0.45)은 드문드문, 대시는 타다닥. 루프 클립의 pitch를 만지면 느린 걸음이
+        /// 늘어져 둔탁해지므로(사용자 지적) 클립은 그대로 두고 **간격만** 바꾼다.
+        /// 누적이 보폭을 넘으면 한 걸음 빼고 남은 거리를 돌려준다(한 프레임에 여러 걸음이면 하나만 —
+        /// 나머지는 다음 프레임에 이어서 난다).
+        /// </summary>
+        public static float Advance(float _accumulated, float _distance, float _strideMeters, out bool _step)
+        {
+            float acc = _accumulated + Mathf.Max(0f, _distance);
+            if (_strideMeters <= 0f || acc < _strideMeters)
+            {
+                _step = false;
+                return acc;
+            }
+            _step = true;
+            return acc - _strideMeters;
+        }
+
+        /// <summary>보폭(m) — 원래 루프 클립의 박자(초당 걸음 수)를 기준 이속에서 그대로 재현하는 값.</summary>
+        public static float StrideOf(float _moveSpeed, float _stepsPerSecond)
+        {
+            if (_stepsPerSecond <= 0f) return 0f;
+            return Mathf.Max(0.05f, _moveSpeed / _stepsPerSecond);
+        }
     }
 }

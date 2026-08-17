@@ -127,14 +127,11 @@ namespace CTC.Runtime.Bots
         }
 
         // 지금 나고 있는 발소리의 반경. 안 움직이거나 멈췄으면 0 — 잠행이면 좁은 값이 그대로 온다.
+        // 한 걸음씩 재생(2026-08-17)이라 AudioSource.isPlaying은 걸음 사이에 false — FootstepPlayer가 답이다.
         private static float ActiveFootstepRange(Transform _other)
         {
-            foreach (AudioSource source in _other.GetComponentsInChildren<AudioSource>())
-            {
-                if (!source.loop || !source.isPlaying) continue;
-                return source.maxDistance;
-            }
-            return 0f;
+            var steps = _other.GetComponentInChildren<FootstepPlayer>();
+            return steps != null && steps.IsStepping ? steps.CurrentRange : 0f;
         }
 
         private Vector3 Blur(Vector3 _heard)

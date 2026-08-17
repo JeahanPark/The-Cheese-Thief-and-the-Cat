@@ -101,7 +101,7 @@ MonoBehaviour:
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -426,11 +426,11 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: ec5b62a37c4d4164ab88fca7d05f59df, type: 3}
+  m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
   m_Volume: 0.6
   m_Pitch: 1
-  Loop: 1
+  Loop: 0
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
@@ -525,6 +525,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.FootstepPlayer
   m_Source: {fileID: 2977953179673282696}
+  m_StepClips:
+  - {fileID: 8300000, guid: c672e1391a3529b4ab9b7369fcd289c8, type: 3}
+  - {fileID: 8300000, guid: 537399fda4e5c0a4c8811c09d8cc894e, type: 3}
+  - {fileID: 8300000, guid: 7a43a069f37a9ab439016f539063e84e, type: 3}
+  m_StrideMeters: 1.7647058
   m_WalkThreshold: 0.5
   m_NormalRange: 14
   m_SneakRange: 4

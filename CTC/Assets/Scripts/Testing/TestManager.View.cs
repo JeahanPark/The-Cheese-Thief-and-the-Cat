@@ -59,11 +59,8 @@ namespace CTC.Runtime.Testing
             var player = NetUtil.FindPlayerObject((ulong)_clientId);
             if (player == null) return false;
 
-            foreach (var source in player.GetComponentsInChildren<UnityEngine.AudioSource>())
-            {
-                if (source.loop && source.isPlaying) return true;
-            }
-            return false;
+            var steps = player.GetComponentInChildren<CTC.Runtime.Audio.FootstepPlayer>();
+            return steps != null && steps.IsStepping;
         }
 
         /// <summary>QA: 관전 중인 대상에게 따봉 — 대상 클라이언트 ID를 직접 준다.</summary>

@@ -41,6 +41,44 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        public void Advance_StepsOncePerStride_CarriesRemainder()
+        {
+            float acc = FootstepLogic.Advance(0f, 0.5f, 1.8f, out bool step);
+            Assert.IsFalse(step);
+            Assert.AreEqual(0.5f, acc, 1e-4f);
+
+            acc = FootstepLogic.Advance(acc, 1.5f, 1.8f, out step);   // 2.0 ≥ 1.8 → 한 걸음, 0.2 남김
+            Assert.IsTrue(step);
+            Assert.AreEqual(0.2f, acc, 1e-4f);
+        }
+
+        [Test]
+        public void Advance_SlowWalkTakesLongerBetweenSteps()
+        {
+            // 같은 시간(1초)에 살금(0.45×)은 걸음이 절반도 안 난다 — 박자가 속도를 따라간다
+            int Steps(float speed)
+            {
+                int n = 0; float acc = 0f;
+                for (int i = 0; i < 60; i++)
+                {
+                    acc = FootstepLogic.Advance(acc, speed / 60f, 1.8f, out bool s);
+                    if (s) n++;
+                }
+                return n;
+            }
+            Assert.AreEqual(3, Steps(6f));           // 6m/s ÷ 1.8m ≈ 3.3 → 3걸음
+            Assert.AreEqual(1, Steps(6f * 0.45f));   // 2.7m/s → 1걸음
+        }
+
+        [Test]
+        public void StrideOf_ReproducesLoopCadenceAtBaseSpeed()
+        {
+            // 쥐 루프는 1.48초에 5걸음(3.4/s), 이속 6 → 보폭 1.78m
+            Assert.AreEqual(6f / 3.4f, FootstepLogic.StrideOf(6f, 3.4f), 1e-4f);
+            Assert.AreEqual(0f, FootstepLogic.StrideOf(6f, 0f));
+        }
+
+        [Test]
         public void Balance_MouseIsHeardFartherThanCat()
         {
             // 예전엔 반대였다(쥐 8 · 고양이 15) — 쥐가 항상 먼저 알아 넓은 맵에서 회피가 공짜였다.
