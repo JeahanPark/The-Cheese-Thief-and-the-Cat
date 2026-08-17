@@ -57,7 +57,7 @@ def main():
     check("전직 — 쥐 클라에도 보인다", m1.invoke("TestGetCatClassOf", _clientId=0) == "Fire",
           m1.invoke("TestGetCatClassOf", _clientId=0))
     check("전직 — 두 번은 못 한다", not cat.invoke("TestGetCanAdvance"))
-    check("능력 바 — 전직하면 Q 칸이 전직명으로 열린다", "Q:불:Ready" in cat.invoke("TestGetAbilityBar"),
+    check("능력 바 — 전직하면 Q 칸이 전직명으로 생긴다", cat.invoke("TestGetAbilityBar") == "Q:불:Ready:0",
           cat.invoke("TestGetAbilityBar"))
 
     # ---------- 스킬 ----------

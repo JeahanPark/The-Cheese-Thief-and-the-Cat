@@ -23,8 +23,7 @@ namespace CTC.Runtime.UI
         [SerializeField] private TMP_Text m_KeyText;
         [SerializeField] private TMP_Text m_NameText;
         [SerializeField] private TMP_Text m_SecondsText;
-        [SerializeField] private TMP_Text m_SubText;   // "6초" · "상점 3" · "전직 필요"
-        [SerializeField] private CanvasGroup m_Group;
+        [SerializeField] private TMP_Text m_SubText;   // 지속 중 "6초"
 
         private static readonly Color FRAME_IDLE = new Color(0.54f, 0.45f, 0.32f, 1f);
         private static readonly Color FRAME_ACTIVE = new Color(1f, 0.82f, 0.48f, 1f);
@@ -43,19 +42,17 @@ namespace CTC.Runtime.UI
         {
             m_KeyText.text = _slot.Key;
             m_NameText.text = _slot.Name;
-            m_SubText.text = _slot.LockReason;
+            m_SubText.text = "";
         }
 
         /// <summary>매 프레임(살아 있을 때) 또는 상태가 바뀔 때.</summary>
         public void Apply(AbilitySlot _slot, float _cooldownRemaining, float _cooldownTotal,
             float _activeRemaining, float _activeTotal, float _dt)
         {
-            AbilityState next = AbilityBarLogic.StateOf(_slot.Locked, _activeRemaining, _cooldownRemaining);
+            AbilityState next = AbilityBarLogic.StateOf(_activeRemaining, _cooldownRemaining);
             if (State == AbilityState.Cooldown && next == AbilityState.Ready) m_FlashLeft = FLASH_SECONDS;
             State = next;
             SecondsShown = _cooldownRemaining;
-
-            m_Group.alpha = _slot.Locked ? 0.45f : 1f;
 
             bool cooling = next == AbilityState.Cooldown;
             float remain = cooling ? AbilityBarLogic.FillRatio(_cooldownRemaining, _cooldownTotal) : 0f;
@@ -67,8 +64,7 @@ namespace CTC.Runtime.UI
             bool active = next == AbilityState.Active;
             m_ActiveBar.gameObject.SetActive(active);
             if (active) m_ActiveBar.fillAmount = AbilityBarLogic.FillRatio(_activeRemaining, _activeTotal);
-            m_SubText.text = active ? AbilityBarLogic.SecondsText(_activeRemaining) + "초"
-                           : _slot.Locked ? _slot.LockReason : "";
+            m_SubText.text = active ? AbilityBarLogic.SecondsText(_activeRemaining) + "초" : "";
             m_Frame.color = active ? FRAME_ACTIVE : FRAME_IDLE;
 
             m_FlashLeft = Mathf.Max(0f, m_FlashLeft - _dt);

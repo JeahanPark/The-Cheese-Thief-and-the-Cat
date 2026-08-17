@@ -6,70 +6,60 @@ using NUnit.Framework;
 
 namespace CTC.Tests.EditMode
 {
-    /// <summary>능력 바(2026-08-17) — 슬롯 목록·상태·채움 비율·초 글자. 그림(View)은 이 값을 그대로 그린다.</summary>
+    /// <summary>
+    /// 능력 바(2026-08-17) — 슬롯 목록·상태·채움 비율·초 글자. 그림(View)은 이 값을 그대로 그린다.
+    /// **해금 안 된 칸은 목록에 없다** — 대시는 사야, 임명은 깡패가 돼야, Q는 전직해야 생긴다.
+    /// </summary>
     public class AbilityBarLogicTests
     {
         [Test]
-        public void Mouse_HasDashAndAppointSlots_InOrder()
+        public void Mouse_NothingUnlocked_NoSlots()
         {
-            var slots = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, false, CatClassId.None, 3);
-            Assert.AreEqual(2, slots.Length);
+            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, false, CatClassId.None).Length);
+        }
+
+        [Test]
+        public void Mouse_DashAppearsWhenOwned()
+        {
+            var slots = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, true, CatClassId.None);
+            Assert.AreEqual(1, slots.Length);
             Assert.AreEqual("Space", slots[0].Key);
             Assert.AreEqual("대시", slots[0].Name);
-            Assert.AreEqual("F", slots[1].Key);
-            Assert.AreEqual("임명", slots[1].Name);
         }
 
         [Test]
-        public void Mouse_DashLockedTellsShopSlot_UntilOwned()
+        public void Mouse_AppointOnlyForGang_AfterDash()
         {
-            var locked = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, false, CatClassId.None, 3)[0];
-            Assert.IsTrue(locked.Locked);
-            Assert.AreEqual("상점 3", locked.LockReason);
-
-            var owned = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, true, CatClassId.None, 3)[0];
-            Assert.IsFalse(owned.Locked);
-            Assert.AreEqual("", owned.LockReason);
+            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.Minion, false, CatClassId.None).Length);
+            var gang = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.Gang, true, CatClassId.None);
+            Assert.AreEqual(2, gang.Length);
+            Assert.AreEqual("Space", gang[0].Key);
+            Assert.AreEqual("F", gang[1].Key);
+            Assert.AreEqual("임명", gang[1].Name);
         }
 
         [Test]
-        public void Mouse_AppointLockedUnlessGang()
+        public void Cat_SkillSlotOnlyAfterAdvance_NamedByClass()
         {
-            var plain = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, true, CatClassId.None, 3)[1];
-            Assert.IsTrue(plain.Locked);
-            Assert.AreEqual("깡패만", plain.LockReason);
-            Assert.IsTrue(AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.Minion, true, CatClassId.None, 3)[1].Locked);
-            Assert.IsFalse(AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.Gang, true, CatClassId.None, 3)[1].Locked);
-        }
-
-        [Test]
-        public void Cat_HasSkillSlot_NamedByClass()
-        {
-            var none = AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.None, 0);
-            Assert.AreEqual(1, none.Length);
-            Assert.AreEqual("Q", none[0].Key);
-            Assert.AreEqual("스킬", none[0].Name);
-            Assert.IsTrue(none[0].Locked);
-            Assert.AreEqual("전직 필요", none[0].LockReason);
-
-            var dark = AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.Dark, 0)[0];
-            Assert.AreEqual("어둠", dark.Name);
-            Assert.IsFalse(dark.Locked);
+            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.None).Length);
+            var dark = AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.Dark);
+            Assert.AreEqual(1, dark.Length);
+            Assert.AreEqual("Q", dark[0].Key);
+            Assert.AreEqual("어둠", dark[0].Name);
         }
 
         [Test]
         public void Spectator_HasNoSlots()
         {
-            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.None, MouseJobId.None, false, CatClassId.None, 0).Length);
+            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.None, MouseJobId.Gang, true, CatClassId.Fire).Length);
         }
 
         [Test]
-        public void StateOf_PrefersLocked_ThenActive_ThenCooldown()
+        public void StateOf_PrefersActive_ThenCooldown()
         {
-            Assert.AreEqual(AbilityState.Locked, AbilityBarLogic.StateOf(true, 2f, 1f));
-            Assert.AreEqual(AbilityState.Active, AbilityBarLogic.StateOf(false, 2f, 1f));
-            Assert.AreEqual(AbilityState.Cooldown, AbilityBarLogic.StateOf(false, 0f, 1f));
-            Assert.AreEqual(AbilityState.Ready, AbilityBarLogic.StateOf(false, 0f, 0f));
+            Assert.AreEqual(AbilityState.Active, AbilityBarLogic.StateOf(2f, 1f));
+            Assert.AreEqual(AbilityState.Cooldown, AbilityBarLogic.StateOf(0f, 1f));
+            Assert.AreEqual(AbilityState.Ready, AbilityBarLogic.StateOf(0f, 0f));
         }
 
         [Test]

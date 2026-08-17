@@ -90,7 +90,13 @@ namespace CTC.Runtime.UI
                 return;
             }
 
-            m_Built = AbilityBarLogic.Build(m_Role, m_Job, m_DashOwned, m_Class, DashShopSlot());
+            m_Built = AbilityBarLogic.Build(m_Role, m_Job, m_DashOwned, m_Class);
+            if (m_Built.Length == 0)   // 해금된 게 없으면 바 자체를 안 그린다
+            {
+                m_Root.SetActive(false);
+                m_Tick.Disposable = null;
+                return;
+            }
             var rootRt = (RectTransform)m_Root.transform;
             rootRt.anchoredPosition = new Vector2(HotbarUsedCenterX(ShopLogic.RoleCatalogIndices(m_Role).Count), rootRt.anchoredPosition.y);
             float left = -(m_Built.Length - 1) * SLOT_STEP * 0.5f;   // 쓰는 칸만 가운데 정렬
@@ -112,18 +118,6 @@ namespace CTC.Runtime.UI
             float total = HOTBAR_SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + HOTBAR_SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
             float used = HOTBAR_SLOT_WIDTH * _usedSlots + HOTBAR_SLOT_GAP * Mathf.Max(0, _usedSlots - 1);
             return -total * 0.5f + used * 0.5f;
-        }
-
-        // 핫바에서 대시가 몇 번 칸인지 — 카탈로그 순서가 바뀌어도 안내가 안 틀리게
-        private static int DashShopSlot()
-        {
-            var indices = ShopLogic.RoleCatalogIndices(RoleId.Mouse);
-            ShopItem[] catalog = ShopLogic.CATALOG;
-            for (int i = 0; i < indices.Count; i++)
-            {
-                if (catalog[indices[i]].Id == ShopItemId.Dash) return i + 1;
-            }
-            return 0;
         }
 
         private void EnsureTicker()

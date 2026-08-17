@@ -41,10 +41,9 @@ def main():
     # 화면에 올라간 슬롯을 읽는다 — "키:이름:상태:남은초|..." (TestGetAbilityBar).
     mouse_bar = m1.invoke("TestGetAbilityBar")
     cat_bar = cat.invoke("TestGetAbilityBar")
-    check("능력 바 — 쥐는 대시·임명 두 칸", mouse_bar.count("|") == 1 and "Space:대시" in mouse_bar and "F:임명" in mouse_bar, mouse_bar)
-    check("능력 바 — 대시 미보유는 Locked", "Space:대시:Locked" in mouse_bar, mouse_bar)
-    check("능력 바 — 깡패가 아니면 임명 Locked", "F:임명:Locked" in mouse_bar, mouse_bar)
-    check("능력 바 — 고양이는 스킬 한 칸(전직 전 Locked)", "|" not in cat_bar and cat_bar.startswith("Q:") and ":Locked:" in cat_bar, cat_bar)
+    # 해금 안 된 칸은 아예 없다(2026-08-17) — 대시 미구매·평쥐·전직 전이면 바가 비어 있다
+    check("능력 바 — 해금 전 쥐는 빈 바", mouse_bar == "", mouse_bar)
+    check("능력 바 — 전직 전 고양이는 빈 바", cat_bar == "", cat_bar)
 
     # ---------- 직업 HUD ----------
     check("직업 HUD — 직업이 없으면 안 뜬다", m1.invoke("TestGetJobHudText") == "",
@@ -55,7 +54,7 @@ def main():
     boss_hud = m1.invoke("TestGetJobHudText")
     check("직업 HUD — 깡패가 되면 뜬다", "깡패" in boss_hud, boss_hud)
     check("직업 HUD — 뭘 해야 하는지 같이 적는다", "부하" in boss_hud or "쓰러" in boss_hud, boss_hud)
-    check("능력 바 — 깡패가 되면 임명이 열린다", "F:임명:Ready" in m1.invoke("TestGetAbilityBar"), m1.invoke("TestGetAbilityBar"))
+    check("능력 바 — 깡패가 되면 임명 칸이 생긴다", m1.invoke("TestGetAbilityBar") == "F:임명:Ready:0", m1.invoke("TestGetAbilityBar"))
 
     # 표식은 깡패팀에게만 보인다(2026-08-14) — 깡패가 아닌 쥐(m2, 아직 평쥐)는 보스 표식을 못 본다
     check("표식 — 깡패가 아닌 쥐에게는 안 보인다",

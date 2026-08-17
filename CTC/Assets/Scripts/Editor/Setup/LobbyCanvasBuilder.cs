@@ -677,7 +677,6 @@ namespace CTC.Editor
             rt.pivot = new Vector2(0.5f, 0f);
             rt.anchoredPosition = new Vector2((_index - (ABILITY_SLOTS - 1) * 0.5f) * (ABILITY_SLOT + ABILITY_GAP), 0f);
             rt.sizeDelta = new Vector2(ABILITY_SLOT, ABILITY_SLOT);
-            var group = go.AddComponent<CanvasGroup>();
 
             var frame = go.AddComponent<Image>();
             frame.color = new Color(0.54f, 0.45f, 0.32f, 1f);
@@ -761,7 +760,6 @@ namespace CTC.Editor
             SetRef(view, "m_NameText", name);
             SetRef(view, "m_SecondsText", seconds);
             SetRef(view, "m_SubText", sub);
-            SetRef(view, "m_Group", group);
             return view;
         }
 
