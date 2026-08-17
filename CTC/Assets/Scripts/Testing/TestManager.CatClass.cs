@@ -91,7 +91,7 @@ namespace CTC.Runtime.Testing
             return skill != null && skill.Active;
         }
 
-        /// <summary>QA: 남은 쿨다운(서버 값이라 클론에서는 0으로 보인다).</summary>
+        /// <summary>QA: 남은 쿨다운 — 서버 시각 NetworkVariable이라 클론에서도 같은 값(2026-08-17).</summary>
         public float TestGetCatSkillCooldown()
         {
             var skill = LocalComponent<CatSkill>();

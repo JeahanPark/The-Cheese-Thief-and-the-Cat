@@ -174,7 +174,7 @@ namespace CTC.Runtime.UI
             {
                 if (_damageStacks > 0) parts.Add($"공격 +{_damageStacks}");
                 if (_speedStacks > 0) parts.Add($"이속 +{_speedStacks}");
-                string cls = ClassWordOf(_class);
+                string cls = Player.CatClassLogic.ClassWordOf(_class);
                 if (cls != "") parts.Add(cls);
             }
             return string.Join(" · ", parts);
@@ -187,18 +187,6 @@ namespace CTC.Runtime.UI
                 case Match.MouseJobId.Hero: return "용사쥐";
                 case Match.MouseJobId.Gang: return "깡패 보스";
                 case Match.MouseJobId.Minion: return "부하쥐";
-                default: return "";
-            }
-        }
-
-        private static string ClassWordOf(Player.CatClassId _class)
-        {
-            switch (_class)
-            {
-                case Player.CatClassId.Fire: return "불";
-                case Player.CatClassId.Wind: return "바람";
-                case Player.CatClassId.Light: return "빛";
-                case Player.CatClassId.Dark: return "어둠";
                 default: return "";
             }
         }

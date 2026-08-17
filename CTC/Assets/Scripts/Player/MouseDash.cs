@@ -38,6 +38,13 @@ namespace CTC.Runtime.Player
         public float CooldownRemaining => !m_Owned.Value ? 0f
             : Mathf.Max(0f, (float)(COOLDOWN_SECONDS - (Time.timeAsDouble - m_LastUseTime)));
 
+        public float CooldownTotal => COOLDOWN_SECONDS;
+
+        /// <summary>대시 진행 중 남은 시간(초) — 능력 슬롯 '지속 중' 표시용.</summary>
+        public float ActiveRemaining => Mathf.Max(0f, m_DashRemainingSeconds);
+
+        public float ActiveTotal => DASH_DURATION_SECONDS;
+
         /// <summary>서버 전용(ShopController).</summary>
         public void ServerSetOwned()
         {

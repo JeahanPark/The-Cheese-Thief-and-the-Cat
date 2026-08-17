@@ -47,6 +47,19 @@ namespace CTC.Runtime.Player
         /// <summary>어둠 — 이 거리(m)부터는 먼 곳 밝기까지 다 어두워진다.</summary>
         public static float DarkFarMeters => Balance.CatDarkFarMeters;
 
+        /// <summary>전직 이름(HUD 배지·능력 슬롯 공용).</summary>
+        public static string ClassWordOf(CatClassId _class)
+        {
+            switch (_class)
+            {
+                case CatClassId.Fire: return "불";
+                case CatClassId.Wind: return "바람";
+                case CatClassId.Light: return "빛";
+                case CatClassId.Dark: return "어둠";
+                default: return "";
+            }
+        }
+
         /// <summary>
         /// 전직할 수 있는가. **모든 강화를 끝까지 올려야** 한다 — 하나만 올린 채로 열리면
         /// "전직이 곧 최적 구매"가 되어 상점의 선택이 사라진다.

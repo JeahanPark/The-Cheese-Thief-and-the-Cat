@@ -20,18 +20,33 @@ namespace CTC.Runtime.Player
     public class CatSkill : NetworkBehaviour
     {
         private readonly NetworkVariable<bool> m_Active = new NetworkVariable<bool>();
+        // 서버 시각(NetworkManager.ServerTime) 기준 시각 두 개. 소유자 HUD(능력 바)가 남은 초를 스스로
+        // 계산한다 — 서버 float였을 때는 클라 고양이에게 쿨다운이 항상 0으로 보였다(2026-08-17).
+        private readonly NetworkVariable<double> m_ReadyAt = new NetworkVariable<double>();
+        private readonly NetworkVariable<double> m_ActiveUntil = new NetworkVariable<double>();
 
         private CatClass m_Class;
-        private float m_Remaining;      // 서버: 남은 지속
-        private float m_Cooldown;       // 서버: 남은 쿨다운
 
         /// <summary>지금 스킬이 켜져 있는가(전원 읽기 — 쥐 화면 효과가 이걸 본다).</summary>
         public bool Active => m_Active.Value;
 
         public Observable<bool> ActiveChanged => m_Active.AsObservableWithCurrent();
 
-        /// <summary>남은 쿨다운(소유자 HUD용). 서버 값이라 다른 클라에서는 0으로 보인다.</summary>
-        public float CooldownRemaining => m_Cooldown;
+        /// <summary>남은 쿨다운(초) — 전 클라에서 같은 값(서버 시각 기준).</summary>
+        public float CooldownRemaining => RemainingUntil(m_ReadyAt.Value);
+
+        public float CooldownTotal => CatClassLogic.SkillCooldown;
+
+        /// <summary>남은 지속(초). 꺼져 있으면 0.</summary>
+        public float ActiveRemaining => m_Active.Value ? RemainingUntil(m_ActiveUntil.Value) : 0f;
+
+        public float ActiveTotal => CatClassLogic.SkillSeconds;
+
+        private float RemainingUntil(double _serverTime)
+        {
+            if (!IsSpawned) return 0f;
+            return Mathf.Max(0f, (float)(_serverTime - NetworkManager.ServerTime.Time));
+        }
 
         private void Awake()
         {
@@ -40,18 +55,16 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            if (IsServer) TickServer(Time.deltaTime);
+            if (IsServer) TickServer();
             if (IsOwner) ReadInput();
         }
 
-        private void TickServer(float _dt)
+        private void TickServer()
         {
-            m_Cooldown = CatClassLogic.TickCooldown(m_Cooldown, _dt);
-
-            if (!m_Active.Value) return;
-
-            m_Remaining -= _dt;
-            if (m_Remaining <= 0f) m_Active.Value = false;
+            if (m_Active.Value && NetworkManager.ServerTime.Time >= m_ActiveUntil.Value)
+            {
+                m_Active.Value = false;
+            }
         }
 
         private void ReadInput()
@@ -71,11 +84,13 @@ namespace CTC.Runtime.Player
         [Rpc(SendTo.Server, RequireOwnership = true)]
         private void UseRpc()
         {
-            if (!CatClassLogic.CanUseSkill(m_Class.Value, m_Cooldown, m_Active.Value)) return;
+            double now = NetworkManager.ServerTime.Time;
+            float cooldown = (float)System.Math.Max(0.0, m_ReadyAt.Value - now);
+            if (!CatClassLogic.CanUseSkill(m_Class.Value, cooldown, m_Active.Value)) return;
 
             m_Active.Value = true;
-            m_Remaining = CatClassLogic.SkillSeconds;
-            m_Cooldown = CatClassLogic.SkillCooldown;
+            m_ActiveUntil.Value = now + CatClassLogic.SkillSeconds;
+            m_ReadyAt.Value = now + CatClassLogic.SkillCooldown;
 
             SkillFxRpc();
         }
