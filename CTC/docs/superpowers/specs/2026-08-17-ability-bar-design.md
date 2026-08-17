@@ -12,9 +12,9 @@
 
 | 항목 | 내용 |
 |---|---|
-| 자리 | 상점 핫바 **왼쪽**, 같은 높이(84px 정사각) · 핫바 1번 칸에서 32px 띄움. 핫바와 함께 게임 중에만 |
+| 자리 | 상점 핫바 **아래 줄**, 하단 중앙 정렬(84px 정사각) — 핫바는 한 칸(84+12px) 위로 올린다. 핫바와 함께 게임 중에만 |
 | 슬롯 | 쥐 `Space 대시` · `F 임명` / 고양이 `Q 스킬` / 관전자 없음 (기본 공격·살금은 슬롯 없음) |
-| 상태 4종 | 준비(밝음) · 쿨다운(어두운 방사형 덮개가 시계방향으로 걷힘 + 남은 초 큰 숫자) · 지속 중(테두리 발광 + 하단 잔여 바 + "n초") · 미보유(흐림 + 점선 + 얻는 곳 "상점 2"/"전직 필요") |
+| 상태 4종 | 준비(밝은 갈색 타일 + 이름) · 쿨다운(검은 방사형 덮개가 12시부터 시계방향으로 걷힘, 걷히는 가장자리 밝은 선 + **최상단** 남은 초 큰 숫자) · 지속 중(테두리 발광 + 하단 잔여 바 + "n초") · 미보유(흐림 + 점선 + 얻는 곳 "상점 2"/"전직 필요") |
 | 준비 알림 | 쿨다운→준비 순간 슬롯이 0.25초 밝게 번쩍(소리 없음) |
 | 좌하단 칩 | `ControlsHud` 삭제. 살금 안내는 첫 스폰 토스트에 남는다 |
 | 키 변경 | 살금 **LCtrl → LShift**(쥐·고양이 공통) · 대시 **LShift → Space** |
@@ -44,7 +44,7 @@ MouseJob (JobChanged) · CatClass (ClassChanged)          ┘        │
 | `UI/AbilityBarLogic` (순수) | `Build(role, job, dashOwned, catClass) → AbilitySlot[]`(키·이름·상태·잠금 사유), `FillRatio(remaining,total)`, `SecondsText(remaining)`(올림 정수) | 없음 — EditMode 대상 |
 | `UI/AbilityBar` (View) | 로컬 플레이어 바뀔 때 슬롯 구성 재구독(JobChanged·OwnedChanged·ClassChanged → 재구성). 쿨다운·지속이 하나라도 살아 있을 때만 `EveryUpdate`로 채움 갱신, 아니면 구독 해제. 준비 플래시 타이머 | R3, LocalPlayerBinder |
 | `UI/AbilitySlotView` | 슬롯 1개의 그림(배경·방사형 덮개 Image Filled Radial360·키캡·이름·초·잔여 바·보조 글자) `Apply(slot, remaining, total, active…)`만 | UGUI |
-| `Editor/Setup/LobbyCanvasBuilder.BuildAbilityBar` | 루트: 앵커 하단 중앙, 피벗 (1,0), x = −(핫바 총폭/2 + 32), y = 28. 슬롯 최대 2칸(빌더가 2개 만들고 View가 켜고 끈다) | — |
+| `Editor/Setup/LobbyCanvasBuilder.BuildAbilityBar` | 루트: 앵커 하단 중앙, 피벗 (0.5,0), y = 28 · 핫바 y = 28+84+12. 슬롯 최대 2칸을 가운데 정렬(빌더가 2개 만들고 View가 켜고 끄며 재정렬) | — |
 | `ShopHotbar` | 문구: 첫 스폰 토스트 `LShift 살금살금`, 대시 힌트/설명 `Space` | — |
 | `Testing/TestManager.Hud` | `TestGetControlsText` → `TestGetAbilityBar()`: "키:이름:상태:남은초" 를 슬롯마다 `|`로 이어 반환 | — |
 
