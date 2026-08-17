@@ -150,9 +150,6 @@ MonoBehaviour:
     BoxContents:
     - Id: 1
       Amount: 1
-  m_Jails:
-  - Pos: {x: 14.7, y: 16.8}
-  - Pos: {x: -14.7, y: -14.7}
   m_Boxes: []
   m_Obstacles:
   - Pos: {x: 0, y: 2.8999996}
@@ -169,6 +166,10 @@ MonoBehaviour:
     Size: {x: 4.200001, y: 0.8}
   - Pos: {x: -12.299999, y: -14.7}
     Size: {x: 0.8, y: 4.2}
+  - Pos: {x: 14.05, y: 16.8}
+    Size: {x: 0.8, y: 4.2}
+  - Pos: {x: 14.05, y: 18.375}
+    Size: {x: 0.8, y: 4.550001}
   - Pos: {x: 0, y: -15.4}
     Size: {x: 4.2, y: 0.8}
   - Pos: {x: 15.4, y: -12.3}

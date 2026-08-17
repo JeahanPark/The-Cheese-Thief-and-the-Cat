@@ -83,22 +83,15 @@ namespace CTC.Editor
             var boxSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.LootBoxSpawner>();
             SetRef(boxSpawner, "m_BoxPrefab", _lootBoxPrefab);
 
-            // 감옥(Worker, v3.8) — 수감·체류·구출을 서버가 여기서 돌린다.
-            // m_Lobby 배선은 LobbyController가 생긴 뒤에 한다(아래).
-            var jailDirector = lobbyGo.AddComponent<CTC.Runtime.Match.JailDirector>();
-
             // 2단계 감독(Worker, v3.9) — 고양이가 죽어도 깡패가 있으면 판이 안 끝난다.
             var phaseDirector = lobbyGo.AddComponent<CTC.Runtime.Match.PhaseDirector>();
-            SetRef(jailDirector, "m_Phase", phaseDirector);   // 2단계에는 구출이 없다
 
             var mapDirector = lobbyGo.AddComponent<CTC.Runtime.Map.MapDirector>(); // 맵(Worker)
-            SetRef(mapDirector, "m_JailDirector", jailDirector);
             // 로비에서 고를 맵 목록 — 요새자리·스폰 공식이 선택된 레이아웃을 읽는다
             SetRefArray(mapDirector, "m_MapLayouts", LoadMapLayouts());
             SetRef(mapDirector, "m_MapBuilder", mapBuilder);
 
             var lobby = lobbyGo.AddComponent<LobbyController>();             // 조립자(Controller)
-            SetRef(jailDirector, "m_Lobby", lobby);
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
 

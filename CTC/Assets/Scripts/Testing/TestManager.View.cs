@@ -223,52 +223,6 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 게임플레이 입력이 막혀 있는가(채팅 타이핑·옵션 창).</summary>
         public bool TestGetInputBlocked() => UiFocus.BlocksGameplay;
 
-        // ===== 감옥 (v3.8 4번) =====
-
-        /// <summary>QA: 내가 갇혔는가.</summary>
-        public bool TestGetJailed()
-        {
-            var tag = LocalJailedTag();
-            return tag != null && tag.Jailed;
-        }
-
-        /// <summary>QA: 내 남은 체류 시간(안 갇혔으면 -1).</summary>
-        public float TestGetJailRemaining()
-        {
-            var tag = LocalJailedTag();
-            return tag != null && tag.Jailed ? tag.RemainingSeconds : -1f;
-        }
-
-        /// <summary>QA: 지금 갇힌 쥐 수(전원 기준).</summary>
-        public int TestGetJailedCount()
-        {
-            int count = 0;
-            foreach (var tag in FindObjectsByType<CTC.Runtime.Match.JailedTag>(FindObjectsSortMode.None))
-            {
-                if (tag.Jailed) count++;
-            }
-            return count;
-        }
-
-        /// <summary>QA: 감옥 좌표들 — "x,z;x,z" 형식. 구조하러 갈 자리를 QA가 알아야 한다.</summary>
-        public string TestGetJailPositions()
-        {
-            var builder = FindFirstObjectByType<CTC.Runtime.Map.MapBuilder>();
-            if (builder == null) return "";
-
-            var parts = new System.Collections.Generic.List<string>();
-            foreach (Vector3 p in builder.JailPositions) parts.Add($"{p.x:F2},{p.z:F2}");
-            return string.Join(";", parts);
-        }
-
-        private static CTC.Runtime.Match.JailedTag LocalJailedTag()
-        {
-            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
-            if (nm == null || nm.SpawnManager == null) return null;
-            Unity.Netcode.NetworkObject me = nm.SpawnManager.GetLocalPlayerObject();
-            return me != null ? me.GetComponent<CTC.Runtime.Match.JailedTag>() : null;
-        }
-
         /// <summary>QA: 커서가 잠겨 있는가 — 옵션 창이 열리면 false, 닫히면 true여야 한다.</summary>
         public bool TestGetCursorLocked() => Cursor.lockState == CursorLockMode.Locked;
     }

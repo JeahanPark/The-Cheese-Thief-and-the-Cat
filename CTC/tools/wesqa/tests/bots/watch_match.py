@@ -38,20 +38,12 @@ def main():
     time.sleep(2.0)
     host.invoke("TestSetTimeScale", _scale=args.speed)
 
-    jail_events = 0
-    prev_jailed = 0
-    peak_jailed = 0
     started = time.time()
     try:
         while True:
             time.sleep(2.0)
             summary = host.invoke("TestGetMatchSummary").split(",")
             result, remaining = summary[0], summary[1]
-            jailed = host.invoke("TestGetJailedCount")
-            if jailed > prev_jailed:
-                jail_events += jailed - prev_jailed
-            peak_jailed = max(peak_jailed, jailed)
-            prev_jailed = jailed
 
             acts = {}
             for _n, role, act in ROW.findall(host.invoke("TestGetBotDiagnostics")):
@@ -60,12 +52,12 @@ def main():
             mouse_acts = " ".join(f"{k[2:]}x{v}" for k, v in sorted(acts.items()) if k.startswith("M"))
             mice_alive = sum(v for k, v in acts.items() if k.startswith("M"))
 
-            print(f"[{time.time()-started:5.0f}s] 남은{remaining:>4s} 수감{jailed} "
-                  f"(누적 {jail_events}) 쥐{mice_alive} [{mouse_acts}] | 고양이: {cat_acts}")
+            print(f"[{time.time()-started:5.0f}s] 남은{remaining:>4s} "
+                  f"쥐{mice_alive} [{mouse_acts}] | 고양이: {cat_acts}")
             sys.stdout.flush()
 
             if result != "None":
-                print(f"\n결과 {result} · 수감 발생 누적 {jail_events} · 동시 최대 {peak_jailed}")
+                print(f"\n결과 {result}")
                 break
             if time.time() - started > 400:
                 print("\n시간 상한 — 관찰 종료")

@@ -78,7 +78,7 @@ namespace CTC.Runtime.Player
         }
 
         /// <summary>
-        /// 봇·QA 전용 — 사람의 Space와 같은 입구. 쿨다운·수감·소유 규칙이 전부 같아야
+        /// 봇·QA 전용 — 사람의 Space와 같은 입구. 쿨다운·소유 규칙이 전부 같아야
         /// 봇으로 잰 밸런스가 뜻을 갖는다(봇이 사람보다 자주 대시하면 그건 봇의 화력이다).
         /// </summary>
         public void DevDash() => TryDash();
@@ -88,7 +88,6 @@ namespace CTC.Runtime.Player
             if (!IsOwner) return;
             if (m_DashRemainingSeconds > 0f) return;
             if (!m_Owned.Value) return;
-            if (IsJailed()) return;                  // 갇힌 쥐는 조작할 수 없다(v3.8)
             if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, COOLDOWN_SECONDS)) return;
 
             m_LastUseTime = Time.timeAsDouble;
@@ -104,15 +103,6 @@ namespace CTC.Runtime.Player
             Audio.SfxPlayer.PlayAt(Audio.SfxId.MouseDash, transform.position);
         }
 
-        // 갇힌 동안은 조작을 받지 않는다(v3.8). 태그가 없는 프리팹에서는 항상 false라
-        // 감옥이 없는 맵·구 씬에서도 그대로 돈다.
-        private CTC.Runtime.Match.JailedTag m_JailedTag;
-
-        private bool IsJailed()
-        {
-            if (m_JailedTag == null) m_JailedTag = GetComponent<CTC.Runtime.Match.JailedTag>();
-            return m_JailedTag != null && m_JailedTag.Jailed;
-        }
 
     }
 }

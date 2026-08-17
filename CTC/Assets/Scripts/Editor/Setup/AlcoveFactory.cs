@@ -12,8 +12,6 @@ namespace CTC.Editor
     // SetupNetworkingScene의 일부 — 벽감·치즈 드롭 프리팹과 레이아웃 배치 (v3.8, 2026-08-09)
     public static partial class SetupNetworkingScene
     {
-        // 요새가 이 여유 안에 있는 방에는 감옥을 두지 않는다 — 요새 자리가 곧 쥐 스폰이다
-        private const float JAIL_FORTRESS_MARGIN = 1f;
 
         /// <summary>
         /// 벽감 프리팹. `CreateStructurePrefab`을 쓰지 않는 이유가 둘 있다 —
@@ -233,56 +231,6 @@ namespace CTC.Editor
             }
         }
 
-        /// <summary>
-        /// 감옥 자리를 레이아웃에 덧쓴다. 서로 **멀리 떨어진** 방들의 중심을 고른다 —
-        /// 붙어 있으면 고양이가 둘 다 지킬 수 있어 "어디를 지킬 것인가"라는 판단이 사라진다.
-        ///
-        /// **요새가 있는 방은 뺀다** — 단, 뺄 여유가 있을 때만. 요새 자리가 곧 쥐 스폰이라
-        /// 겹치면 감옥이 스폰 지점에 서고, 그 앞을 지키는 고양이가 스폰까지 같이 지킨다
-        /// (2026-08-10 실측: 120×120 맵에서 감옥 3개가 전부 요새 위였다).
-        ///
-        /// 여유를 따지는 이유: 기본 맵은 방 6개 중 4개가 요새 방이라 무조건 빼면 후보가 둘만 남고,
-        /// 감옥 둘이 10m 거리에 붙어 "어디를 지킬 것인가"가 사라진다 — 겹치는 것보다 그게 더 나쁘다.
-        /// </summary>
-        private static void PlanJailsInto(MapLayout _layout, int _count)
-        {
-            if (_layout == null || _count <= 0 || _layout.Rooms.Count == 0) return;
-
-            var fortresses = new List<Vector2>();
-            foreach (FortressPlacement f in _layout.Fortresses) fortresses.Add(f.Pos);
-
-            var centers = new List<Vector2>();
-            foreach (RoomRect r in _layout.Rooms)
-            {
-                if (PlacementLogic.RoomHoldsAny(r, fortresses, JAIL_FORTRESS_MARGIN)) continue;
-                centers.Add(r.Center);
-            }
-            // 고를 자리가 감옥 수의 두 배는 돼야 '흩는다'는 말이 성립한다
-            if (centers.Count < _count * 2)
-            {
-                centers.Clear();
-                foreach (RoomRect r in _layout.Rooms) centers.Add(r.Center);
-            }
-
-            // 원점에서 가장 먼 방부터 — 감옥은 구석에 있어야 "데리러 가는 거리"가 값을 갖는다
-            int start = 0;
-            float farthest = -1f;
-            for (int i = 0; i < centers.Count; i++)
-            {
-                float d = centers[i].sqrMagnitude;
-                if (d <= farthest) continue;
-                farthest = d; start = i;
-            }
-
-            var placed = new List<JailPlacement>();
-            foreach (int i in PlacementLogic.SpreadPick(centers, _count, start))
-            {
-                placed.Add(new JailPlacement { Pos = centers[i] });
-            }
-
-            _layout.SetJails(placed);
-            EditorUtility.SetDirty(_layout);
-        }
 
     }
 }

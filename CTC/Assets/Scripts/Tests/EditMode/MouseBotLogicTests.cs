@@ -120,14 +120,6 @@ namespace CTC.Tests.EditMode
                 new Vector3(5f, 0f, 0f), Vector3.zero, 18f, null).x, 0.01f);
         }
 
-        [Test]
-        public void RescueSneak_OnlyNearTheJail()
-        {
-            // 멀리서 잠행(0.45배)으로 기어가면 체류 30초가 먼저 끝난다
-            Assert.IsTrue(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS - 1f));
-            Assert.IsFalse(MouseBotLogic.ShouldSneakForRescue(MouseBotLogic.RESCUE_SNEAK_RADIUS + 1f));
-        }
-
         // ---- 요새 피난 — 이길 수 있는 경주만 뛴다 ----
 
         [Test]

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CTC.Tests.EditMode
 {
     /// <summary>
-    /// 랜드마크(벽감·감옥)를 맵에 흩는 규칙. 여기가 무너지면 한쪽 구석에만 사건이 생기고
+    /// 랜드마크(벽감)를 맵에 흩는 규칙. 여기가 무너지면 한쪽 구석에만 사건이 생기고
     /// 반대편은 아무 일도 안 일어난다 — 실제로 120×120 맵에서 벽감 6개가 한 줄에 몰렸다.
     /// </summary>
     public class PlacementLogicTests
@@ -73,7 +73,7 @@ namespace CTC.Tests.EditMode
         [Test]
         public void RoomHoldsAny_SeesFortressInsideTheRoom()
         {
-            // 감옥이 요새 방에 들어가면 판이 시작하자마자 쥐가 감옥 안에 서 있다
+            // 랜드마크가 요새(=쥐 스폰) 방에 들어가는지 가려내는 판정
             var room = new RoomRect { Id = "R0", Center = new Vector2(0f, 0f), Size = new Vector2(10f, 8f) };
 
             Assert.IsTrue(PlacementLogic.RoomHoldsAny(room, new List<Vector2> { new Vector2(2f, 1f) }, 1f));

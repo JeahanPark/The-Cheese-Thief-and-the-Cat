@@ -74,16 +74,15 @@ def main():
     check("스킬 — 쿨다운이 다른 클라에도 복제된다", remote_cd > 20, f"쥐가 읽은 고양이 쿨 {remote_cd:.1f}초")
 
     # 불: 켜진 동안 덮치기 피해가 오른다.
-    # **한 방에 눕는지**로 잰다 — 피해량 차이로 재면 안 된다. 120이면 쥐(100)가 즉사하고,
-    # 즉사한 쥐는 감옥으로 가면서 HP가 100으로 복구돼 "차이 0"으로 읽힌다(2026-08-10 실측).
+    # **한 방에 눕는지**로 잰다 — 피해량 차이로 재면 안 된다. 120이면 쥐(100)가 즉사한다.
     m1_id = int(m1.invoke("TestGetLocalClientId"))
-    check("불 — 때리기 전에는 안 갇혀 있다", not m1.invoke("TestGetJailed"))
+    check("불 — 때리기 전에는 살아 있다", m1.invoke("TestGetLocalHp") > 0)
 
     cat.invoke("TestTeleportToOtherPlayer", _clientId=m1_id)
     time.sleep(0.5)
     cat.invoke("TestPounce")
     time.sleep(1.5)
-    check("불 — 스킬 중 덮치기 한 방에 쥐가 눕는다", m1.invoke("TestGetJailed"),
+    check("불 — 스킬 중 덮치기 한 방에 쥐가 눕는다", m1.invoke("TestGetLocalHp") <= 0,
           "기본 60이면 두 방이 필요하다")
 
     # 지속이 끝나면 꺼진다

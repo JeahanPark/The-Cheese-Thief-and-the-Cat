@@ -61,9 +61,6 @@ namespace CTC.Runtime.Bots
                 if (tag.Role != prey) continue;
                 if (tag.GetComponent<Player.PlayerMovement>() == null) continue;   // 몸만 — 설치물 제외
 
-                var jailed = tag.GetComponent<JailedTag>();
-                if (jailed != null && jailed.Jailed) continue;                     // 갇힌 쥐는 사냥감이 아니다
-
                 Transform other = tag.transform;
                 if (CanSee(other)) { m_Visible.Add(other); continue; }
 

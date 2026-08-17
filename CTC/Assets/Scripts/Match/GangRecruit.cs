@@ -63,8 +63,7 @@ namespace CTC.Runtime.Match
             m_HasRecruited.Value = true;
         }
 
-        // 가장 가까운 '아직 깡패 편이 아닌 쥐'. 갇힌 쥐는 임명하지 않는다 —
-        // 감옥 안에서 팀이 바뀌면 누가 구하러 가야 하는지가 뒤집힌다.
+        // 가장 가까운 '아직 깡패 편이 아닌 쥐'.
         private MouseJob FindNearestRecruitable()
         {
             MouseJob best = null;
@@ -76,9 +75,6 @@ namespace CTC.Runtime.Match
 
                 var tag = other.GetComponent<RoleTag>();
                 if (tag == null || tag.Role != RoleId.Mouse) continue;
-
-                var jailed = other.GetComponent<JailedTag>();
-                if (jailed != null && jailed.Jailed) continue;
 
                 float distance = Vector3.Distance(transform.position, other.transform.position);
                 if (!MouseJobLogic.CanRecruit(m_Job.Value, other.Value, distance, MouseJobLogic.RecruitRadius))

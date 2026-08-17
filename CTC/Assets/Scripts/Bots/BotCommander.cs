@@ -16,7 +16,7 @@ namespace CTC.Runtime.Bots
     /// 둘은 서로를 모른다.
     ///
     /// **지휘관은 쥐 좌표를 모른다.** 고양이들이 **실제로 보고 들은 것**과 화면에 뜨는 것
-    /// (갇힌 수·남은 시간)만 본다. 서버는 전지적이라 그냥 읽을 수 있지만, 그 순간 봇 승률이
+    /// (남은 시간·살아 있는 쥐 수)만 본다. 서버는 전지적이라 그냥 읽을 수 있지만, 그 순간 봇 승률이
     /// "밸런스가 좋다"가 아니라 "봇이 반칙했다"를 뜻하게 된다 — 이 봇의 존재 이유가 무너진다.
     ///
     /// 사람 둘이 채팅으로 공유하는 딱 그만큼이다.
@@ -46,7 +46,6 @@ namespace CTC.Runtime.Bots
 
         private float m_Timer;
         private float m_HalfExtent = 60f;
-        private int m_JailedMice;
         private int m_FreeMice;
 
         /// <summary>QA — 지금 몇 개의 명령이 나가 있나.</summary>
@@ -92,32 +91,12 @@ namespace CTC.Runtime.Bots
         /// <summary>
         /// <code>
         /// Selector
-        /// ├ [갇힌 쥐 있다] → 한 마리에게 "감옥 지켜", 나머지는 구역 수색
-        /// └ 기본            → 맵을 갈라 각자 수색
+        /// └ 기본 → 맵을 갈라 각자 수색   (감옥 지키기 가지는 감옥과 함께 2026-08-17에 뺐다)
         /// </code>
         /// </summary>
         private BtNode Build()
         {
-            return new BtSelector(
-                new BtSequence(
-                    new BtCondition(() => BotOrderLogic.ShouldGuardJail(m_JailedMice, m_FreeMice)),
-                    BtAction.Once(GuardAndSearch)),
-                BtAction.Once(SearchZones));
-        }
-
-        // 갇힌 쥐가 있으면 한 마리는 감옥 앞을 지킨다 — 구하러 오는 쥐가 곧 다음 사냥감이다.
-        // 둘 다 지키면 맵이 통째로 비므로 **한 마리만** 보낸다.
-        private void GuardAndSearch()
-        {
-            for (int i = 0; i < m_Cats.Count; i++)
-            {
-                if (BotOrderLogic.IsJailGuard(i, m_Cats.Count) && TryNearestJail(m_Cats[i], out Vector3 jail))
-                {
-                    m_Orders.Set(m_Cats[i].Id, new BotOrder(BotOrderId.GuardJail, jail));
-                    continue;
-                }
-                m_Orders.Set(m_Cats[i].Id, new BotOrder(BotOrderId.Search, SearchPointFor(i)));
-            }
+            return new BtSelector(BtAction.Once(SearchZones));
         }
 
         // 맵을 세로로 갈라 각자 한쪽을 맡는다. 이것만으로도 **둘이 한 몸처럼 붙어 다니는 것**이
@@ -162,30 +141,9 @@ namespace CTC.Runtime.Bots
             return point;
         }
 
-        // 감옥 자리는 화면에 뜨는 정보다(맵에 고정된 구조물). 갇힌 쥐가 있는 곳을 고른다.
-        private static bool TryNearestJail(BotAgent _cat, out Vector3 _jail)
-        {
-            _jail = Vector3.zero;
-            float bestSqr = float.MaxValue;
-            bool found = false;
-
-            foreach (JailedTag jailed in Object.FindObjectsByType<JailedTag>(FindObjectsSortMode.None))
-            {
-                if (!jailed.Jailed) continue;
-
-                float sqr = (jailed.transform.position - _cat.Position).sqrMagnitude;
-                if (sqr >= bestSqr) continue;
-                bestSqr = sqr;
-                _jail = jailed.transform.position;
-                found = true;
-            }
-            return found;
-        }
-
-        // 갇힌 수·자유 쥐 수는 화면(감옥 HUD)에 뜨는 값이라 지휘관이 알아도 된다.
+        // 살아 있는 쥐 수는 화면에 뜨는 값이라 지휘관이 알아도 된다.
         private void CountMice()
         {
-            m_JailedMice = 0;
             m_FreeMice = 0;
 
             foreach (RoleTag tag in Object.FindObjectsByType<RoleTag>(FindObjectsSortMode.None))
@@ -196,9 +154,7 @@ namespace CTC.Runtime.Bots
                 var health = tag.GetComponent<Combat.Health>();
                 if (health == null || health.IsDead) continue;
 
-                var jailed = tag.GetComponent<JailedTag>();
-                if (jailed != null && jailed.Jailed) m_JailedMice++;
-                else m_FreeMice++;
+                m_FreeMice++;
             }
         }
     }

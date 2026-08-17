@@ -60,7 +60,6 @@ namespace CTC.Runtime.Map
             BuildGround(_layout.HalfExtent);
             BuildFromLayout(_layout);
             BuildCheeseSpots(_layout);
-            BuildJails(_layout);
             BuildObstacles(_layout);
             BakeNavMesh();
         }
@@ -381,46 +380,6 @@ namespace CTC.Runtime.Map
             if (len2 < 1e-6f) return Vector2.Distance(_p, _a);
             float t = Mathf.Clamp01(Vector2.Dot(_p - _a, ab) / len2);
             return Vector2.Distance(_p, _a + ab * t);
-        }
-
-        /// <summary>감옥 자리(월드 좌표) — `JailDirector`가 판정에 쓴다. 순서 = 레이아웃 순서.</summary>
-        public IReadOnlyList<Vector3> JailPositions => m_JailPositions;
-
-        private readonly List<Vector3> m_JailPositions = new List<Vector3>();
-
-        // 감옥은 맞지도 부서지지도 않는 붙박이라 NetworkObject가 아니다 — 전 클라가 각자 짓는다.
-        // 복제할 상태는 "누가 갇혔나"뿐이고 그건 JailedTag가 플레이어에 들고 있다.
-        private void BuildJails(MapLayout _layout)
-        {
-            m_JailPositions.Clear();
-            if (_layout.Jails.Count == 0) return;
-
-            var root = new GameObject("Jails");
-            root.transform.SetParent(m_Root.transform, false);
-
-            foreach (JailPlacement jp in _layout.Jails)
-            {
-                var pos = new Vector3(jp.Pos.x, 0f, jp.Pos.y);
-                m_JailPositions.Add(pos);
-
-                var cage = new GameObject("Jail");
-                cage.transform.SetParent(root.transform, false);
-                cage.transform.localPosition = pos;
-
-                // 창살 느낌의 기둥 넷 — 벽이 아니라 표식이라 콜라이더를 지운다.
-                // 막아 놓으면 구조하러 온 쥐가 못 들어가고, 갇힌 쥐는 어차피 입력이 막혀 있다.
-                for (int i = 0; i < 4; i++)
-                {
-                    float a = Mathf.PI * 0.5f * i + Mathf.PI * 0.25f;
-                    var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    bar.name = $"Bar{i}";
-                    bar.transform.SetParent(cage.transform, false);
-                    bar.transform.localPosition = new Vector3(Mathf.Cos(a) * 1.2f, 0.9f, Mathf.Sin(a) * 1.2f);
-                    bar.transform.localScale = new Vector3(0.15f, 1.8f, 0.15f);
-                    if (m_WallMaterial != null) bar.GetComponent<Renderer>().sharedMaterial = m_WallMaterial;
-                    DestroyNow(bar.GetComponent<Collider>());
-                }
-            }
         }
 
         /// <summary>

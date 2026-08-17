@@ -56,7 +56,7 @@ namespace CTC.Runtime.UI
             ApplyDark(me);
         }
 
-        // ── 빛 ── 내가 빛 고양이일 때만. 쥐가 죽거나 새로 갇히면 목록이 바뀌므로 주기적으로 다시 만든다.
+        // ── 빛 ── 내가 빛 고양이일 때만. 쥐가 탈락하면 목록이 바뀌므로 주기적으로 다시 만든다.
         private void ApplyLight(NetworkObject _me)
         {
             bool on = _me != null

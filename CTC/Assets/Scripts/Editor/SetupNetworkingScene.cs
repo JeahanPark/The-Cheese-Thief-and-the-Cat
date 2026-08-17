@@ -62,19 +62,14 @@ namespace CTC.Editor
         // 직업권이 바닥에 굴러다니면 판을 뒤집는 물건이 아무 소리 없이 손에 들어간다.
         private const int BOXES_PER_MAP = 0;
 
-        // 벽감·감옥 수는 맵 크기를 따라간다(2026-08-10, 120×120 대응).
+        // 벽감 수는 맵 크기를 따라간다(2026-08-10, 120×120 대응).
         // 고정값이면 대형 맵(49방)에서 벽감 3개가 사실상 없는 것과 같아진다.
         // 하한이 4인 이유(2026-08-11): 강아지 1 + 직업권 2를 빼고도 **치즈 벽이 하나는 남아야** 한다.
         // 3개면 작은 맵에 "달려가서 뺏는 치즈"가 통째로 없어진다.
         private const int ROOMS_PER_ALCOVE = 8;   // 49방 → 6개, 9방 → 4개(하한)
-        private const int ROOMS_PER_JAIL = 16;    // 49방 → 3개, 9방 → 2개(하한)
 
         private static int AlcoveCountFor(MapLayout _layout) =>
             Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_ALCOVE, 4, 8);
-
-        // 감옥이 하나면 고양이가 그 앞에 서 있는 게 최적해가 된다(v3.8 4번).
-        private static int JailCountFor(MapLayout _layout) =>
-            Mathf.Clamp(_layout.Rooms.Count / ROOMS_PER_JAIL, 2, 4);
 
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
@@ -189,7 +184,6 @@ namespace CTC.Editor
                 MapLayout layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
                 if (layout == null) continue;
                 PlanAlcovesInto(layout, AlcoveCountFor(layout));
-                PlanJailsInto(layout, JailCountFor(layout));
                 PlanBoxesInto(layout, BOXES_PER_MAP);   // 벽감 자리를 피하므로 벽감 뒤에 온다
                 PlanObstaclesInto(layout);              // 위의 것들을 전부 피하므로 마지막이다
             }

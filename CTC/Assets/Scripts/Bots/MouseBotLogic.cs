@@ -16,24 +16,6 @@ namespace CTC.Runtime.Bots
         public const float ARRIVE_DISTANCE = 1.2f;
 
         /// <summary>
-        /// 감옥에 이만큼 가까우면 잠행으로 접근한다 — 뛰는 발소리(14m)가 간수를 부른다.
-        /// 멀리서는 뛴다: 체류 30게임초 안에 이동+접근+8초 버티기를 다 해야 해서,
-        /// 20m부터 잠행(2.7m/s)했더니 접근에만 7초가 녹아 구출이 시간을 못 맞췄다(실측).
-        /// </summary>
-        public const float RESCUE_SNEAK_RADIUS = 10f;
-
-        /// <summary>
-        /// 보이는 고양이가 이 안이면 구출을 접는다. **거리 없이 접으면** 간수가 감옥에
-        /// 서 있기만 해도 온 맵의 구출이 죽는다(실측: 접근 중 원거리 간수 목격 → 전원 Farm 복귀).
-        /// 이 밖의 고양이는 무시하고 접근한다 — 다가오면 그때 도주 가지가 받는다.
-        /// </summary>
-        public const float RESCUE_ABORT_RADIUS = 12f;
-
-        /// <summary>구출 접근을 잠행으로 할까 — 감옥까지의 거리로 정한다.</summary>
-        public static bool ShouldSneakForRescue(float _distanceToJail)
-            => _distanceToJail <= RESCUE_SNEAK_RADIUS;
-
-        /// <summary>
         /// 소리 위협에 도망으로 반응하는 반경 — 쥐가 고양이 발소리를 듣는 거리(12m)와 같다.
         /// 덮치기·스킬 소리는 45m를 가는데, 그때마다 도망치면 온 맵의 쥐가 상시 잠행 도주에
         /// 빠져 파밍이 통째로 선다(2026-08-12 실측: 최대 치즈 634→400 · 평균 이속 1.0m/s).

@@ -105,7 +105,6 @@ namespace CTC.Runtime.Bots
         /// <code>
         /// Selector
         /// ├ [위협]     → 잠행·도망·쏘기
-        /// ├ [동료갇힘] → 구출
         /// ├ [쓸 지점]  → 이동 / 파밍
         /// └ 배회
         /// </code>
@@ -113,28 +112,7 @@ namespace CTC.Runtime.Bots
         public static BtNode BuildMouse(BotAgent _self)
         {
             return new BtSelector(
-                // **구출이 도주보다 먼저다 — 단, 고양이가 보이면 양보한다**(2026-08-12).
-                // 구출을 위협 아래 두면 간수의 발소리만으로 모든 구출이 포기되고,
-                // 잡힌 쥐가 체류 만료로 전부 탈락한다(실측: 구출 0회 · 2게임분 전멸).
-                // 소리만 들리는 고양이는 무시하고 간다 — 보이는 순간 아래 도주로 넘어간다.
-                new BtSequence(
-                    // 예약 가중치 게이트 — **한 감옥에 한 마리만** 간다. 전원이 달려가면
-                    // 파밍이 통째로 서고 간수 앞에 먹잇감이 줄을 선다.
-                    new BtCondition(() =>
-                        !CatTooCloseToRescue(_self)
-                        && _self.TryGetJailWithAlly(out Vector3 jail)
-                        && _self.ReservationWeight(jail) > 0.5f),
-                    BtAction.Once(() =>
-                    {
-                        _self.Activity = "Rescue";
-                        _self.TryGetJailWithAlly(out Vector3 jail);
-                        _self.Reserve(jail);
-                        // 가까워지면 잠행 — 뛰는 발소리(18m)가 간수를 부른다. 멀리서는 뛴다.
-                        _self.SetSneak(MouseBotLogic.ShouldSneakForRescue(_self.DistanceTo(jail)));
-                        _self.Nav.SetGoal(jail);   // 반경 안에 버티면 JailDirector가 알아서 푼다
-                        _self.BuyForMouse();
-                        _self.RecruitIfGang();
-                    })),
+                // (구출 가지는 감옥과 함께 2026-08-17에 뺐다 — 잡히면 즉시 탈락이다.)
 
                 // **위협을 만나면 무조건 도망이다** — 캐다 잡히면 그 판의 성장이 통째로 날아간다.
                 //
@@ -218,14 +196,6 @@ namespace CTC.Runtime.Bots
         {
             Transform prey = _self.VisiblePrey();
             return prey != null && _self.DistanceTo(prey.position) <= _self.PounceRange;
-        }
-
-        // 구출을 접는 기준은 "보이는 고양이가 **가까울** 때"만 — 거리 없이 접으면
-        // 간수가 감옥에 서 있기만 해도 온 맵의 구출이 죽는다.
-        private static bool CatTooCloseToRescue(BotAgent _self)
-        {
-            Transform cat = _self.Senses.NearestVisible();
-            return cat != null && _self.DistanceTo(cat.position) <= MouseBotLogic.RESCUE_ABORT_RADIUS;
         }
 
         // 위협의 자리. **보이는 고양이가 우선**, 없으면 **가까운** 소리만 —

@@ -16,7 +16,7 @@ namespace CTC.Runtime.Match
     /// 2단계에는 **새 시계 3분**을 준다. 남은 시간을 쓰면 고양이가 9분에 죽었을 때 2단계가
     /// 1분이라 보스가 아무것도 못 하고 끝난다.
     ///
-    /// 2단계에는 **구출이 없다**(`JailDirector`가 이 값을 본다). 구출은 "쥐는 한 팀"이라는
+    /// (감옥·구출은 2026-08-17에 뺐다.) 2단계 규칙 근거 — 구출은 "쥐는 한 팀"이라는
     /// 전제 위의 장치라, 서로 죽이는 판에서 적팀 쥐가 구하러 오는 그림은 성립하지 않는다.
     /// </summary>
     public class PhaseDirector : NetworkBehaviour
@@ -32,7 +32,7 @@ namespace CTC.Runtime.Match
         public Observable<MatchPhase> PhaseChanged => m_Phase.AsObservableWithCurrent();
         public Observable<float> RemainingChanged => m_Remaining.AsObservableWithCurrent();
 
-        /// <summary>2단계인가 — 구출·승패 판정이 이걸 보고 갈린다.</summary>
+        /// <summary>2단계인가 — 승패 판정이 이걸 보고 갈린다.</summary>
         public bool IsGangPhase => m_Phase.Value == MatchPhase.Gang;
 
         /// <summary>
@@ -84,7 +84,6 @@ namespace CTC.Runtime.Match
             return count;
         }
 
-        // 갇힌 쥐는 살아 있는 것으로 안 센다 — 2단계에는 구출이 없어 다시는 못 나온다.
         private void CountSides(out int _gang, out int _other)
         {
             _gang = 0;
@@ -97,9 +96,6 @@ namespace CTC.Runtime.Match
 
                 var health = job.GetComponent<Health>();
                 if (health != null && health.IsDead) continue;
-
-                var jailed = job.GetComponent<JailedTag>();
-                if (jailed != null && jailed.Jailed) continue;
 
                 if (job.IsGangSide) _gang++;
                 else _other++;

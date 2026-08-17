@@ -65,8 +65,8 @@ namespace CTC.Runtime.Match
             if (m_Timer < POLL_INTERVAL_SECONDS && m_RemainingSeconds.Value > 0f) return;
             m_Timer = 0f;
 
-            CountAlive(out int cats, out int freeMice, out int jailedMice);
-            if (MatchFlowLogic.ShouldArm(started, m_Armed, cats, freeMice + jailedMice)) m_Armed = true;
+            CountAlive(out int cats, out int mice);
+            if (MatchFlowLogic.ShouldArm(started, m_Armed, cats, mice)) m_Armed = true;
 
             // 2단계(v3.9)에 들어갔으면 판정 주체가 통째로 바뀐다 — 고양이는 이미 없다.
             if (m_Phase != null && m_Phase.IsGangPhase)
@@ -80,8 +80,8 @@ namespace CTC.Runtime.Match
             }
 
             MatchResult result = m_RemainingSeconds.Value <= 0f && m_Armed
-                ? MatchFlowLogic.EvaluateAtTimeUp(freeMice)
-                : MatchFlowLogic.Evaluate(m_Armed, cats, freeMice, jailedMice);
+                ? MatchFlowLogic.EvaluateAtTimeUp(mice)
+                : MatchFlowLogic.Evaluate(m_Armed, cats, mice);
             if (result == MatchResult.None) return;
 
             // 고양이가 죽어 쥐가 이기려는 참이다. **깡패가 있으면 판이 안 끝나고 2단계로 간다**(v3.9).
@@ -93,19 +93,15 @@ namespace CTC.Runtime.Match
             }
 
             m_Result.Value = (int)result;
-            Debug.Log($"[MatchManager] 매치 종료: {result} (cats={cats}, free={freeMice}, jailed={jailedMice}, 남은시간={m_RemainingSeconds.Value:F0}s)");
+            Debug.Log($"[MatchManager] 매치 종료: {result} (cats={cats}, mice={mice}, 남은시간={m_RemainingSeconds.Value:F0}s)");
         }
 
         // 쥐 = 스폰된 플레이어 오브젝트 존재(영구 탈락=despawn). 고양이 = hp>0 (사망해도 despawn 안 함).
-        // 요새/미끼도 RoleTag.Mouse라 IsPlayerObject 필터가 필수.
-        //
-        // v3.8: 쥐를 **자유·갇힘**으로 나눈다. 갇힌 쥐를 생존으로 세면 고양이가 전원을
-        // 가둬 놓고도 판이 안 끝난다 — 갇힌 쥐는 스스로 못 나오기 때문이다.
-        private static void CountAlive(out int _cats, out int _freeMice, out int _jailedMice)
+        // 요새/창고도 RoleTag.Mouse라 "몸" 필터가 필수.
+        private static void CountAlive(out int _cats, out int _mice)
         {
             _cats = 0;
-            _freeMice = 0;
-            _jailedMice = 0;
+            _mice = 0;
             foreach (RoleTag tag in FindObjectsByType<RoleTag>(FindObjectsSortMode.None))
             {
                 var no = tag.GetComponent<NetworkObject>();
@@ -121,11 +117,7 @@ namespace CTC.Runtime.Match
                 if (health == null || health.IsDead) continue;
 
                 if (tag.Role == RoleId.Cat) { _cats++; continue; }
-                if (tag.Role != RoleId.Mouse) continue;
-
-                var jailed = tag.GetComponent<JailedTag>();
-                if (jailed != null && jailed.Jailed) _jailedMice++;
-                else _freeMice++;
+                if (tag.Role == RoleId.Mouse) _mice++;
             }
         }
 

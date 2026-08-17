@@ -45,7 +45,6 @@ namespace CTC.Runtime.Bots
         private readonly RoleId m_Role;
         private readonly PlayerMovement m_Move;
         private readonly Sneak m_Sneak;
-        private readonly JailedTag m_Jailed;
         private readonly Health m_Health;
         private readonly CatPounce m_Pounce;
         private readonly MouseDash m_Dash;
@@ -116,7 +115,6 @@ namespace CTC.Runtime.Bots
 
             m_Move = _object.GetComponent<PlayerMovement>();
             m_Sneak = _object.GetComponent<Sneak>();
-            m_Jailed = _object.GetComponent<JailedTag>();
             m_Health = _object.GetComponent<Health>();
             m_Pounce = _object.GetComponent<CatPounce>();
             m_Dash = _object.GetComponent<MouseDash>();
@@ -148,19 +146,6 @@ namespace CTC.Runtime.Bots
             if (!Alive) return;
             m_Lived += _deltaSeconds;
             m_Spots = _spots;
-
-            // 갇힌 쥐는 아무것도 못 한다 — 사람도 입력이 막힌다
-            if (m_Jailed != null && m_Jailed.Jailed)
-            {
-                Activity = "Jailed";
-                m_Nav.Stop();
-                m_SpotIndex = -1;
-                // 예약을 놓는다 — 구출자가 갇힌 채 감옥 예약을 쥐고 있으면
-                // 다른 쥐가 그 감옥을 영원히 안 간다(구출 교착)
-                if (m_Reservations != null) m_Reservations.Release(Id);
-                m_Nav.Tick(_deltaSeconds);
-                return;
-            }
 
             m_Timer -= _deltaSeconds;
             if (m_Timer <= 0f)
@@ -318,27 +303,6 @@ namespace CTC.Runtime.Bots
             int pick = MouseBotLogic.ChooseRefuge(m_Forts, Position, _threat);
             _fort = pick >= 0 ? m_Forts[pick] : Vector3.zero;
             return pick >= 0;
-        }
-
-        /// <summary>갇힌 동료가 있는 감옥 중 가장 가까운 곳. **자리는 안다** — 맵에 고정된 구조물이다.</summary>
-        public bool TryGetJailWithAlly(out Vector3 _jail)
-        {
-            _jail = Vector3.zero;
-            float bestSqr = float.MaxValue;
-            bool found = false;
-
-            foreach (JailedTag jailed in Object.FindObjectsByType<JailedTag>(FindObjectsSortMode.None))
-            {
-                if (!jailed.Jailed) continue;
-                if (jailed.transform == m_Object.transform) continue;
-
-                float sqr = (jailed.transform.position - Position).sqrMagnitude;
-                if (sqr >= bestSqr) continue;
-                bestSqr = sqr;
-                _jail = jailed.transform.position;
-                found = true;
-            }
-            return found;
         }
 
         // 소리 단서는 값이 떨어질 때까지 들고 간다 — 매번 새로 잡으면 제자리에서 떤다.

@@ -15,7 +15,6 @@ namespace CTC.Runtime.Ai
     /// 요새·미끼가 자동으로 표적이 된다. 제외는 셋뿐이다:
     /// ① 벽감 — 강아지가 치즈 벽을 열면 "강아지를 풀어 파밍한다"가 성립해 무리수가 도구로 뒤집힌다.
     /// ② 다른 강아지 — 판에 하나뿐이지만 방어적으로 막는다.
-    /// ③ **갇힌 쥐** — 못 뛰고 못 싸운다. 물면 감옥이 사형장이 되고 구출이라는 축이 사라진다.
     ///
     /// 훑기는 매 프레임이 아니라 `DogRepathSeconds`마다 한다. `FindObjectsByType`은 비싸고,
     /// 표적이 프레임 단위로 바뀔 이유도 없다.
@@ -122,9 +121,6 @@ namespace CTC.Runtime.Ai
                 if (health.transform.root == transform.root) continue;
                 if (health.GetComponent<Map.Alcove>() != null) continue;
                 if (health.GetComponent<DogBrain>() != null) continue;
-
-                var jailed = health.GetComponent<Match.JailedTag>();
-                if (jailed != null && jailed.Jailed) continue;
 
                 RoleTag tag = health.GetComponent<RoleTag>();
                 bool isCat = tag != null && tag.Role == RoleId.Cat;

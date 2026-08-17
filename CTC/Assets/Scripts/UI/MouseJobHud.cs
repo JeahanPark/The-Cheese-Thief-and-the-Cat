@@ -20,7 +20,7 @@ namespace CTC.Runtime.UI
     /// 여기는 규칙이 바뀐 순간(직업 획득·임명·2단계 진입)에만 문장을 띄운다.
     ///
     /// 규칙 3(폴링 금지)대로 `MouseJob`·`PhaseDirector`의 스트림을 구독한다.
-    /// 로컬 플레이어가 바뀌면 `SerialDisposable`이 이전 구독을 끊는다(`JailHud`와 같은 꼴).
+    /// 로컬 플레이어가 바뀌면 `SerialDisposable`이 이전 구독을 끊는다(`StatusHud`와 같은 꼴).
     /// </summary>
     public class MouseJobHud : MonoBehaviour
     {

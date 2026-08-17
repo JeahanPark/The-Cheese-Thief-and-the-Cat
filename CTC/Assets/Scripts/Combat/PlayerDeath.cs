@@ -34,13 +34,9 @@ namespace CTC.Runtime.Combat
                 return;
             }
 
-            // v3.8: 쥐는 죽지 않고 갇힌다 — 3분에 죽으면 남은 7분을 관전만 하던 문제.
-            // 진짜 탈락은 감옥 체류가 만료될 때뿐이고, 그건 JailDirector가 처리한다.
-            var jail = FindFirstObjectByType<Match.JailDirector>();
-            if (jail != null && jail.ServerJail(NetworkObject)) return;
-
-            // 감옥이 없는 맵(구 레이아웃)에서는 예전대로 탈락한다
-            Debug.Log($"[PlayerDeath] 쥐({OwnerClientId}) 탈락 — 감옥 없음, despawn");
+            // 쥐는 잡히면 **즉시 탈락**(관전). 감옥·구출(v3.8)은 2026-08-17에 뺐다 —
+            // "죽으면 감옥으로 순간이동해 40초 버티고 동료가 구하러 온다"가 사람에게 안 읽혔다.
+            Debug.Log($"[PlayerDeath] 쥐({OwnerClientId}) 탈락 — despawn");
             NetworkObject.Despawn(true);
         }
     }

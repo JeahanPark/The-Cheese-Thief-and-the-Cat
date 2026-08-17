@@ -103,9 +103,8 @@ namespace CTC.Runtime.Player
 
             // 채팅 타이핑·옵션 창 중에는 WASD가 이동으로 새면 안 된다. 중력은 계속 먹어야 하므로
             // early-return이 아니라 입력만 0으로 둔다(공중에서 채팅 열면 떠 있게 되는 걸 막는다).
-            // 갇힌 쥐는 걸어 나올 수 없다(v3.8). UiFocus와 같은 자리에서 막아
             // "입력을 무시하는 이유"가 한 줄에 모이게 둔다.
-            bool blocked = Core.UiFocus.BlocksGameplay || IsJailed();
+            bool blocked = Core.UiFocus.BlocksGameplay;
             float h = blocked ? 0f : (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
                     - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
             float v = blocked ? 0f : (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
@@ -138,15 +137,6 @@ namespace CTC.Runtime.Player
             }
         }
 
-        // 갇힌 동안은 조작을 받지 않는다(v3.8). 태그가 없는 프리팹에서는 항상 false라
-        // 감옥이 없는 맵·구 씬에서도 그대로 돈다.
-        private CTC.Runtime.Match.JailedTag m_JailedTag;
-
-        private bool IsJailed()
-        {
-            if (m_JailedTag == null) m_JailedTag = GetComponent<CTC.Runtime.Match.JailedTag>();
-            return m_JailedTag != null && m_JailedTag.Jailed;
-        }
 
     
         // 바람 전직 + 스킬 활성일 때만 1이 아니다. 컴포넌트가 없으면(쥐·구 프리팹) 항상 1이라

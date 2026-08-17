@@ -13,9 +13,7 @@ namespace CTC.Runtime.Bots
 
         /// <summary>이 소리를 확인한다.</summary>
         Investigate = 2,
-
-        /// <summary>감옥 앞을 지킨다 — 구하러 오는 쥐를 잡는다.</summary>
-        GuardJail = 3,
+        // 3 = GuardJail(감옥 지키기)이었다 — 감옥과 함께 2026-08-17에 뺐다. 값은 비워 둔다.
     }
 
     /// <summary>
@@ -60,22 +58,5 @@ namespace CTC.Runtime.Bots
             return new Vector3(x, 0f, z);
         }
 
-        /// <summary>
-        /// 감옥을 지킬 때인가. **갇힌 쥐가 있고 아직 자유로운 쥐가 남았을 때**만이다 —
-        /// 전부 갇혔으면 판이 곧 끝나므로 지킬 이유가 없고, 아무도 안 갇혔으면 지킬 게 없다.
-        /// </summary>
-        public static bool ShouldGuardJail(int _jailedMice, int _freeMice)
-        {
-            return _jailedMice > 0 && _freeMice > 0;
-        }
-
-        /// <summary>
-        /// 고양이가 둘 이상일 때 **한 마리만** 감옥을 맡는다.
-        /// 둘 다 지키면 맵이 통째로 빈다.
-        /// </summary>
-        public static bool IsJailGuard(int _index, int _catCount)
-        {
-            return _catCount > 1 && _index == 0;
-        }
     }
 }

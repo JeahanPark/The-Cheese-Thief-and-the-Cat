@@ -42,12 +42,6 @@ namespace CTC.Runtime.Info
         public int AlcoveCheese;
         public float AlcoveHitSoundMeters;
         public float AlcoveBreakSoundMeters;
-        public float JailHoldSeconds;
-        public float JailRescueSeconds;
-        public float JailRescueRadius;
-        public float JailReleaseHpRatio;
-        public int JailCatchFun;
-        public int JailEliminateFun;
         public int DogAlcoveHp;
         public int DogHp;
         public float DogMoveSpeed;

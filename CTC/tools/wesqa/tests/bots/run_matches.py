@@ -18,7 +18,7 @@ from wesqa import WesPoco
 
 OUT_DIR = r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\docs\balance"
 FIELDS = ["match", "result", "remaining", "mice_left", "cats_left",
-          "first_sight", "jailed", "phase", "warning"]
+          "first_sight", "phase", "warning"]
 
 
 def parse():

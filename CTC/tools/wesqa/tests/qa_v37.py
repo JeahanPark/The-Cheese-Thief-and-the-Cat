@@ -200,26 +200,16 @@ def main():
     # 실제 타격은 몇 번뿐이고, 그러다 못 잡고 끝난다(2026-08-09 실측). 간격을 넓힌다.
     vid = int(p[victim].invoke("TestGetLocalClientId"))
     for _ in range(14):
-        if p[victim].invoke("TestGetJailed"):
+        if p[victim].invoke("TestGetLocalHp") <= 0:
             break
         p[cat_idx].invoke("TestTeleportToOtherPlayer", _clientId=vid)
         time.sleep(0.4)
         p[cat_idx].invoke("TestPounce")
         time.sleep(1.4)
 
-    # v3.8: 잡히면 먼저 갇힌다. **관전자가 되려면 체류가 만료돼야 한다** —
-    # 아래 관전자 채팅 항목들이 검증하는 건 영구 탈락자의 정보 누출이라, 거기까지 기다린다.
-    jailed_now = p[victim].invoke("TestGetJailed")
-    if jailed_now:
-        print(f"   수감 확인 — 체류 {p[victim].invoke('TestGetJailRemaining'):.0f}초 만료 대기...")
-        for _ in range(60):
-            if p[victim].invoke("TestGetLocalHp") <= 0:
-                break
-            time.sleep(1.0)
-
+    # 잡히면 즉시 탈락(관전) — 감옥·구출(v3.8)은 2026-08-17에 뺐다.
     dead = p[victim].invoke("TestGetLocalHp") <= 0
-    check("관전 전환 (수감 → 체류 만료 → 영구 탈락)", dead,
-          f"hp={p[victim].invoke('TestGetLocalHp')} · 수감됐었나={jailed_now}")
+    check("관전 전환 (잡히면 즉시 탈락)", dead, f"hp={p[victim].invoke('TestGetLocalHp')}")
 
     if dead:
         time.sleep(1.5)

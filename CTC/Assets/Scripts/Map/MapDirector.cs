@@ -19,7 +19,6 @@ namespace CTC.Runtime.Map
         [SerializeField] private MapLayout[] m_MapLayouts;
         [SerializeField] private MapBuilder m_MapBuilder;
         [SerializeField] private Economy.CheeseSpotDirector m_CheeseDirector;
-        [SerializeField] private Match.JailDirector m_JailDirector;
 
         private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
 
@@ -74,7 +73,6 @@ namespace CTC.Runtime.Map
             if (m_MapBuilder == null || ActiveLayout == null) return;
 
             m_MapBuilder.Build(ActiveLayout);
-            if (m_JailDirector != null) m_JailDirector.Rebind(m_MapBuilder.JailPositions);
 
             if (m_CheeseDirector != null)
             {

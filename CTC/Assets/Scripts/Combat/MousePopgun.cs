@@ -37,7 +37,6 @@ namespace CTC.Runtime.Combat
             if (!IsOwner || Cursor.lockState != CursorLockMode.Locked) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
-            if (IsJailed()) return;                  // 갇힌 쥐는 조작할 수 없다(v3.8)
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
 
@@ -157,15 +156,6 @@ namespace CTC.Runtime.Combat
             return CTC.Runtime.Match.MouseJobLogic.HeroDamageMultiplier;
         }
 
-        // 갇힌 동안은 조작을 받지 않는다(v3.8). 태그가 없는 프리팹에서는 항상 false라
-        // 감옥이 없는 맵·구 씬에서도 그대로 돈다.
-        private CTC.Runtime.Match.JailedTag m_JailedTag;
-
-        private bool IsJailed()
-        {
-            if (m_JailedTag == null) m_JailedTag = GetComponent<CTC.Runtime.Match.JailedTag>();
-            return m_JailedTag != null && m_JailedTag.Jailed;
-        }
 
     }
 }

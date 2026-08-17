@@ -11,7 +11,7 @@ namespace CTC.Runtime.Ai
     /// **피해만 역할을 본다.** 쥐 HP 100 · 고양이 HP 1000이라 한 값으로 물면 한쪽만 죽는다.
     /// 구조물은 `RoleTag.Mouse`라 쥐 값을 받는다 — 규칙을 하나로 유지한다.
     ///
-    /// 죽인 뒤 처리는 손대지 않는다. 쥐는 `PlayerDeath`가 감옥으로 보내고, 요새는 그냥 부서진다 —
+    /// 죽인 뒤 처리는 손대지 않는다. 쥐는 `PlayerDeath`가 탈락시키고, 요새는 그냥 부서진다 —
     /// 강아지가 특별 대우를 받으면 "누가 죽였나"에 따라 규칙이 갈라진다.
     /// </summary>
     public class DogBite : NetworkBehaviour

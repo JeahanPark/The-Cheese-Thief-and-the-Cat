@@ -47,7 +47,7 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// QA: 한 판의 결과를 한 줄로 — 러너가 이걸 그대로 CSV에 적는다.
-        /// "result,remaining,mice,cats,firstSight,jailed,phase"
+        /// "result,remaining,mice,cats,firstSight,phase"  (jailed 칸은 감옥과 함께 2026-08-17에 뺐다)
         /// </summary>
         public string TestGetMatchSummary()
         {
@@ -60,10 +60,9 @@ namespace CTC.Runtime.Testing
             int mice = bots != null ? bots.MouseCount : 0;
             int cats = bots != null ? bots.CatCount : 0;
             float firstSight = bots != null ? bots.FirstSightSeconds() : -1f;
-            int jailed = TestGetJailedCount();
             string phaseName = phase != null ? phase.Phase.ToString() : "Hunt";
 
-            return $"{result},{remaining:F0},{mice},{cats},{firstSight:F1},{jailed},{phaseName}";
+            return $"{result},{remaining:F0},{mice},{cats},{firstSight:F1},{phaseName}";
         }
     }
 }

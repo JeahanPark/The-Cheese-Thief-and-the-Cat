@@ -20,7 +20,7 @@ namespace CTC.Editor
         ///
         /// 쥐는 요새 중심이 아니라 **입구 1.8m 앞**에 선다. 그냥 2.2m만 띄우면 기둥(1.4폭)의
         /// 면이 1.7m에 오고, 스폰과 **0.1m** 간격이 된다 — 실제로 쥐 하나가 스폰 지점에서
-        /// 30초 동안 한 발도 못 뗐다. 감옥도 같다: 갇힌 쥐가 서고 구하러 온 쥐가 붙어야 한다.
+        /// 30초 동안 한 발도 못 뗐다.
         /// </summary>
         private const float OBSTACLE_SPAWN_CLEARANCE = 6f;
 
@@ -59,8 +59,8 @@ namespace CTC.Editor
         /// 중심선을 지난다 — 그 선 위, 중심에서 비껴난 자리에 두면 관통 시야가 끊긴다.
         /// 가로·세로 각각 하나씩 두 개가 최소한이다.
         ///
-        /// **막으면 안 되는 것**: 치즈 지점·벽감·상자·요새·감옥. 그리고 방 중심 —
-        /// 고양이 스폰과 요새·감옥이 거기 있다.
+        /// **막으면 안 되는 것**: 치즈 지점·벽감·상자·요새. 그리고 방 중심 —
+        /// 고양이 스폰과 요새가 거기 있다.
         /// </summary>
         private static void PlanObstaclesInto(MapLayout _layout)
         {
@@ -82,7 +82,6 @@ namespace CTC.Editor
             // 스폰 자리는 따로 — 훨씬 크게 비운다
             var spawns = new List<Vector2>();
             foreach (FortressPlacement f in _layout.Fortresses) spawns.Add(f.Pos);
-            foreach (JailPlacement j in _layout.Jails) spawns.Add(j.Pos);
 
             var placed = new List<ObstaclePlacement>();
 
