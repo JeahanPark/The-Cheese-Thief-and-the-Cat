@@ -25,6 +25,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(1, slots.Length);
             Assert.AreEqual("Space", slots[0].Key);
             Assert.AreEqual("대시", slots[0].Name);
+            Assert.AreEqual("순간 가속", slots[0].Hint);
         }
 
         [Test]
@@ -46,6 +47,8 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(1, dark.Length);
             Assert.AreEqual("Q", dark[0].Key);
             Assert.AreEqual("어둠", dark[0].Name);
+            Assert.AreEqual("쥐 화면 어둡게", dark[0].Hint);
+            Assert.AreEqual("", AbilityBarLogic.SkillHintOf(CatClassId.None));
         }
 
         [Test]

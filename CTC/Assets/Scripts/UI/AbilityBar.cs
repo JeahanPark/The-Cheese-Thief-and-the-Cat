@@ -17,7 +17,7 @@ namespace CTC.Runtime.UI
     /// </summary>
     public class AbilityBar : MonoBehaviour
     {
-        private const float SLOT_STEP = 84f + 12f;   // 슬롯 폭 + 간격 — 빌더 상수와 같다
+        private const float SLOT_STEP = HOTBAR_SLOT_WIDTH + HOTBAR_SLOT_GAP;   // 능력 칸은 핫바 칸과 같은 폭·간격
         // 핫바 칸 치수(빌더 SLOT_WIDTH·SLOT_GAP과 같다). 핫바는 6칸 폭에서 왼쪽부터 채우므로
         // 역할별로 '쓰는 칸'의 가운데가 다르다 — 능력 칸은 그 가운데 아래에 놓는다.
         private const float HOTBAR_SLOT_WIDTH = 132f;

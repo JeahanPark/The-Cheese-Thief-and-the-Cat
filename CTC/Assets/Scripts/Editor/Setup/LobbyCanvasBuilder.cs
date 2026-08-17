@@ -34,11 +34,10 @@ namespace CTC.Editor
         private const float SLOT_GAP = 8f;
 
         // 능력 칸(핫바 아래 줄, 하단 중앙 — 2026-08-17). 핫바는 이만큼 위로 올라간다.
-        private const float ABILITY_SLOT = 84f;
-        private const float ABILITY_GAP = 12f;
+        // 능력 칸은 핫바 칸과 같은 크기·간격·바탕 — 한 벌로 보이게(2026-08-17)
         private const int ABILITY_SLOTS = 2;
         private const float ABILITY_Y = 28f;
-        private const float HOTBAR_Y = ABILITY_Y + ABILITY_SLOT + 12f;
+        private const float HOTBAR_Y = ABILITY_Y + SLOT_HEIGHT + 12f;
 
         // 로비 패널 치수. 안의 것은 전부 내용 폭 안에 들어와야 한다 —
         // 하나라도 이걸 넘으면 패널 밖으로 삐져나온다.
@@ -652,7 +651,7 @@ namespace CTC.Editor
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
             rt.anchoredPosition = new Vector2(0f, ABILITY_Y);
-            rt.sizeDelta = new Vector2(ABILITY_SLOT * ABILITY_SLOTS + ABILITY_GAP * (ABILITY_SLOTS - 1), ABILITY_SLOT);
+            rt.sizeDelta = new Vector2(SLOT_WIDTH * ABILITY_SLOTS + SLOT_GAP * (ABILITY_SLOTS - 1), SLOT_HEIGHT);
 
             var views = new Object[ABILITY_SLOTS];
             for (int i = 0; i < ABILITY_SLOTS; i++)
@@ -667,6 +666,7 @@ namespace CTC.Editor
             SetRefArray(bar, "m_Slots", views);
         }
 
+        // 핫바 칸(BuildLobbyCanvas의 Slot 생성부)과 같은 크기·바탕·세 줄 배치. 글자 자리도 같은 y다.
         private static AbilitySlotView BuildAbilitySlot(Transform _parent, int _index)
         {
             // 위치는 AbilityBar가 쓰는 칸 수에 맞춰 가운데 정렬로 다시 놓는다 — 여기선 자리만
@@ -675,15 +675,22 @@ namespace CTC.Editor
             var rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2((_index - (ABILITY_SLOTS - 1) * 0.5f) * (ABILITY_SLOT + ABILITY_GAP), 0f);
-            rt.sizeDelta = new Vector2(ABILITY_SLOT, ABILITY_SLOT);
+            rt.anchoredPosition = new Vector2((_index - (ABILITY_SLOTS - 1) * 0.5f) * (SLOT_WIDTH + SLOT_GAP), 0f);
+            rt.sizeDelta = new Vector2(SLOT_WIDTH, SLOT_HEIGHT);
 
-            var frame = go.AddComponent<Image>();
-            frame.color = new Color(0.54f, 0.45f, 0.32f, 1f);
-            frame.raycastTarget = false;
+            var tile = go.AddComponent<Image>();
+            tile.color = new Color(0.07f, 0.055f, 0.04f, 0.82f);   // 핫바 slotBg와 같은 색
+            tile.raycastTarget = false;
 
-            Image tile = FullRectImage(go.transform, "Tile", 2f, new Color(0.36f, 0.30f, 0.21f, 0.95f));
-            Image cover = FullRectImage(go.transform, "Cover", 2f, new Color(0f, 0f, 0f, 0.84f));
+            TMP_Text name = CreateTmpText("Name", go.transform, "", 22f, TextAlignmentOptions.Center,
+                new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 26f));
+            TMP_Text hint = CreateTmpText("Hint", go.transform, "", 12f, TextAlignmentOptions.Center,
+                new Vector2(0f, -34f), new Vector2(SLOT_WIDTH - 8f, 18f));
+            hint.color = new Color(0.73f, 0.76f, 0.82f, 0.8f);   // ShopHotbar.COLOR_HINT
+            TMP_Text status = CreateTmpText("Status", go.transform, "", 20f, TextAlignmentOptions.Center,
+                new Vector2(0f, -54f), new Vector2(SLOT_WIDTH - 8f, 26f));
+
+            Image cover = FullRectImage(go.transform, "Cover", 0f, new Color(0f, 0f, 0f, 0.84f));
             // **스프라이트가 없으면 Filled가 무시된다**(Image.OnPopulateMesh가 통짜 사각형으로 떨어진다) —
             // 내장 UISprite를 꽂아야 fillAmount가 먹는다(2026-08-17 실측: 덮개가 늘 꽉 차 보였다).
             cover.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -693,44 +700,23 @@ namespace CTC.Editor
             cover.fillClockwise = false;   // 걷히는 가장자리가 시계방향으로 돌게(AbilitySlotView 참조)
             cover.fillAmount = 0f;
 
-            // 걷히는 가장자리 선 — 중심에서 위쪽으로 뻗는 막대, 중심 기준으로 회전
+            // 걷히는 가장자리 선 — 중심에서 위쪽으로 뻗는 막대, 중심 기준으로 회전(칸이 직사각형이라 모서리는 짧게 닿는다)
             var edgeGo = new GameObject("Edge", typeof(RectTransform));
             edgeGo.transform.SetParent(go.transform, false);
             var edgeRt = (RectTransform)edgeGo.transform;
             edgeRt.anchorMin = edgeRt.anchorMax = new Vector2(0.5f, 0.5f);
             edgeRt.pivot = new Vector2(0.5f, 0f);
             edgeRt.anchoredPosition = Vector2.zero;
-            edgeRt.sizeDelta = new Vector2(2f, ABILITY_SLOT * 0.5f - 2f);
+            edgeRt.sizeDelta = new Vector2(2f, SLOT_HEIGHT * 0.5f - 2f);
             var edge = edgeGo.AddComponent<Image>();
             edge.color = new Color(1f, 0.86f, 0.59f, 0.9f);
             edge.raycastTarget = false;
             edgeGo.SetActive(false);
 
-            TMP_Text name = CreateTmpText("Name", go.transform, "", 16f, TextAlignmentOptions.Center,
-                new Vector2(0f, -(ABILITY_SLOT - 24f)), new Vector2(ABILITY_SLOT - 6f, 22f));
-            name.fontStyle = FontStyles.Bold;
-            TMP_Text sub = CreateTmpText("Sub", go.transform, "", 14f, TextAlignmentOptions.Center,
-                new Vector2(0f, -22f), new Vector2(ABILITY_SLOT - 6f, 40f));
-            sub.color = new Color(0.93f, 0.88f, 0.78f, 1f);
+            // 남은 초 — 덮개 위(최상단)
             TMP_Text seconds = CreateTmpText("Seconds", go.transform, "", 40f, TextAlignmentOptions.Center,
-                new Vector2(0f, -14f), new Vector2(ABILITY_SLOT, 56f));
+                new Vector2(0f, -14f), new Vector2(SLOT_WIDTH, 56f));
             seconds.fontStyle = FontStyles.Bold;
-
-            // 키캡 — 좌상단 모서리에 걸친 밝은 칩(가장 위)
-            var keyGo = new GameObject("KeyCap", typeof(RectTransform));
-            keyGo.transform.SetParent(go.transform, false);
-            var keyRt = (RectTransform)keyGo.transform;
-            keyRt.anchorMin = keyRt.anchorMax = new Vector2(0f, 1f);
-            keyRt.pivot = new Vector2(0f, 1f);
-            keyRt.anchoredPosition = new Vector2(-6f, 9f);
-            keyRt.sizeDelta = new Vector2(52f, 20f);
-            var keyBg = keyGo.AddComponent<Image>();
-            keyBg.color = new Color(0.91f, 0.86f, 0.76f, 1f);
-            keyBg.raycastTarget = false;
-            TMP_Text key = CreateTmpText("KeyText", keyGo.transform, "", 13f, TextAlignmentOptions.Center,
-                Vector2.zero, new Vector2(52f, 20f));
-            key.color = new Color(0.13f, 0.12f, 0.1f, 1f);
-            key.fontStyle = FontStyles.Bold;
 
             // 지속 잔여 바 — 맨 아래
             var barGo = new GameObject("ActiveBar", typeof(RectTransform));
@@ -739,8 +725,8 @@ namespace CTC.Editor
             barRt.anchorMin = new Vector2(0f, 0f);
             barRt.anchorMax = new Vector2(1f, 0f);
             barRt.pivot = new Vector2(0.5f, 0f);
-            barRt.anchoredPosition = new Vector2(0f, 4f);
-            barRt.sizeDelta = new Vector2(-12f, 4f);
+            barRt.anchoredPosition = new Vector2(0f, 2f);
+            barRt.sizeDelta = new Vector2(-8f, 3f);
             var bar = barGo.AddComponent<Image>();
             bar.color = new Color(1f, 0.82f, 0.48f, 1f);
             bar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -751,15 +737,14 @@ namespace CTC.Editor
             barGo.SetActive(false);
 
             var view = go.AddComponent<AbilitySlotView>();
-            SetRef(view, "m_Frame", frame);
             SetRef(view, "m_Tile", tile);
             SetRef(view, "m_Cover", cover);
             SetRef(view, "m_Edge", edgeRt);
             SetRef(view, "m_ActiveBar", bar);
-            SetRef(view, "m_KeyText", key);
             SetRef(view, "m_NameText", name);
+            SetRef(view, "m_HintText", hint);
+            SetRef(view, "m_StatusText", status);
             SetRef(view, "m_SecondsText", seconds);
-            SetRef(view, "m_SubText", sub);
             return view;
         }
 
