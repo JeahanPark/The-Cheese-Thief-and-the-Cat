@@ -37,15 +37,14 @@ def main():
     m1_id = int(m1.invoke("TestGetLocalClientId"))
     m2_id = int(m2.invoke("TestGetLocalClientId"))
 
-    # ---------- 조작 안내 ----------
-    # 잠행은 2026-08-10부터 무음이 아니다. 안내가 거짓이면 안 들킬 줄 알고 서 있다가 잡힌다.
-    mouse_controls = m1.invoke("TestGetControlsText")
-    cat_controls = cat.invoke("TestGetControlsText")
-    check("안내 — 쥐 조작이 화면에 있다", "살금살금" in mouse_controls, mouse_controls[:40])
-    check("안내 — '무음'이라고 쓰지 않는다(쥐)", "무음" not in mouse_controls)
-    check("안내 — '무음'이라고 쓰지 않는다(고양이)", "무음" not in cat_controls)
-    check("안내 — 잠행 발소리 거리를 적는다", "발소리" in mouse_controls and "발소리" in cat_controls)
-    check("안내 — 깡패가 아니면 F 안내가 없다", "임명" not in mouse_controls)
+    # ---------- 능력 바 (2026-08-17: 좌하단 글자 칩 → 핫바 아래 줄 슬롯) ----------
+    # 화면에 올라간 슬롯을 읽는다 — "키:이름:상태:남은초|..." (TestGetAbilityBar).
+    mouse_bar = m1.invoke("TestGetAbilityBar")
+    cat_bar = cat.invoke("TestGetAbilityBar")
+    check("능력 바 — 쥐는 대시·임명 두 칸", mouse_bar.count("|") == 1 and "Space:대시" in mouse_bar and "F:임명" in mouse_bar, mouse_bar)
+    check("능력 바 — 대시 미보유는 Locked", "Space:대시:Locked" in mouse_bar, mouse_bar)
+    check("능력 바 — 깡패가 아니면 임명 Locked", "F:임명:Locked" in mouse_bar, mouse_bar)
+    check("능력 바 — 고양이는 스킬 한 칸(전직 전 Locked)", "|" not in cat_bar and cat_bar.startswith("Q:") and ":Locked:" in cat_bar, cat_bar)
 
     # ---------- 직업 HUD ----------
     check("직업 HUD — 직업이 없으면 안 뜬다", m1.invoke("TestGetJobHudText") == "",
@@ -56,7 +55,7 @@ def main():
     boss_hud = m1.invoke("TestGetJobHudText")
     check("직업 HUD — 깡패가 되면 뜬다", "깡패" in boss_hud, boss_hud)
     check("직업 HUD — 뭘 해야 하는지 같이 적는다", "부하" in boss_hud or "쓰러" in boss_hud, boss_hud)
-    check("안내 — 깡패가 되면 F 안내가 붙는다", "임명" in m1.invoke("TestGetControlsText"))
+    check("능력 바 — 깡패가 되면 임명이 열린다", "F:임명:Ready" in m1.invoke("TestGetAbilityBar"), m1.invoke("TestGetAbilityBar"))
 
     # 표식은 깡패팀에게만 보인다(2026-08-14) — 깡패가 아닌 쥐(m2, 아직 평쥐)는 보스 표식을 못 본다
     check("표식 — 깡패가 아닌 쥐에게는 안 보인다",

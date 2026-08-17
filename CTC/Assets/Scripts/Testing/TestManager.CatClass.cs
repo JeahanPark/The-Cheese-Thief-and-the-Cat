@@ -98,6 +98,14 @@ namespace CTC.Runtime.Testing
             return skill != null ? skill.CooldownRemaining : -1f;
         }
 
+        /// <summary>QA: 지정 클라이언트 고양이의 남은 쿨다운 — **다른 클라에서 읽어** 복제를 증명한다.</summary>
+        public float TestGetCatSkillCooldownOf(long _clientId)
+        {
+            var player = NetUtil.FindPlayerObject((ulong)_clientId);
+            var skill = player != null ? player.GetComponent<CatSkill>() : null;
+            return skill != null ? skill.CooldownRemaining : -1f;
+        }
+
         private static T LocalComponent<T>() where T : Component
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;

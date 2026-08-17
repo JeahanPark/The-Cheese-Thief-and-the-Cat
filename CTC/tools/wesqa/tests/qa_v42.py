@@ -57,6 +57,8 @@ def main():
     check("전직 — 쥐 클라에도 보인다", m1.invoke("TestGetCatClassOf", _clientId=0) == "Fire",
           m1.invoke("TestGetCatClassOf", _clientId=0))
     check("전직 — 두 번은 못 한다", not cat.invoke("TestGetCanAdvance"))
+    check("능력 바 — 전직하면 Q 칸이 전직명으로 열린다", "Q:불:Ready" in cat.invoke("TestGetAbilityBar"),
+          cat.invoke("TestGetAbilityBar"))
 
     # ---------- 스킬 ----------
     check("스킬 — 쓰기 전에는 꺼져 있다", not cat.invoke("TestGetCatSkillActive"))
@@ -66,6 +68,10 @@ def main():
     check("스킬 — 쓰면 켜진다", cat.invoke("TestGetCatSkillActive"))
     check("스킬 — 쥐 클라에도 켜져 보인다", m1.invoke("TestGetCatSkillActiveOf", _clientId=0),
           "복제됨")
+    check("능력 바 — 쓰면 Q 칸이 Active", ":Active:" in cat.invoke("TestGetAbilityBar"), cat.invoke("TestGetAbilityBar"))
+    # 쿨다운은 서버 시각 NetworkVariable(2026-08-17) — 다른 클라(쥐)가 읽어도 0이 아니어야 복제된 것
+    remote_cd = m1.invoke("TestGetCatSkillCooldownOf", _clientId=0)
+    check("스킬 — 쿨다운이 다른 클라에도 복제된다", remote_cd > 20, f"쥐가 읽은 고양이 쿨 {remote_cd:.1f}초")
 
     # 불: 켜진 동안 덮치기 피해가 오른다.
     # **한 방에 눕는지**로 잰다 — 피해량 차이로 재면 안 된다. 120이면 쥐(100)가 즉사하고,
@@ -92,6 +98,8 @@ def main():
     time.sleep(0.6)
     check("스킬 — 쿨다운 중에는 다시 못 쓴다", not cat.invoke("TestGetCatSkillActive"),
           f"남은 쿨다운 {cat.invoke('TestGetCatSkillCooldown'):.0f}초")
+    bar = cat.invoke("TestGetAbilityBar")
+    check("능력 바 — 쿨다운 중엔 Cooldown + 남은 초", ":Cooldown:" in bar and int(bar.split(":")[-1]) > 0, bar)
 
     print("\n===== 요약 =====")
     for name, ok, detail in RESULTS:

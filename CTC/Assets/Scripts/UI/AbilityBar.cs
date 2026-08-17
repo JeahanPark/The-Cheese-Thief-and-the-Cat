@@ -18,6 +18,10 @@ namespace CTC.Runtime.UI
     public class AbilityBar : MonoBehaviour
     {
         private const float SLOT_STEP = 84f + 12f;   // 슬롯 폭 + 간격 — 빌더 상수와 같다
+        // 핫바 칸 치수(빌더 SLOT_WIDTH·SLOT_GAP과 같다). 핫바는 6칸 폭에서 왼쪽부터 채우므로
+        // 역할별로 '쓰는 칸'의 가운데가 다르다 — 능력 칸은 그 가운데 아래에 놓는다.
+        private const float HOTBAR_SLOT_WIDTH = 132f;
+        private const float HOTBAR_SLOT_GAP = 8f;
 
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Root;
@@ -87,6 +91,8 @@ namespace CTC.Runtime.UI
             }
 
             m_Built = AbilityBarLogic.Build(m_Role, m_Job, m_DashOwned, m_Class, DashShopSlot());
+            var rootRt = (RectTransform)m_Root.transform;
+            rootRt.anchoredPosition = new Vector2(HotbarUsedCenterX(ShopLogic.RoleCatalogIndices(m_Role).Count), rootRt.anchoredPosition.y);
             float left = -(m_Built.Length - 1) * SLOT_STEP * 0.5f;   // 쓰는 칸만 가운데 정렬
             for (int i = 0; i < m_Slots.Length; i++)
             {
@@ -98,6 +104,14 @@ namespace CTC.Runtime.UI
             }
             Tick(0f);
             EnsureTicker();
+        }
+
+        /// <summary>핫바가 실제로 쓰는 n칸의 가운데 x(핫바 루트 중심 기준) — 순수.</summary>
+        public static float HotbarUsedCenterX(int _usedSlots)
+        {
+            float total = HOTBAR_SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + HOTBAR_SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
+            float used = HOTBAR_SLOT_WIDTH * _usedSlots + HOTBAR_SLOT_GAP * Mathf.Max(0, _usedSlots - 1);
+            return -total * 0.5f + used * 0.5f;
         }
 
         // 핫바에서 대시가 몇 번 칸인지 — 카탈로그 순서가 바뀌어도 안내가 안 틀리게

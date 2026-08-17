@@ -685,6 +685,9 @@ namespace CTC.Editor
 
             Image tile = FullRectImage(go.transform, "Tile", 2f, new Color(0.36f, 0.30f, 0.21f, 0.95f));
             Image cover = FullRectImage(go.transform, "Cover", 2f, new Color(0f, 0f, 0f, 0.84f));
+            // **스프라이트가 없으면 Filled가 무시된다**(Image.OnPopulateMesh가 통짜 사각형으로 떨어진다) —
+            // 내장 UISprite를 꽂아야 fillAmount가 먹는다(2026-08-17 실측: 덮개가 늘 꽉 차 보였다).
+            cover.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             cover.type = Image.Type.Filled;
             cover.fillMethod = Image.FillMethod.Radial360;
             cover.fillOrigin = (int)Image.Origin360.Top;
@@ -741,6 +744,7 @@ namespace CTC.Editor
             barRt.sizeDelta = new Vector2(-12f, 4f);
             var bar = barGo.AddComponent<Image>();
             bar.color = new Color(1f, 0.82f, 0.48f, 1f);
+            bar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             bar.type = Image.Type.Filled;
             bar.fillMethod = Image.FillMethod.Horizontal;
             bar.fillOrigin = 0;
