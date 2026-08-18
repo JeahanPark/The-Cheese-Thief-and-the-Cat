@@ -190,6 +190,12 @@ namespace CTC.Runtime.Bots
         /// </summary>
         private static Vector3 ClearSpawn(Vector3 _spawn)
         {
+            // **먼저 격자 위로 당긴다**(2026-08-18). 고양이 스폰은 `(i*2+4, 0, 0)` 하드코딩이라
+            // 맵에 따라 벽 속·방 사이 빈 들판에 떨어진다. 폴리곤 시절에는 바닥 전체가 걷는 면이라
+            // 이 버그가 안 보였는데(봇이 들판을 배회했다), 격자는 못 가는 곳을 못 간다고 해서 드러났다
+            // — 실측: 고양이 둘이 60초에 2m만 움직이고 쥐를 한 번도 못 봤다.
+            if (Ai.NavRoute.TrySnap(_spawn, out Vector3 onGrid)) _spawn = onGrid;
+
             if (!Occupied(_spawn)) return _spawn;
 
             const int RINGS = 8;
@@ -262,6 +268,39 @@ namespace CTC.Runtime.Bots
 
         /// <summary>QA — 지금 나가 있는 지휘관 명령 수.</summary>
         public int OrderCount => m_Commander != null ? m_Commander.OrderCount : 0;
+
+        /// <summary>
+        /// 길찾기 품질 한 줄(2026-08-18) — 길찾기를 갈아끼울 때 **같은 씬·같은 배속**으로 전후를 비교한다.
+        /// `plans` 경로 계산 횟수 · `giveups` 길이 없어 포기 · `ms` 계산에 쓴 실시간 합 ·
+        /// `detour` 경로길이/도착점까지 직선(1이면 곧장) · `short` 원본 목표에 못 미친 거리(m) ·
+        /// `stuck` 제자리걸음 판정 · `moved` 걸은 거리 합.
+        /// </summary>
+        public string NavStats()
+        {
+            int plans = 0, giveups = 0, stuck = 0;
+            double millis = 0.0;
+            float detour = 0f, moved = 0f, shortfall = 0f;
+            int counted = 0;
+
+            foreach (BotAgent a in m_Agents)
+            {
+                BotNavigator nav = a.Nav;
+                if (nav == null) continue;
+                plans += nav.PlanCount;
+                giveups += nav.GiveUpCount;
+                stuck += nav.StuckCount;
+                millis += nav.PlanMillis;
+                detour += nav.LastDetour;
+                shortfall += nav.LastShortfall;
+                moved += nav.TravelledMeters;
+                counted++;
+            }
+
+            float avgDetour = counted > 0 ? detour / counted : 1f;
+            float avgShort = counted > 0 ? shortfall / counted : 0f;
+            return $"bots={counted} plans={plans} giveups={giveups} ms={millis:F1} " +
+                   $"detour={avgDetour:F2} short={avgShort:F1} stuck={stuck} moved={moved:F1}";
+        }
 
         /// <summary>QA·통계 — 한 줄 요약. 벽에 붙박인 봇을 여기서 잡는다.</summary>
         public string Diagnostics()

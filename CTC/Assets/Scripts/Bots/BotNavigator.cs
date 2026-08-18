@@ -49,6 +49,20 @@ namespace CTC.Runtime.Bots
         /// </summary>
         public bool GaveUp() => m_Route != null && m_Route.ConsumeGaveUp();
 
+        /// <summary>길찾기 계측 — 이 봇이 제자리걸음으로 판정된 횟수.</summary>
+        public int StuckCount { get; private set; }
+
+        /// <summary>길찾기 계측 — 경로 계산 횟수·포기 횟수·계산 시간(ms)·마지막 우회율.</summary>
+        public int PlanCount => m_Route != null ? m_Route.PlanCount : 0;
+
+        public int GiveUpCount => m_Route != null ? m_Route.GiveUpCount : 0;
+
+        public double PlanMillis => m_Route != null ? m_Route.PlanMillis : 0.0;
+
+        public float LastDetour => m_Route != null ? m_Route.LastDetour : 1f;
+
+        public float LastShortfall => m_Route != null ? m_Route.LastShortfall : 0f;
+
         /// <summary>디버그 그리기 전용(BotLab) — 두뇌가 준 원본 목표.</summary>
         public Vector3 Goal => m_Route != null ? m_Route.Goal : Vector3.zero;
 
@@ -116,6 +130,7 @@ namespace CTC.Runtime.Bots
 
             if (m_StuckSeconds >= STUCK_SECONDS)
             {
+                StuckCount++;
                 m_StuckSeconds = 0f;
                 m_Route.OnStuck();
             }

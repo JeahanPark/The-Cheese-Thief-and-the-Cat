@@ -128,12 +128,8 @@ namespace CTC.Runtime.Bots
                 Vector3 zone = BotOrderLogic.ZoneCenter(_index, m_Cats.Count, m_HalfExtent);
                 point = BotOrderLogic.SearchPoint(zone, m_HalfExtent, m_Cats.Count, m_Rng);
 
-                // 뽑은 좌표가 벽 속일 수 있다 — 걸을 수 있는 자리로 당긴다
-                if (UnityEngine.AI.NavMesh.SamplePosition(
-                        point, out UnityEngine.AI.NavMeshHit hit, 12f, UnityEngine.AI.NavMesh.AllAreas))
-                {
-                    point = hit.position;
-                }
+                // 뽑은 좌표가 벽 속일 수 있다 — 걸을 수 있는 자리로 당긴다(격자 기준, 2026-08-18)
+                if (Ai.NavRoute.TrySnap(point, out Vector3 snapped)) point = snapped;
 
                 m_SearchPoints[id] = point;
                 m_SearchSince[id] = Time.time;

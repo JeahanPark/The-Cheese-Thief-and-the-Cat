@@ -61,6 +61,7 @@ namespace CTC.Runtime.Map
             BuildFromLayout(_layout);
             BuildCheeseSpots(_layout);
             BuildObstacles(_layout);
+            BakeNavGrid(_layout);
             BakeNavMesh();
         }
 
@@ -79,6 +80,21 @@ namespace CTC.Runtime.Map
         /// 사람과 다른 코드를 타게 만든다 — 그 순간 봇으로 잰 밸런스가 뜻을 잃는다.
         /// 길 계산만 쓰고 이동은 사람과 같은 입구로 넣는다.
         /// </summary>
+        /// <summary>
+        /// **직접 만든 격자를 굽는다**(2026-08-18). 봇·강아지의 길찾기가 이걸 쓴다.
+        ///
+        /// 폴리곤(`BakeNavMesh`)은 아직 같이 굽는다 — QA 훅 몇 개와 "맵이 섰나" 검사가 그걸 본다.
+        /// 둘은 **같은 콜라이더에서** 나오므로 어긋나지 않는다. 길찾기의 주인은 격자다.
+        /// </summary>
+        private void BakeNavGrid(MapLayout _layout)
+        {
+            float half = _layout != null ? _layout.HalfExtent : 60f;
+            CTC.Runtime.Ai.NavGrid grid = CTC.Runtime.Ai.NavGridBaker.Bake(
+                m_Root != null ? m_Root.transform : null, half);
+            CTC.Runtime.Ai.NavGridService.Publish(grid);
+            Core.GameDebug.Log($"[MapBuilder] 격자 {grid.Width}×{grid.Height} (셀 {CTC.Runtime.Ai.NavGrid.CELL_SIZE}m)");
+        }
+
         private void BakeNavMesh()
         {
             RemoveNavMesh();
