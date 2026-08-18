@@ -52,6 +52,19 @@
 - 프레임이 떨어지면 추측 말고 `Tools/CTC/Dev/Profile 3s → 상위 마커 덤프`(플레이 중) — 메인 스레드 self 상위 20을 `%TEMP%\ctc-profile.txt`에 쓴다. 에디터 3인(클론) 환경은 EditorLoop·vSync가 대부분이라 실제 성능은 개발용 빌드로 잰다(2026-08-16).
 - **적용 범위**: **전 파일 적용 완료**(2026-07-31, [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 1~5단계 + 잔여 3건). 예외 없이 위 규칙대로 쓴다.
 
+### 길찾기·봇 실험실 (2026-08-18)
+
+- **길찾기는 직접 만든 격자 A\***(`Assets/Scripts/Ai/Grid/`)다. 유니티 NavMesh는 아직 같이 굽지만
+  **길 계산의 주인은 격자**다. 요새 벽은 "고양이가 부술 수 있는 칸", 입구는 "쥐 전용 문"으로 찍힌다
+  (`NavGridBlocker` — 구조물 프리팹 루트에 붙어 있다).
+- **봇 전용 실험실**: 메뉴 `Tools/CTC/Setup BotLab Scene (봇 전용 실험실)` → `Assets/Scenes/BotLab.unity`.
+  플레이만 누르면 호스트·맵·판·봇이 자동으로 서고, 위에서 내려다보는 자유 카메라와 봇별 경로선이 뜬다
+  (F1 오버레이 · F2 경로선 · F5 봇 다시 · F6 정지 · F7 배속 · Tab 봇 따라가기).
+  **프리팹은 다시 안 굽는다** — `Setup Networking Scene`을 먼저 한 번 돌린 상태여야 한다.
+- 길찾기가 이상하면 추측하지 말고 훅으로 캔다: `TestGetNavGridInfo`(격자 상태) ·
+  `TestTracePath`(두 점 사이를 직접 돌려 본다) · `TestDumpGrid`(격자를 글자 그림으로) ·
+  `TestGetNavStats`(경로계산·포기·우회율·목표미달·제자리걸음 한 줄).
+
 ## unity-scanner (에셋 YAML 탐색 — 토큰 절약)
 
 - 프리팹/씬/.asset의 **내용 파악·검색·참조 추적**은 파일을 Read로 통째로 읽지 말고 `unity-scanner`(CLI, `%LOCALAPPDATA%\unity-scanner\unity-scanner.exe`)를 우선 사용한다.
