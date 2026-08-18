@@ -291,7 +291,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Ai.NavGridBlocker
   m_Kind: 1
   m_DoorHalfWidth: 0
-  m_DoorDepth: 0.3
+  m_DoorDepth: 1.2
   m_DoorDistance: 1.2
 --- !u!1 &8970908541854038298
 GameObject:

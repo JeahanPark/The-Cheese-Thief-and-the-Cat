@@ -50,6 +50,15 @@ namespace CTC.Runtime.Ai
             m_Random = new System.Random(_layout.Seed);
         }
 
+        /// <summary>
+        /// 죽거나 씬이 내려갈 때 격자 셀 예약을 놓는다(2026-08-18 리뷰).
+        /// 강아지는 `DogDeath`가 곧장 despawn 하므로 여기서 안 놓으면 그 경로 칸이 판이 끝날 때까지
+        /// 남아, 아무도 안 다니는 복도를 다른 봇들이 계속 우회한다. 배포 빌드에도 있는 누수였다.
+        /// </summary>
+        public override void OnNetworkDespawn() => m_Route?.Clear();
+
+        private void OnDestroy() => m_Route?.Clear();
+
         private void Awake()
         {
             m_Cc = GetComponent<CharacterController>();

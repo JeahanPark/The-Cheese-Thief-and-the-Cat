@@ -62,7 +62,7 @@ namespace CTC.Runtime.Testing
             bool goalOk = grid.CanEnter(gx, gz, agent, radius, 0f, out _, true);
 
             var cells = new List<int>();
-            bool ok = finder.TryFindPath(from, to, agent, radius, null, 0UL, cells);
+            bool ok = finder.TryFindPath(from, to, agent, radius, null, cells);
             return $"start=({sx},{sz}) ok={startOk} clr={grid.ClearanceMeters(sx, sz):F2} " +
                    $"goal=({gx},{gz}) fit={goalOk} clr={grid.ClearanceMeters(gx, gz):F2} " +
                    $"path={ok} corners={cells.Count} nodes={finder.LastNodes} break={finder.LastNeededBreaking}";

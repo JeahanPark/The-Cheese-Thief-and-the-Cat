@@ -21,8 +21,13 @@ namespace CTC.Runtime.Ai
         /// <summary>0보다 크면 로컬 ±Z 면 가운데를 **쥐 전용 문**으로 찍는다(요새 입구).</summary>
         [SerializeField] private float m_DoorHalfWidth;
 
-        /// <summary>문 띠의 두께(m) — 벽 두께와 같게 둔다.</summary>
-        [SerializeField] private float m_DoorDepth = 0.3f;
+        /// <summary>
+        /// 문 띠의 **깊이**(m) — 벽 두께가 아니라 **벽을 관통하는 터널 길이**다.
+        /// 벽 자국은 "조금이라도 겹치면 찍는다"라 문 양옆 칸까지 벽으로 물든다. 문 띠가 벽 두께만큼만
+        /// 얇으면 그 사이에 낀 한두 칸이 통행 불가로 남아 **쥐가 제 요새에 못 들어간다**
+        /// (2026-08-18 실측: 쥐 경로 실패 · 포기 159/473). 안팎을 확실히 잇도록 넉넉히 잡는다.
+        /// </summary>
+        [SerializeField] private float m_DoorDepth = 1.2f;
 
         /// <summary>문이 뚫린 벽면까지의 거리(m) — 요새 외곽 반치수.</summary>
         [SerializeField] private float m_DoorDistance = 1.2f;
@@ -62,8 +67,6 @@ namespace CTC.Runtime.Ai
         private void StampDoor(NavGrid _grid, float _side)
         {
             Vector3 center = transform.position + transform.forward * (_side * m_DoorDistance);
-            float half = NavGrid.CELL_SIZE * 0.5f;
-
             float yaw = transform.rotation.eulerAngles.y * Mathf.Deg2Rad;
             float cos = Mathf.Cos(yaw), sin = Mathf.Sin(yaw);
 
@@ -81,9 +84,11 @@ namespace CTC.Runtime.Ai
                     float dx = c.x - center.x, dz = c.z - center.z;
                     float lx = dx * cos - dz * sin;
                     float lz = dx * sin + dz * cos;
-                    float proj = half * (Mathf.Abs(cos) + Mathf.Abs(sin));
-                    if (Mathf.Abs(lx) > m_DoorHalfWidth + proj) continue;
-                    if (Mathf.Abs(lz) > m_DoorDepth * 0.5f + proj) continue;
+                    // **문은 셀 중심이 개구부 안에 들어올 때만 찍는다**(2026-08-18 리뷰).
+                    // 막는 자국은 "조금이라도 겹치면 찍는다"가 안전하지만, 문은 반대로 **통행 허가**라
+                    // 반 칸(0.25m)만 번져도 실체 벽 조각이 쥐 통행로로 열린다.
+                    if (Mathf.Abs(lx) > m_DoorHalfWidth) continue;
+                    if (Mathf.Abs(lz) > m_DoorDepth * 0.5f) continue;
                     m_Stamp.Add(x, z, NavStructureKind.MouseDoor);
                 }
             }

@@ -162,6 +162,9 @@ namespace CTC.Runtime.Bots
         /// <summary>판이 끝나거나 봇이 사라질 때 — 입력을 놓아 준다.</summary>
         public void Release()
         {
+            // 격자 셀 예약도 놓는다(2026-08-18 리뷰) — 안 놓으면 죽은 봇이 잡아 둔 칸이
+            // 판이 끝날 때까지 남아, 아무도 안 다니는 복도를 산 봇들이 계속 우회한다.
+            if (m_Nav != null) m_Nav.Stop();
             if (m_Move != null) m_Move.DevSetMoveInput(Vector3.zero);
             if (m_Sneak != null) m_Sneak.DevSetSneak(false);
             if (m_Reservations != null) m_Reservations.Release(Id);

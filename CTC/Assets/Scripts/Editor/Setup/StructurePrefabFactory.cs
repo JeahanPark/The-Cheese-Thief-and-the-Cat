@@ -179,7 +179,9 @@ namespace CTC.Editor
                 var blocker = root.AddComponent<CTC.Runtime.Ai.NavGridBlocker>();
                 SetInt(blocker, "m_Kind", (int)CTC.Runtime.Ai.NavStructureKind.CatBreakable);
                 SetFloat(blocker, "m_DoorHalfWidth", FORTRESS_DOOR_WIDTH * 0.5f);
-                SetFloat(blocker, "m_DoorDepth", 0.5f);                       // 셀 한 칸 — 인방 칸을 확실히 덮는다
+                // 벽을 관통하는 터널 길이 — 벽(0.2)보다 훨씬 길어야 안팎이 이어진다(셀이 0.5m라
+                // 벽 자국이 문 양옆으로 번지기 때문). 폭은 개구부(1.0) 그대로다.
+                SetFloat(blocker, "m_DoorDepth", 1.2f);
                 SetFloat(blocker, "m_DoorDistance", FORTRESS_HALF - FORTRESS_WALL_THICKNESS * 0.5f);
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, FortressPrefabPath);

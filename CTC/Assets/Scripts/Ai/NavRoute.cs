@@ -61,6 +61,7 @@ namespace CTC.Runtime.Ai
         private bool m_HasGoal;
         private bool m_GaveUp;
         private bool m_StraightMode;
+        private bool m_ForcePath;        // 직선으로 가다 막혔다 — 다음 계획은 직선 지름길을 건너뛴다
         private float m_NextPlanTime;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
@@ -171,6 +172,16 @@ namespace CTC.Runtime.Ai
         /// </summary>
         public void OnStuck()
         {
+            // **직선으로 가다 막혔으면 이번엔 경로로 간다.** 직선 모드는 코너가 하나뿐이라
+            // 그냥 다시 짜면 ⓪ 검사가 또 통과해 **완전히 같은 계획**이 나온다 — 탈출구가 없다
+            // (2026-08-18 리뷰). 격자는 남의 몸을 모르므로 이 한 번의 우회가 유일한 해법이다.
+            if (m_StraightMode)
+            {
+                m_ForcePath = true;
+                Replan();
+                return;
+            }
+
             m_Index++;
             if (m_Index >= m_Corners.Count) Replan();
         }
@@ -287,23 +298,30 @@ namespace CTC.Runtime.Ai
                 return;
             }
 
+            // **옛 예약을 먼저 놓는다.** 안 놓으면 자기가 직전에 잡아 둔 셀에 제가 비용을 물어
+            // A*가 제 길을 피해 간다(2026-08-18 리뷰 — `CountAt`은 소유자를 구분하지 않는다).
+            NavGridService.Reservations.Release(m_OwnerId);
+
+            bool forcePath = m_ForcePath;
+            m_ForcePath = false;
+
             // ⓪ 장애물 검사 — 목표까지 격자 직선이 뚫려 있으면 A*를 부를 이유가 없다.
             grid.ToCell(m_Self.position, out int sx, out int sz);
             grid.ToCell(m_Goal, out int gx, out int gz);
-            if (grid.CanEnter(gx, gz, m_Agent, m_BodyRadius, 0f, out _, _strictFit: true)
+            if (!forcePath
+                && grid.CanEnter(gx, gz, m_Agent, m_BodyRadius, 0f, out _, _strictFit: true)
                 && finder.LineClear(grid.Index(sx, sz), grid.Index(gx, gz), m_Agent, m_BodyRadius))
             {
                 m_Corners.Add(m_Goal);
                 m_StraightMode = true;
                 LastNodes = 0;
-                NavGridService.Reservations.Release(m_OwnerId);
                 return;
             }
             m_StraightMode = false;
 
             // ① A* (1차 = 안 부수고 · 실패하면 2차 = 부수고)
             if (!finder.TryFindPath(m_Self.position, m_Goal, m_Agent, m_BodyRadius,
-                    NavGridService.Reservations, m_OwnerId, m_PathCells))
+                    NavGridService.Reservations, m_PathCells))
             {
                 LastNodes = finder.LastNodes;
                 GiveUp();
@@ -313,8 +331,9 @@ namespace CTC.Runtime.Ai
             LastNodes = finder.LastNodes;
 
             // ② 지나갈 셀을 예약한다 — 다음 봇의 A*에서 이 셀들의 비용이 올라 저절로 흩어진다
-            //    (기술소개서 앨리스 19~20p 원형). 코너만이 아니라 실제 경로 셀을 잡는다.
-            NavGridService.Reservations.Claim(m_OwnerId, m_PathCells);
+            //    (기술소개서 앨리스 19~20p 원형). **꺾임점이 아니라 전체 경로 셀**을 잡는다:
+            //    꺾임점만 잡으면 긴 복도에서 겹치는 칸이 양 끝 둘뿐이라 아무도 안 흩어진다.
+            NavGridService.Reservations.Claim(m_OwnerId, finder.LastFullPath);
 
             for (int i = 0; i < m_PathCells.Count; i++)
             {

@@ -24,14 +24,15 @@ namespace CTC.Runtime.Ai
         public int CellCount => m_Counts.Count;
 
         /// <summary>이 소유자의 예약을 통째로 갈아 끼운다(길을 새로 짤 때마다).</summary>
-        public void Claim(ulong _owner, List<int> _cells)
+        public void Claim(ulong _owner, IReadOnlyList<int> _cells)
         {
             Release(_owner);
             if (_cells == null || _cells.Count == 0) return;
 
             var mine = new List<int>(_cells.Count);
-            foreach (int cell in _cells)
+            for (int i = 0; i < _cells.Count; i++)
             {
+                int cell = _cells[i];
                 m_Counts.TryGetValue(cell, out int n);
                 m_Counts[cell] = n + 1;
                 mine.Add(cell);
@@ -59,7 +60,11 @@ namespace CTC.Runtime.Ai
             m_ByOwner.Clear();
         }
 
-        /// <summary>이 셀을 몇 명이 지나가기로 했나. 자기 예약은 <see cref="Claim"/>이 갈아 끼우므로 안 센다.</summary>
+        /// <summary>
+        /// 이 셀을 몇 명이 지나가기로 했나. **소유자를 구분하지 않는다** —
+        /// 부르는 쪽(`NavRoute.ReplanCore`)이 길을 새로 짜기 전에 제 예약을 먼저 놓는다.
+        /// 안 그러면 자기가 직전에 잡은 셀에 자기가 비용을 물어 제 길을 피해 간다(2026-08-18 리뷰).
+        /// </summary>
         public int CountAt(int _cell) => m_Counts.TryGetValue(_cell, out int n) ? n : 0;
     }
 }

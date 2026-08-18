@@ -315,13 +315,21 @@ namespace CTC.Runtime.Ai
 
             if (!m_Structures.TryGetValue(i, out NavCellStructure cell)) return true;
 
-            // 쥐 전용 문: 쥐면 통과, 아니면 인방에 걸린다. 문 셀에는 벽도 같이 겹쳐 있을 수 있는데
+            // 쥐 전용 문: 쥐면 통과, 아니면 인방(0.75m)에 걸린다. 문 셀에는 벽도 같이 겹쳐 있을 수 있는데
             // (문틀), 쥐는 그 틈으로 지나가므로 문이 이긴다.
-            if (cell.MouseDoor > 0 && _agent == NavAgent.Mouse) return true;
-
             bool blockedByCat = cell.CatBreakable > 0;
             bool blockedByAny = cell.AnyBreakable > 0;
-            if (!blockedByCat && !blockedByAny) return cell.MouseDoor == 0 || _agent == NavAgent.Mouse;
+
+            if (cell.MouseDoor > 0)
+            {
+                if (_agent == NavAgent.Mouse) return true;
+                // 고양이·강아지는 인방에 막히지만 **부수면 지나간다** — 예전에는 여기서 곧장 false를
+                // 돌려 문 셀이 부술 수도 없는 절대 벽이었다(2026-08-18 리뷰). 요새가 문 쪽으로만
+                // 뚫려 있으면 고양이 경로가 아예 안 나왔다.
+                blockedByCat = true;
+            }
+
+            if (!blockedByCat && !blockedByAny) return true;
 
             // 쥐는 요새 벽·창고를 못 부순다(CombatLogic이 같은 진영 구조물 피해를 막는다)
             bool canBreak = _breakCost > 0f

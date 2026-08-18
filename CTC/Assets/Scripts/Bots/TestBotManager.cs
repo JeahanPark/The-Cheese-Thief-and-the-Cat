@@ -128,7 +128,12 @@ namespace CTC.Runtime.Bots
 
             for (int i = m_Agents.Count - 1; i >= 0; i--)
             {
-                if (!m_Agents[i].Alive) { m_Agents.RemoveAt(i); continue; }
+                if (!m_Agents[i].Alive)
+                {
+                    m_Agents[i].Release();   // 셀 예약을 놓고 버린다 — 안 그러면 유령 비용이 남는다
+                    m_Agents.RemoveAt(i);
+                    continue;
+                }
                 m_Agents[i].Tick(dt, m_Spots, m_Sound);
             }
         }

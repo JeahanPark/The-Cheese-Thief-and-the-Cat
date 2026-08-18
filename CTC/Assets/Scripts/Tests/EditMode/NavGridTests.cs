@@ -161,7 +161,7 @@ namespace CTC.Tests.EditMode
             var cells = new List<int>();
 
             Assert.IsTrue(finder.TryFindPath(grid.ToWorld(2, 2), grid.ToWorld(15, 2),
-                NavAgent.Mouse, R_MOUSE, null, 0UL, cells));
+                NavAgent.Mouse, R_MOUSE, null, cells));
 
             // **직선 검사**(14p)가 중간 노드를 전부 지운다 — 뚫려 있으면 꺾임점이 없다
             Assert.AreEqual(1, cells.Count);
@@ -180,7 +180,7 @@ namespace CTC.Tests.EditMode
             var cells = new List<int>();
 
             Assert.IsTrue(finder.TryFindPath(grid.ToWorld(2, 2), grid.ToWorld(18, 2),
-                NavAgent.Mouse, R_MOUSE, null, 0UL, cells));
+                NavAgent.Mouse, R_MOUSE, null, cells));
             Assert.IsFalse(finder.LastNeededBreaking, "우회로가 있으면 절대 안 부순다");
             Assert.Greater(cells.Count, 1, "곧장 갈 수 없으니 꺾임점이 생긴다");
         }
@@ -203,12 +203,12 @@ namespace CTC.Tests.EditMode
             var cells = new List<int>();
 
             Assert.IsTrue(finder.TryFindPath(grid.ToWorld(2, 10), grid.ToWorld(10, 10),
-                NavAgent.Cat, R_CAT, null, 0UL, cells));
+                NavAgent.Cat, R_CAT, null, cells));
             Assert.IsTrue(finder.LastNeededBreaking, "우회로가 없으면 벽을 뚫는 경로가 나온다");
 
             // 쥐는 같은 벽을 못 부순다 — 길이 아예 없다
             Assert.IsFalse(finder.TryFindPath(grid.ToWorld(2, 10), grid.ToWorld(10, 10),
-                NavAgent.Mouse, R_MOUSE, null, 0UL, cells));
+                NavAgent.Mouse, R_MOUSE, null, cells));
         }
 
         [Test]
@@ -230,7 +230,7 @@ namespace CTC.Tests.EditMode
 
             // 지형은 못 부순다 — 2차 탐색으로도 길이 없다
             Assert.IsFalse(finder.TryFindPath(grid.ToWorld(2, 2), grid.ToWorld(10, 10),
-                NavAgent.Cat, R_CAT, null, 0UL, cells));
+                NavAgent.Cat, R_CAT, null, cells));
         }
 
         [Test]
@@ -257,7 +257,59 @@ namespace CTC.Tests.EditMode
 
             // (4,4)에서 (5,5)로 가는 길은 대각선뿐인데 양옆이 막혔다 → 못 간다
             Assert.IsFalse(finder.TryFindPath(grid.ToWorld(4, 4), grid.ToWorld(5, 5),
-                NavAgent.Mouse, R_MOUSE, null, 0UL, cells));
+                NavAgent.Mouse, R_MOUSE, null, cells));
+        }
+
+        [Test]
+        public void Diagonal_DoesNotSlipThroughACornerBetweenTwoBreakables()
+        {
+            // 2026-08-18 리뷰에서 재현한 것: 2차 탐색이 부술 셀을 '뚫린 옆칸'으로 인정하면
+            // 대각으로 맞물린 구조물 사이를 **공짜로** 지나가고, 경로에 부술 셀이 하나도 없는데
+            // "부수고 간다"는 자기모순이 나온다 → 포위 행동이 영영 안 걸린다.
+            NavGrid grid = Empty();
+            for (int z = 0; z <= 10; z++) grid.AddStructureCell(10, z, NavStructureKind.CatBreakable);
+            for (int z = 11; z < 20; z++) grid.AddStructureCell(11, z, NavStructureKind.CatBreakable);
+
+            var finder = new GridPathfinder(grid);
+            var cells = new List<int>();
+
+            Assert.IsTrue(finder.TryFindPath(grid.ToWorld(2, 10), grid.ToWorld(17, 10),
+                NavAgent.Cat, R_CAT, null, cells));
+            Assert.IsTrue(finder.LastNeededBreaking);
+
+            bool anyBreakCell = false;
+            foreach (int cell in finder.LastFullPath)
+            {
+                if (grid.NeedsBreaking(cell % grid.Width, cell / grid.Width, NavAgent.Cat)) anyBreakCell = true;
+            }
+            Assert.IsTrue(anyBreakCell, "부수고 간다면 경로에 부술 셀이 반드시 있어야 한다");
+        }
+
+        [Test]
+        public void MouseDoorAlone_IsBreakableForCatsNotAnAbsoluteWall()
+        {
+            // 예전에는 문만 있는 셀이 고양이에게 부술 수도 없는 벽이었다 — 요새가 문 쪽으로만
+            // 뚫려 있으면 고양이 경로가 아예 안 나왔다(2026-08-18 리뷰).
+            NavGrid grid = Empty();
+            grid.AddStructureCell(5, 5, NavStructureKind.MouseDoor);
+
+            Assert.IsTrue(grid.CanEnter(5, 5, NavAgent.Mouse, R_MOUSE, 0f, out _));
+            Assert.IsFalse(grid.CanEnter(5, 5, NavAgent.Cat, R_CAT, 0f, out _), "1차에는 막힌다");
+            Assert.IsTrue(grid.CanEnter(5, 5, NavAgent.Cat, R_CAT, 10f, out _), "2차에는 부수고 지나간다");
+        }
+
+        [Test]
+        public void LineClear_RejectsAnExact45DegreeCornerCut()
+        {
+            // 셀 중심끼리라 tMax가 비트 단위로 같아지는 자리 — 한쪽 계단만 밟으면 반대쪽 모서리를
+            // 한 번도 안 본다. A*가 대각선 검사로 금지한 이동을 직선 검사가 허가하면 안 된다.
+            var grid = new NavGrid(Vector2.zero, 20, 20);
+            grid.SetBlocked(6, 5, true);
+            grid.BuildClearance();
+
+            var finder = new GridPathfinder(grid);
+            Assert.IsFalse(finder.LineClear(grid.Index(5, 5), grid.Index(7, 7), NavAgent.Mouse, R_MOUSE),
+                "벽 꼭짓점을 정확히 스치는 45° 직선은 인정하지 않는다");
         }
 
         // ---- 노드 예약(앨리스 19~20p) ----
@@ -311,10 +363,11 @@ namespace CTC.Tests.EditMode
             var second = new List<int>();
 
             Assert.IsTrue(finder.TryFindPath(grid.ToWorld(1, 8), grid.ToWorld(18, 8),
-                NavAgent.Mouse, R_MOUSE, res, 1UL, first));
+                NavAgent.Mouse, R_MOUSE, res, first));
 
             // 첫 봇이 지나갈 셀을 예약하면 둘째는 다른 복도가 싸진다.
             // **복도 폭 전체를 잡는다** — 한 줄만 잡으면 옆줄로 비켜 가면 그만이라 흩어지지 않는다.
+            // (실제 코드는 `finder.LastFullPath`를 잡는다 — 여기서는 조건을 또렷하게 하려고 손으로 잡는다.)
             var claimed = new List<int>();
             for (int x = 3; x <= 16; x++)
             {
@@ -323,7 +376,7 @@ namespace CTC.Tests.EditMode
             res.Claim(1UL, claimed);
 
             Assert.IsTrue(finder.TryFindPath(grid.ToWorld(1, 8), grid.ToWorld(18, 8),
-                NavAgent.Mouse, R_MOUSE, res, 2UL, second));
+                NavAgent.Mouse, R_MOUSE, res, second));
 
             bool usedUpper = false;
             foreach (int cell in second)
