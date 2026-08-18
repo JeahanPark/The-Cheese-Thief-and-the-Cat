@@ -49,6 +49,16 @@ namespace CTC.Runtime.Bots
         /// </summary>
         public bool GaveUp() => m_Route != null && m_Route.ConsumeGaveUp();
 
+        /// <summary>디버그 그리기 전용(BotLab) — 두뇌가 준 원본 목표.</summary>
+        public Vector3 Goal => m_Route != null ? m_Route.Goal : Vector3.zero;
+
+        /// <summary>디버그 그리기 전용 — 코너 사슬.</summary>
+        public int CornerCount => m_Route != null ? m_Route.CornerCount : 0;
+
+        public int CornerIndex => m_Route != null ? m_Route.CornerIndex : 0;
+
+        public Vector3 CornerAt(int _i) => m_Route != null ? m_Route.CornerAt(_i) : Vector3.zero;
+
         /// <summary>QA — 길찾기가 어느 층에서 끊겼는지 본다.</summary>
         public string Diagnostics =>
             $"{(m_Route != null ? m_Route.Diagnostics : "-")} stuck={m_StuckSeconds:F1} " +

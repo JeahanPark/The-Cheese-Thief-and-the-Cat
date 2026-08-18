@@ -51,7 +51,13 @@ namespace CTC.Runtime.Ai
         /// <summary>코너 버퍼. `NavMeshPath.corners`는 부를 때마다 배열을 새로 만든다.</summary>
         private const int MAX_CORNERS = 64;
 
+        /// <summary>
+        /// 직선 검사 높이. 바닥(0)·바닥 표식은 안 닿고, 요새 벽(1.2)·창고·엄폐물(2.2)·지형 벽은 닿는 높이.
+        /// </summary>
+        private const float STRAIGHT_HEIGHT = 0.6f;
+
         private readonly Transform m_Self;
+        private readonly float m_BodyRadius;
         private readonly NavMeshPath m_Path = new NavMeshPath();
         private readonly Vector3[] m_Buffer = new Vector3[MAX_CORNERS];
         private readonly List<Vector3> m_Corners = new List<Vector3>();
@@ -62,10 +68,15 @@ namespace CTC.Runtime.Ai
         private float m_NextPlanTime;
         private Vector3 m_Goal;          // 지금 향하는 곳 (쥐라면 매 틱 움직인다)
         private Vector3 m_PlannedGoal;   // 지금 들고 있는 경로를 짤 때의 곳
+        private bool m_StraightMode;     // 지금 코너가 "직선 검사로 뚫려 있어 곧장 가는 중"인가
+        private bool m_ForcePath;        // 직선으로 가다 막혔다 — 다음 계획은 직선 검사를 건너뛴다
 
         public NavRoute(Transform _self)
         {
             m_Self = _self;
+            // 직선 검사는 몸 굵기로 한다 — 사람과 같은 CharacterController 반지름(쥐 0.22·고양이 0.35)
+            var cc = _self != null ? _self.GetComponent<CharacterController>() : null;
+            m_BodyRadius = cc != null ? cc.radius : 0.3f;
         }
 
         /// <summary>지금 갈 데가 있는가.</summary>
@@ -76,9 +87,19 @@ namespace CTC.Runtime.Ai
 
         public Vector3 Goal => m_Goal;
 
+        /// <summary>디버그 그리기 전용(BotLab) — 지금 들고 있는 코너 수.</summary>
+        public int CornerCount => m_Corners.Count;
+
+        /// <summary>디버그 그리기 전용 — 다음에 밟을 코너의 자리.</summary>
+        public int CornerIndex => m_Index;
+
+        /// <summary>디버그 그리기 전용 — i번째 코너(범위 밖이면 목표).</summary>
+        public Vector3 CornerAt(int _i) =>
+            (uint)_i < (uint)m_Corners.Count ? m_Corners[_i] : m_Goal;
+
         /// <summary>QA — 어느 층에서 끊겼는지 한 줄로.</summary>
         public string Diagnostics =>
-            $"{(IsStraight ? "straight" : "path")} corners={m_Corners.Count} idx={m_Index} " +
+            $"{(m_StraightMode ? "straight" : "path")} corners={m_Corners.Count} idx={m_Index} " +
             $"goal={m_Goal.x:F0},{m_Goal.z:F0} " +
             $"wp={(m_Index < m_Corners.Count ? $"{m_Corners[m_Index].x:F0},{m_Corners[m_Index].z:F0}" : "-")}";
 
@@ -128,6 +149,13 @@ namespace CTC.Runtime.Ai
         /// </summary>
         public void OnStuck()
         {
+            // 직선으로 가다 막혔다면 검사가 못 본 것(다른 몸·틈)에 걸린 것이다 — 이번엔 경로로 간다
+            if (m_StraightMode)
+            {
+                m_ForcePath = true;
+                Replan();
+                return;
+            }
             m_Index++;
             if (m_Index >= m_Corners.Count) Replan();
         }
@@ -193,6 +221,19 @@ namespace CTC.Runtime.Ai
             m_PlannedGoal = m_Goal;
             m_NextPlanTime = Time.time + REPLAN_COOLDOWN_SECONDS;
             if (m_Self == null) return;
+
+            // **직선 검사가 먼저다**(2026-08-18, 기술소개서 "직선 검사 A*"의 첫 단계).
+            // 목표까지 몸 굵기로 쓸어 봐서 아무것도 안 닿으면 A*를 부를 이유가 없다 — 코너 하나(=목표)로
+            // 곧장 간다. 막혀 있을 때만 폴리곤 경로를 짠다. 직선으로 가다 걸리면(OnStuck) 한 번은 경로로.
+            bool forcePath = m_ForcePath;
+            m_ForcePath = false;
+            if (!forcePath && IsStraightClear(m_Self.position, m_Goal))
+            {
+                m_Corners.Add(m_Goal);
+                m_StraightMode = true;
+                return;
+            }
+            m_StraightMode = false;
 
             // 양 끝을 폴리곤 위로 당긴다 — 소리가 난 자리는 벽 속일 수도 있다
             if (!NavMesh.SamplePosition(m_Self.position, out NavMeshHit from, SAMPLE_RADIUS, NavMesh.AllAreas)
@@ -276,6 +317,31 @@ namespace CTC.Runtime.Ai
             m_HasGoal = false;
             m_Corners.Clear();
             m_Index = 0;
+        }
+
+        /// <summary>
+        /// 목표까지 몸 굵기 스피어캐스트 — 구조물·지형에 안 닿으면 곧장 갈 수 있다.
+        /// 나 자신과 다른 플레이어 몸(CharacterController 루트)은 장애물로 안 친다 —
+        /// 몸에 막힌 건 <see cref="OnStuck"/>이 받는다(폴리곤 경로도 몸은 모른다, 같은 규칙).
+        /// 바닥·바닥 표식은 Ignore Raycast 층이라 기본 마스크에서 빠진다.
+        /// </summary>
+        private bool IsStraightClear(Vector3 _from, Vector3 _to)
+        {
+            Vector3 delta = Flat(_to - _from);
+            float length = delta.magnitude;
+            if (length < 0.05f) return true;
+
+            Vector3 origin = _from + Vector3.up * STRAIGHT_HEIGHT;
+            Transform myRoot = m_Self.root;
+            foreach (RaycastHit hit in Physics.SphereCastAll(origin, m_BodyRadius, delta / length, length,
+                         Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                Transform hitRoot = hit.transform.root;
+                if (hitRoot == myRoot) continue;
+                if (hitRoot.GetComponent<CharacterController>() != null) continue;
+                return false;
+            }
+            return true;
         }
 
         private static Vector3 Flat(Vector3 _v)

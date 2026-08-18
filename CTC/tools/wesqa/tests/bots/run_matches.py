@@ -9,7 +9,7 @@
 **나오는 건 봇 승률이지 사람 승률이 아니다.** 봇은 속임수(미끼)와 협동(몰이)을 못 한다.
 구조적으로 불가능한 구간을 걸러내는 도구지 5:5를 확정해 주지 않는다.
 """
-import argparse, csv, os, sys, time, io
+import argparse, csv, os, re, sys, time, io
 
 sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -87,7 +87,9 @@ def run_one(host, args, index):
     # 이상 징후 — 숫자만 보면 안 보이는 것들. 벽에 낀 봇이 있으면 그 판의 승률은 못 믿는다.
     diag = host.invoke("TestGetBotDiagnostics")
     warning = ""
-    stuck = [c for c in diag.split(" ") if c.endswith("/0m")]
+    # 진단 한 줄은 "#12/M/Farm/0m/path corners=..." 꼴이라 공백 분할로는 "/0m"으로 안 끝난다.
+    # 2026-08-18까지 이 검사는 아무것도 못 잡고 있었다 — 슬래시 필드로 직접 읽는다.
+    stuck = [r for r in re.finditer(r"#\d+/([CM])/(\w+)/(\d+)m/", diag) if r.group(3) == "0"]
     if stuck:
         warning = f"제자리봇 {len(stuck)}"
     if ",-1.0," in summary or summary.endswith(",-1.0"):
@@ -127,8 +129,9 @@ def main():
             writer.writerow([i] + row)
             f.flush()
             rows.append(row)
+            # 칸: result,remaining,mice,cats,first_sight,phase + warning (감옥 칸은 2026-08-17에 빠졌다)
             print(f"[{i:2d}/{args.matches}] {row[0]:8s} 남은{row[1]:>4s}s "
-                  f"쥐{row[2]} 고양이{row[3]} 첫발견{row[4]}s 갇힘{row[5]} {row[6]} {row[7]}")
+                  f"쥐{row[2]} 고양이{row[3]} 첫발견{row[4]}s {row[5]} {row[6]}")
             sys.stdout.flush()
 
     print(f"\n→ {path}")

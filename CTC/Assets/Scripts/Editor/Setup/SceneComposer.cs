@@ -25,7 +25,15 @@ namespace CTC.Editor
     // SetupNetworkingScene의 일부 — 씬 오브젝트 배선 + 네트워크 프리팹 등록 (개편 4단계 분할, 2026-07-31)
     public static partial class SetupNetworkingScene
     {
+        /// <summary>
+        /// 씬을 통째로 짓는다. `_botLab`이면 **봇 전용 실험실**(BotLab.unity)이 된다 —
+        /// 로비 UI·궤도 카메라·스팀/접속 UI를 안 만들고, 대신 자유 카메라와 경로선 그리기,
+        /// 그리고 플레이 즉시 판을 여는 <see cref="CTC.Runtime.Bots.BotLab"/>을 얹는다.
+        /// **한 함수로 둘 다 짓는 이유**: 두 벌로 나누면 배선이 서서히 어긋나 실험실에서 잰 수치가
+        /// 본 게임과 다른 것을 재게 된다.
+        /// </summary>
         private static void CreateGameScene(
+            string _scenePath, bool _botLab,
             GameObject _catPrefab, GameObject _mousePrefab, GameObject _fortressPrefab,
             GameObject _warehousePrefab, GameObject _alcovePrefab, GameObject _cheeseDropPrefab,
             GameObject _dogPrefab, GameObject _lootBoxPrefab,
@@ -55,14 +63,18 @@ namespace CTC.Editor
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _warehousePrefab,
                 _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket);
 
-            // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체
-            nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
-            nmGo.AddComponent<SteamBootstrap>();
-            nmGo.AddComponent<SteamLobbyManager>();
+            // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체.
+            // 실험실은 혼자 도는 판이라 접속·스팀·MPPM 배선을 전부 뺀다(화면도 로그도 깨끗해진다).
+            if (!_botLab)
+            {
+                nmGo.AddComponent<Netcode.Transports.Facepunch.FacepunchTransport>();
+                nmGo.AddComponent<SteamBootstrap>();
+                nmGo.AddComponent<SteamLobbyManager>();
 
-            nmGo.AddComponent<ConnectionUI>();
-            nmGo.AddComponent<MppmAutoConnect>();
-            nmGo.AddComponent<MultiplayerQaProbe>();
+                nmGo.AddComponent<ConnectionUI>();
+                nmGo.AddComponent<MppmAutoConnect>();
+                nmGo.AddComponent<MultiplayerQaProbe>();
+            }
 
             // 로비 (in-scene NetworkObject — 서버 시작 시 자동 스폰)
             var lobbyGo = new GameObject("LobbyController");
@@ -101,7 +113,7 @@ namespace CTC.Editor
             SetRef(cheeseDirector, "m_Lobby", lobby);
             SetRef(cheeseDirector, "m_Match", match);
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
-            BuildLobbyCanvas(lobby, match, phaseDirector);
+            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector);
 
             // 밸런스 측정용 봇을 **밖에서** 조종하는 매니저(2026-08-11) — 개발 빌드 전용.
             // 봇의 몸에는 아무것도 안 붙는다. 여기서 플레이어 프리팹을 그대로 세우고 손만 움직인다.
@@ -124,6 +136,25 @@ namespace CTC.Editor
 
             // 카메라 — Main Camera에 Brain, 별도 오브젝트에 궤도 vcam
             var mainCam = Camera.main;
+            SpectatorFallback spectator = null;
+            if (_botLab)
+            {
+                // **궤도 카메라를 안 만드는 것이 핵심이다.** 봇 몸은 호스트에서 IsOwner라
+                // `PlayerCameraBinder`가 스폰될 때마다 궤도 카메라를 자기에게 가져간다 —
+                // 컨트롤러가 없으면 경고 한 줄만 남기고 아무 일도 안 한다.
+                if (mainCam != null)
+                {
+                    mainCam.farClipPlane = 500f;
+                    mainCam.gameObject.AddComponent<CTC.Runtime.Bots.BotLabCamera>();
+                    mainCam.gameObject.AddComponent<CTC.Runtime.Bots.BotPathDebug>();
+                }
+
+                var labGo = new GameObject("BotLab");
+                var lab = labGo.AddComponent<CTC.Runtime.Bots.BotLab>();
+                SetRef(lab, "m_Lobby", lobby);
+            }
+            else
+            {
             if (mainCam != null) mainCam.gameObject.AddComponent<CinemachineBrain>();
 
             var camGo = new GameObject("OrbitCamera");
@@ -155,20 +186,22 @@ namespace CTC.Editor
             //   페이드가 그 벽을 지우므로 화면에는 드러나지 않는다.
             camGo.AddComponent<OccluderFader>();
             camGo.AddComponent<OrbitCameraController>();
-            var spectator = camGo.AddComponent<SpectatorFallback>();
+            spectator = camGo.AddComponent<SpectatorFallback>();
             SetRef(spectator, "m_Lobby", lobby);
+            }
 
             // 따봉 — 관전자가 보고 있는 쥐를 응원한다. 관전 대상은 SpectatorFallback가 안다.
+            // (실험실에는 관전자가 없다 — 따봉을 보낼 사람도 없으니 null로 둔다.)
             var cheer = lobbyGo.AddComponent<CheerDirector>();
             SetRef(cheer, "m_Lobby", lobby);
-            SetRef(cheer, "m_Spectator", spectator);
+            if (spectator != null) SetRef(cheer, "m_Spectator", spectator);
 
-            EditorSceneManager.SaveScene(scene, GameScenePath);
+            EditorSceneManager.SaveScene(scene, _scenePath);
 
-            if (!EditorBuildSettings.scenes.Any(s => s.path == GameScenePath))
+            if (!EditorBuildSettings.scenes.Any(s => s.path == _scenePath))
             {
                 EditorBuildSettings.scenes = EditorBuildSettings.scenes
-                    .Append(new EditorBuildSettingsScene(GameScenePath, true))
+                    .Append(new EditorBuildSettingsScene(_scenePath, true))
                     .ToArray();
             }
 
@@ -183,7 +216,7 @@ namespace CTC.Editor
             }
             // 직접 필드 수정은 씬을 dirty로 안 만들어 SaveScene이 no-op될 수 있음 → 명시 dirty
             EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene, GameScenePath);
+            EditorSceneManager.SaveScene(scene, _scenePath);
 
             VerifyUniqueHashes(sceneObjects
                 .Append(_catPrefab.GetComponent<NetworkObject>())

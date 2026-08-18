@@ -127,7 +127,7 @@ namespace CTC.Runtime.Lobby
             return true;
         }
 
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         /// <summary>
         /// **QA 전용** — 인원 조건을 건너뛰고 판을 연다 (2026-08-11).
         ///

@@ -51,6 +51,9 @@ namespace CTC.Runtime.Bots
         public int Count => m_Agents.Count;
 
         /// <summary>쥐 봇 수 — 치즈 총량이 쥐 수에 비례하므로 로비가 이걸 더해 센다.</summary>
+        /// <summary>디버그·시각화 전용(BotLab) — 지금 도는 봇들. 수정하면 안 된다.</summary>
+        public System.Collections.Generic.IReadOnlyList<BotAgent> Agents => m_Agents;
+
         public int MouseCount => CountRole(RoleId.Mouse);
         public int CatCount => CountRole(RoleId.Cat);
 

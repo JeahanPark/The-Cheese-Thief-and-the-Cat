@@ -73,6 +73,9 @@ namespace CTC.Editor
 
         private const string GameScenePath = "Assets/Scenes/Game.unity";
 
+        /// <summary>봇 전용 실험실 씬 — 사람 없이 봇만 도는 판(2026-08-18).</summary>
+        private const string BotLabScenePath = "Assets/Scenes/BotLab.unity";
+
         // 로비에서 고를 수 있는 맵들 — 배열 순서가 곧 맵 인덱스다
         private static readonly string[] MapLayoutPaths =
         {
@@ -189,9 +192,50 @@ namespace CTC.Editor
             }
             AssetDatabase.SaveAssets();
 
-            CreateGameScene(catPrefab, mousePrefab, fortressPrefab, warehousePrefab,
+            CreateGameScene(GameScenePath, _botLab: false,
+                catPrefab, mousePrefab, fortressPrefab, warehousePrefab,
                 alcovePrefab, cheeseDropPrefab, dogPrefab, lootBoxPrefab, heroTicket, gangTicket);
             Debug.Log($"[SetupNetworkingScene] 완료 — 프리팹 10종 + Game.unity 재생성 (맵 {MapLayoutPaths.Length}종, 런타임 생성)");
+        }
+
+        /// <summary>
+        /// 봇 전용 실험실 씬을 만든다 (2026-08-18). **프리팹은 다시 굽지 않는다** —
+        /// 이미 구워 둔 것을 불러 쓴다. 다시 구우면 레이아웃 에셋(벽감·상자·엄폐물 자리)이
+        /// 덮여 Game.unity 쪽 측정 기준이 같이 흔들린다.
+        ///
+        /// 그래서 `Tools/CTC/Setup Networking Scene`을 **먼저** 한 번 돌린 상태여야 한다.
+        /// 씬을 새로 만들면 in-scene NetworkObject 해시가 씬 GUID 기준으로 다시 굽히므로,
+        /// MPPM 클론이 붙어 있었다면 `Tools/CTC/Dev/MPPM 클론 재시작`으로 옛 해시를 버려야 한다.
+        /// </summary>
+        [MenuItem("Tools/CTC/Setup BotLab Scene (봇 전용 실험실)")]
+        public static void RunBotLab()
+        {
+            CTC.Runtime.Info.InfoManager.Reload();
+
+            GameObject Load(string _path)
+            {
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(_path);
+                if (go == null) Debug.LogError($"[BotLab] 프리팹 없음: {_path} — 먼저 'Setup Networking Scene'을 돌려라");
+                return go;
+            }
+
+            GameObject catPrefab = Load(CatPrefabPath);
+            GameObject mousePrefab = Load(MousePrefabPath);
+            GameObject fortressPrefab = Load(FortressPrefabPath);
+            GameObject warehousePrefab = Load(WarehousePrefabPath);
+            GameObject alcovePrefab = Load(AlcovePrefabPath);
+            GameObject cheeseDropPrefab = Load(CheeseDropPrefabPath);
+            GameObject dogPrefab = Load(DogPrefabPath);
+            GameObject lootBoxPrefab = Load(LootBoxPrefabPath);
+            GameObject heroTicket = Load(HeroTicketPrefabPath);
+            GameObject gangTicket = Load(GangTicketPrefabPath);
+
+            if (catPrefab == null || mousePrefab == null || fortressPrefab == null) return;
+
+            CreateGameScene(BotLabScenePath, _botLab: true,
+                catPrefab, mousePrefab, fortressPrefab, warehousePrefab,
+                alcovePrefab, cheeseDropPrefab, dogPrefab, lootBoxPrefab, heroTicket, gangTicket);
+            Debug.Log("[SetupNetworkingScene] BotLab.unity 생성 — 플레이하면 봇만 도는 판이 자동으로 열린다");
         }
     }
 }

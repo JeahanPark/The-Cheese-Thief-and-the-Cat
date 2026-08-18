@@ -11,5 +11,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: dea7368c7ac4d1342a068b4a67145984
+  - enabled: 1
+    path: Assets/Scenes/BotLab.unity
+    guid: 42a6185fa24e72749a7aa877f9ad3a89
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
