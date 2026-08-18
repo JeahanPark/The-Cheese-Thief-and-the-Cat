@@ -460,7 +460,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Health
   ShowTopMostFoldoutHeaderGroup: 1
-  m_MaxHp: 180
+  m_MaxHp: 480
 --- !u!114 &3947482109565643162
 MonoBehaviour:
   m_ObjectHideFlags: 0

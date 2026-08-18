@@ -45,6 +45,17 @@ namespace CTC.Runtime.Bots
         /// 자살이라, 이 경주 계산이 없으면 피난 행동이 봇을 더 빨리 죽인다.
         /// 사람도 같은 판단을 한다("집이 가깝고 고양이가 저쪽에 있으니 들어간다").
         /// </summary>
+        /// <summary>
+        /// 이 비율 아래로 깎인 요새는 은신처로 안 친다 — **곧 뚫린다**(2026-08-18).
+        /// 고양이가 벽을 부수고 들어올 수 있게 된 뒤로 요새는 "안전지대"가 아니라 "버는 시간"이다.
+        /// 이미 맞고 있는 벽 뒤로 뛰어드는 건 도망이 아니라 자살이다.
+        /// </summary>
+        public const float REFUGE_MIN_HP_RATIO = 0.5f;
+
+        /// <summary>맞고 있는 요새인가 — 이 안에 있었다면 반대쪽 문으로 나가야 한다.</summary>
+        public static bool IsRefugeSpent(int _hp, int _maxHp) =>
+            _maxHp > 0 && _hp < _maxHp * REFUGE_MIN_HP_RATIO;
+
         public static int ChooseRefuge(
             IReadOnlyList<Vector3> _forts, Vector3 _self, Vector3 _threat)
         {
@@ -77,12 +88,26 @@ namespace CTC.Runtime.Bots
         public static Economy.ShopItemId NextPurchase(
             int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
         {
+            int fortressCost = Economy.ShopLogic.Find(Economy.ShopItemId.Fortress).Cost;
+
+            // ① 대시 — 눈앞에서 쫓길 때 거리를 벌리는 유일한 수단
             if (!_hasDash && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Dash).Cost)
                 return Economy.ShopItemId.Dash;
-            if (!_hasWarehouse && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Warehouse).Cost)
+
+            // ② 요새 — **창고보다 먼저다**(2026-08-18). 예전에는 창고(150) → 요새(80) 순이라
+            //    첫 요새를 세우려면 250을 모아야 했고, 그때까지 쥐는 도망칠 벽이 없었다.
+            //
+            //    **미리 세우는 게 맞다.** "쫓길 때만 사면 되지 않나" 싶어 빼 봤더니 승률이 17%→0%로
+            //    떨어졌다(측정). 서 있는 요새는 `TryGetRefugeFortress`가 찾아 주는 **피난처**라,
+            //    쫓기기 전에 세워 둬야 도망칠 곳이 생긴다. 쫓기는 순간의 발밑 설치는 그것대로 남아 있다.
+            if (!_hasFortress && _cheese >= fortressCost) return Economy.ShopItemId.Fortress;
+
+            // ③ 창고 — **비상 벽 값을 남기고 산다.** 전부 털어 창고를 세우면 그 직후 쫓길 때
+            //    `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
+            if (!_hasWarehouse
+                && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Warehouse).Cost + fortressCost)
                 return Economy.ShopItemId.Warehouse;
-            if (!_hasFortress && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Fortress).Cost)
-                return Economy.ShopItemId.Fortress;
+
             return Economy.ShopItemId.None;
         }
 

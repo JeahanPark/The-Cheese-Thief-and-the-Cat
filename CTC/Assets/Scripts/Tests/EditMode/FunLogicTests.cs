@@ -30,9 +30,12 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
-        public void AccruedFun_Structure_QuarterRate() // 요새 1채(180HP) = 45
+        public void AccruedFun_Structure_QuarterRate()
         {
-            Assert.AreEqual(45, FunLogic.AccruedFun(ShopLogic.FORTRESS_HP, false, true));
+            // 밸런스 수치(요새 HP)를 여기 박지 않는다 — 그 값은 CSV라 바뀐다(2026-08-18에 180→480).
+            // 여기서 못 박을 것은 **규칙**이다: 구조물 피해는 나눗셈만 하고 킬 보너스가 없다.
+            Assert.AreEqual(ShopLogic.FORTRESS_HP / FunLogic.STRUCTURE_DAMAGE_DIVISOR,
+                FunLogic.AccruedFun(ShopLogic.FORTRESS_HP, false, true));
         }
 
         [Test]

@@ -58,7 +58,10 @@ namespace CTC.Runtime.Economy
         public static int MAX_UPGRADE_STACKS => Balance.MaxUpgradeStacks;
         public static int POUNCE_DAMAGE_PER_STACK => Balance.PounceDamagePerStack;
         public static float SPEED_PER_STACK => Balance.SpeedPerStack;
-        // 요새 = 즉발 방패(2026-08-15): 노업 덮치기 60 × 3 = 180. 회복 없음. 씬 생성기가 프리팹에 굽는다.
+        // 요새 = 즉발 방패(2026-08-15). 회복 없음. 씬 생성기가 프리팹에 굽는다 —
+        // **HP를 바꾸면 `Setup Networking Scene`을 다시 돌려야 한다**(CSV만 고치면 안 반영된다).
+        // 2026-08-18: 180(노업 3방) → 480(노업 8방·풀강 5방). 고양이가 벽을 뚫을 수 있게 된 뒤로
+        // 3방짜리 벽은 4초짜리 과속방지턱이었고, 봇 쥐 승률이 0%로 무너졌다(측정).
         public static int FORTRESS_HP => Balance.FortressHp;
 
         // 창고(v3.4) — 파밍이 '서 있기'라 지루하다는 플레이 피드백의 답.

@@ -1,0 +1,9 @@
+﻿match,result,remaining,mice_left,cats_left,first_sight,phase,warning
+1,MouseWin,0,3,2,11.8,Hunt,
+2,MouseWin,0,3,2,11.3,Hunt,
+3,MouseWin,0,2,2,11.5,Hunt,
+4,MouseWin,0,1,2,11.4,Hunt,
+5,MouseWin,0,3,2,11.7,Hunt,
+6,MouseWin,0,4,2,11.6,Hunt,
+7,MouseWin,0,1,2,11.9,Hunt,
+8,MouseWin,0,1,2,11.4,Hunt,

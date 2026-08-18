@@ -317,6 +317,12 @@ namespace CTC.Runtime.Bots
             m_Forts.Clear();
             foreach (var fort in Object.FindObjectsByType<Economy.FortressShield>(FindObjectsSortMode.None))
             {
+                // **맞고 있는 요새는 은신처가 아니다**(2026-08-18). 고양이가 벽을 부수고 들어올 수
+                // 있게 된 뒤로 요새는 안전지대가 아니라 '버는 시간'이다 — 반쯤 깎인 벽 뒤로
+                // 뛰어들면 도망이 아니라 그 자리에서 죽는다. HP는 화면에 뜨는 값이라 봇이 알아도 된다.
+                var hp = fort.GetComponent<Combat.Health>();
+                if (hp != null && MouseBotLogic.IsRefugeSpent(hp.Hp, hp.MaxHp)) continue;
+
                 m_Forts.Add(fort.transform.position);
             }
 
