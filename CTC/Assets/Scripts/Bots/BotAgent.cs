@@ -210,6 +210,23 @@ namespace CTC.Runtime.Bots
         public static bool IsHiddenFrom(Vector3 _threat, Vector3 _goal)
             => Combat.SightLine.IsBlocked(_threat, _goal);
 
+        /// <summary>
+        /// **길이 부술 수 있는 벽에 막혔으면 그 벽을 때린다**(2026-08-18) — 요새 안에 든 쥐를 쫓는 길.
+        ///
+        /// 격자 A*가 1차(안 부수고)에 실패하고 2차(부수고)로 길을 냈을 때만 참이 된다. 즉
+        /// **우회로가 있으면 절대 안 부순다** — 비용 상수를 만질 필요가 없다.
+        /// 벽 앞까지는 평소처럼 걸어간다(경로의 마지막 꺾임점이 그 벽이다). 사거리에 들면 덮친다.
+        /// </summary>
+        public bool TryBreakBlocking()
+        {
+            if (m_Nav == null || !m_Nav.NeedsBreaking) return false;
+            if (DistanceTo(m_Nav.BreakTarget) > m_PounceRange) return false;
+
+            Activity = "Siege";
+            DoPounce();
+            return true;
+        }
+
         public void DoPounce()
         {
             if (m_Pounce != null) m_Pounce.DevPounce();

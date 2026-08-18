@@ -23,6 +23,15 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.NavStats() : "";
         }
 
+        /// <summary>QA: 아무 요새의 자리 — 실험실에는 로컬 플레이어가 없어 "가장 가까운"을 못 쓴다.</summary>
+        public string TestGetAnyFortressPos()
+        {
+            var fort = FindFirstObjectByType<CTC.Runtime.Economy.FortressShield>();
+            if (fort == null) return "";
+            Vector3 p = fort.transform.position;
+            return $"{p.x:F2},{p.z:F2},{fort.transform.rotation.eulerAngles.y:F0}";
+        }
+
         /// <summary>QA: 격자 상태 한 줄 — 크기·막힌 비율·구조물 셀·예약 셀.</summary>
         public string TestGetNavGridInfo()
         {
@@ -93,10 +102,9 @@ namespace CTC.Runtime.Testing
             if (!_grid.InBounds(_x, _z)) return ' ';
             if (_center) return 'C';
 
-            bool catBreak = _grid.NeedsBreaking(_x, _z, NavAgent.Cat);
-            bool mouseBreak = _grid.NeedsBreaking(_x, _z, NavAgent.Mouse);
-            if (catBreak && !mouseBreak) return 'd';   // 쥐만 지나는 문
-            if (catBreak || mouseBreak) return 'o';
+            NavCellStructure cell = _grid.StructureAt(_grid.Index(_x, _z));
+            if (cell.MouseDoor > 0) return 'd';        // 쥐만 지나는 문
+            if (cell.CatBreakable > 0 || cell.AnyBreakable > 0) return 'o';
 
             bool loose = _grid.CanEnter(_x, _z, _agent, _radius, 0f, out _);
             if (!loose) return '#';

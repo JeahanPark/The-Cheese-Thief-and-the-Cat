@@ -60,6 +60,8 @@ namespace CTC.Runtime.Bots
                         {
                             _self.Reserve(prey.position);
                             _self.Nav.SetGoal(prey.position);
+                            // 요새 안으로 숨었다 — 길이 벽을 관통해 나왔으면 그 벽을 부순다
+                            _self.TryBreakBlocking();
                         }
                     })),
 
@@ -72,6 +74,7 @@ namespace CTC.Runtime.Bots
                         _self.BuyForCat();
                         _self.Reserve(_self.Lead);
                         _self.Nav.SetGoal(_self.Lead);
+                        _self.TryBreakBlocking();   // 소리 난 자리가 요새 안이면 벽부터 연다
                         // 도착했는데 아무도 없으면 그 단서를 버린다
                         if (_self.DistanceTo(_self.Lead) < BotAgent.LEAD_ARRIVE) _self.DropLead();
                     })),

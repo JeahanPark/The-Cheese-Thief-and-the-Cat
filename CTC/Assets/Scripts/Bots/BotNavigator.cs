@@ -63,6 +63,12 @@ namespace CTC.Runtime.Bots
 
         public float LastShortfall => m_Route != null ? m_Route.LastShortfall : 0f;
 
+        /// <summary>이 길로 가려면 무언가를 부숴야 하나 — 두뇌가 "때려라"로 읽는다(2026-08-18).</summary>
+        public bool NeedsBreaking => m_Route != null && m_Route.NeedsBreaking;
+
+        /// <summary>부숴야 하는 자리(월드).</summary>
+        public Vector3 BreakTarget => m_Route != null ? m_Route.BreakTarget : Vector3.zero;
+
         /// <summary>디버그 그리기 전용(BotLab) — 두뇌가 준 원본 목표.</summary>
         public Vector3 Goal => m_Route != null ? m_Route.Goal : Vector3.zero;
 

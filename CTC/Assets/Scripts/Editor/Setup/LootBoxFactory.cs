@@ -64,6 +64,9 @@ namespace CTC.Editor
 
                 // 판이 시작할 때 서므로 구운 폴리곤에 없다 — 제 자리를 도려낸다
                 root.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
+                // 격자 자국 — 벽감·상자는 **누구나** 부순다(CombatLogic의 MapLoot 예외)
+                var gridBlocker = root.AddComponent<CTC.Runtime.Ai.NavGridBlocker>();
+                SetInt(gridBlocker, "m_Kind", (int)CTC.Runtime.Ai.NavStructureKind.AnyBreakable);
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, LootBoxPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());

@@ -173,6 +173,15 @@ namespace CTC.Editor
                 // 요새 안이 갈 수 없는 곳이 된다. 문은 벽 사이의 빈칸이라 저절로 남는다.
                 CarveWalls(root);
 
+                // 길찾기 격자 자국(2026-08-18) — 벽은 **고양이가 부술 수 있는 칸**, 입구는 **쥐 전용 문**.
+                // 인방(입구 위 가로대)이 문 자리에도 콜라이더를 두므로, 문 띠를 따로 찍지 않으면
+                // 쥐까지 막힌다. 인방 높이(0.75)가 곧 "쥐는 지나고 고양이는 못 지난다"의 근거다.
+                var blocker = root.AddComponent<CTC.Runtime.Ai.NavGridBlocker>();
+                SetInt(blocker, "m_Kind", (int)CTC.Runtime.Ai.NavStructureKind.CatBreakable);
+                SetFloat(blocker, "m_DoorHalfWidth", FORTRESS_DOOR_WIDTH * 0.5f);
+                SetFloat(blocker, "m_DoorDepth", 0.5f);                       // 셀 한 칸 — 인방 칸을 확실히 덮는다
+                SetFloat(blocker, "m_DoorDistance", FORTRESS_HALF - FORTRESS_WALL_THICKNESS * 0.5f);
+
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, FortressPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
                 AssetDatabase.SaveAssets();
