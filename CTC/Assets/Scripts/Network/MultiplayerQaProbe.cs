@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
 using CTC.Runtime.Combat;
@@ -19,6 +18,10 @@ namespace CTC.Runtime.Networking
     /// </summary>
     public class MultiplayerQaProbe : MonoBehaviour
     {
+        // **타입 껍데기는 빌드에도 남긴다**(2026-08-20). 이 컴포넌트는 씬(NetworkManager)에
+        // 직렬화돼 있어서, 파일 전체를 #if UNITY_EDITOR로 감싸면 플레이어 빌드가 켜질 때마다
+        // "The referenced script ... is missing!" + 직렬화 레이아웃 경고를 뱉는다(개발용 빌드 로그로 확인).
+        // 동작(파일 스냅샷·클론 커맨드)은 에디터에서만 컴파일된다 — 배포 빌드에 남는 건 빈 컴포넌트뿐이다.
         public const string PROBE_DIR_NAME = "ctc-mppm-qa";
         public const string HOST_FILE = "probe_host.json";
         public const string CLONE_FILE = "probe_clone.json";
@@ -26,8 +29,13 @@ namespace CTC.Runtime.Networking
 
         public static string ProbeDir => Path.Combine(Path.GetTempPath(), PROBE_DIR_NAME);
 
+        // 값을 쓰는 코드가 에디터 전용이라 플레이어 빌드에선 CS0414(안 쓰는 필드)가 뜬다.
+        // 필드 자체는 씬 직렬화 레이아웃을 맞추려고 남겨 둔 것이므로 경고만 끈다.
+#pragma warning disable 0414
         [SerializeField] private float m_SnapshotIntervalSeconds = 0.5f;
+#pragma warning restore 0414
 
+#if UNITY_EDITOR
         private float m_Timer;
         private string m_FilePath;
         private string m_CmdFilePath;
@@ -292,8 +300,10 @@ namespace CTC.Runtime.Networking
 
             return s;
         }
+#endif
     }
 
+#if UNITY_EDITOR
     [System.Serializable]
     public class ProbeSnapshot
     {
@@ -330,5 +340,5 @@ namespace CTC.Runtime.Networking
         public int hp;
         public int weaponTier;
     }
-}
 #endif
+}

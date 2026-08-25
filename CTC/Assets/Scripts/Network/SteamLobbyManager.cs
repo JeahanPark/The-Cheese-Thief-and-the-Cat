@@ -1,4 +1,4 @@
-using Steamworks;
+﻿using Steamworks;
 using SteamLobby = Steamworks.Data.Lobby;
 using Steamworks.Data;
 using Unity.Netcode;
@@ -24,6 +24,13 @@ namespace CTC.Runtime.Networking
             SteamFriends.OnGameLobbyJoinRequested += OnJoinRequested; // 친구 초대/참여 클릭
             NetworkManager nm = NetworkManager.Singleton;
             if (nm != null) nm.OnClientDisconnectCallback += OnNetworkDisconnected;
+
+            // **종료는 OnDestroy가 아니라 여기서 받는다**(2026-08-20). 둘 다 DontDestroyOnLoad라
+            // SteamBootstrap.OnDestroy(SteamClient.Shutdown)가 먼저 돌 수 있고, 그러면
+            // Lobby.Leave()가 내부에서 NullReferenceException을 던진다(개발용 빌드 종료 로그로 확인).
+            // Application.quitting은 씬 오브젝트 파괴 **전에** 발화하므로 스팀이 아직 살아 있다.
+            Application.quitting -= LeaveLobby;
+            Application.quitting += LeaveLobby;
         }
 
         private void OnDisable()
@@ -31,6 +38,7 @@ namespace CTC.Runtime.Networking
             SteamFriends.OnGameLobbyJoinRequested -= OnJoinRequested;
             NetworkManager nm = NetworkManager.Singleton;
             if (nm != null) nm.OnClientDisconnectCallback -= OnNetworkDisconnected;
+            Application.quitting -= LeaveLobby;
         }
 
         // 접속 실패·강제 종료 시 로비까지 정리 — 유령 세션으로 재시도가 막히는 것 방지
@@ -139,7 +147,16 @@ namespace CTC.Runtime.Networking
         public void LeaveLobby()
         {
             if (!InLobby) return;
-            m_CurrentLobby.Value.Leave();
+
+            // 스팀이 이미 내려갔으면 이탈을 시도하지 않는다 — Facepunch의 Lobby.Leave()는
+            // SteamClient.Shutdown() 뒤에 부르면 내부에서 NRE를 던진다. 프로세스가 죽으면
+            // 스팀이 알아서 방에서 빼 주므로 여기서 못 나가도 유령 방은 안 남는다.
+            if (SteamBootstrap.Ready)
+            {
+                try { m_CurrentLobby.Value.Leave(); }
+                catch (System.Exception e) { Debug.LogWarning($"[SteamLobby] 이탈 실패(무시): {e.Message}"); }
+            }
+
             m_CurrentLobby = null;
             UseLocalTransport();
             Debug.Log("[SteamLobby] 로비 이탈 — UTP 복원");

@@ -1,0 +1,321 @@
+<title>CTC 스팀 매칭</title>
+<style>
+  :root {
+    --ground: #F7F3EA;
+    --panel: #FFFFFF;
+    --edge: #E0D6C4;
+    --ink: #241F1A;
+    --ink-soft: #6B6055;
+    --ink-faint: #9C9083;
+    --cheese: #B8860B;
+    --cheese-bg: #FBF0D2;
+    --bad: #C2502A;
+    --ok: #3F7A46;
+    --steam: #4A6E8A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17130F;
+      --panel: #1F1A15;
+      --edge: #352C23;
+      --ink: #F2EDE3;
+      --ink-soft: #B3A695;
+      --ink-faint: #7A6E60;
+      --cheese: #E8B93C;
+      --cheese-bg: #2B2213;
+      --bad: #E07A50;
+      --ok: #6FB177;
+      --steam: #8FA6B8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17130F;
+    --panel: #1F1A15;
+    --edge: #352C23;
+    --ink: #F2EDE3;
+    --ink-soft: #B3A695;
+    --ink-faint: #7A6E60;
+    --cheese: #E8B93C;
+    --cheese-bg: #2B2213;
+    --bad: #E07A50;
+    --ok: #6FB177;
+    --steam: #8FA6B8;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, -apple-system, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header {
+    padding: 64px 0 36px;
+    border-bottom: 1px solid var(--edge);
+    margin-bottom: 44px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--steam);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-size: clamp(30px, 5.5vw, 46px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.14;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .lede { font-size: 17px; color: var(--ink-soft); margin: 0; max-width: 64ch; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  section { margin: 0 0 60px; }
+  h2 {
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--edge);
+  }
+  p { margin: 0 0 16px; max-width: 70ch; }
+  .note { color: var(--ink-soft); font-size: 15px; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em;
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  .scroll { overflow-x: auto; margin: 18px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  th {
+    text-align: left;
+    font-size: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 600;
+    padding: 0 16px 8px 0;
+    border-bottom: 1px solid var(--edge);
+    white-space: nowrap;
+  }
+  td { padding: 11px 16px 11px 0; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .callout {
+    border-left: 3px solid var(--cheese);
+    background: var(--cheese-bg);
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 10px; }
+
+  .bad { color: var(--bad); }
+  .ok { color: var(--ok); }
+
+  figure { margin: 26px 0; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption { font-size: 14px; color: var(--ink-soft); margin-top: 10px; max-width: 70ch; }
+
+  .mermaid-box {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    padding: 18px;
+    overflow-x: auto;
+    margin: 20px 0;
+  }
+
+  footer {
+    border-top: 1px solid var(--edge);
+    padding-top: 22px;
+    color: var(--ink-faint);
+    font-size: 14px;
+  }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">CTC · 네트워크 · 2026-08-20</p>
+  <h1>스팀 매칭 — 수명과 접속</h1>
+  <p class="lede">
+    첫 2인 실기기 테스트에서 잡은 구조 결함과 수정 4건.
+    핵심 원칙은 하나다 — <b>스팀 클라이언트의 수명은 <code>SteamBootstrap</code> 혼자 소유한다.</b>
+    세션이 끝나는 것과 스팀이 꺼지는 것은 다른 일이다.
+  </p>
+</header>
+
+<section>
+  <h2>무엇이 터졌나</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>증상 (실기기 로그)</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td class="bad">상대 화면 <code>Lobby.GetData</code> NRE 매 프레임 폭주</td>
+          <td>세션 종료가 스팀을 통째로 죽인 뒤, 로비 UI가 죽은 스팀을 <code>OnGUI</code>마다 찔렀다</td></tr>
+      <tr><td class="bad">종료 시 <code>Lobby.Leave</code> NRE</td>
+          <td>같은 뿌리 — NGO가 앱 종료 처리에서 스팀을 먼저 내렸다</td></tr>
+      <tr><td class="bad">양방향 모두 접속 불성립 (<code>인원 2</code>가 없다)</td>
+          <td>식은 릴레이 위에서 <code>ConnectRelay</code>가 10초 타임아웃과 경주 — 유력 원인, 재테스트로 확정</td></tr>
+      <tr><td>클라 <code>[SteamLobby] 참여: …</code> + 긴 스택</td>
+          <td class="ok">에러 아님 — 개발 빌드는 모든 로그에 스택을 붙인다</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>원인 — 사라진 호출 하나</h2>
+  <p>트랜스포트(Facepunch)의 <code>Shutdown()</code>이 <code>SteamClient.Shutdown()</code>까지 불렀다.
+  NGO는 Disconnect 버튼·접속 실패 정리·앱 종료 <b>때마다</b> <code>transport.Shutdown()</code>을 부르므로,
+  세션 한 번에 스팀 전체가 내려갔다.</p>
+
+  <figure>
+    <svg viewBox="0 0 800 236" role="img" aria-label="수정 전에는 세션 종료가 SteamClient.Shutdown까지 불러 방 목록과 재호스트가 죽었고, 수정 후에는 소켓만 닫혀 스팀이 살아 있다">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+        <marker id="arbad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/>
+        </marker>
+      </defs>
+
+      <text x="16" y="26" font-size="12" font-weight="700" fill="var(--bad)" font-family="ui-monospace, Menlo, monospace">수정 전</text>
+      <g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55">
+        <path d="M188 58 H 236" marker-end="url(#ar)"/>
+        <path d="M424 58 H 472" marker-end="url(#ar)"/>
+      </g>
+      <path d="M612 58 H 660" fill="none" stroke="var(--bad)" stroke-width="1.5" marker-end="url(#arbad)"/>
+      <rect x="16" y="36" width="172" height="44" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="102" y="62" text-anchor="middle" font-size="13" fill="var(--ink)">NetworkManager.Shutdown</text>
+      <rect x="236" y="36" width="188" height="44" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="330" y="55" text-anchor="middle" font-size="13" fill="var(--ink)">transport.Shutdown</text>
+      <text x="330" y="71" text-anchor="middle" font-size="11" fill="var(--ink-faint)">소켓 닫기</text>
+      <rect x="472" y="36" width="140" height="44" rx="8" fill="var(--panel)" stroke="var(--bad)" stroke-width="1.5"/>
+      <text x="542" y="55" text-anchor="middle" font-size="13" font-weight="700" fill="var(--bad)">SteamClient</text>
+      <text x="542" y="71" text-anchor="middle" font-size="13" font-weight="700" fill="var(--bad)">.Shutdown()</text>
+      <rect x="660" y="36" width="124" height="44" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="722" y="55" text-anchor="middle" font-size="12" fill="var(--bad)">방 목록 · 재호스트</text>
+      <text x="722" y="71" text-anchor="middle" font-size="12" fill="var(--bad)">전부 NRE</text>
+
+      <line x1="16" y1="112" x2="784" y2="112" stroke="currentColor" opacity="0.18" stroke-dasharray="4 4"/>
+
+      <text x="16" y="140" font-size="12" font-weight="700" fill="var(--ok)" font-family="ui-monospace, Menlo, monospace">수정 후</text>
+      <g fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55">
+        <path d="M188 172 H 236" marker-end="url(#ar)"/>
+        <path d="M424 172 H 472" marker-end="url(#ar)"/>
+      </g>
+      <rect x="16" y="150" width="172" height="44" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="102" y="176" text-anchor="middle" font-size="13" fill="var(--ink)">NetworkManager.Shutdown</text>
+      <rect x="236" y="150" width="188" height="44" rx="8" fill="var(--panel)" stroke="var(--edge)"/>
+      <text x="330" y="169" text-anchor="middle" font-size="13" fill="var(--ink)">transport.Shutdown</text>
+      <text x="330" y="185" text-anchor="middle" font-size="11" fill="var(--ink-faint)">소켓만 닫는다</text>
+      <rect x="472" y="150" width="180" height="44" rx="8" fill="var(--panel)" stroke="var(--ok)" stroke-width="1.5"/>
+      <text x="562" y="169" text-anchor="middle" font-size="13" font-weight="700" fill="var(--ok)">SteamClient 생존</text>
+      <text x="562" y="185" text-anchor="middle" font-size="11" fill="var(--ink-faint)">수명은 SteamBootstrap 소유</text>
+      <text x="668" y="169" font-size="12" fill="var(--ok)">방 목록 · 재호스트</text>
+      <text x="668" y="185" font-size="12" fill="var(--ok)">계속 가능</text>
+    </svg>
+    <figcaption>수정은 호출 하나를 지우는 것이다 — 세션 종료 사슬에서 <code>SteamClient.Shutdown()</code>을 떼어내면
+    아래 워크플로우의 "종료" 상자가 스팀을 건드리지 않게 된다.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>전체 워크플로우</h2>
+  <div class="mermaid-box">
+  <pre class="mermaid">
+flowchart TD
+    subgraph BOOT["앱 시작 — SteamBootstrap (수명 소유자)"]
+        A[Awake] --> I{SteamClient.Init 480}
+        I -->|성공| W["릴레이 예열 InitRelayNetworkAccess&lt;br/&gt;+ 첫 접속 타임아웃 25초 ★수정"]
+        I -->|실패| L["로컬 모드&lt;br/&gt;UI '다시 연결'이 재시도"]
+    end
+
+    subgraph HOST["방 만들기 — SteamLobbyManager.CreateLobby"]
+        H1[CreateLobbyAsync] --> H2["트랜스포트를&lt;br/&gt;Facepunch로 교체"] --> H3["StartHost&lt;br/&gt;CreateRelaySocket"]
+    end
+
+    subgraph JOIN["참여 — SteamLobbyManager.JoinLobby"]
+        C1[lobby.Join] --> C2["트랜스포트 교체&lt;br/&gt;targetSteamId = 방장"] --> C3["StartClient&lt;br/&gt;ConnectRelay"]
+        C3 --> C4{핸드셰이크}
+        C4 -->|성공| C5["Connected with … 로그 ★수정&lt;br/&gt;→ NGO 접속 → 인원 N"]
+        C4 -->|실패| C6["Disconnected 로그&lt;br/&gt;→ LeaveLobby → UTP 복원"]
+    end
+
+    subgraph QUIT["세션 종료 — 스팀은 살아 있다"]
+        D1["Disconnect · 접속 실패 · 앱 종료"] --> D2[NetworkManager.Shutdown]
+        D2 --> D3["transport.Shutdown&lt;br/&gt;소켓만 닫는다 ★수정"]
+        D3 --> D4["방 목록 · 재호스트 계속 가능"]
+    end
+
+    W -. 스팀 살아 있는 동안 .-> HOST
+    W -.-> JOIN
+  </pre>
+  </div>
+  <p class="note">★ 세 곳이 이번 수정이다. 원본 문서는
+  <code>docs/design-vault/코드 다이어그램.md</code>의 "스팀 매칭 — 수명과 접속" 절.</p>
+</section>
+
+<section>
+  <h2>수정 4건</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>#</th><th>수정</th><th>효과</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>트랜스포트에서 <code>SteamClient.Shutdown()</code> 제거</td>
+          <td>세션이 끝나도 스팀은 산다 — 방 목록·재호스트·NRE 폭주 해소</td></tr>
+      <tr><td>2</td><td><code>SteamBootstrap</code> init 직후 릴레이 예열</td>
+          <td>기존엔 <code>ConnectRelay</code>가 식은 릴레이 위에서 10초와 경주 — 접속 불성립의 유력 원인</td></tr>
+      <tr><td>3</td><td>첫 접속 타임아웃 10초 → 25초</td>
+          <td>NAT·릴레이가 느린 환경 여유</td></tr>
+      <tr><td>4</td><td>접속 이벤트 로그 Developer → Normal</td>
+          <td>테스터 화면 콘솔(<code>`</code> 키)에서 접속 단계가 보인다</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <p><b>다음 2인 테스트에서 볼 것</b> — <code>Connecting with …</code>만 뜨고
+    <code>Connected with …</code>가 안 뜨면 네트워크(NAT) 문제로 확정, 둘 다 뜨면 해결이다.
+    새 빌드(<code>Builds/Windows-Dev</code> 폴더째)를 양쪽 다 써야 한다 — 이전 빌드엔 수정이 없다.</p>
+    <p><b>종료 순서 함정</b> — 앱 종료 시 NGO의 <code>OnApplicationQuit</code>(→ transport.Shutdown)이
+    <code>Application.quitting</code> 구독자보다 먼저 돈다. 로비 이탈은 quitting에서 하되
+    <code>Ready</code> 가드 + try/catch로 감싼다. 프로세스가 죽으면 스팀이 알아서 방에서 빼 주므로
+    유령 방은 안 남는다.</p>
+  </div>
+</section>
+
+<footer>
+  Unity 6000.5.2f1 · Netcode for GameObjects · Facepunch Steamworks (AppID 480) ·
+  트랜스포트 패치: <code>Packages/com.community.netcode.transport.facepunch</code>
+</footer>
+</div>

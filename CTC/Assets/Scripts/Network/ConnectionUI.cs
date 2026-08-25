@@ -1,4 +1,4 @@
-using SteamLobby = Steamworks.Data.Lobby;
+﻿using SteamLobby = Steamworks.Data.Lobby;
 using Steamworks.Data;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,9 +12,23 @@ namespace CTC.Runtime.Networking
     /// </summary>
     public class ConnectionUI : MonoBehaviour
     {
+        /// <summary>
+        /// 방 하나 = 스팀 핸들 + **새로고침 순간에 만든 라벨**.
+        /// 라벨을 들고 있는 이유는 <see cref="OnGUI"/>가 매 프레임 돌기 때문이다 —
+        /// `lobby.GetData`·`MemberCount`는 스팀 내부 인터페이스를 찌르는 호출이라,
+        /// 스팀이 흔들린 순간(로그아웃·Shutdown·초기화 실패)에 프레임마다 NRE가 터진다.
+        /// 실제로 상대 플레이어 화면에서 `Lobby.GetData`가 OnGUI에서 폭주했다(2026-08-20).
+        /// </summary>
+        private readonly struct LobbyEntry
+        {
+            public readonly SteamLobby Lobby;
+            public readonly string Label;
+            public LobbyEntry(SteamLobby _lobby, string _label) { Lobby = _lobby; Label = _label; }
+        }
+
         private SteamLobbyManager m_Steam;
         private string m_RoomName = "";
-        private SteamLobby[] m_Lobbies = System.Array.Empty<SteamLobby>();
+        private LobbyEntry[] m_Lobbies = System.Array.Empty<LobbyEntry>();
 
         private void Awake()
         {
@@ -65,7 +79,9 @@ namespace CTC.Runtime.Networking
 
         private void DrawSteamSection()
         {
-            if (m_Steam == null || !SteamBootstrap.Ready)
+            // SteamBootstrap.Ready만으로는 부족하다 — 초기화 뒤에 스팀이 내려가면 Ready는
+            // 참인 채로 내부 인터페이스만 죽는다. IsValid가 그 상태를 잡아 준다.
+            if (m_Steam == null || !SteamBootstrap.Ready || !Steamworks.SteamClient.IsValid)
             {
                 GUILayout.Space(8f);
                 GUILayout.Label("― Steam 매칭 ―");
@@ -87,17 +103,34 @@ namespace CTC.Runtime.Networking
             GUILayout.Space(4f);
             if (GUILayout.Button("방 목록 새로고침"))
             {
-                m_Steam.RefreshLobbies(_lobbies => m_Lobbies = _lobbies);
+                m_Steam.RefreshLobbies(_lobbies => m_Lobbies = BuildEntries(_lobbies));
             }
-            foreach (SteamLobby lobby in m_Lobbies)
+            foreach (LobbyEntry entry in m_Lobbies)
             {
-                string label = SteamLobbyLogic.RoomLabel(
-                    lobby.GetData(SteamLobbyLogic.NAME_KEY), lobby.MemberCount, lobby.MaxMembers);
-                if (GUILayout.Button(label))
+                if (GUILayout.Button(entry.Label)) m_Steam.JoinLobby(entry.Lobby);
+            }
+        }
+
+        /// <summary>목록을 받은 **그 순간에** 라벨을 굳힌다 — 그리는 동안은 스팀을 안 부른다.</summary>
+        private static LobbyEntry[] BuildEntries(SteamLobby[] _lobbies)
+        {
+            if (_lobbies == null || _lobbies.Length == 0) return System.Array.Empty<LobbyEntry>();
+
+            var list = new System.Collections.Generic.List<LobbyEntry>(_lobbies.Length);
+            foreach (SteamLobby lobby in _lobbies)
+            {
+                // 방 하나가 사라지는 중이어도 목록 전체가 날아가면 안 된다 — 그 방만 건너뛴다
+                try
                 {
-                    m_Steam.JoinLobby(lobby);
+                    list.Add(new LobbyEntry(lobby, SteamLobbyLogic.RoomLabel(
+                        lobby.GetData(SteamLobbyLogic.NAME_KEY), lobby.MemberCount, lobby.MaxMembers)));
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[SteamLobby] 방 정보 읽기 실패(목록에서 제외): {e.Message}");
                 }
             }
+            return list.ToArray();
         }
     }
 }

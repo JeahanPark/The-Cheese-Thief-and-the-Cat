@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CTC.Runtime.Networking
 {
@@ -29,6 +29,22 @@ namespace CTC.Runtime.Networking
             {
                 Steamworks.SteamClient.Init(APP_ID, true);
                 Ready = true;
+
+                // 릴레이 예열(밸브 권장: 앱 시작 시). 트랜스포트도 부르지만 그건 StartClient가
+                // ConnectRelay를 던진 **다음** 프레임이라, 첫 접속이 식은 릴레이 위에서 10초
+                // 기본 타임아웃과 경주하게 된다(실측: 2인 테스트 양방향 모두 핸드셰이크 사망).
+                // 여기서 미리 예열하고, 첫 접속 타임아웃도 25초로 늘린다.
+                Steamworks.SteamNetworkingUtils.InitRelayNetworkAccess();
+                Steamworks.SteamNetworkingUtils.ConnectionTimeout = 25_000;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                // 릴레이 핸드셰이크가 "신원 0"으로 죽는 원인 추적(2026-08-24) — 스팀 네트워킹의
+                // 내부 진단(인증서·릴레이 회선·타임아웃 사유)을 로그로 흘린다. 개발 빌드 전용.
+                Steamworks.SteamNetworkingUtils.OnDebugOutput -= OnSteamNetDebug;
+                Steamworks.SteamNetworkingUtils.OnDebugOutput += OnSteamNetDebug;
+                Steamworks.SteamNetworkingUtils.DebugLevel = Steamworks.NetDebugOutput.Msg;
+#endif
+
                 Debug.Log($"[Steam] init OK: {Steamworks.SteamClient.Name} ({Steamworks.SteamClient.SteamId})");
             }
             catch (System.Exception e)
@@ -38,6 +54,13 @@ namespace CTC.Runtime.Networking
             }
             return Ready;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static void OnSteamNetDebug(Steamworks.NetDebugOutput _type, string _message)
+        {
+            Debug.Log($"[SteamNet] {_type}: {_message}");
+        }
+#endif
 
         private void OnDestroy()
         {

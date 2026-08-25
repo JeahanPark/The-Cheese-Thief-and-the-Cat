@@ -133,7 +133,11 @@ namespace Netcode.Transports.Facepunch
 
                 connectionManager?.Close();
                 socketManager?.Close();
-                SteamClient.Shutdown();
+                // [CTC 패치 2026-08-20] SteamClient.Shutdown() 제거.
+                // NGO는 Disconnect 버튼·접속 실패 정리·앱 종료 등 **세션이 끝날 때마다**
+                // transport.Shutdown()을 부른다 — 여기서 스팀 클라이언트를 통째로 내리면
+                // 그 뒤 방 목록·재호스트가 전부 NRE로 죽는다(실측: 2인 테스트에서 상대 화면에
+                // Lobby.GetData NRE가 매 프레임 폭주). 스팀 수명은 SteamBootstrap이 소유한다.
             }
             catch (Exception e)
             {
@@ -201,15 +205,17 @@ namespace Netcode.Transports.Facepunch
 
         void IConnectionManager.OnConnecting(ConnectionInfo info)
         {
-            if (LogLevel <= LogLevel.Developer)
-                Debug.Log($"[{nameof(FacepunchTransport)}] - Connecting with Steam user {info.Identity.SteamId}.");
+            // [CTC 패치] 접속 진행 로그는 Normal로 — 한 번씩만 찍히는 이벤트인데 Developer로
+            // 묶여 있으면 테스터 빌드에서 "참여" 후 조용히 실패해 원인 특정이 안 된다(실측).
+            if (LogLevel <= LogLevel.Normal)
+                Debug.Log($"[{nameof(FacepunchTransport)}] - Connecting with Steam user {info.Identity.SteamId} (state={info.State}).");
         }
 
         void IConnectionManager.OnConnected(ConnectionInfo info)
         {
             InvokeOnTransportEvent(NetworkEvent.Connect, ServerClientId, default, Time.realtimeSinceStartup);
 
-            if (LogLevel <= LogLevel.Developer)
+            if (LogLevel <= LogLevel.Normal)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Connected with Steam user {info.Identity.SteamId}.");
         }
 
@@ -217,8 +223,9 @@ namespace Netcode.Transports.Facepunch
         {
             InvokeOnTransportEvent(NetworkEvent.Disconnect, ServerClientId, default, Time.realtimeSinceStartup);
 
-            if (LogLevel <= LogLevel.Developer)
-                Debug.Log($"[{nameof(FacepunchTransport)}] - Disconnected Steam user {info.Identity.SteamId}.");
+            // [CTC 패치] EndReason이 곧 사인(死因)이다 — 신원 0으로 죽는 핸드셰이크를 추적 중(2026-08-24)
+            if (LogLevel <= LogLevel.Normal)
+                Debug.Log($"[{nameof(FacepunchTransport)}] - Disconnected Steam user {info.Identity.SteamId} (state={info.State}, reason={info.EndReason}).");
         }
 
         unsafe void IConnectionManager.OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel)
@@ -239,8 +246,8 @@ namespace Netcode.Transports.Facepunch
 
         void ISocketManager.OnConnecting(SocketConnection connection, ConnectionInfo info)
         {
-            if (LogLevel <= LogLevel.Developer)
-                Debug.Log($"[{nameof(FacepunchTransport)}] - Accepting connection from Steam user {info.Identity.SteamId}.");
+            if (LogLevel <= LogLevel.Normal)
+                Debug.Log($"[{nameof(FacepunchTransport)}] - Accepting connection from Steam user {info.Identity.SteamId} (state={info.State}).");
 
             connection.Accept();
         }
@@ -274,7 +281,7 @@ namespace Netcode.Transports.Facepunch
                     Debug.Log($"[{nameof(FacepunchTransport)}] - Disconnected Steam user {info.Identity.SteamId}");
 	    }
      	    else if (LogLevel <= LogLevel.Normal)
-                Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Failed to diconnect client with ID {connection.Id}, client not connected.");
+                Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Failed to diconnect client with ID {connection.Id}, client not connected (state={info.State}, reason={info.EndReason}).");
         }
 
         unsafe void ISocketManager.OnMessage(SocketConnection connection, NetIdentity identity, IntPtr data, int size, long messageNum, long recvTime, int channel)
