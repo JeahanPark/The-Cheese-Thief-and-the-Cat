@@ -50,10 +50,17 @@ namespace CTC.Runtime.Testing
                 return;
             }
 
-            var key = keyboard.FindKeyOnCurrentKeyboardLayout(_keyName);
+            // Key 열거형 이름을 먼저 본다 — FindKeyOnCurrentKeyboardLayout은 '표시명' 기준이라
+            // 한국어 레이아웃에서 "backquote" 같은 이름을 못 찾는다(2026-08-24 실측: ` 주입 무반응).
+            UnityEngine.InputSystem.Controls.KeyControl key = null;
+            if (System.Enum.TryParse(_keyName, true, out Key parsed) && parsed != Key.None)
+            {
+                key = keyboard[parsed];
+            }
+            if (key == null) key = keyboard.FindKeyOnCurrentKeyboardLayout(_keyName);
             if (key == null)
             {
-                GameDebug.LogError($"[TestManager] Key '{_keyName}' not found");
+                Debug.LogError($"[TestManager] Key '{_keyName}' not found");
                 return;
             }
 

@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
 using CTC.Runtime.Cameras;
 using CTC.Runtime.Combat;
@@ -337,8 +337,10 @@ namespace CTC.Editor
             SetRef(matchSfx, "m_Lobby", _lobby);
             SetRef(matchSfx, "m_Match", _match);
 
-            // 인게임 디버그 콘솔(yasirkula, MIT) — 빌드에서 로그 확인용. 기본 최소화, ` 키 토글.
-            // 원격 테스터가 [SteamLobby]/[Lobby] 로그를 화면에서 바로 볼 수 있어야 원인 특정이 된다.
+            // 인게임 디버그 콘솔(yasirkula, MIT) — 빌드에서 로그 확인용. ` · F2 토글.
+            // 2026-08-20에 뺐다가 2026-08-24에 복구(사용자 결정 번복) — 스팀 접속 진단에서
+            // "화면에서 바로 보는 로그"가 실제로 필요했다. 버블도 2026-08-24에 다시 켰다
+            // (Always) — 로그 개수가 상시 보이는 그 작은 원이 테스터의 1차 신호등이다.
             var consolePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Packages/com.yasirkula.ingamedebugconsole/Plugins/IngameDebugConsole/IngameDebugConsole.prefab");
             if (consolePrefab != null)
@@ -351,6 +353,8 @@ namespace CTC.Editor
                     var so = new SerializedObject(mb);
                     SerializedProperty toggle = so.FindProperty("toggleWithKey");
                     if (toggle != null) toggle.boolValue = true;
+                    SerializedProperty popup = so.FindProperty("popupVisibility");
+                    if (popup != null) popup.enumValueIndex = 0; // Always — 버블 상시 노출
                     so.ApplyModifiedPropertiesWithoutUndo();
                 }
 
@@ -844,10 +848,37 @@ namespace CTC.Editor
             GameObject input = CreateChatInput(root.transform, out TMP_InputField field);
             input.SetActive(false);
 
+            // `/` 예약어 힌트 — 입력창 바로 아래 한 장(2026-08-20). 목록·표시는 ChatHud가 켠다.
+            var hintGo = new GameObject("CommandHint", typeof(RectTransform));
+            hintGo.transform.SetParent(root.transform, false);
+            var hintRt = (RectTransform)hintGo.transform;
+            hintRt.anchorMin = new Vector2(0f, 0f);
+            hintRt.anchorMax = new Vector2(1f, 0f);
+            hintRt.pivot = new Vector2(0f, 1f);
+            hintRt.offsetMin = new Vector2(0f, -44f);
+            hintRt.offsetMax = new Vector2(0f, -6f);
+            hintGo.AddComponent<Image>().color = new Color(0.05f, 0.06f, 0.09f, 0.9f);
+
+            var hintTextGo = new GameObject("Text", typeof(RectTransform));
+            hintTextGo.transform.SetParent(hintGo.transform, false);
+            var hintTextRt = (RectTransform)hintTextGo.transform;
+            hintTextRt.anchorMin = Vector2.zero;
+            hintTextRt.anchorMax = Vector2.one;
+            hintTextRt.offsetMin = new Vector2(10f, 2f);
+            hintTextRt.offsetMax = new Vector2(-10f, -2f);
+            var hintText = hintTextGo.AddComponent<TextMeshProUGUI>();
+            hintText.fontSize = 18f;
+            hintText.alignment = TextAlignmentOptions.Left;
+            hintText.color = new Color(0.85f, 0.85f, 0.85f);
+            hintText.raycastTarget = false;
+            hintGo.SetActive(false);
+
             var chat = _canvasGo.AddComponent<ChatHud>();
             SetRef(chat, "m_Root", root);
             SetRef(chat, "m_Log", log);
             SetRef(chat, "m_Input", field);
+            SetRef(chat, "m_HintRoot", hintGo);
+            SetRef(chat, "m_HintText", hintText);
             SetRef(_esc, "m_Chat", chat);
 
             root.SetActive(false);

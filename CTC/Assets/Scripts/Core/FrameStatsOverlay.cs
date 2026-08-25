@@ -1,10 +1,10 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CTC.Runtime.Core
 {
     /// <summary>
     /// 좌상단 FPS · 프레임 타임 표시 — **개발용 빌드·에디터에서만**(2026-08-15).
-    /// `GameDebug`·`DebugConsoleGate`·봇과 같은 기준(`DEVELOPMENT_BUILD`)이라 배포 빌드에는
+    /// `GameDebug`·봇과 같은 기준(`DEVELOPMENT_BUILD`)이라 배포 빌드에는
     /// 컴포넌트가 붙어 있어도 아무것도 그리지 않는다.
     ///
     /// IMGUI로 그린다 — 캔버스 배선 없이 컴포넌트 하나로 끝나고, ConnectionUI(좌상단 IMGUI)와

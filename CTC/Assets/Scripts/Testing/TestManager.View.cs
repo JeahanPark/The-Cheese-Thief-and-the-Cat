@@ -1,4 +1,4 @@
-// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
+﻿// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
 // WES 원본의 인게임 의존 메서드(InGameController/Popup/FullPlay 등)는 CTC 미이식 상태라 제외.
 // WesQA InvokeBridge가 리플렉션으로 Instance.<method>(kwargs)를 호출하는 QA 진입점 싱글턴.
 #if UNITY_EDITOR
@@ -120,6 +120,23 @@ namespace CTC.Runtime.Testing
             SimulateKeyPress("enter");
         }
 
+        /// <summary>QA: 입력창을 열고 글자만 넣는다(Enter 없음) — `/` 예약어 힌트 검증용.</summary>
+        public void TestTypeChat(string _text)
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            if (hud == null) { GameDebug.LogWarning("[TestManager] ChatHud 없음"); return; }
+            hud.Open();
+            var field = hud.GetComponentInChildren<TMPro.TMP_InputField>(true);
+            if (field != null) field.text = _text;
+        }
+
+        /// <summary>QA: `/` 예약어 힌트 — 떠 있으면 내용, 아니면 빈 문자열.</summary>
+        public string TestGetChatHint()
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            return hud != null ? hud.DevHintText : "";
+        }
+
         /// <summary>QA: 채팅 입력창 열림 여부.</summary>
         public bool TestGetChatOpen()
         {
@@ -132,6 +149,47 @@ namespace CTC.Runtime.Testing
         {
             var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
             if (hud != null && hud.IsOpen) hud.Close();
+        }
+
+        // ===== 인게임 콘솔 진단 (2026-08-24, ` 키가 안 열리는 문제) =====
+
+        private MonoBehaviour FindDebugLogManager()
+        {
+            foreach (MonoBehaviour mb in FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (mb != null && mb.GetType().Name == "DebugLogManager") return mb;
+            }
+            return null;
+        }
+
+        /// <summary>QA: 콘솔 내부 상태 — 어디서 끊기는지 한 줄로.</summary>
+        public string TestGetConsoleState()
+        {
+            MonoBehaviour mb = FindDebugLogManager();
+            if (mb == null) return "manager=null";
+
+            var t = mb.GetType();
+            object toggleWithKey = t.GetField("toggleWithKey",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(mb);
+            object bindingObj = t.GetField("toggleBinding",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)?.GetValue(mb);
+            string binding = "field-none";
+            if (bindingObj is UnityEngine.InputSystem.InputAction act)
+            {
+                binding = $"enabled={act.enabled} bindings={act.bindings.Count}" +
+                          (act.bindings.Count > 0 ? $" path={act.bindings[0].path}" : "");
+            }
+            object visible = t.GetProperty("IsLogWindowVisible")?.GetValue(mb);
+            return $"active={mb.gameObject.activeInHierarchy} enabled={mb.enabled} " +
+                   $"toggleWithKey={toggleWithKey} binding[{binding}] visible={visible}";
+        }
+
+        /// <summary>QA: 콘솔 창을 코드로 강제로 연다 — 입력 문제와 표시 문제를 가른다.</summary>
+        public void TestShowDebugConsole()
+        {
+            MonoBehaviour mb = FindDebugLogManager();
+            if (mb == null) { GameDebug.LogWarning("[TestManager] DebugLogManager 없음"); return; }
+            mb.GetType().GetMethod("ShowLogWindow")?.Invoke(mb, null);
         }
 
         // ===== 옵션 (2026-08-01) =====

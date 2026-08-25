@@ -1,4 +1,7 @@
-using UnityEngine;
+﻿using UnityEngine;
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+using UnityEngine.InputSystem;   // AddBinding 확장 메서드
+#endif
 
 namespace CTC.Runtime.Core
 {
@@ -25,6 +28,36 @@ namespace CTC.Runtime.Core
             const bool ENABLED = false;
 #endif
             if (m_Console.activeSelf != ENABLED) m_Console.SetActive(ENABLED);
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            AddFallbackToggle();
+#endif
         }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>
+        /// ` 키가 키보드·레이아웃에 따라 안 먹는 사례가 있어(2026-08-24 실측) **F2를 예비
+        /// 토글로 추가**한다. 콘솔 어셈블리를 직접 참조하지 않으려고 리플렉션으로 꽂는다 —
+        /// 배포 빌드에는 이 메서드째 없다.
+        /// </summary>
+        private void AddFallbackToggle()
+        {
+            foreach (MonoBehaviour mb in m_Console.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb == null || mb.GetType().Name != "DebugLogManager") continue;
+
+                var field = mb.GetType().GetField("toggleBinding",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                if (field != null && field.GetValue(mb) is InputAction action)
+                {
+                    bool wasEnabled = action.enabled;
+                    if (wasEnabled) action.Disable();   // 켜진 액션엔 바인딩을 못 더한다
+                    action.AddBinding("<Keyboard>/f2");
+                    if (wasEnabled) action.Enable();
+                }
+                return;
+            }
+        }
+#endif
     }
 }

@@ -47,7 +47,7 @@
 - 로그는 `GameDebug.Log/LogWarning/LogError` (WES 방식, `[Conditional("DEVELOPMENT_BUILD")]`) — 배포 빌드에선 전부 제거된다.
 - 빌드 메뉴 2종: `Tools/CTC/Build Windows (개발용 — 로그·콘솔 켜짐)` → `Builds/Windows-Dev`,
   `Tools/CTC/Build Windows (배포용)` → `Builds/Windows`.
-- 인게임 로그 콘솔(` 키)은 `DebugConsoleGate`가 **개발용 빌드에서만** 켠다 — `GameDebug`와 같은 기준.
+- 인게임 로그 콘솔(` 키, yasirkula)은 `DebugConsoleGate`가 **개발용 빌드에서만** 켠다 — 좌하단 팝업 버블은 끔. 로그 전문은 `Player.log`.
 - 좌상단 FPS·프레임 타임(`Core/FrameStatsOverlay`, IMGUI, ConnectionUI 오른쪽)도 같은 기준 — 배포 빌드에선 안 그린다(2026-08-15).
 - 프레임이 떨어지면 추측 말고 `Tools/CTC/Dev/Profile 3s → 상위 마커 덤프`(플레이 중) — 메인 스레드 self 상위 20을 `%TEMP%\ctc-profile.txt`에 쓴다. 에디터 3인(클론) 환경은 EditorLoop·vSync가 대부분이라 실제 성능은 개발용 빌드로 잰다(2026-08-16).
 - **적용 범위**: **전 파일 적용 완료**(2026-07-31, [코드 개편 계획](docs/design-vault/코드%20개편%20계획.md) 1~5단계 + 잔여 3건). 예외 없이 위 규칙대로 쓴다.

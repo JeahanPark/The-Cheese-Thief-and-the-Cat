@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,7 +9,7 @@ namespace CTC.Editor
     ///
     /// 두 갈래다(2026-07-31):
     /// - **개발용**: `BuildOptions.Development` → `DEVELOPMENT_BUILD` 정의 →
-    ///   `GameDebug.Log`가 살아나고 인게임 로그 콘솔(`DebugConsoleGate`)도 켜진다. 테스터 배포용.
+    ///   `GameDebug.Log`가 살아난다(로그는 Player.log로 — 인게임 콘솔 UI는 없다). 테스터 배포용.
     /// - **배포용**: 로그도 콘솔도 전부 빠진다.
     /// 산출 폴더를 나눠 둬서 어느 쪽을 압축하는지 헷갈리지 않는다.
     /// </summary>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,7 +57,14 @@ namespace CTC.Editor
         }
 
         [MenuItem("Tools/CTC/Dev/MPPM 3인 세팅 (클론 2개 + wes 태그)")]
-        public static void SetupThreePlayers()
+        public static void SetupThreePlayers() => SetupPlayers(2);
+
+        // 4인 = 고양이 1 + 쥐 3 — 기본 맵 권장 쥐 상한(3)까지 채우는 구성(2026-08-23 건의).
+        // wes3 → 포트 5004. qa_v36~45 스위트는 3인 기준이라 4인은 수동·전용 시나리오에 쓴다.
+        [MenuItem("Tools/CTC/Dev/MPPM 4인 세팅 (클론 3개 + wes 태그)")]
+        public static void SetupFourPlayers() => SetupPlayers(3);
+
+        private static void SetupPlayers(int _clones)
         {
             if (!TryGetPlayers(out object[] players, out string error))
             {
@@ -67,7 +74,7 @@ namespace CTC.Editor
 
             EnableBackgroundUpdates(); // 세팅할 때마다 절전이 켜져 있는지 확인
 
-            var sb = new StringBuilder("[MppmSetup] 3인 세팅\n");
+            var sb = new StringBuilder($"[MppmSetup] {_clones + 1}인 세팅" + "\n");
             int cloneOrder = 0;
             foreach (object player in players)
             {
@@ -80,9 +87,13 @@ namespace CTC.Editor
                 }
 
                 cloneOrder++;
-                if (cloneOrder > 2)
+                if (cloneOrder > _clones)
                 {
-                    sb.AppendLine($"  {name}: 비활성 유지(3인 초과)");
+                    // "유지"가 아니라 **실제로 끈다**(2026-08-23) — 손으로 켜 둔 여분 클론이
+                    // 태그 없이 살아 있으면 WesQA 폴백 인덱스 1로 wes1과 포트 5002를 두고
+                    // 싸운다(SocketException). 세팅 인원만 남긴다.
+                    bool running = Get(player, "PlayerState")?.ToString() == "Launched";
+                    sb.AppendLine($"  {name}: {(running ? Deactivate(player) : "비활성 유지")}({_clones + 1}인 초과)");
                     continue;
                 }
 

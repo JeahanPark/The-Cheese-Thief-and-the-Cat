@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text;
 using CTC.Runtime.Managers;
 using R3;
@@ -33,6 +33,8 @@ namespace CTC.Runtime.UI
         [SerializeField] private GameObject m_Root;
         [SerializeField] private TMP_Text m_Log;
         [SerializeField] private TMP_InputField m_Input;
+        [SerializeField] private GameObject m_HintRoot;   // `/` 예약어 힌트 (개발 빌드 전용)
+        [SerializeField] private TMP_Text m_HintText;
 
         private readonly List<string> m_Lines = new List<string>();
         private readonly StringBuilder m_Builder = new StringBuilder();
@@ -42,6 +44,12 @@ namespace CTC.Runtime.UI
 
         /// <summary>QA 전용 — 지금 이 클라이언트가 실제로 본 로그 전문.</summary>
         public string DevLogText => m_Log != null ? m_Log.text : "";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>QA 전용 — 예약어 힌트가 떠 있으면 그 내용, 아니면 빈 문자열.</summary>
+        public string DevHintText =>
+            m_HintRoot != null && m_HintRoot.activeSelf && m_HintText != null ? m_HintText.text : "";
+#endif
 
         private void Start()
         {
@@ -55,7 +63,39 @@ namespace CTC.Runtime.UI
                     .Subscribe(Append)
                     .AddTo(this);
             }
+
+            if (m_HintRoot != null) m_HintRoot.SetActive(false);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (m_Input != null)
+            {
+                m_Input.onValueChanged.AsObservable()
+                    .Subscribe(OnInputChanged)
+                    .AddTo(this);
+            }
+#endif
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // `/`로 시작하는 동안 예약어 힌트를 띄운다(2026-08-20 건의). 명령이 아니게 되면 바로 걷는다.
+        private void OnInputChanged(string _text)
+        {
+            if (m_HintRoot == null || m_HintText == null) return;
+
+            var matches = ChatCommandLogic.Match(_text);
+            bool show = IsOpen && matches.Count > 0;
+            if (m_HintRoot.activeSelf != show) m_HintRoot.SetActive(show);
+            if (!show) return;
+
+            m_Builder.Clear();
+            for (int i = 0; i < matches.Count; i++)
+            {
+                if (i > 0) m_Builder.Append('\n');
+                m_Builder.Append("<color=#F2E68C>").Append(matches[i].Name).Append("</color>  ")
+                         .Append(matches[i].Description);
+            }
+            m_HintText.text = m_Builder.ToString();
+        }
+#endif
 
         private void Update()
         {
@@ -94,6 +134,7 @@ namespace CTC.Runtime.UI
             m_Input.DeactivateInputField();
             m_Input.text = "";
             m_Input.gameObject.SetActive(false);
+            if (m_HintRoot != null) m_HintRoot.SetActive(false);
             UnityEngine.EventSystems.EventSystem current = UnityEngine.EventSystems.EventSystem.current;
             if (current != null) current.SetSelectedGameObject(null); // UiFocus.IsTyping을 확실히 내린다
             m_HideAt = Time.time + IDLE_HIDE_SECONDS;
@@ -110,6 +151,17 @@ namespace CTC.Runtime.UI
             CommitComposition();
 
             string text = m_Input != null ? m_Input.text : "";
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // 완성된 예약어는 채팅으로 보내지 않고 실행한다. 모르는 /문자열은 그냥 채팅이다.
+            if (ChatCommandLogic.IsSendLog(text))
+            {
+                if (ChatManager.Instance != null) ChatManager.Instance.SendMyLogToHost();
+                Close();
+                return;
+            }
+#endif
+
             if (ChatManager.Instance != null && !string.IsNullOrWhiteSpace(text))
             {
                 ChatManager.Instance.SendChatMessage(text);
