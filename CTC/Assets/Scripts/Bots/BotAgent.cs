@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using CTC.Runtime.Ai;
 using CTC.Runtime.Ai.Bt;
@@ -61,6 +61,8 @@ namespace CTC.Runtime.Bots
         private readonly BtNode m_Tree;
         private readonly System.Random m_Rng;
         private readonly float m_PounceRange;
+        private float m_MoveSpeed;
+        private float m_PreySpeed; // 반대 역할의 이속 — 추격 경주 판정에 쓴다
 
         private readonly List<Vector3> m_Positions = new List<Vector3>();
         private readonly List<int> m_Grades = new List<int>();
@@ -129,6 +131,9 @@ namespace CTC.Runtime.Bots
             Info.PlayerInfo info = Info.InfoManager.Instance.PlayerOf(_role);
             m_Senses = new BotSenses(_object.transform, _role, info.Fov);
             m_PounceRange = info.PounceRange;
+            m_MoveSpeed = info.MoveSpeed;
+            m_PreySpeed = Info.InfoManager.Instance.PlayerOf(
+                _role == RoleId.Cat ? RoleId.Mouse : RoleId.Cat).MoveSpeed;
 
             // 배회는 봇마다 달라야 한다 — 같은 씨앗이면 전원이 같은 자리로 몰려 맵이 안 쓰인다.
             // 오브젝트 id로 씨앗을 주므로 같은 판을 다시 돌리면 같은 결과가 나온다(재현성).
@@ -220,6 +225,51 @@ namespace CTC.Runtime.Bots
         /// **우회로가 있으면 절대 안 부순다** — 비용 상수를 만질 필요가 없다.
         /// 벽 앞까지는 평소처럼 걸어간다(경로의 마지막 꺾임점이 그 벽이다). 사거리에 들면 덮친다.
         /// </summary>
+        /// <summary>포위 중인가 — 지금 길이 부술 수 있는 벽을 관통해 나 있다.</summary>
+        public bool IsSieging => m_Nav != null && m_Nav.NeedsBreaking;
+
+        /// <summary>
+        /// **포위 결심을 유지할까**(2026-08-24) — 벽을 부수는 중에 쥐가 밖에 보여도,
+        /// 추격이 진 경주면(쥐가 요새로 먼저 되돌아감) 벽을 계속 판다. 판정은
+        /// <see cref="CatBotLogic.IsChaseWinnable"/>, 속도는 CSV 값 그대로.
+        /// </summary>
+        public bool ShouldKeepSieging()
+        {
+            if (!IsSieging) return false;
+            Transform prey = VisiblePrey();
+            if (prey == null) return false;
+            if (!TryGetPreyRefuge(prey.position, out _, out float preyToFort)) return false;
+
+            return !CatBotLogic.IsChaseWinnable(
+                DistanceTo(prey.position), preyToFort, m_MoveSpeed, m_PreySpeed);
+        }
+
+        /// <summary>
+        /// 쥐가 되돌아갈 은신처 — 쥐 기준 가장 가까운 **성한** 요새(피난 반경 안).
+        /// 반쯤 깎인 요새를 거르는 기준은 쥐 봇의 피난 판정과 같다(같은 벽을 두 봇이
+        /// 다르게 보면 판이 어긋난다).
+        /// </summary>
+        public bool TryGetPreyRefuge(Vector3 _preyPos, out Vector3 _fort, out float _preyDistance)
+        {
+            _fort = Vector3.zero;
+            _preyDistance = float.MaxValue;
+            bool found = false;
+            foreach (var fort in Object.FindObjectsByType<Economy.FortressShield>(FindObjectsSortMode.None))
+            {
+                var hp = fort.GetComponent<Combat.Health>();
+                if (hp != null && MouseBotLogic.IsRefugeSpent(hp.Hp, hp.MaxHp)) continue;
+
+                float d = Flat(fort.transform.position - _preyPos).magnitude;
+                if (d < _preyDistance)
+                {
+                    _preyDistance = d;
+                    _fort = fort.transform.position;
+                    found = true;
+                }
+            }
+            return found && _preyDistance <= MouseBotLogic.FORT_REFUGE_RADIUS;
+        }
+
         public bool TryBreakBlocking()
         {
             if (m_Nav == null || !m_Nav.NeedsBreaking) return false;

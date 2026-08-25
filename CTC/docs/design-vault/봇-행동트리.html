@@ -1,0 +1,196 @@
+<title>봇 행동트리</title>
+<style>
+  :root {
+    --ground: #F7F3EA;
+    --panel: #FFFFFF;
+    --edge: #E0D6C4;
+    --ink: #241F1A;
+    --ink-soft: #6B6055;
+    --ink-faint: #9C9083;
+    --cheese: #B8860B;
+    --cheese-bg: #FBF0D2;
+    --cat: #C2502A;
+    --mouse: #4A6E8A;
+    --dog: #8A4520;
+    --ok: #3F7A46;
+    --bad: #C2502A;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17130F; --panel: #1F1A15; --edge: #352C23;
+      --ink: #F2EDE3; --ink-soft: #B3A695; --ink-faint: #7A6E60;
+      --cheese: #E8B93C; --cheese-bg: #2B2213;
+      --cat: #E07A50; --mouse: #8FA6B8; --dog: #C97A45; --ok: #6FB177; --bad: #E07A50;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17130F; --panel: #1F1A15; --edge: #352C23;
+    --ink: #F2EDE3; --ink-soft: #B3A695; --ink-faint: #7A6E60;
+    --cheese: #E8B93C; --cheese-bg: #2B2213;
+    --cat: #E07A50; --mouse: #8FA6B8; --dog: #C97A45; --ok: #6FB177; --bad: #E07A50;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header { padding: 56px 0 30px; border-bottom: 1px solid var(--edge); margin-bottom: 36px; }
+  .eyebrow {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--cheese); margin: 0 0 12px;
+  }
+  h1 { font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .lede { font-size: 16px; color: var(--ink-soft); margin: 0; max-width: 64ch; }
+  .lede b { color: var(--ink); }
+
+  section { margin: 0 0 56px; }
+  h2 {
+    font-size: 13px; font-family: ui-monospace, Menlo, monospace;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint);
+    font-weight: 600; margin: 0 0 12px; padding-bottom: 10px; border-bottom: 1px solid var(--edge);
+  }
+  p { margin: 0 0 14px; max-width: 70ch; }
+  .note { color: var(--ink-soft); font-size: 14.5px; }
+
+  code {
+    font-family: ui-monospace, Menlo, monospace; font-size: 0.86em;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px;
+  }
+
+  .scroll { overflow-x: auto; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th {
+    text-align: left; font-size: 12px; font-family: ui-monospace, Menlo, monospace;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint);
+    font-weight: 600; padding: 0 16px 8px 0; border-bottom: 1px solid var(--edge); white-space: nowrap;
+  }
+  td { padding: 10px 16px 10px 0; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+
+  .mermaid-box {
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    padding: 18px; overflow-x: auto; margin: 16px 0;
+  }
+  .callout {
+    border-left: 3px solid var(--bad); background: var(--cheese-bg);
+    padding: 14px 18px; margin: 20px 0; border-radius: 0 6px 6px 0; font-size: 15px;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 8px; }
+  .c-cat { color: var(--cat); } .c-mouse { color: var(--mouse); } .c-dog { color: var(--dog); }
+  footer { border-top: 1px solid var(--edge); padding-top: 20px; color: var(--ink-faint); font-size: 14px; }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">CTC · 봇 AI · 소스 기준 2026-08-23</p>
+  <h1>봇 행동트리</h1>
+  <p class="lede">
+    <code>Assets/Scripts/Bots/BotBrainTrees.cs</code>에 적힌 <b>현재 구현 그대로</b>다.
+    기술소개서(리그오브레전드 6p)의 챔피언 트리 구조 — <b>개인행동 → 지휘관명령 → 배회</b>.
+    원칙 하나: <b>봇은 영리해지면 안 된다</b> — 봇이 사람보다 잘하면 잰 승률은 밸런스가 아니라 봇 실력이다.
+  </p>
+</header>
+
+<section>
+  <h2>골격 — 노드 다섯 종</h2>
+  <p><code>Assets/Scripts/Ai/Bt/</code>. 순수 C#이라 씬을 모른다 — 잎이 필요한 값은 조립하는 쪽(<code>BotAgent</code>)이 델리게이트로 넣고, 그래서 EditMode가 트리 전체를 그대로 굴린다.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>노드</th><th>규칙</th></tr></thead>
+    <tbody>
+      <tr><td>Selector</td><td><b>하나만 성공하면 성공</b> — 위에서부터 시도. <b>위아래 순서가 곧 우선순위</b>고, 봇의 판단 규칙이 여기 적힌다</td></tr>
+      <tr><td>Sequence</td><td><b>전부 성공해야 성공</b> — "조건 → 조건 → 행동" 꼴</td></tr>
+      <tr><td>Condition</td><td>묻는다 — <code>[보인다]</code> <code>[사거리다]</code>. 참=성공, 거짓=실패</td></tr>
+      <tr><td>Action</td><td>한다 — 여러 프레임짜리는 <code>Running</code>을 돌려주면 <b>다음 틱에 그 자리부터</b> 이어진다(<code>m_Resume</code>)</td></tr>
+      <tr><td>RandomSelector / Succeeder</td><td>배회처럼 매번 같으면 안 되는 선택(씨앗은 밖에서 — 재현 가능해야 QA 성립) / "해 보고 안 되면 넘어가라"</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note">틱 주기: <code>BotAgent</code>가 <b>0.5초마다</b> 트리를 한 번 굴리고(<code>DECIDE_INTERVAL</code>), 길찾기(<code>NavRoute</code>)는 매 프레임 돈다. 강아지도 같은 골격의 3잎짜리 트리다(<span class="c-dog">물기 → 추격 → 배회</span>).</p>
+</section>
+
+<section>
+  <h2 class="c-cat">고양이 트리</h2>
+  <div class="mermaid-box">
+  <pre class="mermaid">
+flowchart TD
+    ROOT{{"Selector — 위에서부터, 되는 첫 가지"}}
+
+    ROOT --> P1["① [보인다]+[덮치기 사거리 2.8m]&lt;br/&gt;→ <b>덮치기</b>&lt;br/&gt;잠행 해제 · 구매 · 스킬 · 표적 쪽으로 몸 돌려 DoPounce"]
+    ROOT --> P2["② [보인다]&lt;br/&gt;→ <b>추격 Chase</b>&lt;br/&gt;목표=쥐 위치 · 예약 · TryBreakBlocking&lt;br/&gt;(길이 벽을 관통하면 그 벽을 부순다)"]
+    ROOT --> P3["③ [소리 단서 HasLead]&lt;br/&gt;→ <b>조사 Investigate</b>&lt;br/&gt;잠행 켬(발소리 안 알림) · 단서 자리로&lt;br/&gt;TryBreakBlocking · 도착했는데 없으면 단서 폐기"]
+    ROOT --> P4["④ [지휘관 명령]&lt;br/&gt;→ 명령 지점으로"]
+    ROOT --> P5["⑤ <b>배회 Patrol</b>&lt;br/&gt;서 있으면 판에서 사라진 것과 같다 — 계속 걷는다"]
+
+    style P2 stroke:#C2502A,stroke-width:2px
+    style P3 stroke:#C2502A,stroke-width:2px
+  </pre>
+  </div>
+
+  <div class="callout">
+    <p><b>지금 관찰된 문제가 사는 곳</b> — ②와 ③의 경계다. 쥐가 요새 밖으로 나와 보이면 ②가
+    이겨서 벽 부수기를 버리고 긴 길로 쫓고, 쥐가 다시 요새로 들어가 안 보이면 ③으로 떨어져
+    벽으로 돌아온다. 0.5초마다 재평가하므로 쥐가 요새를 빙빙 돌면 ②↔③이 진동한다 —
+    벽 데미지는 영구라 언젠가 끝나긴 하지만, 추격 왕복으로 시간을 무한정 쪼갠다.</p>
+    <p><b>수정 계획</b>: ② 진입에 <b>경주 판정</b> 게이트를 하나 끼운다 — "쥐가 요새 문까지
+    돌아가는 시간 &lt; 내가 쥐를 잡는 시간(거리 ÷ 속도차 1.8m/s)"이면 추격은 진 경주다 →
+    ②를 실패시키고 벽을 계속 판다. 쥐 봇의 요새 피난 판정(<code>ChooseRefuge</code>,
+    "이길 수 있는 경주만 뛴다")을 고양이에게 거울로 적용하는 것.</p>
+  </div>
+</section>
+
+<section>
+  <h2 class="c-mouse">쥐 트리</h2>
+  <p class="note">지휘관이 없다 — 여덟 마리가 각자 놀고, 예약 시스템이 뭉치는 것만 막는다. 구출 가지는 감옥 삭제와 함께 뺐다(2026-08-17).</p>
+  <div class="mermaid-box">
+  <pre class="mermaid">
+flowchart TD
+    ROOT{{"Selector"}}
+
+    ROOT --> T1["① [위협: 보이는 고양이 우선, 없으면 가까운 소리]&lt;br/&gt;→ <b>도망</b>"]
+    ROOT --> T2["② [쓸 치즈 지점 있음]&lt;br/&gt;→ 도착 전 <b>Travel</b> · 도착하면 <b>Farm</b>(정지·채굴)&lt;br/&gt;+ 구매 · 깡패면 임명"]
+    ROOT --> T3["③ <b>Wander</b> — 전부 마르거나 남이 쓰면 빈자리 찾아 배회"]
+
+    T1 --> F1{"보이는가?"}
+    F1 -->|보인다| F2["달린다(잠행 해제 — 2.7m/s로는 무조건 잡힘)&lt;br/&gt;+ 대시 · 즉발 요새 설치"]
+    F1 -->|소리만| F3["잠행 유지 — 발소리 14m로 위치를 다시 알리지 않는다"]
+    F2 --> F4{"이길 수 있는 요새 피난처?&lt;br/&gt;(ChooseRefuge — 반쯤 깎인 요새는 제외)"}
+    F3 --> F4
+    F4 -->|있다| F5["<b>Shelter</b> — 요새로/안에서 대기"]
+    F4 -->|없다| F6["<b>Flee</b> — 위협에게 안 보이는 자리로 꺾는다&lt;br/&gt;(FleeGoal — 차폐벽·기둥 뒤)"]
+  </pre>
+  </div>
+  <p class="note"><b>맞서 쏘지 않는다</b>(2026-08-14 확정) — 예전엔 도망치며 쐈는데 여덟 마리가 쉬지 않고 쏘니 97초 만에 고양이 둘이 죽었다(실측). 쥐 봇의 일은 싸움이 아니라 <b>벌어서 크는 것</b>이다. 구매 순서는 대시 → 요새 → 창고(비상 벽 값 80은 남긴다).</p>
+</section>
+
+<section>
+  <h2>잎이 부르는 손잡이</h2>
+  <p class="note">잎은 <code>BotAgent</code>가 공개한 메서드만 부른다 — 씬 접근은 전부 거기 모여 있다.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>손잡이</th><th>하는 일</th></tr></thead>
+    <tbody>
+      <tr><td><code>VisiblePrey / Senses.NearestVisible</code></td><td>시야 판정(차폐 레이캐스트) — "보인다"의 근거</td></tr>
+      <tr><td><code>HasLead / Lead / DropLead</code></td><td>소리 단서 — <code>SoundLog</code>가 들은 마지막 자리. 도착했는데 없으면 버린다</td></tr>
+      <tr><td><code>Nav.SetGoal / SetWanderGoal / Stop</code></td><td>격자 A* 길찾기(<code>NavRoute</code>) — ⓪직선 검사 → 1차(벽=막힘) → 2차(부술 셀 허용)</td></tr>
+      <tr><td><code>TryBreakBlocking</code></td><td>경로가 부술 셀을 관통하면 그 벽을 표적으로 공격 — 요새 포위가 이걸로 돈다</td></tr>
+      <tr><td><code>TryGetRefugeFortress</code></td><td>이길 수 있는 거리의 요새(반쯤 깎인 건 제외) — 쥐 피난</td></tr>
+      <tr><td><code>DoPounce / DoDash / PlaceFortressForFlee</code></td><td>덮치기 · 대시 · 즉발 요새 — 사람의 도주·사냥 수단 전부</td></tr>
+      <tr><td><code>BuyForCat / BuyForMouse / RecruitIfGang</code></td><td>상점(순수 로직 <code>CatBotLogic</code>·<code>MouseBotLogic</code>이 판단) · 깡패 임명</td></tr>
+      <tr><td><code>Reserve</code></td><td>목표 지점 예약 — 여덟 마리가 같은 자리로 몰리는 것을 막는다(기술소개서 원형)</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  원본: BotBrainTrees.cs · Bt/(BtNode·BtComposite·BtLeaf) · 판단 로직은 CatBotLogic/MouseBotLogic(EditMode 커버) ·
+  최신 계측: 2:8 봇전 쥐 승률 37% (3판 재확인 1/3)
+</footer>
+</div>

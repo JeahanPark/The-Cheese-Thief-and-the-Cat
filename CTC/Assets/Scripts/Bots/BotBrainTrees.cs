@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Ai.Bt;
 using UnityEngine;
 
@@ -45,6 +45,25 @@ namespace CTC.Runtime.Bots
                         // 덮치기는 앞을 봐야 맞는다 — 표적 쪽으로 몸을 밀어 방향을 맞춘 뒤 친다
                         if (prey != null) _self.Nav.SetGoal(prey.position);
                         _self.DoPounce();
+                    })),
+
+                // ── 포위 유지(2026-08-24) — 벽을 부수는 중에 쥐가 밖에 보여도, 추격이
+                //    진 경주면 벽을 계속 판다. 목표는 쥐가 아니라 **쥐의 은신처(요새)**다 —
+                //    쥐를 향하면 열린 우회로로 빙 돌아 여태 판 벽을 버리게 된다.
+                new BtSequence(
+                    new BtCondition(() => _self.ShouldKeepSieging()),
+                    BtAction.Once(() =>
+                    {
+                        _self.Activity = "Siege";
+                        Transform prey = _self.VisiblePrey();
+                        _self.SetSneak(false);
+                        _self.BuyForCat();
+                        if (prey != null && _self.TryGetPreyRefuge(prey.position, out Vector3 fort, out _))
+                        {
+                            _self.Reserve(fort);
+                            _self.Nav.SetGoal(fort);
+                        }
+                        _self.TryBreakBlocking();
                     })),
 
                 new BtSequence(

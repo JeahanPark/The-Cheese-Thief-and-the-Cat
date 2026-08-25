@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CTC.Runtime.Bots
 {
@@ -25,5 +25,26 @@ namespace CTC.Runtime.Bots
         /// 없으면 봇이 빈 자리를 영원히 서성인다.
         /// </summary>
         public const float GIVE_UP_SECONDS = 5f;
+
+        /// <summary>
+        /// **추격이 이길 수 있는 경주인가**(2026-08-24). 요새를 부수는 중에 쥐가 반대편에
+        /// 나와 보여도, 쥐가 요새로 되돌아가는 시간이 내가 잡는 시간보다 짧으면 그 추격은
+        /// 진 경주다 — 쫓는 순간 벽 부수기 진행만 날리고 쥐는 다시 들어간다(실관찰: 이
+        /// 왕복이 무한 반복됐다). 지면 벽을 계속 판다: 벽 HP는 회복이 없어 결심만 유지하면
+        /// 반드시 끝난다(480 = 노업 여덟 방 ≈ 16초).
+        ///
+        /// 쥐 봇 <see cref="MouseBotLogic.ChooseRefuge"/>의 "이길 수 있는 경주만 뛴다"를
+        /// 고양이에게 거울로 적용한 것.
+        /// </summary>
+        public static bool IsChaseWinnable(
+            float _catToPrey, float _preyToRefuge, float _catSpeed, float _preySpeed)
+        {
+            if (_preyToRefuge <= 0f) return false;      // 이미 요새 안 — 벽이 답이다
+            float closing = _catSpeed - _preySpeed;
+            if (closing <= 0.01f) return false;         // 못 좁힌다 — 쫓아 봐야 평행선
+            float catchSeconds = _catToPrey / closing;
+            float refugeSeconds = _preyToRefuge / _preySpeed;
+            return catchSeconds < refugeSeconds;
+        }
     }
 }
