@@ -1,0 +1,353 @@
+<title>인게임 테스트 체크리스트</title>
+<style>
+  :root {
+    --ground: #F7F3EA;
+    --panel: #FFFFFF;
+    --edge: #E0D6C4;
+    --ink: #241F1A;
+    --ink-soft: #6B6055;
+    --ink-faint: #9C9083;
+    --cheese: #B8860B;
+    --cheese-bg: #FBF0D2;
+    --cat: #C2502A;
+    --mouse: #4A6E8A;
+    --dog: #8A4520;
+    --gang: #6B4A8A;
+    --ok: #3F7A46;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17130F; --panel: #1F1A15; --edge: #352C23;
+      --ink: #F2EDE3; --ink-soft: #B3A695; --ink-faint: #7A6E60;
+      --cheese: #E8B93C; --cheese-bg: #2B2213;
+      --cat: #E07A50; --mouse: #8FA6B8; --dog: #C97A45; --gang: #A98AC9; --ok: #6FB177;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17130F; --panel: #1F1A15; --edge: #352C23;
+    --ink: #F2EDE3; --ink-soft: #B3A695; --ink-faint: #7A6E60;
+    --cheese: #E8B93C; --cheese-bg: #2B2213;
+    --cat: #E07A50; --mouse: #8FA6B8; --dog: #C97A45; --gang: #A98AC9; --ok: #6FB177;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 840px; margin: 0 auto; padding: 0 24px 96px; }
+
+  header { padding: 56px 0 28px; border-bottom: 1px solid var(--edge); margin-bottom: 34px; }
+  .eyebrow {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--cheese); margin: 0 0 12px;
+  }
+  h1 { font-size: clamp(28px, 5vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 12px; }
+  .lede { font-size: 16px; color: var(--ink-soft); margin: 0; max-width: 64ch; }
+  .lede b { color: var(--ink); }
+
+  section { margin: 0 0 44px; }
+  h2 { font-size: 17px; font-weight: 700; margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+  h2 .tag { font-family: ui-monospace, Menlo, monospace; font-size: 12px; font-weight: 600; color: var(--ink-faint); letter-spacing: 0.06em; }
+  .why { font-size: 14px; color: var(--ink-soft); margin: 0 0 12px; max-width: 70ch; }
+
+  code {
+    font-family: ui-monospace, Menlo, monospace; font-size: 0.86em;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 4px; padding: 1px 5px;
+  }
+  kbd {
+    font-family: ui-monospace, Menlo, monospace; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--edge); border-bottom-width: 2px;
+    border-radius: 4px; padding: 0 6px;
+  }
+
+  .case {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 8px; padding: 11px 15px; margin: 0 0 7px;
+  }
+  .case input[type=checkbox] { width: 19px; height: 19px; margin: 3px 0 0; flex: none; accent-color: var(--ok); cursor: pointer; }
+  .case .id { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--ink-faint); flex: none; padding-top: 4px; width: 40px; }
+  .case .body { flex: 1; }
+  .case .do { font-weight: 600; }
+  .case .do .who {
+    font-size: 11px; font-weight: 600; font-family: ui-monospace, Menlo, monospace;
+    border: 1px solid var(--edge); border-radius: 4px; padding: 0 5px; margin-right: 6px;
+    color: var(--ink-faint); white-space: nowrap;
+  }
+  .case .expect { font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+  .case .expect b { color: var(--ok); font-weight: 600; }
+
+  .c-cat { color: var(--cat); } .c-mouse { color: var(--mouse); } .c-dog { color: var(--dog); } .c-gang { color: var(--gang); }
+
+  .callout {
+    border-left: 3px solid var(--cheese); background: var(--cheese-bg);
+    padding: 13px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; font-size: 15px;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 8px; }
+  textarea {
+    width: 100%; min-height: 90px; margin-top: 8px;
+    background: var(--panel); color: var(--ink);
+    border: 1px solid var(--edge); border-radius: 8px; padding: 10px 12px;
+    font: inherit; font-size: 14px; resize: vertical;
+  }
+  footer { border-top: 1px solid var(--edge); padding-top: 20px; color: var(--ink-faint); font-size: 14px; }
+</style>
+
+<div class="wrap">
+<header>
+  <p class="eyebrow">CTC · 인게임 전수 테스트 · 2026-08-23</p>
+  <h1>인게임 테스트 체크리스트</h1>
+  <p class="lede">
+    게임 규칙 전부를 사람 손으로 한 바퀴 — 판 두세 번이면 다 돈다.
+    각 항목의 <b>[쥐]·[고양이]</b>는 그걸 확인할 사람이고, 기대 결과의 수치는 현재 확정 밸런스다.
+    구성: <b>2인이면 전부 가능</b>(고양이 1 + 쥐 1) — 3인이면 F·G 절이 편해진다. 에디터 MPPM 3인으로도 된다.
+  </p>
+</header>
+
+<section>
+  <h2>판 구성 <span class="tag">0</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">0-1</span><div class="body">
+    <div class="do"><span class="who">호스트</span>로비에서 맵 3종을 하나씩 골라 시작해 본다 (기본 30×30 · 확장 42×42 · 대형 120×120)</div>
+    <div class="expect">셋 다 정상 로드 · 하단 맵 설명(방·치즈 지점 수)이 맵마다 바뀐다 · <b>본판 테스트는 대형 맵 기준</b>(2:8 밸런스를 맞춘 맵)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">0-2</span><div class="body">
+    <div class="do"><span class="who">3인</span>고양이 2 구성으로도 한 판 (셋 중 둘이 고양이 선택)</div>
+    <div class="expect">고양이 둘이 같이 사냥 가능 · 한 마리가 죽어도 판이 계속되고, <b>둘 다 죽어야</b> 쥐 승/2단계 판정</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>쥐 — 기본 동작 <span class="tag">A</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">A-1</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>시작 직후 우상단 확인</div>
+    <div class="expect">치즈 <b>65</b>로 시작 · HP 100 · 첫 스폰에 기본 조작 토스트 4초</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">A-2</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>치즈 지점에 서서 채굴</div>
+    <div class="expect">치즈가 오르고 지점 라벨 숫자가 줄어든다 · 지점당 1인 독점(둘이 못 캔다) · 다 캐면 지점이 사라진다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">A-3</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>쥐가 캐는 동안 소리 따라가 보기</div>
+    <div class="expect">파밍 소리는 <b>32m</b> — 화면에 보이기 전에 방향이 잡힌다. 발소리는 14m부터</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">A-4</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span><kbd>LShift</kbd> 잠행으로 고양이 근처 지나가기</div>
+    <div class="expect">속도가 절반쯤 · 발소리 반경 <b>4m</b>로 축소(무음 아님 — 코앞이면 들린다)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">A-5</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>걷기·달리기·잠행을 바꿔 가며 발소리 듣기</div>
+    <div class="expect">발소리가 <b>한 걸음씩</b> 나고 속도에 따라 박자가 변한다(잠행 드문드문 · 대시 타다닥)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">A-6</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>채팅 타이핑 중 <kbd>WASD</kbd>·좌클릭</div>
+    <div class="expect">캐릭터가 <b>움직이지 않는다</b> · 발사도 안 나간다 (입력 가드)</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>쥐 — 상점·설치물 <span class="tag">B</span></h2>
+  <p class="why">핫바 <kbd>1</kbd>~<kbd>9</kbd>. 구매 순간 사용법 토스트 3초.</p>
+  <div class="case"><input type="checkbox"><span class="id">B-1</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>대시(100치즈) 구매 → <kbd>Space</kbd></div>
+    <div class="expect">순간 가속 · 구매 전엔 능력 바에 대시 칸이 <b>아예 없다</b> → 구매하면 생긴다 · 쿨다운은 덮개가 시계방향으로 걷히며 남은 초 표시</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-2</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>요새(80치즈) 구매 — 고양이에게 쫓기다 사용</div>
+    <div class="expect"><b>조준 없이 즉시</b> 내 위치 중심에 선다 · 입구는 내가 보던 방향 · 치즈 80 차감</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-3</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>쥐가 요새를 내 몸 위에 세우게 해 보기</div>
+    <div class="expect">고양이는 <b>밖으로 밀려난다</b> · 안으로 못 들어간다(몸이 커서) · 문으로 밀어붙여도 못 통과</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-4</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>요새 벽을 계속 덮치기</div>
+    <div class="expect">HP <b>480</b> = 노업 <b>여덟 방</b>에 부서진다(약 14초) · 부수고 들어가 쥐를 잡을 수 있다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-5</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>요새 안에서 요새 한 번 더 구매 시도</div>
+    <div class="expect"><b>안 세워진다</b>(겹치기 금지) · 치즈도 안 나간다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-6</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>창고(150치즈) 설치 후 옆에서 대기</div>
+    <div class="expect"><b>2초마다 치즈 10</b> 자동 수입 · 가동음이 꽤 멀리(24m) — 고양이에게 위치가 팔린다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-7</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>새총(150) 구매 → 고양이에게 발사</div>
+    <div class="expect">맞으면 고양이 HP가 깎인다(1000 기준 티끌) · 고양이 화면엔 자기 HP만 — <b>쥐 화면에 고양이 HP는 안 보인다</b></div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-8</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>쥐끼리 공격 — 다른 쥐에게 발사 (2인이면 2단계에서 확인)</div>
+    <div class="expect">판 시작부터 <b>항상 맞는다</b> · 단 남의 요새·창고는 안 부서진다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">B-9</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>기관총(600치즈)까지 올려 고양이와 <b>맞서 본다</b> — 쥐 승리 ②의 현실 경로</div>
+    <div class="expect">새총보다 확연히 아프다 · "기관총 2정이 모이면 고양이를 잡을 수 있다"가 체감되나 기록 (2인이면 1정 기준 화력감만)</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>고양이 — 사냥·성장 <span class="tag">C</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">C-1</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>쥐를 좌클릭 덮치기</div>
+    <div class="expect">피해 60 · 쿨 2초 · 사거리 2.8m → 쥐(100)는 <b>두 방</b> · 잡으면 <b>즉시 탈락</b>(감옥 없음 — 그 자리에서 관전 전환)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">C-2</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>쥐·구조물을 때리며 우상단 장난기 확인</div>
+    <div class="expect">쥐 피해의 절반 · 구조물 피해의 1/4이 수입 · <b>벽감·상자·강아지를 때려도 0</b>(맵 기물은 안 준다)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">C-3</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>공격 강화(120)·이속 강화(90) 하나씩 구매</div>
+    <div class="expect">덮치기가 아프고 걸음이 빨라진다 · 각 5중첩까지 · <b>하나만 만렙이면 전직 창이 안 뜬다</b></div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">C-4</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>둘 다 5중첩 완성</div>
+    <div class="expect"><b>전직 창</b>이 뜬다(불·바람·빛·어둠) · 고르면 되돌릴 수 없고 두 번째 전직 불가</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">C-5</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span><kbd>LShift</kbd> 잠행으로 파밍 중인 쥐에게 접근</div>
+    <div class="expect">발소리 반경 <b>3m</b> — 쥐의 조기 경보(고양이 발소리 12m)가 안 울린 채 코앞까지 간다 · 속도는 느려진다</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>고양이 — 전직 스킬 <span class="tag">D · 판마다 하나씩</span></h2>
+  <p class="why">공통: <kbd>Q</kbd> · 지속 6초 · 쿨 35초 · 켜는 순간 45m 소리(쥐도 "지금 썼다"를 안다). 능력 바 Q 칸은 <b>전직 후에만</b> 생긴다.</p>
+  <div class="case"><input type="checkbox"><span class="id">D-1</span><div class="body">
+    <div class="do"><span class="who c-cat">불</span>스킬 중 덮치기</div>
+    <div class="expect">피해 ×2 = 120 → 쥐가 <b>한 방</b></div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">D-2</span><div class="body">
+    <div class="do"><span class="who c-cat">바람</span>스킬 켜고 추격</div>
+    <div class="expect">이속 ×1.35 — 대시 없는 쥐는 못 벗어난다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">D-3</span><div class="body">
+    <div class="do"><span class="who c-cat">빛</span>벽 너머에 쥐를 두고 스킬</div>
+    <div class="expect">모든 쥐 <b>실루엣이 벽을 뚫고</b> 보인다 · 6초 뒤 사라진다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">D-4</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>고양이가 어둠 스킬을 쓸 때 쥐 화면 확인</div>
+    <div class="expect">화면이 <b>랜턴</b>이 된다 — 발치 1m는 밝고 4.5m부터 암흑 · 고양이는 코앞(덮치기 사거리쯤)에 와야 보인다 · <b>고양이 화면은 멀쩡</b></div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">D-5</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>스킬 직후 능력 바 확인</div>
+    <div class="expect">지속 중 표시 → 끝나면 쿨다운 덮개 + 남은 초 · 쿨 중 <kbd>Q</kbd> 다시 눌러도 안 나간다 · <b>쥐 화면에서도</b> 고양이 쿨이 흘러간다(복제)</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>맵 — 벽감·상자·강아지 <span class="tag">E</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">E-1</span><div class="body">
+    <div class="do"><span class="who">아무나</span>벽감(벽)을 부순다 — 쥐도 가능</div>
+    <div class="expect">벽 120HP · <b>부수는 중</b>에도 타격음이 꽤 멀리(30m) — "부서졌다"(45m)와 다른 소리 · 뒤에서 상자가 드러난다(바로 보상 아님)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">E-2</span><div class="body">
+    <div class="do"><span class="who">아무나</span>드러난 상자(40HP)도 부순다</div>
+    <div class="expect">치즈 <b>3덩이(총 250)</b>가 흩어진다 — <b>닿으면 즉시 획득, 먼저 닿는 놈이 임자</b> · 또는 직업권이 나온다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">E-3</span><div class="body">
+    <div class="do"><span class="who">아무나</span>벽 두 종류에 귀 대 보기</div>
+    <div class="expect">강아지 벽은 <b>낑낑거린다</b>(14m) · 치즈 벽은 조용 · 강아지 벽은 420HP로 눈에 띄게 단단</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">E-4</span><div class="body">
+    <div class="do"><span class="who">아무나</span>강아지 벽을 부순다</div>
+    <div class="expect">강아지가 걸어 나와 <b>부순 사람 포함 누구든</b> 문다 · 40m 짖음 · 시간이 지나도 안 사라진다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">E-5</span><div class="body">
+    <div class="do"><span class="who">아무나</span>나온 강아지를 때려서 쓰러뜨린다</div>
+    <div class="expect">쓰러뜨려야만 끝난다 · 강아지를 때려도 <b>장난기·치즈는 0</b>(맵 기물)</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>직업·2단계 <span class="tag">F · 3인이면 편함</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">F-1</span><div class="body">
+    <div class="do"><span class="who c-gang">깡패</span>깡패권을 줍는다</div>
+    <div class="expect">직업 팝업 + <b>깡패팀에게만</b> 보이는 보스 표식 · 이미 직업 있는 쥐는 못 줍는다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-2</span><div class="body">
+    <div class="do"><span class="who c-gang">깡패</span>다른 쥐 2.5m 안에서 <kbd>F</kbd> 임명</div>
+    <div class="expect">부하 화면에 "부하쥐" 팝업 3초 · 능력 바에 <b>F 칸은 깡패에게만</b> 있다 · 부하는 거절 못 한다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-3</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>표식 가시성 — 고양이·일반 쥐 화면 확인</div>
+    <div class="expect">보스·부하 표식이 <b>안 보인다</b>(깡패팀 내부 정보)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-4</span><div class="body">
+    <div class="do"><span class="who">전원</span>깡패가 있는 상태에서 고양이 처치</div>
+    <div class="expect">쥐 승리가 아니라 <b>2단계 개막</b> — 타이머가 "깡패전 4:00" 새 시계로 · 깡패팀 vs 나머지 쥐</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-5</span><div class="body">
+    <div class="do"><span class="who c-gang">깡패팀</span>2단계에서 나머지 쥐 전멸 / 또는 4분 버티기</div>
+    <div class="expect">전멸시키면 <b>GANG WINS</b> · 4분을 못 채우면 나머지 쥐 승리</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-6</span><div class="body">
+    <div class="do"><span class="who">전원</span>용사권을 주운 판도 한 번</div>
+    <div class="expect">HP ×2 · 화력 ×1.5 — 고양이와 잠깐 맞서도 안 죽는 게 체감된다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-7</span><div class="body">
+    <div class="do"><span class="who c-gang">깡패</span>직업 중첩 시도 — 용사(또는 이미 직업 있는 쥐)에게 <kbd>F</kbd> 임명 · 직업 있는 쥐로 남은 직업권 줍기</div>
+    <div class="expect">둘 다 <b>안 된다</b> — 직업권도 임명도 직업 없는 쥐에게만 간다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">F-8</span><div class="body">
+    <div class="do"><span class="who c-gang">깡패팀</span>첫 임명 직후 보스 머리 위 확인</div>
+    <div class="expect">보스 표식은 <b>첫 임명 전까지만</b> 떠 있다("깡패를 찾아가라"는 유도) — 임명 순간부터 사라진다 · 부하는 3초 팝업뿐</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>탈락·관전·승부 <span class="tag">G</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">G-1</span><div class="body">
+    <div class="do"><span class="who c-mouse">쥐</span>잡혀 본다</div>
+    <div class="expect"><b>즉시 관전</b>(감옥·구출·리스폰 없음) · 관전 시점으로 판을 계속 볼 수 있다</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">G-2</span><div class="body">
+    <div class="do"><span class="who">관전자</span>살아 있는 쥐에게 <kbd>G</kbd> 따봉</div>
+    <div class="expect">그 쥐 화면에 응원 표식 · <b>고양이 화면엔 안 뜬다</b></div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">G-3</span><div class="body">
+    <div class="do"><span class="who">관전자</span>관전 중 채팅 한 줄</div>
+    <div class="expect">[관전] 말머리 · 살아 있는 쥐·관전자에게만 — <b>고양이에겐 전송 자체가 안 된다</b>(위치 제보 방지)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">G-4</span><div class="body">
+    <div class="do"><span class="who">전원</span>승리 조건 3종 — 한 번씩 끝까지</div>
+    <div class="expect">① 자유 쥐 0 → 고양이 승 ② 깡패 없이 고양이 사망 → 쥐 승 ③ 12분 만료에 자유 쥐 있음 → 쥐 승 · 결과 문구가 맞는 쪽으로 뜬다</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>UI·옵션 <span class="tag">H</span></h2>
+  <div class="case"><input type="checkbox"><span class="id">H-1</span><div class="body">
+    <div class="do"><span class="who">전원</span>능력 바 관찰 (핫바 아래 줄)</div>
+    <div class="expect">해금 안 된 칸은 <b>안 보인다</b> — 평쥐는 빈 바, 대시 사면 Space 칸, 깡패 되면 F 칸, 전직하면 Q 칸 · 칸 모양은 핫바와 동일</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">H-2</span><div class="body">
+    <div class="do"><span class="who">전원</span><kbd>ESC</kbd> 옵션 — 감도·볼륨 슬라이더 조작</div>
+    <div class="expect">슬라이더 움직이는 <b>즉시 들리고/느껴지고</b> · "확인"으로 저장 · "취소"·ESC면 원래 값으로 되돌아간다 · 게임 재시작 후에도 저장값 유지</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">H-3</span><div class="body">
+    <div class="do"><span class="who">전원</span>옵션 창 열린 채 <kbd>WASD</kbd></div>
+    <div class="expect">캐릭터가 안 움직인다 · ESC 한 번이면 옵션만 닫힌다(게임 종료는 옵션 안 버튼뿐)</div>
+  </div></div>
+  <div class="case"><input type="checkbox"><span class="id">H-4</span><div class="body">
+    <div class="do"><span class="who c-cat">고양이</span>추격 중 시점 회전 — 벽 근처에서</div>
+    <div class="expect">카메라가 벽에 파묻히지 않고 거리 유지 · 채팅 타이핑 중에도 시점 회전은 산다</div>
+  </div></div>
+</section>
+
+<section>
+  <h2>소감 기록</h2>
+  <div class="callout">
+    <p><b>다 돌면 마지막으로 이 세 줄만</b> — 다음 밸런스·기획이 여기서 갈린다.</p>
+    <p>① 즉시 탈락이 판을 너무 빨리 끝내나 · 관전이 지루한가 ② 2단계가 자연스럽게 열리나 ③ 쥐로 살아남을 만한가(봇 하한 37%보다 위 체감인가)</p>
+  </div>
+  <textarea placeholder="여기 적고 스크린샷 — 페이지 닫으면 사라진다"></textarea>
+</section>
+
+<footer>
+  기준 밸런스: 시작 치즈 65 · 요새 80/HP480 · 판 12분 · 2단계 4분 — 원본 수치는 규칙과-현황 페이지 ·
+  버그가 나면 그 자리에서 <code>/send log</code>(개발 빌드)
+</footer>
+</div>
