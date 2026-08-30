@@ -66,6 +66,15 @@ namespace CTC.Editor
                 AssetDatabase.CreateFolder("Assets", "Materials");
 
             var shader = AssetDatabase.LoadAssetAtPath<Shader>(UrpShaderPath);
+            if (shader == null)
+            {
+                // **여기가 조용히 깨지던 자리다**(2026-08-30). 셰이더그래프가 아직 임포트 중이거나
+                // 서브에셋 fileID가 바뀌면 이 로드가 null을 준다. 그대로 `new Material(null)`을 하면
+                // 에러 한 줄 없이 **마젠타 머티리얼**이 구워져 프리팹에 박힌다.
+                Debug.LogError($"[SetupNetworkingScene] 셰이더를 못 읽었다: {UrpShaderPath} — URP/Lit으로 대체한다");
+                shader = Shader.Find("Universal Render Pipeline/Lit");
+            }
+
             var source = AssetDatabase.LoadAssetAtPath<Material>(_sourceMatPath);
 
             var mat = new Material(shader) { name = _name };
@@ -79,6 +88,12 @@ namespace CTC.Editor
             string path = MaterialsDir + "/" + _name + ".mat";
             AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(mat, path);
+
+            // 구운 뒤 실제로 셰이더가 붙었는지 다시 확인한다 — 디스크에 마젠타가 남는 것을 막는다.
+            var written = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (written != null && written.shader == null)
+                Debug.LogError($"[SetupNetworkingScene] {_name}에 셰이더가 안 붙었다 — 화면에 마젠타로 뜬다");
+
             return mat;
         }
 

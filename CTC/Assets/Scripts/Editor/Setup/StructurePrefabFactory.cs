@@ -27,9 +27,12 @@ namespace CTC.Editor
     {
         // 설치형 NetworkObject 프리팹(요새·미끼). 프리미티브 + Health/RoleTag(Mouse)/PlayerDeath.
         // RoleTag.Mouse라 고양이 덮치기 판정을 그대로 받는다(파괴 가능, 보상은 플레이어 한정).
+        // _visualMesh를 주면 프리미티브에서 **그리는 부분만** 떼고 그 메시를 대신 얹는다.
+        // 콜라이더(=밸런스 치수)는 프리미티브가 계속 들고 있다 — 여기서 크기를 건드리면 안 된다.
         private static GameObject CreateStructurePrefab(
             string _name, string _prefabPath, PrimitiveType _primitive, Material _material,
-            int _maxHp, Vector3 _scale, System.Action<GameObject> _addExtras, int _layer = -1)
+            int _maxHp, Vector3 _scale, System.Action<GameObject> _addExtras, int _layer = -1,
+            Mesh _visualMesh = null, Material _visualMaterial = null)
         {
             var root = new GameObject(_name);
             try
@@ -55,6 +58,13 @@ namespace CTC.Editor
                 body.transform.localPosition = new Vector3(0f, _scale.y * unitHalfHeight, 0f);
                 body.transform.localScale = _scale;
                 if (_material != null) body.GetComponent<Renderer>().sharedMaterial = _material;
+
+                if (_visualMesh != null)
+                {
+                    PropAssets.AddVisual(root, "Visual", _visualMesh, _visualMaterial,
+                        Vector3.zero, Quaternion.identity);
+                    PropAssets.StripRenderer(body);
+                }
 
                 // 레이어는 콜라이더가 붙은 Body까지 칠해야 물리 필터가 걸린다
                 if (_layer >= 0)
@@ -118,7 +128,10 @@ namespace CTC.Editor
             shape.rotation = new Vector3(-90f, 0f, 0f); // 위로
 
             var renderer = vfxGo.GetComponent<ParticleSystemRenderer>();
-            renderer.sharedMaterial = GridboxMaterial("Yellow");
+            // 튀는 조각은 치즈 재질로 — 프로토타입 노랑은 창고 벽과 같은 색이라 분출이 안 보였다.
+            // 메시는 큐브 그대로다: 파티클 하나가 수천 정점인 쐐기 메시를 쓰면 분출마다 그게 곱해진다.
+            Material cheeseMat = PropAssets.LoadMaterial(PropAssets.CHEESE_MATERIAL);
+            renderer.sharedMaterial = cheeseMat != null ? cheeseMat : GridboxMaterial("Yellow");
             renderer.renderMode = ParticleSystemRenderMode.Mesh;
             renderer.mesh = PrimitiveMesh(PrimitiveType.Cube);
 
@@ -172,6 +185,20 @@ namespace CTC.Editor
                 // **벽마다 따로 구멍을 판다** — 통째로 도려내면 쥐 전용 문까지 막혀
                 // 요새 안이 갈 수 없는 곳이 된다. 문은 벽 사이의 빈칸이라 저절로 남는다.
                 CarveWalls(root);
+
+                // 보이는 것만 실제 치수의 메시 하나로 갈아 끼운다(2026-08-30).
+                // 벽 박스 8개는 **콜라이더로 남는다** — 쥐만 통과하는 문 1.0×0.75가 거기 걸려 있고,
+                // FortressPushLogic·NavGridBlocker가 같은 치수를 전제한다.
+                // 박스마다 치즈 구멍을 파지 않은 이유: 비균등 스케일에 눌려 구멍이 타원이 되고
+                // 이음매마다 각진 틈이 보인다. 메시가 없으면 프로토타입 박스가 그대로 보인다.
+                Mesh wallMesh = PropAssets.LoadMesh(PropAssets.FORTRESS_MESH);
+                if (wallMesh != null)
+                {
+                    GameObject visual = PropAssets.AddVisual(root, "Visual", wallMesh,
+                        PropAssets.LoadMaterial(PropAssets.FORTRESS_MATERIAL),
+                        Vector3.zero, Quaternion.identity);
+                    PropAssets.StripRenderersExcept(root, visual);
+                }
 
                 // 길찾기 격자 자국(2026-08-18) — 벽은 **고양이가 부술 수 있는 칸**, 입구는 **쥐 전용 문**.
                 // 인방(입구 위 가로대)이 문 자리에도 콜라이더를 두므로, 문 띠를 따로 찍지 않으면

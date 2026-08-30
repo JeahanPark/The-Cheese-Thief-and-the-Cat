@@ -72,6 +72,17 @@ namespace CTC.Editor
                 body.transform.localScale = new Vector3(1.2f, 1.0f, 0.4f);
                 body.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Brown");
 
+                // 벽돌 줄눈이 파인 패널로 갈아 끼운다(2026-08-30). 매끈한 갈색 큐브는
+                // "부술 수 있는 벽"으로 안 읽혔다 — 줄눈이 그 힌트다. 콜라이더는 큐브 그대로.
+                Mesh panelMesh = PropAssets.LoadMesh(PropAssets.ALCOVE_MESH);
+                if (panelMesh != null)
+                {
+                    PropAssets.AddVisual(root, "Visual", panelMesh,
+                        PropAssets.LoadMaterial(PropAssets.ALCOVE_MATERIAL),
+                        Vector3.zero, Quaternion.identity);
+                    PropAssets.StripRenderer(body);
+                }
+
                 // 판이 시작할 때 서므로 구운 폴리곤에 없다 — 제 자리를 도려낸다
                 root.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
                 // 격자 자국 — 벽감·상자는 **누구나** 부순다(CombatLogic의 MapLoot 예외)
@@ -111,6 +122,18 @@ namespace CTC.Editor
                 // 시각물의 콜라이더는 지운다 — 남기면 쥐가 치즈에 걸려 넘어진다
                 Object.DestroyImmediate(body.GetComponent<Collider>());
                 body.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Yellow");
+
+                // 이미 구워 둔 치즈 쐐기를 그대로 쓴다(2026-08-30) — 노란 구는 등급 원반과 색이 같아
+                // "떨어진 치즈"인지 "파밍 지점"인지 헷갈렸다. 트리거는 손대지 않는다.
+                Mesh cheeseMesh = PropAssets.LoadMesh(PropAssets.CHEESE_MESH);
+                Material cheeseMat = PropAssets.LoadMaterial(PropAssets.CHEESE_MATERIAL);
+                if (cheeseMesh != null && cheeseMat != null)
+                {
+                    body.GetComponent<MeshFilter>().sharedMesh = cheeseMesh;
+                    body.GetComponent<Renderer>().sharedMaterial = cheeseMat;
+                    // 쐐기는 밑면이 원점이다(구는 중심이 원점이었다) — 바닥에 눕힌다
+                    body.transform.localPosition = new Vector3(0f, 0.02f, 0f);
+                }
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, CheeseDropPrefabPath);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());

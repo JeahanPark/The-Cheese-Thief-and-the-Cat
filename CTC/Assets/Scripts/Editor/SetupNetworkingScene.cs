@@ -136,9 +136,11 @@ namespace CTC.Editor
             GameObject cheeseDropPrefab = CreateCheeseDropPrefab();
             GameObject dogPrefab = CreateDogPrefab();
             GameObject heroTicket = CreateJobTicketPrefab(
-                "HeroTicket", HeroTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Hero, "Blue2");
+                "HeroTicket", HeroTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Hero, "Blue2",
+                PropAssets.HERO_TICKET_MATERIAL);
             GameObject gangTicket = CreateJobTicketPrefab(
-                "GangTicket", GangTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Gang, "Purple");
+                "GangTicket", GangTicketPrefabPath, CTC.Runtime.Match.MouseJobId.Gang, "Purple",
+                PropAssets.GANG_TICKET_MATERIAL);
             GameObject lootBoxPrefab = CreateLootBoxPrefab(cheeseDropPrefab, heroTicket, gangTicket);
             // 벽감은 상자를 참조한다(부수면 그 뒤에서 상자가 드러난다) — 순서가 중요하다
             GameObject alcovePrefab = CreateAlcovePrefab(lootBoxPrefab, dogPrefab);
@@ -158,7 +160,11 @@ namespace CTC.Editor
                     // 격자에도 자국을 남긴다 — 고양이·강아지만 부순다(쥐 총알은 아군 구조물을 못 때린다)
                     var blocker = _root.AddComponent<CTC.Runtime.Ai.NavGridBlocker>();
                     SetInt(blocker, "m_Kind", (int)CTC.Runtime.Ai.NavStructureKind.CatBreakable);
-                });
+                },
+                // 한 조각이 빠진 치즈 바퀴로 보인다(2026-08-30) — 노란 큐브는 요새 벽과 구별이 안 됐다.
+                // 콜라이더는 여전히 1×0.8×1 큐브다.
+                _visualMesh: PropAssets.LoadMesh(PropAssets.WAREHOUSE_MESH),
+                _visualMaterial: PropAssets.LoadMaterial(PropAssets.CHEESE_MATERIAL));
 
             // 플레이어 수치는 CSV(PlayerInfo.csv)가 원본 — 이 생성기는 굽기만 한다(2026-07-31).
             // 이속·HP·FOV를 바꾸려면 CSV만 고치고 이 메뉴를 다시 돌리면 된다.

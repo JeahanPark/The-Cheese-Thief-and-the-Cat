@@ -62,6 +62,16 @@ namespace CTC.Editor
                 body.transform.localScale = new Vector3(0.7f, 0.7f, 0.7f);
                 body.GetComponent<Renderer>().sharedMaterial = GridboxMaterial("Orange");
 
+                // 나무 궤짝 메시로 갈아 끼운다(2026-08-30). **단위 크기(±0.5)로 구워** 두었기 때문에
+                // 위 균등 스케일 0.7이 그대로 먹고 BoxCollider는 손도 안 닿는다.
+                Mesh crateMesh = PropAssets.LoadMesh(PropAssets.CRATE_MESH);
+                Material crateMat = PropAssets.LoadMaterial(PropAssets.CRATE_MATERIAL);
+                if (crateMesh != null && crateMat != null)
+                {
+                    body.GetComponent<MeshFilter>().sharedMesh = crateMesh;
+                    body.GetComponent<Renderer>().sharedMaterial = crateMat;
+                }
+
                 // 판이 시작할 때 서므로 구운 폴리곤에 없다 — 제 자리를 도려낸다
                 root.AddComponent<CTC.Runtime.Map.NavMeshCarver>();
                 // 격자 자국 — 벽감·상자는 **누구나** 부순다(CombatLogic의 MapLoot 예외)
@@ -84,7 +94,7 @@ namespace CTC.Editor
         /// 달려가 줍는 물건이다. 색만 다르게 둔다: 용사는 파랑, 깡패는 보라.
         /// </summary>
         private static GameObject CreateJobTicketPrefab(
-            string _name, string _path, CTC.Runtime.Match.MouseJobId _job, string _color)
+            string _name, string _path, CTC.Runtime.Match.MouseJobId _job, string _color, string _materialPath)
         {
             var root = new GameObject(_name);
             try
@@ -105,6 +115,17 @@ namespace CTC.Editor
                 body.transform.localScale = new Vector3(0.35f, 0.5f, 0.08f);   // 얇은 패 — 종이 느낌
                 Object.DestroyImmediate(body.GetComponent<Collider>());
                 body.GetComponent<Renderer>().sharedMaterial = GridboxMaterial(_color);
+
+                // 테두리와 끈 구멍이 있는 패로 갈아 끼운다(2026-08-30). 메시가 이미 실제 치수라
+                // 스케일을 1로 되돌린다 — 여기엔 콜라이더가 없어(위에서 지웠다) 밸런스가 안 걸린다.
+                Mesh ticketMesh = PropAssets.LoadMesh(PropAssets.TICKET_MESH);
+                Material ticketMat = PropAssets.LoadMaterial(_materialPath);
+                if (ticketMesh != null && ticketMat != null)
+                {
+                    body.GetComponent<MeshFilter>().sharedMesh = ticketMesh;
+                    body.GetComponent<Renderer>().sharedMaterial = ticketMat;
+                    body.transform.localScale = Vector3.one;
+                }
 
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, _path);
                 BakeGlobalObjectIdHash(asset.GetComponent<NetworkObject>());
