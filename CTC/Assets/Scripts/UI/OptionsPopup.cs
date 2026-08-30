@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CTC.Runtime.UI
 {
     /// <summary>
-    /// 옵션 창 — 마우스 감도 · 배경음 · 효과음 (2026-08-01 건의).
+    /// 옵션 창 — 마우스 감도 · 배경음 · 효과음 · **해상도 · 창모드** (2026-08-01 · 화면 2026-08-30).
     ///
     /// MVC: Model은 `UserSettings`(PlayerPrefs + R3), 여기는 **표시와 입력 전달만** 한다.
     /// 슬라이더를 움직이면 곧바로 Model에 쓰고, Model이 바뀌면 슬라이더·숫자가 따라온다.
@@ -34,6 +34,15 @@ namespace CTC.Runtime.UI
         [SerializeField] private TMP_Text m_SensitivityValue;
         [SerializeField] private TMP_Text m_BgmValue;
         [SerializeField] private TMP_Text m_SfxValue;
+        [Header("화면")]
+        [SerializeField] private TMP_Text m_ResolutionValue;
+        [SerializeField] private Button m_ResolutionPrev;
+        [SerializeField] private Button m_ResolutionNext;
+        [SerializeField] private TMP_Text m_ModeValue;
+        [SerializeField] private Button m_ModePrev;
+        [SerializeField] private Button m_ModeNext;
+
+        [Header("버튼")]
         [SerializeField] private Button m_ResetButton;
         [SerializeField] private Button m_ConfirmButton;
         [SerializeField] private Button m_CloseButton;
@@ -48,6 +57,12 @@ namespace CTC.Runtime.UI
                 UserSettings.MIN_SENSITIVITY, UserSettings.MAX_SENSITIVITY, "0.00");
             BindSlider(m_BgmSlider, m_BgmValue, UserSettings.BgmVolume, 0f, 1f, "0%");
             BindSlider(m_SfxSlider, m_SfxValue, UserSettings.SfxVolume, 0f, 1f, "0%");
+
+            BindCycler(m_ResolutionPrev, m_ResolutionNext, m_ResolutionValue,
+                DisplaySettings.ResolutionIndex, () => DisplaySettings.Options.Count, ResolutionText);
+            BindCycler(m_ModePrev, m_ModeNext, m_ModeValue,
+                DisplaySettings.Mode, () => System.Enum.GetValues(typeof(WindowMode)).Length,
+                i => DisplayLogic.ModeLabel((WindowMode)i));
 
             if (m_ResetButton != null) m_ResetButton.OnClickAsObservable().Subscribe(_ => OnClickReset()).AddTo(this);
             if (m_ConfirmButton != null) m_ConfirmButton.OnClickAsObservable().Subscribe(_ => OnClickConfirm()).AddTo(this);
@@ -69,6 +84,7 @@ namespace CTC.Runtime.UI
         {
             if (m_Panel == null || !m_Panel.activeSelf) return;
             UserSettings.Revert();
+            DisplaySettings.Revert();
             m_Panel.SetActive(false);
             UiFocus.SetModalOpen(false);
         }
@@ -79,17 +95,68 @@ namespace CTC.Runtime.UI
             if (UiFocus.ModalOpen) UiFocus.SetModalOpen(false);
         }
 
-        private void OnClickReset() => UserSettings.ResetToDefaults();
+        /// <summary>
+        /// 화면은 CSV 기본값이 없다 — 기기마다 다르기 때문이다. 대신 **가장 안전한 조합**으로 간다:
+        /// 이 모니터의 최대 해상도 + 테두리 없는 창(알탭이 빠르고 스팀 오버레이가 제일 잘 뜬다).
+        /// </summary>
+        private void OnClickReset()
+        {
+            UserSettings.ResetToDefaults();
+            DisplaySettings.ResolutionIndex.Value = 0;   // 목록은 큰 것이 앞이다
+            DisplaySettings.Mode.Value = (int)WindowMode.Borderless;
+        }
 
         // 저장이 먼저다 — 뒤따르는 Close()의 되돌리기가 방금 저장한 값을 다시 읽어 무효타가 된다
         private void OnClickConfirm()
         {
             UserSettings.Save();
+            DisplaySettings.Save();
             Close();
         }
 
         private void OnClickCancel() => Close();
         private void OnClickQuit() => EscapeRouter.QuitGame();
+
+        private static string ResolutionText(int _index)
+        {
+            System.Collections.Generic.IReadOnlyList<Vector2Int> options = DisplaySettings.Options;
+            if (options.Count == 0) return "-";
+
+            Vector2Int r = options[DisplayLogic.ClampIndex(_index, options.Count)];
+            return DisplayLogic.ResolutionLabel(r.x, r.y);
+        }
+
+        /// <summary>
+        /// ◀ 값 ▶ 한 줄. **드롭다운을 안 쓴 이유**: TMP_Dropdown은 템플릿·뷰포트·아이템까지
+        /// 손으로 지어야 하는데, 이 프로젝트는 UI를 전부 코드로 굽는다. 고를 것이 서너 개뿐이라
+        /// 화살표 두 개가 짓기도 쓰기도 간단하다.
+        ///
+        /// 양 끝에서 돈다 — 끝에서 막히면 "고장 났나" 싶어 한 번 더 누르게 된다.
+        /// </summary>
+        private void BindCycler(
+            Button _prev, Button _next, TMP_Text _label,
+            ReactiveProperty<int> _model, System.Func<int> _count, System.Func<int, string> _format)
+        {
+            if (_model == null) return;
+
+            if (_prev != null) _prev.OnClickAsObservable().Subscribe(_ => Step(_model, _count, -1)).AddTo(this);
+            if (_next != null) _next.OnClickAsObservable().Subscribe(_ => Step(_model, _count, +1)).AddTo(this);
+
+            _model.Subscribe(v =>
+            {
+                if (_label != null) _label.text = _format(v);
+            }).AddTo(this);
+        }
+
+        private static void Step(ReactiveProperty<int> _model, System.Func<int> _count, int _delta)
+        {
+            int count = _count();
+            if (count <= 0) return;
+
+            int next = (_model.Value + _delta) % count;
+            if (next < 0) next += count;
+            _model.Value = next;
+        }
 
         // 양방향: 슬라이더 → Model, Model → 슬라이더·숫자.
         // Model에서 되돌아온 값을 다시 슬라이더에 쓰지만, Slider는 같은 값 대입 시
