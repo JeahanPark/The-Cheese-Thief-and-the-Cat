@@ -1,0 +1,115 @@
+using CTC.Runtime.Core;
+using CTC.Runtime.Networking;
+using R3;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
+namespace CTC.Runtime.Room
+{
+    /// <summary>
+    /// 대기실의 입력만 받는다(규칙 5). 버튼은 R3 구독, 핸들러 이름은 OnClick~(규칙 2·4).
+    ///
+    /// 나가기는 **NGO 세션을 먼저 닫고** 로비로 돌아간다 — 순서를 바꾸면 씬이 사라진 뒤에
+    /// 끊기며 유령 세션이 남는다(스팀 방 이탈이 안 돼 재입장이 막힌다).
+    /// </summary>
+    public class RoomController : MonoBehaviour
+    {
+        [SerializeField] private RoomSession m_Session;
+        [SerializeField] private RoomDirector m_Director;
+
+        [Header("버튼")]
+        [SerializeField] private Button m_StartButton;
+        [SerializeField] private Button m_LeaveButton;
+
+        /// <summary>맵 버튼 — 배열 순서가 곧 맵 인덱스다(<see cref="RoomMapCatalog"/>와 같은 순서).</summary>
+        [SerializeField] private Button[] m_MapButtons;
+
+        [Header("씬")]
+        [SerializeField] private string m_LobbySceneName = "Lobby";
+
+        private bool m_Leaving;
+
+        private void Awake()
+        {
+            // 대기실은 **커서를 놓는다.** 버튼을 눌러야 하는 화면이고, 커서가 잠겨 있으면
+            // `OrbitCameraController`가 돌지만 UI를 못 누른다(둘 다는 안 된다).
+            // 인게임에서 돌아왔을 때 잠금이 남아 있을 수 있어 여기서 한 번 푼다.
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            if (m_StartButton != null)
+                m_StartButton.OnClickAsObservable().Subscribe(_ => OnClickStart()).AddTo(this);
+
+            if (m_LeaveButton != null)
+                m_LeaveButton.OnClickAsObservable().Subscribe(_ => OnClickLeave()).AddTo(this);
+
+            if (m_MapButtons == null) return;
+            for (int i = 0; i < m_MapButtons.Length; i++)
+            {
+                if (m_MapButtons[i] == null) continue;
+
+                int index = i; // 클로저 캡처 — 루프 변수를 그대로 넘기면 전부 마지막 값이 된다
+                m_MapButtons[i].OnClickAsObservable().Subscribe(_ => OnClickMap(index)).AddTo(this);
+            }
+        }
+
+        private void OnEnable()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm != null) nm.OnClientDisconnectCallback += OnDisconnected;
+        }
+
+        private void OnDisable()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm != null) nm.OnClientDisconnectCallback -= OnDisconnected;
+        }
+
+        private void OnClickStart()
+        {
+            if (m_Director == null || m_Session == null) return;
+            if (!m_Session.CanStart) return;
+
+            m_Director.ServerStartMatch();
+        }
+
+        private void OnClickMap(int _index)
+        {
+            if (m_Session == null || !m_Session.IsHost || m_Session.Starting) return;
+            m_Session.SelectMap(_index);
+        }
+
+        private void OnClickLeave()
+        {
+            if (m_Leaving) return;
+            m_Leaving = true;
+
+            Shutdown();
+            SceneManager.LoadScene(m_LobbySceneName);
+        }
+
+        // 호스트가 방을 닫거나 연결이 끊겼다 — 대기실에 혼자 남아 있을 이유가 없다.
+        private void OnDisconnected(ulong _clientId)
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm == null || m_Leaving) return;
+            if (nm.IsServer || nm.LocalClientId != _clientId) return;
+
+            GameDebug.LogWarning("[Room] 연결이 끊겼다 — 로비로 되돌린다");
+            m_Leaving = true;
+            Shutdown();
+            SceneManager.LoadScene(m_LobbySceneName);
+        }
+
+        private static void Shutdown()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm != null && (nm.IsListening || nm.IsClient || nm.IsServer)) nm.Shutdown();
+
+            var steam = Object.FindAnyObjectByType<SteamLobbyManager>();
+            if (steam != null) steam.LeaveLobby();
+        }
+    }
+}
