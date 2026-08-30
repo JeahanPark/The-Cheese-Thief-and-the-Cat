@@ -1,0 +1,231 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; background: #0a0f16;
+      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    a { color: #ffd84d; } a:hover { color: #ffe9a3; }
+    .kb { display: inline-block; padding: 1px 6px; border-radius: 4px; background: #212b3a;
+      border: 1px solid #3a4860; color: #ffd84d; font-weight: 700; font-size: 11px; }
+    .mk { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: #f2705c;
+      color: #1a0f0d; font-size: 12px; font-weight: 900; display: flex; align-items: center;
+      justify-content: center; box-shadow: 0 0 0 3px rgba(242,112,92,0.24); }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 720px; overflow: hidden; display: flex; flex-direction: column; background: #0a0f16;">
+
+  <!-- ── 게임 화면 ── -->
+  <div style="position: relative; height: 610px; overflow: hidden; color: #e9edf2;
+              background: radial-gradient(120% 90% at 50% 30%, #182234 0%, #0f1620 55%, #0a0f16 100%);">
+    <div style="position: absolute; inset: 0; opacity: 0.25;
+                background: repeating-linear-gradient(0deg, transparent 0 31px, #223046 31px 32px),
+                            repeating-linear-gradient(90deg, transparent 0 31px, #223046 31px 32px);"></div>
+
+    <div style="position: absolute; left: 140px; top: 150px; width: 190px; height: 20px; border-radius: 2px;
+                background: linear-gradient(180deg, #c3c8cf, #9aa1ab); box-shadow: 0 4px 10px rgba(0,0,0,0.45);"></div>
+    <div style="position: absolute; left: 140px; top: 150px; width: 20px; height: 150px; border-radius: 2px;
+                background: linear-gradient(180deg, #c3c8cf, #9aa1ab); box-shadow: 0 4px 10px rgba(0,0,0,0.45);"></div>
+    <div style="position: absolute; left: 880px; top: 210px; width: 22px; height: 190px; border-radius: 2px;
+                background: linear-gradient(180deg, #c3c8cf, #9aa1ab); box-shadow: 0 4px 10px rgba(0,0,0,0.45);"></div>
+    <div style="position: absolute; left: 620px; top: 330px; width: 116px; height: 78px; border-radius: 4px;
+                background: linear-gradient(160deg, #3a2f24, #241d16); border: 2px solid #4a3a2a;"></div>
+
+    <div style="position: absolute; left: 400px; top: 262px; width: 18px; height: 13px; border-radius: 50%;
+                background: radial-gradient(circle at 35% 35%, #ffc85e, #e8862e); box-shadow: 0 0 12px rgba(232,134,46,0.55);"></div>
+    <div style="position: absolute; left: 760px; top: 186px; width: 18px; height: 13px; border-radius: 50%;
+                background: radial-gradient(circle at 35% 35%, #ffc85e, #e8862e); box-shadow: 0 0 12px rgba(232,134,46,0.55);"></div>
+
+    <div style="position: absolute; left: 486px; top: 292px;">
+      <svg width="74" height="78" viewBox="0 0 62 66" fill="none" aria-hidden="true">
+        <ellipse cx="31" cy="62" rx="20" ry="4.2" fill="#000" opacity="0.5"/>
+        <path d="M42 40 C51 36 56 40 54 46" stroke="#9dc4bc" stroke-width="2.8" stroke-linecap="round"/>
+        <ellipse cx="29" cy="43" rx="16.5" ry="13.5" fill="#7fa8a0"/>
+        <circle cx="20" cy="24" r="7.3" fill="#5d8880"/>
+        <circle cx="38" cy="24" r="7.3" fill="#5d8880"/>
+        <circle cx="29" cy="30" r="12.8" fill="#7fa8a0"/>
+        <circle cx="24.4" cy="29" r="1.8" fill="#12201d"/>
+        <circle cx="33.6" cy="29" r="1.8" fill="#12201d"/>
+      </svg>
+    </div>
+
+    <!-- ① 상단 중앙 · 판 상태 한 줄 -->
+    <div style="position: absolute; left: 50%; transform: translateX(-50%); top: 18px;
+                display: flex; align-items: center; gap: 0; background: rgba(14,19,28,0.8);
+                border: 1px solid #2c3a50; border-radius: 9px; overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 7px; padding: 8px 14px;">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.4" stroke="#cfd6de" stroke-width="1.4"/>
+          <path d="M8 4.6 V8.2 L10.4 9.8" stroke="#cfd6de" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums;">08:42</span>
+      </div>
+      <div style="width: 1px; align-self: stretch; background: #2c3a50;"></div>
+      <div style="display: flex; align-items: center; gap: 7px; padding: 8px 14px;">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <ellipse cx="8" cy="10" rx="5" ry="4.2" fill="#7fa8a0"/>
+          <circle cx="5.4" cy="5.6" r="2.4" fill="#5d8880"/>
+          <circle cx="10.6" cy="5.6" r="2.4" fill="#5d8880"/>
+        </svg>
+        <span style="font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;">5</span>
+        <span style="font-size: 12px; color: #6f7987;">/ 7</span>
+      </div>
+      <div style="width: 1px; align-self: stretch; background: #2c3a50;"></div>
+      <div style="display: flex; align-items: center; gap: 7px; padding: 8px 14px;">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2.6 13.4 C1.9 10 3.6 6.6 6.8 5.8 C7.2 4 9 3.4 10 4.8 C11 3.4 12.4 4.4 12.8 5.8 C16 6.6 17 10 16 13.4 Z"
+                transform="translate(-1.2,0)" fill="#f2705c"/>
+        </svg>
+        <span style="font-size: 14px; font-weight: 700; color: #ff9b8a;">고양이 생존</span>
+      </div>
+      <div class="mk" style="right: -9px; top: -9px;">1</div>
+    </div>
+
+    <!-- ② 우상단 상태 클러스터 -->
+    <div style="position: absolute; right: 22px; top: 20px; display: flex; flex-direction: column;
+                align-items: flex-end; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; border-radius: 8px; padding: 6px 11px;">
+        <span style="font-size: 12px; color: #8b97a5;">HP</span>
+        <div style="position: relative; width: 116px; height: 10px; border-radius: 5px; background: #26303f; overflow: hidden;">
+          <div style="position: absolute; inset: 0; width: 70%; background: linear-gradient(90deg, #67c257, #8fdb61);"></div>
+        </div>
+        <span style="font-size: 12px; font-variant-numeric: tabular-nums; color: #dfe5ec;">70</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; border-radius: 8px; padding: 6px 11px;">
+        <div style="width: 13px; height: 10px; border-radius: 50%;
+                    background: radial-gradient(circle at 35% 35%, #ffc85e, #e8862e);"></div>
+        <span style="font-size: 14px; font-weight: 800; color: #ffd84d; font-variant-numeric: tabular-nums;">168</span>
+        <span style="font-size: 11px; color: #6f7987;">보유</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; border-radius: 8px; padding: 6px 11px;">
+        <span style="font-size: 13px; font-weight: 800; color: #f2705c;">깡패쥐</span>
+        <span style="font-size: 11px; color: #8b97a5;">부하 2</span>
+      </div>
+      <div class="mk" style="left: -9px; top: -9px;">2</div>
+    </div>
+
+    <!-- ③ 좌측 · 층으로 나눈 정보 -->
+    <div style="position: absolute; left: 22px; bottom: 20px; width: 330px;
+                display: flex; flex-direction: column; gap: 7px;">
+      <div style="display: flex; align-items: center; gap: 8px; background: rgba(16,22,32,0.7);
+                  border: 1px solid #202b3c; border-radius: 7px; padding: 5px 10px; align-self: flex-start;">
+        <span style="font-size: 11px; color: #6f7987;">확장 맵</span>
+        <span style="font-size: 11px; color: #2c3a50;">|</span>
+        <span style="font-size: 11px; color: #8b97a5;">창고까지 12m</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 3px; font-size: 12px;">
+        <div style="color: #cfd6de;"><span style="color: #8cd0ff; font-weight: 700;">생쥐삼형제</span> : 북쪽 창고 비었음</div>
+        <div style="color: #cfd6de;"><span style="color: #ffd84d; font-weight: 700;">숨은쥐</span> : 고양이 남쪽에 있다</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 7px; align-self: flex-start;
+                  background: rgba(16,22,32,0.7); border: 1px solid #202b3c; border-radius: 7px; padding: 5px 10px;">
+        <span class="kb">Enter</span><span style="font-size: 11px; color: #6f7987;">채팅</span>
+      </div>
+      <div class="mk" style="right: -2px; top: 30px;">3</div>
+    </div>
+
+    <!-- ④ 하단 중앙 · 핫바 + 능력 -->
+    <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px;
+                display: flex; flex-direction: column; align-items: flex-start; gap: 7px;">
+      <div style="display: flex; gap: 6px;">
+        <sc-for list="{{slots}}" as="s" hint-placeholder-count="5">
+          <div style="width: 88px; height: 56px; border-radius: 7px; background: rgba(14,19,28,0.84);
+                      border: 1px solid {{s.border}}; padding: 6px 7px; display: flex; flex-direction: column;
+                      justify-content: space-between;">
+            <div style="display: flex; align-items: baseline; gap: 4px;">
+              <span style="font-size: 10px; font-weight: 800; color: #ffd84d;">{{s.key}}</span>
+              <span style="font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden;
+                           text-overflow: ellipsis; color: {{s.nameColor}};">{{s.name}}</span>
+            </div>
+            <div style="font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums;
+                        color: {{s.costColor}};">{{s.cost}}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; gap: 6px;">
+        <div style="width: 88px; height: 56px; border-radius: 7px; background: rgba(14,19,28,0.84);
+                    border: 1px solid #2c3a50; position: relative; overflow: hidden;
+                    display: flex; flex-direction: column; justify-content: space-between; padding: 6px 7px;">
+          <div style="position: absolute; left: 0; right: 0; top: 0; height: 42%; background: rgba(120,116,104,0.55);"></div>
+          <div style="position: relative; display: flex; align-items: baseline; gap: 4px;">
+            <span style="font-size: 10px; font-weight: 800; color: #ffd84d;">Space</span>
+            <span style="font-size: 11px; font-weight: 700;">대시</span>
+          </div>
+          <div style="position: relative; font-size: 11px; color: #cfd6de; font-variant-numeric: tabular-nums;">2.4초</div>
+        </div>
+        <div style="width: 88px; height: 56px; border-radius: 7px; background: rgba(14,19,28,0.84);
+                    border: 1px solid #2c3a50; display: flex; flex-direction: column;
+                    justify-content: space-between; padding: 6px 7px;">
+          <div style="display: flex; align-items: baseline; gap: 4px;">
+            <span style="font-size: 10px; font-weight: 800; color: #ffd84d;">F</span>
+            <span style="font-size: 11px; font-weight: 700;">임명</span>
+          </div>
+          <div style="font-size: 11px; color: #80d16b;">사용 가능</div>
+        </div>
+      </div>
+      <div class="mk" style="left: -11px; top: 46px;">4</div>
+    </div>
+  </div>
+
+  <!-- ── 변경 요약 ── -->
+  <div style="height: 110px; background: #0d1219; border-top: 1px solid #202b3c;
+              padding: 13px 22px; display: flex; gap: 10px;">
+    <sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+      <div style="flex-grow: 1; flex-basis: 0; display: flex; gap: 10px;">
+        <div style="width: 20px; height: 20px; border-radius: 50%; background: #f2705c; color: #1a0f0d;
+                    font-size: 11px; font-weight: 900; display: flex; align-items: center;
+                    justify-content: center; flex-shrink: 0;">{{n.no}}</div>
+        <div style="display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-size: 13px; font-weight: 800; color: #e9ebee;">{{n.title}}</div>
+          <div style="font-size: 12px; color: #8b97a5; line-height: 1.45;">{{n.desc}}</div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const slot = (key, name, cost, kind) => ({
+      key: key, name: name, cost: cost,
+      border: kind === 'owned' ? '#3f6b3a' : '#2c3a50',
+      nameColor: kind === 'poor' ? '#8b97a5' : '#e9ebee',
+      costColor: kind === 'owned' ? '#80d16b' : kind === 'poor' ? '#ff8672' : '#ffd84d'
+    });
+    return {
+      slots: [
+        slot('1', '새총', '150', 'buy'),
+        slot('2', '기관총', '600', 'poor'),
+        slot('3', '대시', '보유', 'owned'),
+        slot('4', '요새', '80', 'buy'),
+        slot('5', '창고', '150', 'buy')
+      ],
+      notes: [
+        { no: '1', title: '판 상태를 한 줄로',
+          desc: '타이머 · 남은 쥐 · 고양이 생존을 상단 중앙 한 덩이로 묶는다' },
+        { no: '2', title: '우상단은 내 것만',
+          desc: 'HP · 치즈 · 직업. 고양이 HP는 지금처럼 쥐에게 안 보인다' },
+        { no: '3', title: '좌하단 겹침 정리',
+          desc: '맵 정보 · 채팅 · 입력 힌트가 한 자리를 다투던 것을 위아래 층으로' },
+        { no: '4', title: '임시 UI 제거',
+          desc: 'IMGUI 접속 창은 로비로 옮겨 삭제. 능력 칸은 핫바 왼쪽 기준에 맞춘다' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; background: #0f1620;
+      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    a { color: #ffd84d; } a:hover { color: #ffe9a3; }
+  </style>
+</helmet>
+
+<div style="width: 1080px; height: 620px; background: #0f1620; color: #e9ebee; padding: 28px 30px;
+            display: flex; flex-direction: column; gap: 20px;">
+
+  <div style="display: flex; flex-direction: column; gap: 5px;">
+    <div style="font-size: 21px; font-weight: 900; letter-spacing: -0.01em;">씬 구조와 화면 흐름</div>
+    <div style="font-size: 13px; color: #8b97a5;">
+      씬 4개. 네트워크가 붙는 곳은 대기실부터다 — 그 앞은 전부 오프라인이라 스팀이 흔들려도 게임이 안 죽는다.
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px;">
+    <sc-for list="{{scenes}}" as="s" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 9px; background: rgba(20,27,39,0.85);
+                  border: 1px solid {{s.border}}; border-radius: 11px; padding: 15px 16px 17px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: {{s.dot}};"></div>
+          <div style="font-size: 11px; font-weight: 800; letter-spacing: 0.09em; color: {{s.dot}};">{{s.net}}</div>
+        </div>
+        <div style="font-size: 16px; font-weight: 900;">{{s.name}}</div>
+        <div style="font-size: 11px; color: #6f7987; font-family: ui-monospace, Menlo, Consolas, monospace;">{{s.file}}</div>
+        <div style="height: 1px; background: #202b3c; margin: 2px 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <sc-for list="{{s.items}}" as="it" hint-placeholder-count="3">
+            <div style="font-size: 12px; color: #cfd6de; line-height: 1.45;">{{it}}</div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: -8px;">
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-right: 4px;">
+      <span style="font-size: 11px; color: #8b97a5;">체크 통과</span>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true">
+        <path d="M0 6 H21 M17 2.2 L21 6 L17 9.8" stroke="#ffd84d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-right: 4px;">
+      <span style="font-size: 11px; color: #8b97a5;">방 참여 · 생성</span>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true">
+        <path d="M0 6 H21 M17 2.2 L21 6 L17 9.8" stroke="#ffd84d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-right: 4px;">
+      <span style="font-size: 11px; color: #8b97a5;">시작 · 고양이 추첨</span>
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true">
+        <path d="M0 6 H21 M17 2.2 L21 6 L17 9.8" stroke="#ffd84d" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: flex-start; gap: 8px;">
+      <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true">
+        <path d="M26 6 H5 M9 2.2 L5 6 L9 9.8" stroke="#8cd0ff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size: 11px; color: #8cd0ff;">판 끝나면 대기실로</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+    <div style="background: rgba(20,27,39,0.7); border: 1px solid #202b3c; border-radius: 10px; padding: 13px 15px;
+                display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 13px; font-weight: 800; color: #ffd84d;">Game.unity는 혼자서도 돈다</div>
+      <div style="font-size: 12px; color: #8b97a5; line-height: 1.5;">
+        플레이를 Game에서 바로 눌러도 지금처럼 동작해야 한다 — wesqa·MPPM 회귀가 전부 그 경로다.
+      </div>
+    </div>
+    <div style="background: rgba(20,27,39,0.7); border: 1px solid #202b3c; border-radius: 10px; padding: 13px 15px;
+                display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 13px; font-weight: 800; color: #ffd84d;">스팀 수명은 그대로</div>
+      <div style="font-size: 12px; color: #8b97a5; line-height: 1.5;">
+        SteamBootstrap은 DontDestroyOnLoad라 씬을 넷으로 쪼개도 연결이 끊기지 않는다.
+      </div>
+    </div>
+    <div style="background: rgba(20,27,39,0.7); border: 1px solid #202b3c; border-radius: 10px; padding: 13px 15px;
+                display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 13px; font-weight: 800; color: #f2705c;">역할 선택은 사라진다</div>
+      <div style="font-size: 12px; color: #8b97a5; line-height: 1.5;">
+        쥐/고양이 버튼과 SelectRole이 빠지고, 시작할 때 서버가 고양이 1명을 뽑는다.
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1080,"height":620}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      scenes: [
+        { name: '인트로', file: 'Intro.unity', net: '오프라인', dot: '#8b97a5', border: '#202b3c',
+          items: ['로고 · 모델 연출', '스팀 · 데이터 · 릴레이 체크', '실패하면 여기서 멈추고 재시도'] },
+        { name: '로비', file: 'Lobby.unity', net: '오프라인', dot: '#8b97a5', border: '#202b3c',
+          items: ['공개 방 목록 · 새로고침', '방 만들기 (공개 / 친구만)', '우상단: 친구 · 상점(잠김) · 설정 · 종료'] },
+        { name: '대기실', file: 'Room.unity', net: 'NGO 접속', dot: '#ffd84d', border: '#8a6a15',
+          items: ['3D — 쥐로 돌아다닌다', '방장이 맵 선택 · 시작', '참가자 보드 · 채팅 · 친구 초대'] },
+        { name: '인게임', file: 'Game.unity', net: 'NGO 씬 전환', dot: '#80d16b', border: '#3f6b3a',
+          items: ['고양이 1 vs 나머지 전원 쥐', '기존 맵 생성 · 봇 · QA 그대로', '결과 화면 → 대기실 복귀'] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

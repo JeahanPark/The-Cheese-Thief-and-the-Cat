@@ -1,0 +1,71 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "1 · 인트로",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "file": "Lobby.dc.html",
+      "title": "2 · 로비 (방 목록)",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "file": "Room.dc.html",
+      "title": "3 · 대기실 (3D)",
+      "x": 2800,
+      "y": 0,
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "file": "CatDraw.dc.html",
+      "title": "4 · 고양이 추첨",
+      "x": 0,
+      "y": 880,
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "file": "Hud.dc.html",
+      "title": "5 · 인게임 HUD 개선",
+      "x": 1400,
+      "y": 880,
+      "w": 1280,
+      "h": 720
+    },
+    {
+      "file": "Flow.dc.html",
+      "title": "0 · 씬 구조",
+      "x": 2800,
+      "y": 880,
+      "w": 1080,
+      "h": 620
+    }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -190,
+      "w": 620,
+      "text": "CANADIAN MOUSE — 프론트엔드 시안 (2026-08-26)\n임시 IMGUI 접속창을 걷어내고 인트로 → 로비 → 대기실 → 인게임을 세운다.\n톤은 기존 HUD 시안 그대로: Pretendard · 치즈 노랑 #ffd84d · 야간 남색 패널."
+    },
+    {
+      "id": "note-cat",
+      "x": 1400,
+      "y": -190,
+      "w": 560,
+      "text": "확정 (2026-08-26)\n· 씬 4개 — Intro / Lobby / Room / Game. 네트워크는 대기실부터\n· 고양이 1명을 서버가 무작위로. 전원에게 공개 추첨\n· 밸런스 수치는 동결 — CAT_CAPACITY만 2→1\n기획서: docs/superpowers/specs/2026-08-26-frontend-flow-design.md"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

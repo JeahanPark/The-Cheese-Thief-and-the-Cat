@@ -1,0 +1,250 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+  <style>
+    body { margin: 0; background: #0a0f16;
+      font-family: Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+    a { color: #ffd84d; } a:hover { color: #ffe9a3; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1280px; height: 720px; overflow: hidden; color: #e9edf2;
+            background: radial-gradient(120% 90% at 50% 20%, #182234 0%, #0f1620 58%, #0a0f16 100%);
+            display: flex; flex-direction: column;">
+
+  <div style="position: absolute; inset: 0; opacity: 0.1;
+              background: repeating-linear-gradient(0deg, transparent 0 31px, #223046 31px 32px),
+                          repeating-linear-gradient(90deg, transparent 0 31px, #223046 31px 32px);"></div>
+
+  <!-- 상단 바 -->
+  <div style="position: relative; display: flex; align-items: center; gap: 16px;
+              padding: 18px 24px 16px; border-bottom: 1px solid #202b3c;">
+    <svg width="28" height="28" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M6 30 L26 8 L42 18 L42 34 L24 42 Z" fill="#ffd84d" stroke="#8a6a15" stroke-width="1.8" stroke-linejoin="round"/>
+      <circle cx="20" cy="27" r="4.2" fill="#0f1620" opacity="0.82"/>
+      <circle cx="32" cy="24" r="2.6" fill="#0f1620" opacity="0.82"/>
+    </svg>
+    <div style="font-size: 19px; font-weight: 800; letter-spacing: -0.01em;">CANADIAN MOUSE</div>
+    <div style="width: 1px; height: 20px; background: #2c3a50;"></div>
+    <div style="font-size: 15px; font-weight: 700; color: #8b97a5;">로비</div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <div style="display: flex; align-items: center; gap: 10px; background: rgba(14,19,28,0.8);
+                border: 1px solid #2c3a50; border-radius: 8px; padding: 6px 12px 6px 7px;">
+      <div style="width: 26px; height: 26px; border-radius: 5px;
+                  background: linear-gradient(140deg, #4a6b62, #7fa8a0);"></div>
+      <div style="font-size: 14px; font-weight: 700;">치즈사냥꾼</div>
+    </div>
+
+    <div style="display: flex; gap: 7px;">
+      <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; display: flex; align-items: center; justify-content: center;">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="7.6" cy="6.6" r="3.1" stroke="#cfd6de" stroke-width="1.5"/>
+          <path d="M2.4 16.4 C2.4 12.8 4.7 11.2 7.6 11.2 C9.3 11.2 10.7 11.7 11.6 12.7" stroke="#cfd6de" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M14.6 10.6 V16.6 M11.6 13.6 H17.6" stroke="#ffd84d" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(14,19,28,0.5);
+                  border: 1px dashed #2c3a50; display: flex; align-items: center; justify-content: center; position: relative;">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true" style="opacity: 0.42;">
+          <path d="M3.4 6.6 H16.6 L15.4 16.2 H4.6 Z" stroke="#8b97a5" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M7.2 6.6 V4.9 A2.8 2.8 0 0 1 12.8 4.9 V6.6" stroke="#8b97a5" stroke-width="1.5"/>
+        </svg>
+        <div style="position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+                    font-size: 9px; color: #6f7987; white-space: nowrap; letter-spacing: 0.05em;">상점 준비 중</div>
+      </div>
+      <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; display: flex; align-items: center; justify-content: center;">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <circle cx="10" cy="10" r="2.9" stroke="#cfd6de" stroke-width="1.5"/>
+          <path d="M10 2.2 V4.4 M10 15.6 V17.8 M2.2 10 H4.4 M15.6 10 H17.8 M4.5 4.5 L6 6 M14 14 L15.5 15.5 M15.5 4.5 L14 6 M6 14 L4.5 15.5"
+                stroke="#cfd6de" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(14,19,28,0.8);
+                  border: 1px solid #2c3a50; display: flex; align-items: center; justify-content: center;">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+          <path d="M12.4 3.2 H15.6 A1.4 1.4 0 0 1 17 4.6 V15.4 A1.4 1.4 0 0 1 15.6 16.8 H12.4"
+                stroke="#8b97a5" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8.6 13.4 L11.9 10 L8.6 6.6 M11.5 10 H3.2" stroke="#f2705c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- 본문 -->
+  <div style="position: relative; flex-grow: 1; display: flex; gap: 18px; padding: 18px 24px 0;">
+
+    <!-- 방 리스트 -->
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="font-size: 15px; font-weight: 800;">방 목록</div>
+        <div style="font-size: 13px; color: #8b97a5;">6개</div>
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; align-items: center; gap: 7px; font-size: 13px; color: #cfd6de;
+                    background: rgba(14,19,28,0.7); border: 1px solid #2c3a50; border-radius: 7px; padding: 6px 11px;">
+          <div style="width: 13px; height: 13px; border-radius: 3px; background: #ffd84d;"></div>
+          참여 가능만
+        </div>
+        <div style="display: flex; align-items: center; gap: 7px; font-size: 13px; color: #cfd6de;
+                    background: rgba(14,19,28,0.7); border: 1px solid #2c3a50; border-radius: 7px; padding: 6px 11px;">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M13.6 6.8 A5.8 5.8 0 1 0 13 10.6" stroke="#cfd6de" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M13.9 2.8 V7 H9.7" stroke="#cfd6de" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          새로고침
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; padding: 0 14px 7px; font-size: 12px; font-weight: 700;
+                  letter-spacing: 0.08em; color: #6f7987;">
+        <div style="flex-grow: 1;">방 이름</div>
+        <div style="width: 108px;">맵</div>
+        <div style="width: 60px; text-align: center;">인원</div>
+        <div style="width: 74px; text-align: right;">상태</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <sc-for list="{{rooms}}" as="room" hint-placeholder-count="6">
+          <div style="display: flex; gap: 12px; align-items: center; padding: 12px 14px;
+                      background: {{room.bg}}; border: 1px solid {{room.border}}; border-radius: 9px;">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <sc-if value="{{room.isPrivate}}" hint-placeholder-val="{{false}}">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <rect x="3" y="7" width="10" height="7" rx="1.6" stroke="#8b97a5" stroke-width="1.4"/>
+                    <path d="M5.4 7 V5.2 A2.6 2.6 0 0 1 10.6 5.2 V7" stroke="#8b97a5" stroke-width="1.4"/>
+                  </svg>
+                </sc-if>
+                <div style="font-size: 15px; font-weight: 700; color: {{room.nameColor}}; white-space: nowrap;
+                            overflow: hidden; text-overflow: ellipsis;">{{room.name}}</div>
+              </div>
+              <div style="font-size: 12px; color: #7b8492;">{{room.host}}</div>
+            </div>
+            <div style="width: 108px; font-size: 13px; color: #cfd6de;">{{room.map}}</div>
+            <div style="width: 60px; text-align: center; font-size: 14px; font-weight: 700;
+                        font-variant-numeric: tabular-nums; color: {{room.countColor}};">{{room.count}}</div>
+            <div style="width: 74px; text-align: right; font-size: 12px; font-weight: 700; color: {{room.stateColor}};">{{room.state}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- 선택한 방 -->
+    <div style="width: 322px; display: flex; flex-direction: column; gap: 12px;
+                background: rgba(14,19,28,0.82); border: 1px solid #2c3a50; border-radius: 11px; padding: 16px;">
+      <div style="height: 146px; border-radius: 8px; border: 1px solid #223046; overflow: hidden; position: relative;
+                  background: linear-gradient(160deg, #16202e, #0d141d);">
+        <div style="position: absolute; inset: 0; opacity: 0.5;
+                    background: repeating-linear-gradient(0deg, transparent 0 15px, #223046 15px 16px),
+                                repeating-linear-gradient(90deg, transparent 0 15px, #223046 15px 16px);"></div>
+        <div style="position: absolute; left: 26px; top: 24px; width: 62px; height: 44px; border-radius: 3px; background: #2f3d52;"></div>
+        <div style="position: absolute; left: 128px; top: 18px; width: 44px; height: 74px; border-radius: 3px; background: #2f3d52;"></div>
+        <div style="position: absolute; left: 200px; top: 52px; width: 78px; height: 40px; border-radius: 3px; background: #2f3d52;"></div>
+        <div style="position: absolute; left: 62px; top: 92px; width: 10px; height: 10px; border-radius: 50%;
+                    background: radial-gradient(circle at 35% 35%, #ffc85e, #e8862e); box-shadow: 0 0 8px rgba(232,134,46,0.6);"></div>
+        <div style="position: absolute; left: 218px; top: 30px; width: 10px; height: 10px; border-radius: 50%;
+                    background: radial-gradient(circle at 35% 35%, #ffc85e, #e8862e); box-shadow: 0 0 8px rgba(232,134,46,0.6);"></div>
+        <div style="position: absolute; right: 9px; bottom: 8px; font-size: 11px; color: #8b97a5;
+                    background: rgba(10,15,22,0.72); border-radius: 4px; padding: 3px 7px;">확장 맵 (42×42)</div>
+      </div>
+
+      <div style="font-size: 18px; font-weight: 800;">치즈 창고 털러 갈 사람</div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #8b97a5;">방장</span><span>야옹이대장</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #8b97a5;">인원</span>
+          <span style="font-variant-numeric: tabular-nums;">6 / 10</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #8b97a5;">고양이</span><span style="color: #ffd84d;">시작할 때 1명 무작위</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: #8b97a5;">한 판</span><span>10분 · 시간 다 되면 쥐 승</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <sc-for list="{{members}}" as="m" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(20,27,39,0.9);
+                      border: 1px solid #223046; border-radius: 6px; padding: 5px 9px 5px 6px;">
+            <div style="width: 16px; height: 16px; border-radius: 3px; background: {{m.tint}};"></div>
+            <span style="font-size: 12px; color: #cfd6de;">{{m.name}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex-grow: 1;"></div>
+
+      <div style="background: #ffd84d; color: #221a04; font-weight: 900; font-size: 16px; text-align: center;
+                  border-radius: 9px; padding: 14px 0; box-shadow: 0 8px 22px rgba(255,216,77,0.18);">참여하기</div>
+    </div>
+  </div>
+
+  <!-- 하단 바 -->
+  <div style="position: relative; display: flex; align-items: center; gap: 12px; padding: 16px 24px 18px;">
+    <div style="display: flex; align-items: center; gap: 9px; background: rgba(232,134,46,0.14);
+                border: 1px solid #8a5620; border-radius: 9px; padding: 12px 20px;">
+      <svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10 4.4 V15.6 M4.4 10 H15.6" stroke="#e8862e" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span style="font-size: 15px; font-weight: 800; color: #ffb765;">방 만들기</span>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="font-size: 12px; color: #6f7987;">v0.9.2-dev · 스팀 릴레이 24ms</div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mk = (name, host, map, count, state, opt) => {
+      const o = opt || {};
+      const sel = !!o.selected;
+      return {
+        name: name, host: host, map: map, count: count, state: state,
+        isPrivate: !!o.priv,
+        bg: sel ? 'rgba(255,216,77,0.09)' : 'rgba(14,19,28,0.72)',
+        border: sel ? '#8a6a15' : '#202b3c',
+        nameColor: sel ? '#ffe9a3' : '#e9ebee',
+        countColor: o.full ? '#8b97a5' : '#e9ebee',
+        stateColor: state === '진행 중' ? '#8b97a5' : state === '가득 참' ? '#f2705c' : '#80d16b'
+      };
+    };
+
+    return {
+      rooms: [
+        mk('치즈 창고 털러 갈 사람', '야옹이대장', '확장 맵', '6 / 10', '대기 중', { selected: true }),
+        mk('초보만 · 욕 ㄴㄴ', '생쥐삼형제', '기본 맵', '4 / 10', '대기 중'),
+        mk('빡겜 풀방만', '치즈러버', '대형 맵', '10 / 10', '가득 참', { full: true }),
+        mk('친구방', '고다치즈', '기본 맵', '3 / 10', '대기 중', { priv: true }),
+        mk('한 판만 더', '숨은쥐', '확장 맵', '7 / 10', '진행 중'),
+        mk('아무나 오세요', '냥냥펀치', '기본 맵', '2 / 10', '대기 중')
+      ],
+      members: [
+        { name: '야옹이대장', tint: 'linear-gradient(140deg, #6b5a3a, #b09155)' },
+        { name: '치즈사냥꾼', tint: 'linear-gradient(140deg, #4a6b62, #7fa8a0)' },
+        { name: '생쥐삼형제', tint: 'linear-gradient(140deg, #5a4a6b, #9585b0)' },
+        { name: '숨은쥐', tint: 'linear-gradient(140deg, #6b4a4a, #b08585)' },
+        { name: '고다치즈', tint: 'linear-gradient(140deg, #6b6540, #b0a855)' },
+        { name: '냥냥펀치', tint: 'linear-gradient(140deg, #40566b, #7f95b0)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
