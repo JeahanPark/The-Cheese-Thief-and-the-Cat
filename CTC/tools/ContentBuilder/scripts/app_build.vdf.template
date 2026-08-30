@@ -1,0 +1,38 @@
+// SteamPipe 빌드 스크립트 — Upload-Build.ps1이 __APP_ID__ 등을 채워 실제 vdf를 만든다.
+// 이 파일을 직접 고치면 다음 실행에 덮인다. 값은 ../steam-app.config에서 온다.
+"AppBuild"
+{
+    "AppID" "__APP_ID__"
+    "Desc"  "__DESCRIPTION__"
+
+    "ContentRoot" "..\content\"
+    "BuildOutput" "..\output\"
+
+    // 라이브(default) 브랜치는 자동 설정이 불가능하다 — App Admin > Builds에서 손으로 올린다.
+    // 베타 브랜치만 여기서 자동으로 올릴 수 있다.
+    "SetLive" ""
+
+    // 1이면 업로드 없이 매니페스트만 만든다(드라이런).
+    "Preview" "__PREVIEW__"
+
+    "Depots"
+    {
+        "__DEPOT_ID__"
+        {
+            "FileMapping"
+            {
+                "LocalPath" "*"
+                "DepotPath" "."
+                "recursive" "1"
+            }
+
+            // 아래 넷은 배포하면 안 된다.
+            // steam_appid.txt가 남으면 RestartAppIfNecessary가 언제나 false를 돌려줘
+            // "스팀을 거쳐 재실행"이 죽는다 — exe 직접 실행이 그대로 통과한다.
+            "FileExclusion" "*_BurstDebugInformation_DoNotShip*"
+            "FileExclusion" "*_BackUpThisFolder_ButDontShipItWithYourGame*"
+            "FileExclusion" "steam_appid.txt"
+            "FileExclusion" "*.pdb"
+        }
+    }
+}

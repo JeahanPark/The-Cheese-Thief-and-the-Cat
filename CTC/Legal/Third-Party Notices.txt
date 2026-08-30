@@ -1,0 +1,122 @@
+Canadian Mouse — Third-Party Notices
+© __COMPANY__. All rights reserved.
+
+This product includes software and assets from third parties, listed below.
+
+
+== FONTS ==
+
+Pretendard
+  Copyright (c) 2021 Kil Hyung-jin (https://github.com/orioncactus/pretendard),
+  with Reserved Font Name 'Pretendard'.
+  Licensed under the SIL Open Font License, Version 1.1.
+  This license is available with a FAQ at: https://openfontlicense.org
+
+Liberation Sans
+  Digitized data copyright (c) 2010 Google Corporation,
+  with Reserved Font Arimo, Tinos and Cousine.
+  Copyright (c) 2012 Red Hat, Inc., with Reserved Font Name Liberation.
+  Licensed under the SIL Open Font License, Version 1.1.
+
+
+== MIT LICENSE ==
+
+The following components are licensed under the MIT License:
+
+  In-game Debug Console — Copyright (c) 2016 Suleyman Yasir KULA
+  Facepunch Transport for Netcode for GameObjects — Copyright (c) 2021 Unity Technologies
+  Facepunch.Steamworks — Copyright (c) 2016 Facepunch Studios LTD
+  UniTask — Copyright (c) 2019 Yoshifumi Kawai / Cysharp, Inc.
+  R3 — Copyright (c) 2024 Cysharp, Inc.
+  Newtonsoft.Json — Copyright (c) 2007 James Newton-King
+  Json.Net.Unity3D — see Unity package third-party notices
+  Microsoft.Bcl.AsyncInterfaces, Microsoft.Bcl.TimeProvider,
+    System.ComponentModel.Annotations, System.Runtime.CompilerServices.Unsafe,
+    System.Threading.Channels — Copyright (c) .NET Foundation and Contributors
+  RadeonRays 4.1 — Copyright (c) 2021 Advanced Micro Devices, Inc.
+  Sobol sampler — Copyright (c) 2023 Leonhard Gruenschloss
+  Mono.Cecil — Copyright (c) Jb Evain
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+== FXAA 3.11 (NVIDIA) ==
+
+Copyright (c) 2014-2015, NVIDIA CORPORATION. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of NVIDIA CORPORATION nor the names of its contributors may
+   be used to endorse or promote products derived from this software without
+   specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
+SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES HOWSOEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+== CLIPPER ==
+
+Copyright (c) 2010-2014 Angus Johnson.
+Distributed under the Boost Software License, Version 1.0.
+http://www.boost.org/LICENSE_1_0.txt
+
+
+== BULLET PHYSICS SDK ==
+
+Copyright (c) 2003-2006 Erwin Coumans.
+Distributed under the zlib License.
+
+
+== LLVM / UNITY BURST ==
+
+Portions of the Unity Burst compiler are derived from LLVM,
+licensed under the Apache License 2.0 with LLVM Exceptions.
+Additional components: xxHash and Smash (BSD 2-Clause), musl, SLEEF, mimalloc.
+See https://llvm.org for full license texts.
+
+
+== UNITY ==
+
+Made with Unity. The Unity engine and Unity packages included in this product
+are licensed under the Unity Companion License
+(https://unity.com/legal/licenses/unity-companion-license) and the Unity Terms
+of Service. Unity, the Unity logo, and Unity Companion License are trademarks or
+registered trademarks of Unity Technologies.
+
+
+== STEAM ==
+
+Portions of this software are provided under the Steamworks SDK Access
+Agreement. Steam and the Steam logo are trademarks and/or registered trademarks
+of Valve Corporation in the U.S. and/or other countries.
+
+
+== ASSETS ==
+
+3D characters: Quirky Series by Omabuarts Studio (Unity Asset Store).
+Prototype materials: Gridbox Prototype Materials by Surreal Cosmic (Unity Asset Store).

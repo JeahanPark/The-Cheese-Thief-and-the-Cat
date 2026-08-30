@@ -149,3 +149,6 @@ tools/__pycache__/
 # 프로젝트 루트에 흘린 스크린샷 (Playwright·MCP가 작업 중에 찍는 것)
 #  작업물은 docs/ 아래에 둔다. 루트 png는 전부 흔적이다.
 /*.png
+
+# 파이썬 캐시 (어디에 있든)
+__pycache__/
