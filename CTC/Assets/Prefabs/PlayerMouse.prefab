@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  m_MoveSpeed: 6
+  m_MoveSpeed: 6.6
   m_TurnSpeedDegPerSec: 720
 --- !u!114 &1405390907534316074
 MonoBehaviour:
@@ -423,7 +423,7 @@ AudioSource:
   Priority: 128
   DopplerLevel: 1
   MinDistance: 1.5
-  MaxDistance: 14
+  MaxDistance: 22
   Pan2D: 0
   rolloffMode: 1
   BypassEffects: 0
@@ -515,10 +515,10 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c672e1391a3529b4ab9b7369fcd289c8, type: 3}
   - {fileID: 8300000, guid: 537399fda4e5c0a4c8811c09d8cc894e, type: 3}
   - {fileID: 8300000, guid: 7a43a069f37a9ab439016f539063e84e, type: 3}
-  m_StrideMeters: 1.7647058
+  m_StrideMeters: 1.9411764
   m_WalkThreshold: 0.5
-  m_NormalRange: 14
-  m_SneakRange: 4
+  m_NormalRange: 22
+  m_SneakRange: 6
 --- !u!114 &6539816911504078304
 MonoBehaviour:
   m_ObjectHideFlags: 0
