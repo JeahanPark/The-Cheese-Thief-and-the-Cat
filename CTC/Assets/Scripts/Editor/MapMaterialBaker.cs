@@ -39,7 +39,8 @@ namespace CTC.Editor
             var roomFloorTex = AssetDatabase.LoadAssetAtPath<Texture2D>(MapAssets.ROOM_FLOOR_TEX);
 
             // 타일 2m: 널빤지 텍스처 한 장이 2m를 덮는다 → 널폭 25~33cm, 거대 세계 감각
-            Save(MapAssets.GROUND_MAT, shader, floorTex, 2f, Color.white, 0f);
+            // 지면은 회색빛으로 눌러 방 바닥(밝고 붉은 기)과 갈라놓는다 — 존 구분이 게임플레이 정보다
+            Save(MapAssets.GROUND_MAT, shader, floorTex, 2f, new Color(0.62f, 0.60f, 0.55f), 0f);
             Save(MapAssets.BOUNDARY_MAT, shader, wallTex, 2f, Color.white, 0.6f);       // 걸레받이 0.6m
             Save(MapAssets.ROOM_FLOOR_MAT, shader, roomFloorTex, 2f, Color.white, 0f);
             Save(MapAssets.ROOM_WALL_MAT, shader, wallTex, 2f, new Color(0.92f, 0.88f, 0.82f), 0f);

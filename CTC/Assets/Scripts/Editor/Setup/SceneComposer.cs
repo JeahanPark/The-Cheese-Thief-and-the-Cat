@@ -45,10 +45,18 @@ namespace CTC.Editor
             // MapBuilder가 런타임에 짓는다 — 바닥·경계벽도 레이아웃의 HalfExtent에서 나온다.
             var mapBuilderGo = new GameObject("MapBuilder");
             var mapBuilder = mapBuilderGo.AddComponent<MapBuilder>();
-            SetRef(mapBuilder, "m_WallMaterial", GridboxMaterial("Grey2"));
-            SetRef(mapBuilder, "m_FloorMaterial", GridboxMaterial("Grey4"));
-            SetRef(mapBuilder, "m_GroundMaterial", GridboxMaterial("Grey1"));
-            SetRef(mapBuilder, "m_DiscHighMaterial", GridboxMaterial("Red"));
+            // 시맨틱 교체(2026-08-31) — 팬트리 머티리얼이 없으면 Gridbox로 되돌아간다(마젠타 방지).
+            Material roomWall = MapAssets.LoadMaterial(MapAssets.ROOM_WALL_MAT);
+            Material roomFloor = MapAssets.LoadMaterial(MapAssets.ROOM_FLOOR_MAT);
+            Material ground = MapAssets.LoadMaterial(MapAssets.GROUND_MAT);
+            Material boundary = MapAssets.LoadMaterial(MapAssets.BOUNDARY_MAT);
+            Material corridor = MapAssets.LoadMaterial(MapAssets.CORRIDOR_WALL_MAT);
+            SetRef(mapBuilder, "m_WallMaterial", roomWall != null ? roomWall : GridboxMaterial("Grey2"));
+            SetRef(mapBuilder, "m_FloorMaterial", roomFloor != null ? roomFloor : GridboxMaterial("Grey4"));
+            SetRef(mapBuilder, "m_GroundMaterial", ground != null ? ground : GridboxMaterial("Grey1"));
+            SetRef(mapBuilder, "m_BoundaryMaterial", boundary);
+            SetRef(mapBuilder, "m_CorridorWallMaterial", corridor);
+            SetRef(mapBuilder, "m_DiscHighMaterial", GridboxMaterial("Red"));      // 기능색 — 유지
             SetRef(mapBuilder, "m_DiscMidMaterial", GridboxMaterial("Orange"));
             SetRef(mapBuilder, "m_DiscLowMaterial", GridboxMaterial("Yellow"));
 

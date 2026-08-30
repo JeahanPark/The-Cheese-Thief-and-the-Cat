@@ -14,13 +14,15 @@ namespace CTC.Runtime.Map
     /// </summary>
     public class MapBuilder : MonoBehaviour
     {
-        private const float ROOM_WALL_HEIGHT = 3f;
+        // 거대 세계 높이(2026-08-31 도안) — 수평 치수는 그대로, 키만 올린다.
+        // 방 벽 5m = 시야를 완전히 막는 가구 절벽, 복도 벽 2.4m = 크레이트 줄.
+        private const float ROOM_WALL_HEIGHT = 5f;
         private const float ROOM_WALL_THICK = 0.5f;
-        private const float CORRIDOR_WALL_HEIGHT = 1.6f;
+        private const float CORRIDOR_WALL_HEIGHT = 2.4f;
         private const float BOUNDARY_THICK = 0.5f;
         private const float FLOOR_THICK = 0.5f;
-        // 엄폐물 높이 — 눈높이 레이(1.0m)보다 확실히 높고, 방 벽(3m)보다는 낮아 답답하지 않다
-        private const float OBSTACLE_HEIGHT = 2.2f;
+        // 엄폐물 높이 — 눈높이 레이(1.0m)보다 확실히 높고, 방 벽(5m)보다는 낮아 답답하지 않다
+        private const float OBSTACLE_HEIGHT = 3f;
 
         // 이동 폴리곤을 구울 때의 몸 — 프리팹의 CharacterController와 맞춘다(쥐 0.22 · 고양이 0.35).
         // 가장 굵은 몸보다 조금 작게 잡는다. 크게 잡으면 사람이 지나는 문틈이 폴리곤에서 막히고,
@@ -36,6 +38,13 @@ namespace CTC.Runtime.Map
         [SerializeField] private Material m_DiscHighMaterial;   // 등급 6~7
         [SerializeField] private Material m_DiscMidMaterial;    // 등급 4~5
         [SerializeField] private Material m_DiscLowMaterial;    // 등급 1~3
+        // 시맨틱 교체(2026-08-31) — 경계벽·복도 벽은 방 벽과 다른 옷을 입는다.
+        // 비어 있으면 m_WallMaterial로 되돌아간다(옛 씬 호환).
+        [SerializeField] private Material m_BoundaryMaterial;
+        [SerializeField] private Material m_CorridorWallMaterial;
+
+        private Material BoundaryMat => m_BoundaryMaterial != null ? m_BoundaryMaterial : m_WallMaterial;
+        private Material CorridorWallMat => m_CorridorWallMaterial != null ? m_CorridorWallMaterial : m_WallMaterial;
 
         private GameObject m_Root;
         private UnityEngine.AI.NavMeshData m_NavMesh;
@@ -210,13 +219,13 @@ namespace CTC.Runtime.Map
             // 지오메트리 틈으로 새어나가도 바닥 밖으로 못 나가게
             float h = ROOM_WALL_HEIGHT;
             float outer = span + BOUNDARY_THICK;
-            AddBox(m_Root, m_WallMaterial, "Boundary_N", new Vector3(0f, h * 0.5f, _halfExtent),
+            AddBox(m_Root, BoundaryMat, "Boundary_N", new Vector3(0f, h * 0.5f, _halfExtent),
                 new Vector3(outer, h, BOUNDARY_THICK));
-            AddBox(m_Root, m_WallMaterial, "Boundary_S", new Vector3(0f, h * 0.5f, -_halfExtent),
+            AddBox(m_Root, BoundaryMat, "Boundary_S", new Vector3(0f, h * 0.5f, -_halfExtent),
                 new Vector3(outer, h, BOUNDARY_THICK));
-            AddBox(m_Root, m_WallMaterial, "Boundary_E", new Vector3(_halfExtent, h * 0.5f, 0f),
+            AddBox(m_Root, BoundaryMat, "Boundary_E", new Vector3(_halfExtent, h * 0.5f, 0f),
                 new Vector3(BOUNDARY_THICK, h, outer));
-            AddBox(m_Root, m_WallMaterial, "Boundary_W", new Vector3(-_halfExtent, h * 0.5f, 0f),
+            AddBox(m_Root, BoundaryMat, "Boundary_W", new Vector3(-_halfExtent, h * 0.5f, 0f),
                 new Vector3(BOUNDARY_THICK, h, outer));
         }
 
@@ -357,7 +366,7 @@ namespace CTC.Runtime.Map
                 if (segLen > 0.05f)
                 {
                     Vector2 center2 = wallStart + fwd * ((cursor + segEnd) * 0.5f);
-                    AddOrientedBox(m_Root, m_WallMaterial, $"CorridorWall_{sideName}{seg++}",
+                    AddOrientedBox(m_Root, CorridorWallMat, $"CorridorWall_{sideName}{seg++}",
                         new Vector3(center2.x, CORRIDOR_WALL_HEIGHT * 0.5f, center2.y), rot,
                         new Vector3(ROOM_WALL_THICK, CORRIDOR_WALL_HEIGHT, segLen));
                 }
@@ -384,7 +393,7 @@ namespace CTC.Runtime.Map
 
             Vector2 dir = (_c.To - _c.From).normalized;
             Quaternion rot = Quaternion.LookRotation(new Vector3(dir.x, 0f, dir.y));
-            AddOrientedBox(m_Root, m_WallMaterial, "CorridorEndCap",
+            AddOrientedBox(m_Root, CorridorWallMat, "CorridorEndCap",
                 new Vector3(_end.x, CORRIDOR_WALL_HEIGHT * 0.5f, _end.y), rot,
                 new Vector3(_c.Width + ROOM_WALL_THICK * 2f, CORRIDOR_WALL_HEIGHT, ROOM_WALL_THICK));
         }
