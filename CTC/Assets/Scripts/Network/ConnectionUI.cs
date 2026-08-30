@@ -33,6 +33,14 @@ namespace CTC.Runtime.Networking
         private void Awake()
         {
             m_Steam = GetComponent<SteamLobbyManager>();
+
+#if !UNITY_EDITOR && !DEVELOPMENT_BUILD
+            // **배포 빌드에서는 그리지 않는다**(2026-08-30). 이건 개발·MPPM QA용 발판이라
+            // 유저 화면 좌상단에 Host/Client 버튼이 뜨면 그대로 사고다.
+            // 인트로부터 시작하는 정상 경로에서는 NetworkRootGuard가 이 오브젝트째 지우지만,
+            // 그건 대기실을 거쳤을 때 얘기다 — 여기서 한 번 더 막는다.
+            enabled = false;
+#endif
         }
 
         private void OnGUI()

@@ -31,6 +31,14 @@ namespace CTC.Runtime.Networking
             // Application.quitting은 씬 오브젝트 파괴 **전에** 발화하므로 스팀이 아직 살아 있다.
             Application.quitting -= LeaveLobby;
             Application.quitting += LeaveLobby;
+
+            // 초대를 받고 켜진 경우 — 여기가 스팀 매니저가 처음 서는 자리다(로비 씬).
+            // 스팀이 아직 안 떴으면 **꺼내지 않는다.** 초대는 그대로 남아 다음 기회를 기다린다.
+            if (SteamBootstrap.Ready && SteamInvite.HasPending
+                && SteamInvite.TryConsume(out ulong invited))
+            {
+                JoinLobbyById(invited);
+            }
         }
 
         private void OnDisable()
@@ -95,6 +103,7 @@ namespace CTC.Runtime.Networking
                 LeaveLobby();
                 return;
             }
+            PublishConnect(lobby);
             Debug.Log($"[SteamLobby] 방 생성: '{name}' ({(_isPublic ? "공개" : "친구만")})");
         }
 
@@ -140,7 +149,66 @@ namespace CTC.Runtime.Networking
                 LeaveLobby();
                 return;
             }
+            PublishConnect(_lobby);
             Debug.Log($"[SteamLobby] 참여: {_lobby.GetData(SteamLobbyLogic.NAME_KEY)} (방장 {_lobby.Owner.Name})");
+        }
+
+        /// <summary>
+        /// **방 번호만 알 때** 들어간다 — 오버레이 초대로 게임이 켜진 경우다(`+connect_lobby`).
+        /// 목록에 없는 방일 수 있으므로 <see cref="JoinLobby"/>와 달리 핸들을 스팀에서 직접 받아 온다.
+        /// </summary>
+        public async void JoinLobbyById(ulong _lobbyId)
+        {
+            if (!SteamBootstrap.Ready || InLobby || m_Busy || NetworkBusy()) return;
+            m_Busy = true;
+
+            SteamLobby? joined = await SteamMatchmaking.JoinLobbyAsync(_lobbyId);
+            m_Busy = false;
+            if (!joined.HasValue)
+            {
+                Debug.LogError($"[SteamLobby] 초대받은 방에 못 들어갔다: {_lobbyId}");
+                return;
+            }
+
+            SteamLobby lobby = joined.Value;
+            if (NetworkBusy())
+            {
+                Debug.LogWarning("[SteamLobby] 이미 세션 진행 중 — 초대 참여 취소");
+                lobby.Leave();
+                return;
+            }
+            m_CurrentLobby = lobby;
+
+            UseSteamTransport(lobby.Owner.Id);
+            if (!NetworkManager.Singleton.StartClient())
+            {
+                Debug.LogError("[SteamLobby] 초대 참여 StartClient 실패 — 로비 정리");
+                LeaveLobby();
+                return;
+            }
+
+            PublishConnect(lobby);
+            Debug.Log($"[SteamLobby] 초대 참여: {lobby.GetData(SteamLobbyLogic.NAME_KEY)}");
+        }
+
+        /// <summary>
+        /// 친구목록의 "게임 참가"를 켠다. 이 값이 없으면 친구가 우리를 볼 수는 있어도 **따라 들어올 수가 없다**.
+        /// 스팀은 이 문자열을 그대로 커맨드라인으로 넘겨 주므로, 꺼진 게임을 켜는 경로와 규약이 같다.
+        /// </summary>
+        private static void PublishConnect(SteamLobby _lobby)
+        {
+            if (!SteamBootstrap.Ready) return;
+
+            try
+            {
+                SteamFriends.SetRichPresence(
+                    SteamInviteLogic.RICH_PRESENCE_CONNECT_KEY,
+                    SteamInviteLogic.ConnectValue(_lobby.Id.Value));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[SteamLobby] 리치 프레즌스 실패(무시): {e.Message}");
+            }
         }
 
         /// <summary>연결 종료 시 로비 이탈 + UTP 복원 (Disconnect 버튼/파괴 공용).</summary>
@@ -159,6 +227,14 @@ namespace CTC.Runtime.Networking
 
             m_CurrentLobby = null;
             UseLocalTransport();
+
+            // 안 지우면 친구 목록에 "참가"가 남아 **이미 없는 방**으로 사람을 보낸다.
+            if (SteamBootstrap.Ready)
+            {
+                try { SteamFriends.ClearRichPresence(); }
+                catch (System.Exception e) { Debug.LogWarning($"[SteamLobby] 프레즌스 정리 실패(무시): {e.Message}"); }
+            }
+
             Debug.Log("[SteamLobby] 로비 이탈 — UTP 복원");
         }
 

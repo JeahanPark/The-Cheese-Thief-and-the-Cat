@@ -54,12 +54,18 @@ namespace CTC.Editor
 
             // NetworkManager — 자동 플레이어 스폰 없음(로비가 역할별로 스폰)
             var nmGo = new GameObject("NetworkManager");
+            // 대기실에서 넘어오면 이미 NetworkManager가 하나 살아 있다 — 그때는 이 오브젝트가
+            // 통째로 두 번째가 되므로 스스로 사라진다(2026-08-30). 혼자 열면 아무 일도 안 한다.
+            nmGo.AddComponent<NetworkRootGuard>();
             var nm = nmGo.AddComponent<NetworkManager>();
             var transport = nmGo.AddComponent<UnityTransport>();
             transport.SetConnectionData("127.0.0.1", 7788);
 
             nm.NetworkConfig.NetworkTransport = transport;
             nm.NetworkConfig.PlayerPrefab = null;
+            // 구버전 클라이언트가 신버전 호스트에 붙는 것을 막는다 — 0이면 아무나 붙는다.
+            // 씬에 굽히는 값이라 **버전을 올리면 씬을 다시 구워야** 반영된다.
+            nm.NetworkConfig.ProtocolVersion = NetVersionLogic.Protocol(PlayerSettings.bundleVersion);
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _warehousePrefab,
                 _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket);
 
@@ -107,13 +113,26 @@ namespace CTC.Editor
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);
 
+            // 대기실이 뽑아 넘긴 판을 서버가 알아서 연다(2026-08-30). 쪽지가 비면 아무 일도 안 한다 —
+            // 실험실은 자기 방식으로 판을 열므로 붙이지 않는다.
+            if (!_botLab)
+            {
+                var autoStart = lobbyGo.AddComponent<MatchAutoStart>();
+                SetRef(autoStart, "m_Lobby", lobby);
+            }
+
             // 치즈 고갈 감독 — 지점 상태를 NetworkList로 복제하고, 매치 시작 시 매장량 복구,
             // 전 지점 고갈 시 최고 등급 1곳만 부활시켜 후반 결전지를 만든다
             var cheeseDirector = lobbyGo.AddComponent<CheeseSpotDirector>();
             SetRef(cheeseDirector, "m_Lobby", lobby);
             SetRef(cheeseDirector, "m_Match", match);
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
-            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector);
+            // 3판 시리즈(2026-08-30) — 대기실에서 온 판에서만 돈다. 단독 실행은 지금까지 그대로.
+            var series = lobbyGo.AddComponent<MatchSeries>();
+            SetRef(series, "m_Lobby", lobby);
+            SetRef(series, "m_Match", match);
+
+            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector, series);
 
             // 밸런스 측정용 봇을 **밖에서** 조종하는 매니저(2026-08-11) — 개발 빌드 전용.
             // 봇의 몸에는 아무것도 안 붙는다. 여기서 플레이어 프리팹을 그대로 세우고 손만 움직인다.
