@@ -65,6 +65,16 @@ namespace CTC.Runtime.Networking
                 Lobby.LobbyController lobby = FindFirstObjectByType<Lobby.LobbyController>();
                 if (lobby != null && lobby.IsSpawned)
                 {
+                    // 대기실에서 온 판이면 역할이 이미 서버 추첨으로 정해져 있다(2026-08-30).
+                    // 그걸 모르고 "쥐"를 눌러 버리면 **뽑힌 고양이가 스스로 쥐로 바뀐다.**
+                    NetworkManager net = NetworkManager.Singleton;
+                    int idx = net != null ? lobby.IndexOfClient(net.LocalClientId) : -1;
+                    if (idx >= 0 && lobby.GetPlayer(idx).Role != Lobby.RoleId.None)
+                    {
+                        Debug.Log("[MppmAutoConnect] 역할이 이미 배정돼 있다 — 손대지 않는다");
+                        return;
+                    }
+
                     lobby.SelectRole(Lobby.RoleId.Mouse);
                     Debug.Log("[MppmAutoConnect] 역할 자동 선택 → 쥐");
                     return;

@@ -91,6 +91,12 @@ namespace CTC.Runtime.Lobby
             if (m_Session != null) m_Session.SelectRole(_role);
         }
 
+        /// <summary>서버 전용 — 역할을 통째로 다시 앉힌다(3판 시리즈의 고양이 재추첨).</summary>
+        public void ServerAssignRoles(System.Collections.Generic.IReadOnlyDictionary<ulong, RoleId> _roles)
+        {
+            if (m_Session != null) m_Session.ServerAssignRoles(_roles);
+        }
+
         /// <summary>맵 선택 요청 — 서버가 방장인지 확인한다.</summary>
         public void SelectMap(int _index)
         {

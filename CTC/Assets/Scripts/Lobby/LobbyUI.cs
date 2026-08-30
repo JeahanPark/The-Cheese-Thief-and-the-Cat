@@ -1,4 +1,4 @@
-using R3;
+﻿using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CTC.Runtime.Lobby
 {
     /// <summary>
-    /// 로비 UGUI 컨트롤러(Modern UI Pack 위젯은 SetupNetworkingScene이 배선).
+    /// 로비 UGUI 컨트롤러(위젯은 SetupNetworkingScene이 코드로 굽는다 — 순수 UGUI다).
     /// 접속 후~시작 전 패널 표시, 역할 선택/시작 버튼, 커서 관리.
     ///
     /// 버튼 연결은 R3 (CTC 규칙 2·4) — 구독은 버튼 파괴 시 자동 해제되고,
@@ -17,8 +17,10 @@ namespace CTC.Runtime.Lobby
     /// </summary>
     public class LobbyUI : MonoBehaviour
     {
-        private static readonly Color MAP_SELECTED = new Color(0.45f, 0.95f, 0.45f);
-        private static readonly Color MAP_NORMAL = Color.white;
+        // 대기실의 맵 선택과 같은 규칙이다 — 고른 것은 강조색, 나머지는 슬롯 바탕.
+        // 전에는 초록/흰색이라 인게임만 다른 게임처럼 보였다(2026-08-30).
+        private static readonly Color MAP_SELECTED = UI.UiPalette.Accent;
+        private static readonly Color MAP_NORMAL = UI.UiPalette.Slot;
 
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Panel;
@@ -104,7 +106,11 @@ namespace CTC.Runtime.Lobby
         {
             NetworkManager nm = NetworkManager.Singleton;
             bool connected = nm != null && (nm.IsClient || nm.IsServer);
-            bool inLobby = connected && m_Lobby != null && m_Lobby.IsSpawned && !m_Lobby.GameStarted;
+            // 대기실에서 넘어온 판에서는 이 패널을 아예 안 띄운다(2026-08-30) — 역할은 이미
+            // 서버가 뽑았고, 시작도 자동이다. 안 막으면 판이 열리기 직전 한 프레임 동안
+            // "쥐로 하기 / 고양이로 하기"가 인게임 화면 위에 뜬다(실측).
+            bool inLobby = connected && m_Lobby != null && m_Lobby.IsSpawned
+                           && !m_Lobby.GameStarted && !Core.MatchHandoff.FromRoom;
 
             m_Panel.SetActive(inLobby);
             if (!inLobby) return;
@@ -161,13 +167,17 @@ namespace CTC.Runtime.Lobby
                 if (!exists) continue;
 
                 m_MapButtons[i].interactable = _isHost && i != selected;
+                bool picked = i == selected;
                 Graphic target = m_MapButtons[i].targetGraphic;
-                if (target != null) target.color = i == selected ? MAP_SELECTED : MAP_NORMAL;
+                if (target != null) target.color = picked ? MAP_SELECTED : MAP_NORMAL;
 
                 // 버튼 라벨은 에셋 파일명이 아니라 맵의 표시 이름
                 var text = m_MapButtons[i].GetComponentInChildren<TMP_Text>();
                 string wanted = ShortMapName(m_Lobby.MapNameAt(i));
-                if (text != null && text.text != wanted) text.text = wanted;
+                if (text == null) continue;
+
+                if (text.text != wanted) text.text = wanted;
+                text.color = picked ? UI.UiPalette.TextOnAccent : UI.UiPalette.TextOn;
             }
         }
 

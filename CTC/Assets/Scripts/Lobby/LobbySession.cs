@@ -145,6 +145,29 @@ namespace CTC.Runtime.Lobby
         }
 #endif
 
+        /// <summary>
+        /// 서버가 역할을 통째로 다시 앉힌다 — **3판 시리즈에서 판마다 고양이를 다시 뽑을 때**
+        /// 쓴다(2026-08-30). 목록에 없는 클라이언트는 건드리지 않는다.
+        ///
+        /// 클라이언트가 부르는 <see cref="SelectRole"/>과 달리 정원 검사를 하지 않는다 —
+        /// 여기 들어오는 표는 이미 <see cref="Room.CatDrawLogic"/>이 만든 것이라
+        /// 고양이가 정확히 하나다.
+        /// </summary>
+        public void ServerAssignRoles(IReadOnlyDictionary<ulong, RoleId> _roles)
+        {
+            if (!IsServer || _roles == null) return;
+
+            for (int i = 0; i < m_Players.Count; i++)
+            {
+                LobbyPlayerState st = m_Players[i];
+                if (!_roles.TryGetValue(st.ClientId, out RoleId role)) continue;
+                if (st.Role == role) continue;
+
+                st.Role = role;
+                m_Players[i] = st;
+            }
+        }
+
         /// <summary>매치 종료 후 로비 복귀(MatchManager 재시작 스윕 뒤). 역할은 유지.</summary>
         public void ServerResetToLobby()
         {
@@ -183,7 +206,13 @@ namespace CTC.Runtime.Lobby
         {
             if (IndexOf(_clientId) >= 0) return;
 
-            m_Players.Add(new LobbyPlayerState { ClientId = _clientId, Role = RoleId.None });
+            // 대기실에서 뽑아 온 역할이 있으면 그대로 앉힌다(2026-08-30). 쪽지가 비어 있으면
+            // None이라 지금까지와 같다 — Game.unity를 혼자 열면 여기서 역할을 고른다.
+            m_Players.Add(new LobbyPlayerState
+            {
+                ClientId = _clientId,
+                Role = Core.MatchHandoff.RoleOf(_clientId),
+            });
             Debug.Log($"[Lobby] 접속 client={_clientId} → 인원 {m_Players.Count}");
         }
 

@@ -47,7 +47,7 @@ namespace CTC.Editor
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
         private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match,
-            CTC.Runtime.Match.PhaseDirector _phase)
+            CTC.Runtime.Match.PhaseDirector _phase, CTC.Runtime.Match.MatchSeries _series)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -71,9 +71,9 @@ namespace CTC.Editor
             panelRt.pivot = new Vector2(0.5f, 0.5f);
             panelRt.sizeDelta = new Vector2(PANEL_WIDTH, 690f); // 맵 선택·봇전 줄이 늘어 세로 확장
             var panelImage = panel.AddComponent<Image>();
-            panelImage.color = new Color(0.08f, 0.09f, 0.12f, 0.85f);
+            panelImage.color = UiPalette.WithAlpha(UiPalette.Panel, 0.85f);
 
-            TMP_Text title = CreateTmpText("Title", panel.transform, "치즈 도둑과 고양이",
+            TMP_Text title = CreateTmpText("Title", panel.transform, "CANADIAN MOUSE",
                 32f, TextAlignmentOptions.Center, new Vector2(0f, -20f), new Vector2(440f, 50f));
             title.fontStyle = FontStyles.Bold;
 
@@ -93,15 +93,15 @@ namespace CTC.Editor
             for (int i = 0; i < MapLayoutPaths.Length; i++)
             {
                 float x = (i - (MapLayoutPaths.Length - 1) * 0.5f) * (mapButtonWidth + MAP_BUTTON_GAP);
-                mapButtons[i] = CreateMuipButton(panel.transform, $"MapButton{i + 1}",
+                mapButtons[i] = CreatePanelButton(panel.transform, $"MapButton{i + 1}",
                     "맵 " + (i + 1), new Vector2(x, -330f), mapButtonWidth);
             }
 
-            Button mouseButton = CreateMuipButton(panel.transform, "MouseButton", "쥐로 하기", new Vector2(0f, -400f));
-            Button catButton = CreateMuipButton(panel.transform, "CatButton", "고양이로 하기", new Vector2(0f, -470f));
-            Button startButton = CreateMuipButton(panel.transform, "StartButton", "게임 시작", new Vector2(0f, -550f));
+            Button mouseButton = CreatePanelButton(panel.transform, "MouseButton", "쥐로 하기", new Vector2(0f, -400f));
+            Button catButton = CreatePanelButton(panel.transform, "CatButton", "고양이로 하기", new Vector2(0f, -470f));
+            Button startButton = CreatePanelButton(panel.transform, "StartButton", "게임 시작", new Vector2(0f, -550f));
             // 개발 빌드 전용 — 혼자 봇 상대 2:8. 배포 빌드에선 LobbyUI가 Awake에서 숨긴다.
-            Button botMatchButton = CreateMuipButton(panel.transform, "BotMatchButton", "봇전 시작 (개발)", new Vector2(0f, -620f));
+            Button botMatchButton = CreatePanelButton(panel.transform, "BotMatchButton", "봇전 시작 (개발)", new Vector2(0f, -620f));
 
             var ui = canvasGo.AddComponent<LobbyUI>();
             SetRef(ui, "m_Lobby", _lobby);
@@ -142,7 +142,7 @@ namespace CTC.Editor
                 slotRt.anchoredPosition = new Vector2(x, 0f);
                 slotRt.sizeDelta = new Vector2(SLOT_WIDTH, SLOT_HEIGHT);
                 var slotBg = slot.AddComponent<Image>();
-                slotBg.color = new Color(0.07f, 0.055f, 0.04f, 0.82f);
+                slotBg.color = UiPalette.Slot;
 
                 slotLabels[i] = CreateTmpText($"Name{i + 1}", slot.transform, "-",
                     22f, TextAlignmentOptions.Center, new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 26f));
@@ -183,13 +183,13 @@ namespace CTC.Editor
             resultRt.pivot = new Vector2(0.5f, 0.5f);
             resultRt.sizeDelta = new Vector2(520f, 260f);
             var resultBg = resultPanel.AddComponent<Image>();
-            resultBg.color = new Color(0.08f, 0.09f, 0.12f, 0.95f);
+            resultBg.color = UiPalette.PanelSolid;
 
             TMP_Text resultText = CreateTmpText("ResultText", resultPanel.transform, "-",
                 44f, TextAlignmentOptions.Center, new Vector2(0f, -40f), new Vector2(480f, 70f));
             resultText.fontStyle = FontStyles.Bold;
 
-            Button restartButton = CreateMuipButton(resultPanel.transform, "RestartButton", "Restart",
+            Button restartButton = CreatePanelButton(resultPanel.transform, "RestartButton", "Restart",
                 new Vector2(0f, -170f));
             resultPanel.SetActive(false);
 
@@ -242,6 +242,27 @@ namespace CTC.Editor
             // 2단계는 시계가 통째로 다르다 — 이 배선이 빠지면 깡패전 4분이 화면에 안 나온다
             SetRef(timerHud, "m_Phase", _phase);
             SetRef(timerHud, "m_Text", timerText);
+
+            // 시계 바로 아래 한 줄 — 3판 시리즈의 판 번호와 점수. 단독 실행에선 안 뜬다.
+            var seriesTextGo = new GameObject("SeriesText");
+            seriesTextGo.transform.SetParent(canvasGo.transform, false);
+            var seriesText = seriesTextGo.AddComponent<TextMeshProUGUI>();
+            seriesText.text = "";
+            seriesText.fontSize = 20f;
+            seriesText.alignment = TextAlignmentOptions.Top;
+            seriesText.color = UiPalette.TextDim;
+            seriesText.raycastTarget = false;
+            var seriesRect = seriesTextGo.GetComponent<RectTransform>();
+            seriesRect.anchorMin = new Vector2(0.5f, 1f);
+            seriesRect.anchorMax = new Vector2(0.5f, 1f);
+            seriesRect.pivot = new Vector2(0.5f, 1f);
+            seriesRect.anchoredPosition = new Vector2(0f, -66f);
+            seriesRect.sizeDelta = new Vector2(420f, 30f);
+            seriesTextGo.SetActive(false);
+
+            var seriesView = canvasGo.AddComponent<MatchSeriesView>();
+            SetRef(seriesView, "m_Series", _series);
+            SetRef(seriesView, "m_Label", seriesText);
 
             // 인게임 BGM (게임 시작 시 루프 재생 — BgmPlayer가 제어)
             var bgmGo = new GameObject("BgmPlayer");
@@ -392,22 +413,28 @@ namespace CTC.Editor
             var rt = (RectTransform)panel.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(560f, 440f);
-            panel.AddComponent<Image>().color = new Color(0.08f, 0.09f, 0.12f, 0.96f);
+            rt.sizeDelta = new Vector2(560f, 600f);
+            panel.AddComponent<Image>().color = UiPalette.PanelSolid;
 
             TMP_Text title = CreateTmpText("OptionsTitle", panel.transform, "옵션",
                 34f, TextAlignmentOptions.Center, new Vector2(0f, -18f), new Vector2(520f, 46f));
             title.fontStyle = FontStyles.Bold;
 
-            Slider sens = CreateSlider(panel.transform, "SensitivitySlider", "마우스 감도", -90f, out TMP_Text sensValue);
-            Slider bgm = CreateSlider(panel.transform, "BgmSlider", "배경음", -160f, out TMP_Text bgmValue);
-            Slider sfx = CreateSlider(panel.transform, "SfxSlider", "효과음", -230f, out TMP_Text sfxValue);
+            Slider sens = CreateSlider(panel.transform, "SensitivitySlider", "마우스 감도", -84f, out TMP_Text sensValue);
+            Slider bgm = CreateSlider(panel.transform, "BgmSlider", "배경음", -150f, out TMP_Text bgmValue);
+            Slider sfx = CreateSlider(panel.transform, "SfxSlider", "효과음", -216f, out TMP_Text sfxValue);
+
+            // 화면 — 고를 것이 서너 개뿐이라 드롭다운 대신 ◀ 값 ▶ 한 줄이다(OptionsPopup 주석 참조).
+            CreateCyclerRow(panel.transform, "Resolution", "해상도", -288f,
+                out TMP_Text resValue, out Button resPrev, out Button resNext);
+            CreateCyclerRow(panel.transform, "WindowMode", "창 모드", -348f,
+                out TMP_Text modeValue, out Button modePrev, out Button modeNext);
 
             // 3열 — 기본값 / 취소 / 확인. "닫기"가 아니라 "취소"인 이유: 이제 닫으면 되돌아간다.
-            Button reset = CreateMuipButton(panel.transform, "ResetButton", "기본값", new Vector2(-180f, -300f), 168f);
-            Button close = CreateMuipButton(panel.transform, "CloseButton", "취소", new Vector2(0f, -300f), 168f);
-            Button confirm = CreateMuipButton(panel.transform, "ConfirmButton", "확인", new Vector2(180f, -300f), 168f);
-            Button quit = CreateMuipButton(panel.transform, "QuitButton", "게임 종료", new Vector2(0f, -366f), 230f);
+            Button reset = CreatePanelButton(panel.transform, "ResetButton", "기본값", new Vector2(-180f, -424f), 168f);
+            Button close = CreatePanelButton(panel.transform, "CloseButton", "취소", new Vector2(0f, -424f), 168f);
+            Button confirm = CreatePanelButton(panel.transform, "ConfirmButton", "확인", new Vector2(180f, -424f), 168f);
+            Button quit = CreatePanelButton(panel.transform, "QuitButton", "게임 종료", new Vector2(0f, -492f), 230f);
 
             var popup = _canvasGo.AddComponent<OptionsPopup>();
             SetRef(popup, "m_Panel", panel);
@@ -417,6 +444,12 @@ namespace CTC.Editor
             SetRef(popup, "m_SensitivityValue", sensValue);
             SetRef(popup, "m_BgmValue", bgmValue);
             SetRef(popup, "m_SfxValue", sfxValue);
+            SetRef(popup, "m_ResolutionValue", resValue);
+            SetRef(popup, "m_ResolutionPrev", resPrev);
+            SetRef(popup, "m_ResolutionNext", resNext);
+            SetRef(popup, "m_ModeValue", modeValue);
+            SetRef(popup, "m_ModePrev", modePrev);
+            SetRef(popup, "m_ModeNext", modeNext);
             SetRef(popup, "m_ResetButton", reset);
             SetRef(popup, "m_ConfirmButton", confirm);
             SetRef(popup, "m_CloseButton", close);
@@ -439,7 +472,7 @@ namespace CTC.Editor
             rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.sizeDelta = new Vector2(720f, 300f);
-            panel.AddComponent<Image>().color = new Color(0.08f, 0.09f, 0.12f, 0.96f);
+            panel.AddComponent<Image>().color = UiPalette.PanelSolid;
 
             TMP_Text title = CreateTmpText("CatClassTitle", panel.transform, "전직",
                 34f, TextAlignmentOptions.Center, new Vector2(0f, -20f), new Vector2(680f, 46f));
@@ -455,7 +488,7 @@ namespace CTC.Editor
             for (int i = 0; i < 4; i++)
             {
                 float x = -255f + i * 170f;
-                buttons[i] = CreateMuipButton(panel.transform, $"CatClass{i}", labels[i],
+                buttons[i] = CreatePanelButton(panel.transform, $"CatClass{i}", labels[i],
                     new Vector2(x, -160f), 160f);
             }
 
@@ -560,6 +593,23 @@ namespace CTC.Editor
         }
 
         // 프로젝트 첫 Slider — 재사용할 프리팹이 없어 4계층(배경/채움영역/채움/손잡이)을 손으로 조립한다.
+        /// <summary>
+        /// `라벨   ◀ 값 ▶` 한 줄. 슬라이더와 같은 좌표계를 쓴다(패널 상단 기준, 가운데 정렬).
+        /// 화살표는 라벨과 겹치지 않게 오른쪽으로 몰아 둔다.
+        /// </summary>
+        private static void CreateCyclerRow(
+            Transform _parent, string _name, string _label, float _y,
+            out TMP_Text _value, out Button _prev, out Button _next)
+        {
+            CreateTmpText(_name + "Label", _parent, _label, 22f, TextAlignmentOptions.Left,
+                new Vector2(-140f, _y), new Vector2(240f, 30f));
+
+            _prev = CreatePanelButton(_parent, _name + "Prev", "◀", new Vector2(30f, _y + 4f), 44f);
+            _value = CreateTmpText(_name + "Value", _parent, "-", 22f, TextAlignmentOptions.Center,
+                new Vector2(140f, _y), new Vector2(180f, 30f));
+            _next = CreatePanelButton(_parent, _name + "Next", "▶", new Vector2(250f, _y + 4f), 44f);
+        }
+
         private static Slider CreateSlider(
             Transform _parent, string _name, string _label, float _y, out TMP_Text _value)
         {
@@ -576,12 +626,12 @@ namespace CTC.Editor
             rt.anchoredPosition = new Vector2(0f, _y - 34f);
             rt.sizeDelta = new Vector2(460f, 20f);
 
-            GameObject bg = AddStretchedImage(go.transform, "Background", new Color(0.22f, 0.23f, 0.28f, 1f));
+            GameObject bg = AddStretchedImage(go.transform, "Background", UiPalette.Groove);
 
             var fillArea = new GameObject("Fill Area", typeof(RectTransform));
             fillArea.transform.SetParent(go.transform, false);
             StretchFull((RectTransform)fillArea.transform);
-            GameObject fill = AddStretchedImage(fillArea.transform, "Fill", new Color(0.45f, 0.95f, 0.45f, 1f));
+            GameObject fill = AddStretchedImage(fillArea.transform, "Fill", UiPalette.Accent);
 
             var handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
             handleArea.transform.SetParent(go.transform, false);
@@ -670,18 +720,18 @@ namespace CTC.Editor
             rt.sizeDelta = new Vector2(SLOT_WIDTH, SLOT_HEIGHT);
 
             var tile = go.AddComponent<Image>();
-            tile.color = new Color(0.07f, 0.055f, 0.04f, 0.82f);   // 핫바 slotBg와 같은 색
+            tile.color = UiPalette.Slot;   // 핫바 slotBg와 같은 색
             tile.raycastTarget = false;
 
             TMP_Text name = CreateTmpText("Name", go.transform, "", 22f, TextAlignmentOptions.Center,
                 new Vector2(0f, -6f), new Vector2(SLOT_WIDTH - 8f, 26f));
             TMP_Text hint = CreateTmpText("Hint", go.transform, "", 12f, TextAlignmentOptions.Center,
                 new Vector2(0f, -34f), new Vector2(SLOT_WIDTH - 8f, 18f));
-            hint.color = new Color(0.73f, 0.76f, 0.82f, 0.8f);   // ShopHotbar.COLOR_HINT
+            hint.color = UiPalette.WithAlpha(UiPalette.TextDim, 0.9f);   // ShopHotbar.COLOR_HINT와 같은 값
             TMP_Text status = CreateTmpText("Status", go.transform, "", 20f, TextAlignmentOptions.Center,
                 new Vector2(0f, -54f), new Vector2(SLOT_WIDTH - 8f, 26f));
 
-            Image cover = FullRectImage(go.transform, "Cover", 0f, new Color(0f, 0f, 0f, 0.84f));
+            Image cover = FullRectImage(go.transform, "Cover", 0f, UiPalette.Veil);
             // **스프라이트가 없으면 Filled가 무시된다**(Image.OnPopulateMesh가 통짜 사각형으로 떨어진다) —
             // 내장 UISprite를 꽂아야 fillAmount가 먹는다(2026-08-17 실측: 덮개가 늘 꽉 차 보였다).
             cover.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -700,7 +750,7 @@ namespace CTC.Editor
             edgeRt.anchoredPosition = Vector2.zero;
             edgeRt.sizeDelta = new Vector2(2f, SLOT_HEIGHT * 0.5f - 2f);
             var edge = edgeGo.AddComponent<Image>();
-            edge.color = new Color(1f, 0.86f, 0.59f, 0.9f);
+            edge.color = UiPalette.WithAlpha(UiPalette.AccentSoft, 0.9f);
             edge.raycastTarget = false;
             edgeGo.SetActive(false);
 
@@ -719,7 +769,7 @@ namespace CTC.Editor
             barRt.anchoredPosition = new Vector2(0f, 2f);
             barRt.sizeDelta = new Vector2(-8f, 3f);
             var bar = barGo.AddComponent<Image>();
-            bar.color = new Color(1f, 0.82f, 0.48f, 1f);
+            bar.color = UiPalette.Accent;
             bar.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
             bar.type = Image.Type.Filled;
             bar.fillMethod = Image.FillMethod.Horizontal;
@@ -767,13 +817,13 @@ namespace CTC.Editor
             rt.sizeDelta = new Vector2(320f, 90f);
 
             (GameObject _, Image myFill, TMP_Text myText) = CreateStatusBar(
-                root.transform, "MyHpBar", 0f, 26f, 16f, new Color(0.45f, 0.85f, 0.35f, 0.9f));
+                root.transform, "MyHpBar", 0f, 26f, 16f, UiPalette.WithAlpha(UiPalette.Good, 0.9f));
 
             TMP_Text wallet = CreateTmpText("WalletText", root.transform, "-",
                 24f, TextAlignmentOptions.Right, new Vector2(0f, -32f), new Vector2(320f, 32f));
             TMP_Text badge = CreateTmpText("BadgeText", root.transform, "",
                 16f, TextAlignmentOptions.Right, new Vector2(0f, -66f), new Vector2(320f, 24f));
-            badge.color = new Color(0.73f, 0.76f, 0.82f, 0.9f);
+            badge.color = UiPalette.WithAlpha(UiPalette.TextOn, 0.9f);
 
             root.SetActive(false); // StatusHud가 게임 시작 시 켬
 
@@ -799,7 +849,7 @@ namespace CTC.Editor
             rt.anchoredPosition = new Vector2(0f, _y);
             rt.sizeDelta = new Vector2(0f, _height);
             var bg = go.AddComponent<Image>();
-            bg.color = new Color(0.06f, 0.07f, 0.1f, 0.82f);
+            bg.color = UiPalette.Slot;
             bg.raycastTarget = false;
 
             var fillGo = new GameObject("Fill", typeof(RectTransform));
@@ -857,7 +907,7 @@ namespace CTC.Editor
             hintRt.pivot = new Vector2(0f, 1f);
             hintRt.offsetMin = new Vector2(0f, -44f);
             hintRt.offsetMax = new Vector2(0f, -6f);
-            hintGo.AddComponent<Image>().color = new Color(0.05f, 0.06f, 0.09f, 0.9f);
+            hintGo.AddComponent<Image>().color = UiPalette.Panel;
 
             var hintTextGo = new GameObject("Text", typeof(RectTransform));
             hintTextGo.transform.SetParent(hintGo.transform, false);
@@ -869,7 +919,7 @@ namespace CTC.Editor
             var hintText = hintTextGo.AddComponent<TextMeshProUGUI>();
             hintText.fontSize = 18f;
             hintText.alignment = TextAlignmentOptions.Left;
-            hintText.color = new Color(0.85f, 0.85f, 0.85f);
+            hintText.color = UiPalette.TextOn;
             hintText.raycastTarget = false;
             hintGo.SetActive(false);
 
@@ -895,7 +945,7 @@ namespace CTC.Editor
             rt.pivot = new Vector2(0f, 0f);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = new Vector2(0f, 34f);
-            go.AddComponent<Image>().color = new Color(0.05f, 0.06f, 0.09f, 0.9f);
+            go.AddComponent<Image>().color = UiPalette.Panel;
 
             var area = new GameObject("Text Area", typeof(RectTransform));
             area.transform.SetParent(go.transform, false);
@@ -920,7 +970,7 @@ namespace CTC.Editor
             var placeholder = placeholderGo.AddComponent<TextMeshProUGUI>();
             placeholder.text = "Enter로 전송 · ESC로 취소";
             placeholder.fontSize = 20f;
-            placeholder.color = new Color(1f, 1f, 1f, 0.35f);
+            placeholder.color = UiPalette.WithAlpha(UiPalette.TextDim, 0.8f);
 
             _field = go.AddComponent<TMP_InputField>();
             _field.textViewport = areaRt;
@@ -956,7 +1006,7 @@ namespace CTC.Editor
         // 표준 UGUI 버튼(흰 배경 + TMP 라벨). MUIP 버튼은 런타임 상태 초기화가 세션에 따라
         // 깨지는 문제(비가시 버튼)와 한글 글리프·다중 라벨 이슈가 반복돼 그레이박스 단계에선
         // 플레인 UGUI로 통일 — 본 UI 패스에서 디자인 버튼으로 교체 전제.
-        private static Button CreateMuipButton(
+        private static Button CreatePanelButton(
             Transform _parent, string _name, string _label, Vector2 _anchoredPos,
             float _width = PANEL_CONTENT_WIDTH)
         {
@@ -970,7 +1020,13 @@ namespace CTC.Editor
             rt.sizeDelta = new Vector2(_width, 56f);
 
             var bg = go.AddComponent<Image>();
-            bg.color = Color.white;
+            // 흰 바탕 + 검은 글씨였다. 인트로·로비·대기실은 전부 어두운 패널에 밝은 글씨라
+            // 인게임 버튼만 반대로 튀었다 — 같은 게임으로 안 읽힌다(2026-08-30).
+            bg.color = UiPalette.Slot;
+
+            var outline = go.AddComponent<Outline>();
+            outline.effectColor = UiPalette.Line;
+            outline.effectDistance = new Vector2(1f, -1f);
 
             var labelGo = new GameObject("Label", typeof(RectTransform));
             labelGo.transform.SetParent(go.transform, false);
@@ -983,7 +1039,7 @@ namespace CTC.Editor
             tmp.text = _label;
             tmp.fontSize = 24f;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = new Color(0.12f, 0.13f, 0.16f);
+            tmp.color = UiPalette.TextOn;
             tmp.raycastTarget = false;
 
             var button = go.AddComponent<Button>();
