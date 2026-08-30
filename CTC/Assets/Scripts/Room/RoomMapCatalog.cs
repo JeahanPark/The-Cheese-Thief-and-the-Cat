@@ -45,6 +45,13 @@ namespace CTC.Runtime.Room
             return paren > 0 ? full.Substring(0, paren).TrimEnd() : full;
         }
 
+        /// <summary>이 맵을 지금 빌드에서 고를 수 있나 — 정식(대형~)이거나 개발 빌드(2026-08-31).</summary>
+        public bool IsSelectableAt(int _index)
+        {
+            MapLayout layout = LayoutAt(_index);
+            return layout != null && MapCatalogLogic.IsSelectable(layout.HalfExtent, Debug.isDebugBuild);
+        }
+
         private MapLayout LayoutAt(int _index)
         {
             if (m_Layouts == null || m_Layouts.Length == 0) return null;

@@ -24,6 +24,9 @@ namespace CTC.Runtime.Room
             new NetworkVariable<FixedString64Bytes>();
 
         private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
+        // 새 방의 기본 맵(2026-08-31) — 씬 빌더가 첫 정식 맵(대형) 인덱스를 굽는다.
+        // 런타임에 카탈로그를 뒤지지 않는 이유: Model이 Worker를 모르게(MVC), 스폰 순서에도 안 걸리게.
+        [SerializeField] private int m_DefaultMapIndex;
 
         /// <summary>시작을 눌러 추첨·씬 전환이 도는 중. 다시 못 누르게 잠근다.</summary>
         private readonly NetworkVariable<bool> m_Starting = new NetworkVariable<bool>();
@@ -95,6 +98,7 @@ namespace CTC.Runtime.Room
 
             if (IsServer)
             {
+                m_MapIndex.Value = Mathf.Max(0, m_DefaultMapIndex);
                 NetworkManager.OnClientConnectedCallback += OnClientConnected;
                 NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
                 foreach (ulong id in NetworkManager.ConnectedClientsIds) EnsureEntry(id);

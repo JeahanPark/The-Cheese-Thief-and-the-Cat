@@ -49,7 +49,8 @@ namespace CTC.Runtime.Room
                 Button button = m_Buttons[i];
                 if (button == null) continue;
 
-                bool exists = i < m_Catalog.Count;
+                // 정식 맵만 노출(2026-08-31) — 작은 맵은 개발 빌드에서만 버튼이 선다.
+                bool exists = i < m_Catalog.Count && m_Catalog.IsSelectableAt(i);
                 if (button.gameObject.activeSelf != exists) button.gameObject.SetActive(exists);
                 if (!exists) continue;
 
