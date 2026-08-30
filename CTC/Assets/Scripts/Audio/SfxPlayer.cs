@@ -85,6 +85,17 @@ namespace CTC.Runtime.Audio
         /// </summary>
         public static event System.Action<SfxId, Vector3, float> Played;
 
+        /// <summary>원샷 소리 껍데기를 담는 풀의 이름표 — 3D·2D가 같은 껍데기를 나눠 쓴다.</summary>
+        private const string POOL_KEY = "sfx.oneshot";
+
+        /// <summary>풀이 비었을 때만 불린다. AudioSource 하나만 얹은 빈 껍데기다.</summary>
+        private static GameObject CreateVoice()
+        {
+            var go = new GameObject("SfxVoice");
+            go.AddComponent<AudioSource>().playOnAwake = false;
+            return go;
+        }
+
         /// <summary>월드 위치 3D 원샷 — 리스너(자기 카메라) 거리에 따라 감쇠. maxDistance로 가청 반경 조절.</summary>
         public static void PlayAt(SfxId _id, Vector3 _position, float _volume = 1f, float _maxDistance = WORLD_MAX_DISTANCE)
         {
@@ -93,9 +104,16 @@ namespace CTC.Runtime.Audio
             AudioClip clip = ClipOf(_id);
             if (clip == null) return;
 
-            var go = new GameObject($"Sfx_{_id}");
+            // 발소리는 판 내내 쏟아진다 — 한 발마다 GameObject를 만들고 부수지 않고 껍데기를 돌려 쓴다.
+            GameObject go = Core.PoolManager.Instance.SpawnFrom(POOL_KEY, CreateVoice);
+            if (go == null) return;
+
+            go.transform.SetParent(null, false);
             go.transform.position = _position;
-            AudioSource source = go.AddComponent<AudioSource>();
+
+            AudioSource source = go.GetComponent<AudioSource>();
+            if (source == null) return;
+
             source.clip = clip;
             source.volume = _volume * Core.UserSettings.SfxVolume.Value;
             source.spatialBlend = 1f;
@@ -103,7 +121,8 @@ namespace CTC.Runtime.Audio
             source.minDistance = WORLD_MIN_DISTANCE;
             source.maxDistance = _maxDistance;
             source.Play();
-            Destroy(go, clip.length + 0.1f);
+
+            Core.PoolManager.Instance.DespawnAfter(go, clip.length + 0.1f);
         }
 
         /// <summary>2D 원샷 — UI·매치 알림 등 거리 무관 소리.</summary>
@@ -112,13 +131,20 @@ namespace CTC.Runtime.Audio
             AudioClip clip = ClipOf(_id);
             if (clip == null) return;
 
-            var go = new GameObject($"Sfx_{_id}");
-            AudioSource source = go.AddComponent<AudioSource>();
+            GameObject go = Core.PoolManager.Instance.SpawnFrom(POOL_KEY, CreateVoice);
+            if (go == null) return;
+
+            go.transform.SetParent(null, false);
+
+            AudioSource source = go.GetComponent<AudioSource>();
+            if (source == null) return;
+
             source.clip = clip;
             source.volume = _volume * Core.UserSettings.SfxVolume.Value;
             source.spatialBlend = 0f;
             source.Play();
-            Destroy(go, clip.length + 0.1f);
+
+            Core.PoolManager.Instance.DespawnAfter(go, clip.length + 0.1f);
         }
 
         /// <summary>QA용 — 해당 id에 배선된 클립 이름(미배선이면 빈 문자열). 무음 회귀를 잡는다.</summary>
