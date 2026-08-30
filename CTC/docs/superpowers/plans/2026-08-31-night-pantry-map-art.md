@@ -737,7 +737,7 @@ public int DefaultIndex()
 
 - [ ] **Step 1: 전체 임포트** — `AssetDatabase.ImportPackage(경로, false)` (비대화형). 임포트가 크니 **끝날 때까지 기다린 뒤** 다음 단계 (함정 6 — 리임포트 중 에셋 생성 금지)
 - [ ] **Step 2: 내장 URP 패치 임포트** — `Assets/polyperfect/Poly Universal Pack/Poly Universal Pack - URP.unitypackage`를 같은 방법으로 (기본 머티리얼은 빌트인용 — URP 패치 없이는 마젠타)
-- [ ] **Step 3: 불용 카테고리 삭제** — `- Prefabs`·`- Meshes`·`- Animations`·`- Demo Scenes`에서 Cars·Racetrack·Guns·People·Movie Set·Primeval·Christmas·Easter·Halloween·Valentine·4July·Steampunk 삭제. **유지: Farm·Fantasy·Food·Nature·Survival·Tools·Modular Parts·`- Materials`·`- Textures`** (팩은 아틀라스 공유 — Materials/Textures는 통째로 유지)
+- [ ] **Step 3: 불용 카테고리 삭제** — `- Prefabs`·`- Meshes`·`- Animations`·`- Demo Scenes`에서 Cars·Racetrack·Guns·People·Movie Set·Primeval·Christmas·Easter·Halloween·Valentine·4July·Steampunk 삭제(단, Steampunk의 shelf-wall-victorian-a/b 2종은 선반 후보라 남긴다). **유지: Farm·Fantasy·Food·Nature·Survival·Tools·Modular Parts·`- Materials`·`- Textures`** (팩은 아틀라스 공유 — Materials/Textures는 통째로 유지)
 - [ ] **Step 4: 육안 확인** — 궤짝·배럴 프리팹 하나를 빈 씬에 놓고 마젠타 아닌지 (`unity-scanner read`로 머티리얼 배선도 확인)
 - [ ] **Step 5: 라이선스 기록** — `3자 에셋 라이선스.md`에 polyperfect 행 추가 (Asset Store 표준 EULA, 고지 의무 없음, 소스 재배포 금지)
 - [ ] **Step 6: 커밋** (에셋만 별도 커밋 — 용량 큼) — `chore(assets): Poly Universal Pack 선별 임포트 — 팬트리 가구·소품`
@@ -854,7 +854,7 @@ namespace CTC.Runtime.Map
         [SerializeField] private MapBuilder m_Builder;
         [SerializeField] private GameObject[] m_ShelfUnits;     // 방 벽 앞 — 선반
         [SerializeField] private GameObject[] m_CrateUnits;     // 복도 벽 — 궤짝
-        [SerializeField] private GameObject[] m_ObstacleUnits;  // 장애물 — 배럴·자루
+        [SerializeField] private GameObject[] m_ObstacleUnits;  // 장애물 — 배럴·호박·궤짝 (밀가루 포대는 팩에 없다 — 필요해지면 SdfMesher로)
         [SerializeField] private float m_UnitScale = 1f;        // 팩 스케일 보정(사람 크기 → 거대 세계)
 
         public void Dress(int _seed)
