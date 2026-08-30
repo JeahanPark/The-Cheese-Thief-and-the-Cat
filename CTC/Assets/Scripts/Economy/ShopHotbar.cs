@@ -1,4 +1,4 @@
-using CTC.Runtime.Combat;
+﻿using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
 using R3;
@@ -43,11 +43,11 @@ namespace CTC.Runtime.Economy
             "3방 버티는 즉석 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
         };
 
-        private static readonly Color COLOR_HINT = new Color(0.73f, 0.76f, 0.82f, 0.8f);
+        private static readonly Color COLOR_HINT = UI.UiPalette.WithAlpha(UI.UiPalette.TextDim, 0.9f);
 
-        private static readonly Color COLOR_READY = Color.white;
-        private static readonly Color COLOR_POOR = new Color(1f, 0.45f, 0.35f);
-        private static readonly Color COLOR_OWNED = new Color(0.5f, 0.82f, 0.42f);
+        private static readonly Color COLOR_READY = UI.UiPalette.TextOn;
+        private static readonly Color COLOR_POOR = UI.UiPalette.Bad;
+        private static readonly Color COLOR_OWNED = UI.UiPalette.Good;
 
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private GameObject m_Root;
@@ -288,8 +288,8 @@ namespace CTC.Runtime.Economy
             Vector3 half = ShopController.HalfExtentsOf(m_PlacingId);
             m_Ghost.transform.position = pos + Vector3.up * half.y;
             m_GhostMaterial.color = m_GhostValid
-                ? new Color(0.45f, 0.85f, 0.35f, 0.35f)
-                : new Color(0.9f, 0.3f, 0.2f, 0.35f);
+                ? UI.UiPalette.WithAlpha(UI.UiPalette.Good, 0.35f)
+                : UI.UiPalette.WithAlpha(UI.UiPalette.Bad, 0.35f);
 
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
             if (!m_GhostValid) { Say("여기엔 설치할 수 없다"); return; }

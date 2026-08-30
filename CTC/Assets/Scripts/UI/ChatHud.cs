@@ -27,8 +27,8 @@ namespace CTC.Runtime.UI
         private const int MAX_LINES = 8;
         private const float IDLE_HIDE_SECONDS = 12f;
 
-        private static readonly Color COLOR_MINE = new Color(0.95f, 0.9f, 0.55f);
-        private static readonly Color COLOR_SPECTATOR = new Color(0.6f, 0.75f, 0.95f);
+        private static readonly Color COLOR_MINE = UiPalette.AccentSoft;
+        private static readonly Color COLOR_SPECTATOR = UiPalette.Info;
 
         [SerializeField] private GameObject m_Root;
         [SerializeField] private TMP_Text m_Log;

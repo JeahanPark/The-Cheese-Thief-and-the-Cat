@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using CTC.Runtime.Core;
 using CTC.Runtime.Match;
 using Cysharp.Threading.Tasks;
@@ -27,8 +27,8 @@ namespace CTC.Runtime.UI
         private const float HEIGHT = 1.15f;
         private const float FONT_SIZE = 4f;
         private const float MINION_POPUP_SECONDS = 3f;
-        private static readonly Color COLOR_BOSS = new Color(0.95f, 0.35f, 0.3f);
-        private static readonly Color COLOR_MINION = new Color(0.95f, 0.65f, 0.35f);
+        private static readonly Color COLOR_BOSS = UiPalette.Bad;
+        private static readonly Color COLOR_MINION = UiPalette.Warn;
 
         private MouseJob m_Job;
         private GangRecruit m_Recruit;

@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -29,13 +29,13 @@ namespace CTC.Runtime.UI
         [SerializeField] private TMP_Text m_SecondsText;// 쿨다운 남은 초(최상단)
 
         // 핫바 칸 색과 같은 값(LobbyCanvasBuilder·ShopHotbar)
-        private static readonly Color TILE_IDLE = new Color(0.07f, 0.055f, 0.04f, 0.82f);
-        private static readonly Color TILE_FLASH = new Color(0.55f, 0.45f, 0.25f, 0.95f);
-        private static readonly Color COLOR_READY = new Color(0.5f, 0.82f, 0.42f);   // 핫바 "보유"와 같은 초록
-        private static readonly Color COLOR_ACTIVE = new Color(1f, 0.82f, 0.48f);
+        private static readonly Color TILE_IDLE = UiPalette.Slot;
+        private static readonly Color TILE_FLASH = UiPalette.WithAlpha(UiPalette.Accent, 0.55f);
+        private static readonly Color COLOR_READY = UiPalette.Good;   // 핫바 "보유"와 같은 초록
+        private static readonly Color COLOR_ACTIVE = UiPalette.Accent;
         // 덮개 — 바탕이 이미 검어서 검은 덮개는 안 보인다. 덮인 자리를 **뿌옇게** 밝히고 글자를 가려
         // "아직 안 걷힌 부분"이 눈에 들어오게 한다(2026-08-17 실측: 검정 0.84는 구분이 안 됐다).
-        private static readonly Color COVER = new Color(0.62f, 0.56f, 0.46f, 0.72f);
+        private static readonly Color COVER = UiPalette.WithAlpha(UiPalette.Groove, 0.78f);
 
         private AbilitySlot m_Slot;
         private float m_FlashLeft;

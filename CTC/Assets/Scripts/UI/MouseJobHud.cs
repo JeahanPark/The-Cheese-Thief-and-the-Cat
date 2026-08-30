@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using CTC.Runtime.Core;
 using CTC.Runtime.Match;
 using R3;
@@ -26,8 +26,8 @@ namespace CTC.Runtime.UI
     {
         private const float POPUP_SECONDS = 3f;
 
-        private static readonly Color COLOR_GANG = new Color(0.95f, 0.45f, 0.35f);
-        private static readonly Color COLOR_HERO = new Color(0.55f, 0.85f, 1f);
+        private static readonly Color COLOR_GANG = UiPalette.Bad;
+        private static readonly Color COLOR_HERO = UiPalette.Info;
 
         [SerializeField] private PhaseDirector m_Phase;
         [SerializeField] private TMP_Text m_Text;

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Player;
@@ -35,7 +35,7 @@ namespace CTC.Runtime.UI
         private const float DARK_AMBIENT_FACTOR = 0.2f;
         private const float LANTERN_RANGE = 5f;
         private const float LANTERN_INTENSITY = 2.2f;
-        private static readonly Color LANTERN_COLOR = new Color(1f, 0.86f, 0.62f);
+        private static readonly Color LANTERN_COLOR = UiPalette.AccentSoft;   // 조명색 — 강조색 계열로 맞춘다
         private float m_DarkStrength;
         private Light m_Sun;
         private float m_SunIntensity;

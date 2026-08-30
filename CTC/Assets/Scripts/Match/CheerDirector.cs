@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using TMPro;
@@ -125,7 +125,7 @@ namespace CTC.Runtime.Match
             tmp.text = "따봉!";
             tmp.fontSize = 5f;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = new Color(0.45f, 0.95f, 0.45f);
+            tmp.color = UI.UiPalette.Good;
             go.AddComponent<Cameras.FaceCamera>();
 
             Destroy(go, MARKER_SECONDS);

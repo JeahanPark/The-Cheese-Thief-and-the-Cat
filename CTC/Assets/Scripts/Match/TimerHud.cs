@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using CTC.Runtime.Lobby;
 using R3;
 using TMPro;
@@ -18,7 +18,7 @@ namespace CTC.Runtime.Match
     /// </summary>
     public class TimerHud : MonoBehaviour
     {
-        private static readonly Color COLOR_GANG = new Color(0.95f, 0.45f, 0.35f);
+        private static readonly Color COLOR_GANG = UI.UiPalette.Bad;
 
         [SerializeField] private LobbyController m_Lobby;
         [SerializeField] private MatchManager m_Match;
