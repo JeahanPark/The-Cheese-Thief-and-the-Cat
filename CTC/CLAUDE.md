@@ -74,6 +74,27 @@
   - 참조 추적: `unity-scanner refs -p <프로젝트경로> <에셋경로|GUID>`
 - 예외: YAML을 **정확히 수정**해야 하거나 특정 직렬화 값(해시 등)을 원문으로 검증할 때만 Read/Grep 직접 사용.
 
+## rtk (셸 출력 압축 — 토큰 절약, 2026-08-26)
+
+`rtk`(CLI, `C:\Users\user\.local\bin\rtk.exe`)는 셸 **출력**을 압축하는 프록시다. unity-scanner와 역할이 겹치지 않는다 — 둘 다 쓴다.
+
+| 대상 | 도구 |
+|---|---|
+| `.prefab` · `.unity` · `.asset` 내용·참조 | **unity-scanner** |
+| git · pytest(wesqa) · ls/grep/find | **rtk** |
+| Unity 에디터 조작·플레이모드 | **MCP** |
+| YAML 정밀 수정·직렬화 값 원문 검증 | **내장 Read/Grep** |
+
+- 자주 쓰는 것: `rtk git status` · `rtk git log -n 10` · `rtk git diff` · `rtk pytest` · `rtk ls <경로>` · `rtk grep <패턴> <경로>` · `rtk err <명령>`
+- **자동 재작성 훅은 안 깔았다.** 명시적으로 `rtk`를 붙여 호출한다.
+- **Unity YAML(`.prefab`·`.unity`·`.asset`)에는 rtk를 쓰지 않는다.** 잘려서가 아니라 **출력이 더 나쁘기 때문이다** — rtk는 도메인을 몰라서 `m_Script: {guid: 609eafc4...}`를 그대로 뱉지만, unity-scanner는 같은 걸 `Health`로 풀어 준다. YAML은 unity-scanner, 원문 검증은 내장 Read/Grep.
+- rtk를 일반 파일에 쓸 때 주의 2가지 (2026-08-26 실측):
+  - **`-n`을 명시해야 줄번호가 남는다.** 빠뜨리면 `file.cs:42` 클릭 링크를 못 만든다.
+  - 줄 길이 기본 컷이 **80자**다. 긴 줄이 필요하면 `--max-len 200`.
+  - 매치가 많으면 25줄만 보이고 나머지는 tee 로그로 빠진다(출력 마지막 줄에 경로가 찍힘) — 사라지는 건 아니다.
+- 원문이 필요하면 `rtk proxy <명령>` (압축 없이 통과).
+- 실측 절감(CTC): `ls -laR Assets/Scripts` 99% · 씬 grep(211매치) 88% · `git log -n 20` 67% · 짧은 grep 2%. **줄이 짧고 결과가 적으면 효과 없다.**
+
 ## MCP Rules
 
 - Unity 관련 작업(프리팹, 컴포넌트, Inspector 참조 등)은 MCP 도구를 우선 사용한다.
@@ -87,6 +108,60 @@
 - **MCP 플러그인 수정 시**: 반드시 원본 저장소(`C:\GitFork\MCP_Unity\MCP_Unity_Plugin`)에서 먼저 수정한 뒤 프로젝트(`Assets/MCP_Unity_Plugin/`)로 복사한다. 프로젝트 내 파일을 직접 수정하지 않는다.
 - **MCP 서버 재빌드/재시작**: 배치 파일 `C:\GitFork\MCP_Unity\MCP\MCP\MCP\stop_and_rebuild.bat`를 실행한다.
 - **McpBridge 미응답 시** (도메인 리로드 후 에디터 미포커스): `powershell -NoProfile -File tools/focus-unity.ps1`
+
+## 조용히 깨지는 함정 (2026-08-30 실측 — 전부 에러가 안 난다)
+
+| # | 함정 | 증상 | 규칙 |
+|---|---|---|---|
+| 1 | `m_Name`을 직렬화 필드 이름으로 씀 | `UnityEngine.Object`가 같은 이름을 이미 쓴다. 에디터에서 `FindProperty("m_Name")`이 **오브젝트 이름**을 집어 배선이 빈다 | `m_Name`·`m_Enabled`·`m_GameObject`·`m_Script`는 필드명으로 쓰지 않는다 |
+| 2 | 씬 빌더가 손으로 고친 에셋을 덮어씀 | 프리팹 좌표를 옮겨 놔도 씬 재생성이 매번 지운다 | 자리·개수의 주인이 프리팹이면 **있으면 안 덮어쓴다**. 다시 굽고 싶으면 프리팹을 지운다 |
+| 3 | `AnimationUtility.SetEditorCurve`를 인메모리 클립에 씀 | 런타임 커브가 안 채워져 `SampleAnimation`이 아무 일도 안 한다 | 에셋 클립엔 `SetEditorCurve`, 인메모리 클립엔 `clip.SetCurve` |
+| 4 | `EditorUtility.CopySerialized`로 메시 에셋을 덮음 | **디스크는 갱신되는데 렌더 버퍼는 옛 것**이 남는다. 정점 7203→10632인데 렌더 결과가 바이트까지 같았다 | GUID를 지키려면 `mesh.Clear()` 후 Mesh API로 직접 다시 채운다 |
+| 5 | 한 머티리얼을 **UV 규약이 다른 메시**들이 나눠 씀 | 타일 배율을 한쪽에 맞추면 반대쪽이 단색으로 보인다. `M_Cheese`를 쐐기(0~1 정규화)와 창고(미터)가 같이 써서 쐐기만 무늬가 안 나왔다 | **UV는 미터 단위 박스 투영으로 통일한다**(`SdfMesher.PlanarUvs`). 새 메시 생성기도 같은 규약을 쓴다 |
+| 6 | `new Material(null)` | `LoadAssetAtPath<Shader>`가 **대규모 리임포트 중에 null**을 준다. 예외도 경고도 없이 **마젠타 머티리얼이 구워져 프리팹에 박힌다** | 셰이더 로드를 널 검사하고, 구운 뒤 `mat.shader == null`을 한 번 더 본다. 큰 에셋을 지운 직후엔 리임포트가 끝난 뒤 생성기를 돌린다 |
+| 7 | 상태를 **같은 프레임에 껐다 켬** | 감시자가 전환을 못 본다. `RequestRestart()`→`RequestStartGame()`을 붙여 부르니 `MatchManager`가 "시작됨→꺼짐"을 놓쳐 타이머를 안 채웠고, **2판부터 시작하자마자 시간 만료**로 끝났다 | 껐다 켜는 사이에 **한 프레임을 준다**(`UniTask.NextFrame`) |
+| 8 | 한글 주석이 든 `.ps1` | PowerShell 5.1은 `.ps1`을 **ANSI로 읽는다**. 글자가 깨져 **파싱 자체가 실패**한다 — 문법 오류로만 보여 원인이 안 보인다 | `.ps1`은 **UTF-8 BOM**으로 저장한다. 만들고 나면 반드시 한 번 실행해 본다 |
+
+애니메이션·이펙트를 다룰 때 추가로 겪은 것:
+- **커브·마스크 경로는 Animator 기준**이다. Animator가 자식(`Model`)에 있으면 그 접두를 뺀다. 틀려도 에러가 없다.
+- `AvatarMask.AddTransformPath`는 **계층 루트 기준** 경로를 넣는다 → 기준이 어긋나 마스크가 0개를 켠다. 경로를 직접 계산해 넣는다.
+- 본을 코드로 직접 돌려도 **에디터에서는 스킨드 메시가 다시 스키닝되지 않는다.** 클립을 만들어 샘플링해야 반영된다.
+- 씬 뷰 스크린샷(`u_editor_sceneview`)은 갱신이 안 붙어 같은 그림을 반복해 준다. 확인이 필요하면 **임시 카메라로 직접 렌더**한다.
+
+### MPPM 클론이 MCP 브리지를 가로챈다 (2026-08-30)
+
+`\\.\pipe\mcp-unity-bridge`는 이름이 하나뿐이다. **MPPM 클론도 같은 프로젝트 코드를 돌리므로
+`McpBridge`가 그 이름을 먼저 잡을 수 있다.** 그러면 파이프는 존재하는데 메인 에디터가 응답을
+못 해서, `u_console` 같은 호출이 전부 타임아웃한다(포커스를 아무리 줘도 안 살아난다).
+
+- 확인: `[System.IO.Directory]::GetFiles("\\.\pipe\") | ? { $_ -match 'mcp' }` — 파이프가 있는데 응답이 없으면 이 경우다.
+- 조치: 클론(`Player N` 제목의 Unity 프로세스)을 닫는다. 메뉴로 다시 띄우면 된다.
+
+### 스팀이 켜져 있으면 MPPM 3인 테스트가 안 된다 (2026-08-30)
+
+스팀이 살아 있으면 호스트는 **Facepunch 트랜스포트**로 방을 연다. 반면 클론은 **같은 계정 중복**이라
+스팀 초기화가 실패해 UTP로 남는다 — **트랜스포트가 서로 달라 클론이 못 붙는다.**
+
+여러 명 로컬 테스트를 하려면 **스팀을 꺼야 한다.** 그러면 양쪽 다 UTP로 붙는다.
+
+### 에디터가 UDP 포트를 안 놓는다 (2026-08-30)
+
+플레이를 끝내도 에디터 프로세스가 7788을 물고 있는 일이 잦다. 그래서 이 프로젝트에는
+`HostPortFallback`이 있다 — 빈 포트를 찾아 올라가고 그 번호를 공유 파일에 적어 클론이 읽는다.
+
+**로컬 호스트를 여는 새 경로를 만들면 반드시 그걸 태운다.** `nm.StartHost()`를 직접 부르면
+포트가 막혔을 때 그대로 실패해 방이 안 열린다(로비의 에디터 경로가 실제로 그랬다).
+
+### MCP 브리지가 안 붙을 때 (2026-08-30)
+
+`tools/focus-unity.ps1`이 창을 못 찾아 `UNITY_NOT_FOUND`로 빠지던 문제를 고쳤다. **컴파일·도메인 리로드
+중에는 Unity 창 제목이 비거나 바뀐다** — 하필 포커스가 가장 필요한 그 순간이다. 그러면 에디터가 안 돌아
+sentinel을 기다리는 루프가 통째로 타임아웃한다.
+
+- 제목 필터를 완화하고(CTC 우선, 없으면 남은 것), `SetForegroundWindow` 대신 **`WScript.Shell.AppActivate`** 를 먼저 쓴다.
+- 출력에 `activated=True/False`가 찍히니 실패를 알 수 있다.
+
+---
 
 ## CTC 코드 제약
 
