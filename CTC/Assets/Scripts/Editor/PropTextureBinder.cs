@@ -98,7 +98,7 @@ namespace CTC.Editor
         /// 타일링이 목적이라 **Repeat**여야 한다. Clamp면 가장자리 픽셀이 늘어나 줄무늬가 생긴다.
         /// mipmap은 켠다 — 멀리 있는 벽감이 지글거리는 것을 막는다.
         /// </summary>
-        private static void ConfigureImport(string _path)
+        internal static void ConfigureImport(string _path)
         {
             var importer = AssetImporter.GetAtPath(_path) as TextureImporter;
             if (importer == null) return;
