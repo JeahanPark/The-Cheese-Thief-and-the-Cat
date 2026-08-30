@@ -84,6 +84,36 @@ namespace CTC.Runtime.Testing
 
         // ===== CTC 시나리오 (기존 public 메서드 조합만 — 신규 게임 로직 없음) =====
 
+        /// <summary>씬·NetworkManager 상태 한 줄 — 클론이 왜 못 붙는지 가를 때(2026-08-31).</summary>
+        public string TestGetNetDiag()
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var anyNm = UnityEngine.Object.FindFirstObjectByType<Unity.Netcode.NetworkManager>(
+                FindObjectsInactive.Include);
+            var auto = UnityEngine.Object.FindFirstObjectByType<Networking.MppmAutoConnect>(
+                FindObjectsInactive.Include);
+            return $"scene={scene} singleton={(nm != null ? nm.gameObject.name : "null")} " +
+                   $"nmInScene={(anyNm != null ? anyNm.gameObject.name : "null")} " +
+                   $"autoConnect={(auto != null ? "yes" : "no")} " +
+                   $"listening={(nm != null && nm.IsListening)}";
+        }
+
+        /// <summary>
+        /// 클론 수동 접속 — MppmAutoConnect가 못 붙을 때의 QA 우회로(2026-08-31).
+        /// 같은 공유 포트 파일을 읽으므로 자동 경로와 조건이 같다. 결과를 문자열로 돌려준다.
+        /// </summary>
+        public string TestStartClient()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null) return "no-networkmanager";
+            if (nm.IsListening) return $"already listening client={nm.IsConnectedClient}";
+
+            Networking.HostPortFallback.ApplyHostPortToTransport(nm);
+            bool started = nm.StartClient();
+            return $"startclient={started}";
+        }
+
         /// <summary>
         /// HostPortFallback 경유 호스트 시작 — 선택 포트를 공유 파일에 기록해 클론이 따라온다.
         /// QA에서 NetworkManager.StartHost를 직접 호출하면 파일이 스테일로 남아
