@@ -135,3 +135,17 @@ docs/design-vault/.obsidian/workspace.json
 gemini-state.jpeg
 screenshot.png
 tools/__pycache__/
+
+
+# 스팀 업로드 작업 폴더 (2026-08-30)
+#  builder : Steamworks SDK에서 복사해 오는 steamcmd — 재배포 대상이 아니다
+#  content : 업로드 직전에 빌드를 복사해 넣는 자리
+#  output  : 로그 + 청크 캐시. 커밋은 안 하되 **로컬에서 지우지 마라** — 지우면 업로드가 느려진다
+/tools/ContentBuilder/builder/
+/tools/ContentBuilder/content/
+/tools/ContentBuilder/output/
+/tools/ContentBuilder/scripts/app_build_*.vdf
+
+# 프로젝트 루트에 흘린 스크린샷 (Playwright·MCP가 작업 중에 찍는 것)
+#  작업물은 docs/ 아래에 둔다. 루트 png는 전부 흔적이다.
+/*.png
