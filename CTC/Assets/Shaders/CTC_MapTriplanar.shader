@@ -25,6 +25,9 @@ Shader "CTC/MapTriplanar"
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE
             #pragma multi_compile _ _SHADOWS_SOFT
             #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            // Forward+(PC 렌더러) — 클러스터 키워드가 없으면 GetAdditionalLightsCount()가 0을 준다
+            #pragma multi_compile_fragment _ _FORWARD_PLUS
+            #pragma multi_compile_fragment _ _CLUSTER_LIGHT_LOOP
             #pragma multi_compile_fog
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -83,14 +86,18 @@ Shader "CTC/MapTriplanar"
                 lighting += mainLight.color
                     * (saturate(dot(n, mainLight.direction)) * mainLight.shadowAttenuation);
 
-                #if defined(_ADDITIONAL_LIGHTS)   // 4단계의 앰버 빛웅덩이(포인트 라이트)가 여기로 들어온다
-                uint count = GetAdditionalLightsCount();
-                for (uint li = 0u; li < count; li++)
-                {
-                    Light l = GetAdditionalLight(li, i.positionWS);
+                #if defined(_ADDITIONAL_LIGHTS)   // 앰버 빛웅덩이(포인트 라이트)가 여기로 들어온다
+                // LIGHT_LOOP 매크로는 Forward+에선 클러스터를, Forward에선 단순 루프를 편다.
+                // 매크로가 inputData를 이름으로 참조하므로 두 필드는 반드시 채운다.
+                InputData inputData = (InputData)0;
+                inputData.positionWS = i.positionWS;
+                inputData.normalizedScreenSpaceUV = GetNormalizedScreenSpaceUV(i.positionCS);
+                uint pixelLightCount = GetAdditionalLightsCount();
+                LIGHT_LOOP_BEGIN(pixelLightCount)
+                    Light l = GetAdditionalLight(lightIndex, i.positionWS);
                     lighting += l.color * (saturate(dot(n, l.direction))
                         * l.distanceAttenuation * l.shadowAttenuation);
-                }
+                LIGHT_LOOP_END
                 #endif
 
                 half3 color = MixFog(albedo * lighting, i.fogFactor);

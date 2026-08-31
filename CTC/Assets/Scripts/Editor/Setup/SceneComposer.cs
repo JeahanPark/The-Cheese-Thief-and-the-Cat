@@ -41,6 +41,27 @@ namespace CTC.Editor
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
+            // 밤 조명(2026-08-31 도안 도판 1) — 인트로와 같은 밤, 다른 밀도.
+            // 달빛은 겨우 보일 만큼만, 색·목표물은 앰버 빛웅덩이(MapDresser)가 준다.
+            // 실험실(BotLab)은 관찰용이라 낮 그대로 둔다 — 어두우면 경로선이 안 보인다.
+            if (!_botLab)
+            {
+                Light sun = Object.FindFirstObjectByType<Light>();
+                if (sun != null)
+                {
+                    sun.color = new Color(0.55f, 0.65f, 0.85f);   // 딤 블루 달빛
+                    sun.intensity = 0.35f;
+                    sun.transform.rotation = Quaternion.Euler(55f, 35f, 0f);
+                    sun.shadows = LightShadows.Soft;
+                }
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+                RenderSettings.ambientLight = new Color(0.055f, 0.065f, 0.095f);
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = new Color(0.010f, 0.014f, 0.020f);
+                RenderSettings.fogDensity = 0.012f;   // 인트로 0.16은 실내 근경용 — 120m 맵에선 안 보인다
+            }
+
             // v3.5: 맵 지오메트리는 더 이상 여기서 굽지 않는다. 로비에서 고른 레이아웃으로
             // MapBuilder가 런타임에 짓는다 — 바닥·경계벽도 레이아웃의 HalfExtent에서 나온다.
             var mapBuilderGo = new GameObject("MapBuilder");

@@ -47,6 +47,32 @@ namespace CTC.Runtime.Map
                     foreach (Transform o in child)
                         ReplaceVisual(o, m_ObstacleUnits, dressRoot, _seed + 2);
             }
+
+            PlaceLightPools(dressRoot, _seed);
+        }
+
+        /// <summary>앰버 빛웅덩이 — 3방 중 1방꼴. 빛 = 위험이라 드문드문해야 스텔스가 산다(도판 1).</summary>
+        private void PlaceLightPools(Transform _parent, int _seed)
+        {
+            MapLayout layout = m_Builder != null ? m_Builder.CurrentLayout : null;
+            if (layout == null) return;
+
+            for (int i = 0; i < layout.Rooms.Count; i++)
+            {
+                if (MapDressLogic.Pick(i, 3, _seed + 3) != 0) continue;
+
+                RoomRect room = layout.Rooms[i];
+                var go = new GameObject($"LightPool_{i}");
+                go.transform.SetParent(_parent, false);
+                go.transform.position = new Vector3(room.Center.x, 3.5f, room.Center.y);
+
+                var light = go.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.color = new Color(0.91f, 0.71f, 0.21f);   // 앰버 등불
+                light.intensity = 5.5f;   // 2.2는 바닥이 미지근했다 — 웅덩이는 한눈에 읽혀야 위험이다
+                light.range = 12f;
+                light.shadows = LightShadows.None;   // 웅덩이 수십 개 — 그림자는 달빛 하나면 된다
+            }
         }
 
         /// <summary>벽 박스의 긴 축을 따라 가구를 타일링 — 양면에 붙인다.</summary>
@@ -106,11 +132,32 @@ namespace CTC.Runtime.Map
             StripPhysics(go);
         }
 
-        /// <summary>팩 프리팹의 콜라이더·리지드바디 제거 — 물리는 원본 박스의 몫.</summary>
+        /// <summary>
+        /// 팩 프리팹의 물리를 눕힌다 — 리지드바디는 제거, 콜라이더는 **트리거로 전환**.
+        /// 트리거는 이동(CC)·게임플레이 레이(전부 Ignore)를 안 건드리면서
+        /// OccluderFader(Collide로 캐스트)에게만 잡혀 카메라 가림 페이드가 산다(2026-08-31).
+        /// </summary>
         private static void StripPhysics(GameObject _go)
         {
+            // 원본 콜라이더는 전부 버린다 — concave MeshCollider는 트리거가 못 된다(런타임 에러).
             foreach (Collider c in _go.GetComponentsInChildren<Collider>(true)) Destroy(c);
             foreach (Rigidbody r in _go.GetComponentsInChildren<Rigidbody>(true)) Destroy(r);
+
+            // 페이더용 트리거 박스 하나 — 렌더 경계 AABB. 벽 가구는 축 정렬이라 딱 맞고,
+            // 회전한 배럴은 좀 크게 잡히지만 페이드 용도로는 충분하다.
+            Renderer[] renderers = _go.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return;
+            Bounds b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+
+            var box = _go.AddComponent<BoxCollider>();
+            box.isTrigger = true;
+            box.center = _go.transform.InverseTransformPoint(b.center);
+            Vector3 ls = _go.transform.lossyScale;
+            box.size = new Vector3(
+                b.size.x / Mathf.Max(ls.x, 1e-4f),
+                b.size.y / Mathf.Max(ls.y, 1e-4f),
+                b.size.z / Mathf.Max(ls.z, 1e-4f));
         }
     }
 }

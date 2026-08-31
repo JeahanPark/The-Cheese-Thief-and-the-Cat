@@ -84,7 +84,9 @@ namespace CTC.Runtime.Cameras
 
             Vector3 dir = (_targetPos - _cameraPos).normalized;
             int count = Physics.SphereCastNonAlloc(origin, m_CastRadius, dir, m_Hits, distance,
-                m_ObstacleLayers, QueryTriggerInteraction.Ignore);
+                m_ObstacleLayers, QueryTriggerInteraction.Collide);
+            // Collide인 이유(2026-08-31): 팬트리 가구(MapDresser)는 트리거 콜라이더만 든다 —
+            // 이동·시야 레이는 전부 Ignore라 게임플레이에 안 잡히고, 여기서만 잡혀 페이드된다.
 
             for (int i = 0; i < count; i++)
             {
