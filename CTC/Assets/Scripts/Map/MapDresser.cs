@@ -17,8 +17,10 @@ namespace CTC.Runtime.Map
         [SerializeField] private GameObject[] m_ShelfUnits;     // 방 벽 앞 — 선반
         [SerializeField] private GameObject[] m_CrateUnits;     // 복도 벽 — 궤짝
         [SerializeField] private GameObject[] m_ObstacleUnits;  // 장애물 — 배럴·호박
-        // 팩은 사람 스케일(선반 ~2m)이다 — 거대 세계(벽 5m)에선 키워야 가구가 벽 노릇을 한다
+        // 팩은 사람 스케일(선반 ~2m)이다 — 거대 세계(벽 5m)에선 키워야 가구가 벽 노릇을 한다.
+        // 궤짝만 낮게 — 복도 벽(2.4m)에 2배 궤짝을 대면 통로를 통째로 먹는다(2026-08-31 검수).
         [SerializeField] private float m_UnitScale = 2f;
+        [SerializeField] private float m_CrateScale = 1.4f;
 
         public void Dress(int _seed)
         {
@@ -40,9 +42,9 @@ namespace CTC.Runtime.Map
             {
                 string n = child.name;
                 if (n.StartsWith("Wall_"))
-                    TileAlong(child, m_ShelfUnits, dressRoot, _seed);
+                    TileAlong(child, m_ShelfUnits, dressRoot, _seed, m_UnitScale);
                 else if (n.StartsWith("CorridorWall") || n.StartsWith("CorridorEndCap"))
-                    TileAlong(child, m_CrateUnits, dressRoot, _seed + 1);
+                    TileAlong(child, m_CrateUnits, dressRoot, _seed + 1, m_CrateScale);
                 else if (n == "Obstacles")
                     foreach (Transform o in child)
                         ReplaceVisual(o, m_ObstacleUnits, dressRoot, _seed + 2);
@@ -76,7 +78,7 @@ namespace CTC.Runtime.Map
         }
 
         /// <summary>벽 박스의 긴 축을 따라 가구를 타일링 — 양면에 붙인다.</summary>
-        private void TileAlong(Transform _wall, GameObject[] _units, Transform _parent, int _seed)
+        private void TileAlong(Transform _wall, GameObject[] _units, Transform _parent, int _seed, float _scale)
         {
             if (_units == null || _units.Length == 0) return;
 
@@ -101,12 +103,20 @@ namespace CTC.Runtime.Map
 
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    Vector3 pos = _wall.position + axis * (start + i * UNIT_WIDTH)
-                                + face * (side * (thick * 0.5f + 0.05f));
+                    Vector3 outward = face * side;
+                    // 경계와 맞닿은 면(바깥쪽)은 안 입힌다 — 맵 밖에 가구가 떠 있었다(2026-08-31 검수)
+                    float facePlane = Vector3.Dot(_wall.position, outward) + thick * 0.5f;
+                    float half = m_Builder.CurrentLayout != null ? m_Builder.CurrentLayout.HalfExtent : float.MaxValue;
+                    if (facePlane > half - 0.2f) continue;
+
+                    Vector3 pos = _wall.position + axis * (start + i * UNIT_WIDTH);
                     pos.y = 0f;
-                    GameObject go = Instantiate(prefab, pos, Quaternion.LookRotation(face * side), _parent);
+                    GameObject go = Instantiate(prefab, pos, Quaternion.LookRotation(outward), _parent);
                     go.name = $"{prefab.name}_{i}";
-                    go.transform.localScale *= m_UnitScale;
+                    go.transform.localScale *= _scale;
+                    // 피벗을 믿지 않는다(2026-08-31 검수: 벽에 파묻혔다) — 렌더 AABB로
+                    // 뒷면을 벽면에, 바닥을 지면에 맞춘다. 팩마다 피벗이 제각각이라 이 길뿐이다.
+                    AlignToWallFace(go, outward, Vector3.Dot(_wall.position, outward) + thick * 0.5f);
                     StripPhysics(go);
                 }
             }
@@ -129,7 +139,38 @@ namespace CTC.Runtime.Map
             float yaw = PantryTextureLogic.Hash(key, 5, _seed) * 360f;
             GameObject go = Instantiate(prefab, pos, Quaternion.Euler(0f, yaw, 0f), _parent);
             go.transform.localScale *= m_UnitScale;
+            AlignToFloor(go);   // 피벗이 가운데인 팩 프리팹은 바닥에 반쯤 파묻힌다
             StripPhysics(go);
+        }
+
+        /// <summary>렌더 AABB의 뒷면을 벽면(+2cm)에, 바닥을 지면에 맞춘다.</summary>
+        private static void AlignToWallFace(GameObject _go, Vector3 _outward, float _wallPlane)
+        {
+            if (!TryGetWorldBounds(_go, out Bounds b)) return;
+
+            // AABB를 outward 방향으로 사영 — 안쪽(벽 쪽) 모서리 좌표
+            float halfExt = Mathf.Abs(b.extents.x * _outward.x)
+                          + Mathf.Abs(b.extents.y * _outward.y)
+                          + Mathf.Abs(b.extents.z * _outward.z);
+            float innerEdge = Vector3.Dot(b.center, _outward) - halfExt;
+            float shift = (_wallPlane + 0.02f) - innerEdge;
+            _go.transform.position += _outward * shift + Vector3.up * (0.01f - b.min.y);
+        }
+
+        /// <summary>렌더 AABB의 바닥을 지면(+1cm)에 맞춘다.</summary>
+        private static void AlignToFloor(GameObject _go)
+        {
+            if (!TryGetWorldBounds(_go, out Bounds b)) return;
+            _go.transform.position += Vector3.up * (0.01f - b.min.y);
+        }
+
+        private static bool TryGetWorldBounds(GameObject _go, out Bounds _bounds)
+        {
+            Renderer[] renderers = _go.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) { _bounds = default; return false; }
+            _bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) _bounds.Encapsulate(renderers[i].bounds);
+            return true;
         }
 
         /// <summary>
