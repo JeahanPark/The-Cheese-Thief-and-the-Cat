@@ -55,6 +55,9 @@ namespace CTC.Runtime.Economy
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
                     return m_WarehousePrefab != null
                            && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE;
+                case ShopItemId.PepperShot:
+                    PepperRounds pepper = GetComponent<PepperRounds>();
+                    return pepper != null && !pepper.Owned;
                 case ShopItemId.CatAttack:
                     CatPounce pounce = GetComponent<CatPounce>();
                     return pounce != null && ShopLogic.CanAddStack(pounce.DamageStacks);
@@ -200,6 +203,9 @@ namespace CTC.Runtime.Economy
                     break;
                 case ShopItemId.Warehouse:
                     SpawnStructure(_itemId, m_WarehousePrefab, Quaternion.identity);
+                    break;
+                case ShopItemId.PepperShot:
+                    GetComponent<PepperRounds>().ServerSetOwned();
                     break;
                 case ShopItemId.CatAttack:
                     GetComponent<CatPounce>().ServerAddDamageStack();

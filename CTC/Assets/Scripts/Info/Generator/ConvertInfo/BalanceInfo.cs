@@ -72,6 +72,9 @@ namespace CTC.Runtime.Info
         public float HeroHpMultiplier;
         public float HeroDamageMultiplier;
         public float GangRecruitRadius;
+        public int PepperDotDamage;
+        public float PepperDotSeconds;
+        public int PepperDotMaxStacks;
     }
 
     public partial class InfoManager

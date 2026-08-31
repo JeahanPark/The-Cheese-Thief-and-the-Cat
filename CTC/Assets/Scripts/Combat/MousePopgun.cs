@@ -110,6 +110,17 @@ namespace CTC.Runtime.Combat
                 // 용사쥐(v3.9)는 그냥 세진다 — 화력도 오른다. 직업이 없으면 배율이 1이라
                 // 직업을 모르는 씬에서도 그대로 돈다.
                 target.TakeDamage(Mathf.RoundToInt(stats.Damage * HeroMultiplier()));
+
+                // 후추 탄(빌드 심화 v1) — 고양이·강아지(RoleTag None인 제3세력)에게만 도트.
+                // 구조물·상자·쥐엔 안 붙는다: 벽감 치즈 총량 QA(qa_v38)를 흔들면 안 되고,
+                // 쥐끼리는 매울 이유가 없다. 강아지는 hitIsPlayer=false·비노획물로 걸러진다.
+                var pepper = GetComponent<PepperRounds>();
+                bool livingEnemy = tag.Role == RoleId.Cat || (tag.Role == RoleId.None && !hitIsMapLoot);
+                if (pepper != null && pepper.Owned && livingEnemy)
+                {
+                    var balance = Info.InfoManager.Instance.Balance;
+                    PepperDot.ServerApply(target, balance.PepperDotMaxStacks, balance.PepperDotSeconds);
+                }
                 break;
             }
 

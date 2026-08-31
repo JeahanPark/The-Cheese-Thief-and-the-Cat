@@ -33,14 +33,15 @@ namespace CTC.Runtime.Economy
 
         private static readonly string[] ITEM_LABELS =
         {
-            "새총", "기관총", "대시", "요새", "창고", "공격 강화", "이속 강화",
+            "새총", "기관총", "대시", "요새", "창고", "후추 탄", "공격 강화", "이속 강화",
         };
 
         // 슬롯 반줄 힌트 — "딱봤을 때 뭔지"만. 사용법 문장은 구매 토스트(UsageOf)의 몫.
         private static readonly string[] ITEM_HINTS =
         {
             "더 세고 멀리", "연사 — 고양이 사냥", "Space 순간 가속",
-            "3방 버티는 즉석 벙커", "자동 치즈 생산", "덮치기 더 아프게", "더 빨리 달리게",
+            "3방 버티는 즉석 벙커", "자동 치즈 생산", "총알에 매운맛 — 지속피해",
+            "덮치기 더 아프게", "더 빨리 달리게",
         };
 
         private static readonly Color COLOR_HINT = UI.UiPalette.WithAlpha(UI.UiPalette.TextDim, 0.9f);

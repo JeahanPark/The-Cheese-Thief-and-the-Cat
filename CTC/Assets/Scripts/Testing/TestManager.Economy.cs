@@ -44,6 +44,8 @@ namespace CTC.Runtime.Testing
 
         public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
 
+        public void TestBuyPepperShot() => BuyLocal(ShopItemId.PepperShot);   // 후추 탄(빌드 심화 v1)
+
         public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
 
         public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);

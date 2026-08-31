@@ -1,4 +1,4 @@
-using CTC.Runtime.Economy;
+﻿using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using NUnit.Framework;
 
@@ -55,14 +55,16 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void RoleCatalogIndices_MouseFiveInCatalogOrder()
+        public void RoleCatalogIndices_MouseSixInCatalogOrder()
         {
-            // 미끼 삭제(2026-08-15) — 쥐 5칸: 새총·기관총·대시·요새·창고
+            // 후추 탄 추가(2026-08-31, 빌드 심화 v1 ①) — 쥐 6칸: 새총·기관총·대시·요새·창고·후추 탄.
+            // 핫바 6칸이 꽉 찼다 — 다음 항목부터는 HOTBAR_SLOTS 증설 또는 노선 교체 UI가 필요하다.
             var idx = ShopLogic.RoleCatalogIndices(RoleId.Mouse);
-            Assert.AreEqual(5, idx.Count);
+            Assert.AreEqual(6, idx.Count);
             Assert.AreEqual(ShopItemId.Slingshot, ShopLogic.CATALOG[idx[0]].Id);
             Assert.AreEqual(ShopItemId.Fortress, ShopLogic.CATALOG[idx[3]].Id);
             Assert.AreEqual(ShopItemId.Warehouse, ShopLogic.CATALOG[idx[4]].Id);
+            Assert.AreEqual(ShopItemId.PepperShot, ShopLogic.CATALOG[idx[5]].Id);
         }
 
         [Test]

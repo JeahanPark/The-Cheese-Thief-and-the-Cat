@@ -13,6 +13,7 @@ namespace CTC.Runtime.Economy
         CatAttack = 6,
         CatSpeed = 7,
         Warehouse = 8,
+        PepperShot = 9,   // 후추 탄(빌드 심화 v1 · 후추 선반 ①) — 총알에 지속피해
     }
 
     /// <summary>카탈로그 한 줄. 정적 데이터 — CSV 파이프라인은 아이템 수가 늘면 도입.</summary>

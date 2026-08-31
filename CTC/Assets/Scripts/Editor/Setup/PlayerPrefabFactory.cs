@@ -101,6 +101,7 @@ namespace CTC.Editor
                 {
                     root.AddComponent<MousePopgun>();
                     root.AddComponent<MouseDash>();
+                    root.AddComponent<PepperRounds>();   // 후추 탄 보유 플래그(빌드 심화 v1)
                     root.AddComponent<CTC.Runtime.Audio.FarmingSfx>(); // 수입 짤랑 3D 공개음(20m)
 
                     // 직업(v3.9) — 상자에서 주운 직업권이 여기 새겨진다.
