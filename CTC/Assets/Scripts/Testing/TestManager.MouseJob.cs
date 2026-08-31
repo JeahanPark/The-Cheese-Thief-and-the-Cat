@@ -1,5 +1,6 @@
-// TestManager의 일부 — 쥐 직업과 2단계 (v3.9)
-#if UNITY_EDITOR
+﻿// TestManager의 일부 — 쥐 직업과 2단계 (v3.9)
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Core;
 using CTC.Runtime.Match;
 using UnityEngine;

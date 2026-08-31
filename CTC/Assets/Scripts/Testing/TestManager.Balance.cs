@@ -1,6 +1,7 @@
-// TestManager의 일부 — 2:8 기준 밸런스(2026-08-10). 맵 규모·소리 거리·치즈 총량처럼
+﻿// TestManager의 일부 — 2:8 기준 밸런스(2026-08-10). 맵 규모·소리 거리·치즈 총량처럼
 // "Model 값만 봐서는 배선 누락을 못 잡는" 것들을 실제 오브젝트에서 읽는다.
-#if UNITY_EDITOR
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;

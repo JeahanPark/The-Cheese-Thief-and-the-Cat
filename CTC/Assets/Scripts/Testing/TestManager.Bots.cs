@@ -1,6 +1,7 @@
-// TestManager의 일부 — 밸런스 측정용 봇 (2026-08-11).
+﻿// TestManager의 일부 — 밸런스 측정용 봇 (2026-08-11).
 // 봇 자체가 개발 빌드 전용이라 이 파일도 같은 기준을 탄다.
-#if UNITY_EDITOR
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Bots;
 using CTC.Runtime.Core;
 using UnityEngine;

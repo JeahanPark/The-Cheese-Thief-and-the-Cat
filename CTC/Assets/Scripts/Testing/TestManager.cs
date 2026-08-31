@@ -1,7 +1,8 @@
 ﻿// WES에서 이식(2026-07-12) — 골격만: SimulateKeyPress(Input System StateEvent 주입) + CTC 시나리오 3종.
 // WES 원본의 인게임 의존 메서드(InGameController/Popup/FullPlay 등)는 CTC 미이식 상태라 제외.
 // WesQA InvokeBridge가 리플렉션으로 Instance.<method>(kwargs)를 호출하는 QA 진입점 싱글턴.
-#if UNITY_EDITOR
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;

@@ -1,9 +1,10 @@
-// TestManager의 일부 — HUD가 **실제로 그린 글자**를 읽는다 (2026-08-10).
+﻿// TestManager의 일부 — HUD가 **실제로 그린 글자**를 읽는다 (2026-08-10).
 //
 // Model 값만 보는 QA는 배선 누락을 못 잡는다(2026-08-09 실측: 볼륨은 바뀌는데 소리는 그대로였다).
 // 그래서 여기서는 HUD 컴포넌트의 TMP 참조를 타고 들어가 화면에 올라간 문자열을 그대로 가져온다 —
 // 참조가 안 꽂혔으면 빈 문자열이 나와 그 자리에서 실패한다.
-#if UNITY_EDITOR
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Reflection;
 using CTC.Runtime.Lobby;
 using CTC.Runtime.Match;

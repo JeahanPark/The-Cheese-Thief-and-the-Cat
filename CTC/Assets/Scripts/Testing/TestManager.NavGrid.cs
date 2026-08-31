@@ -1,4 +1,5 @@
-#if UNITY_EDITOR
+﻿// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Text;
 using CTC.Runtime.Ai;

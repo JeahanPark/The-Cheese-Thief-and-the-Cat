@@ -1,5 +1,6 @@
-// TestManager의 일부 — 봇 판을 자동으로 돌리는 데 필요한 손잡이들 (2026-08-11).
-#if UNITY_EDITOR
+﻿// TestManager의 일부 — 봇 판을 자동으로 돌리는 데 필요한 손잡이들 (2026-08-11).
+// 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using CTC.Runtime.Bots;
 using CTC.Runtime.Match;
 using UnityEngine;
