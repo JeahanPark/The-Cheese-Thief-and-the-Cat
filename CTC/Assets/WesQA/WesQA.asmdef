@@ -1,8 +1,12 @@
 {
   "name": "WesQA",
   "rootNamespace": "WesQA",
-  "references": ["Unity.Nuget.Newtonsoft-Json", "Unity.TextMeshPro", "Unity.Multiplayer.Playmode"],
-  "includePlatforms": ["Editor"],
+  "references": [
+    "Unity.Nuget.Newtonsoft-Json",
+    "Unity.TextMeshPro",
+    "Unity.Multiplayer.Playmode"
+  ],
+  "includePlatforms": [],
   "excludePlatforms": [],
   "defineConstraints": [],
   "versionDefines": [],

@@ -85,6 +85,16 @@ namespace CTC.Runtime.Testing
 
         // ===== CTC 시나리오 (기존 public 메서드 조합만 — 신규 게임 로직 없음) =====
 
+        /// <summary>
+        /// 씬 직행 — 빌드 QA용(2026-08-31). 방 만들기는 스팀 필수라 스팀 없는 빌드 QA는
+        /// Game.unity 단독 경로(TestStartHost)로 우회한다. 유니티 로드라 in-scene NGO 스폰이
+        /// 필요한 흐름(대기실→인게임)엔 못 쓴다 — 단독 QA 전용.
+        /// </summary>
+        public void TestLoadScene(string _sceneName)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(_sceneName);
+        }
+
         /// <summary>인트로 → 로비. 빌드 E2E QA용(2026-08-31) — 버튼과 같은 사(私)경로를 SendMessage로 탄다.</summary>
         public void TestIntroStart()
         {
