@@ -77,6 +77,9 @@ namespace CTC.Editor
             SetRef(mapBuilder, "m_GroundMaterial", ground != null ? ground : GridboxMaterial("Grey1"));
             SetRef(mapBuilder, "m_BoundaryMaterial", boundary);
             SetRef(mapBuilder, "m_CorridorWallMaterial", corridor);
+            // 치즈 원반 리스킨 — 자체 쐐기 메시 재사용(없으면 원반만)
+            SetRef(mapBuilder, "m_CheeseVisualMesh", PropAssets.LoadMesh(PropAssets.CHEESE_MESH));
+            SetRef(mapBuilder, "m_CheeseVisualMaterial", PropAssets.LoadMaterial(PropAssets.CHEESE_MATERIAL));
             SetRef(mapBuilder, "m_DiscHighMaterial", GridboxMaterial("Red"));      // 기능색 — 유지
             SetRef(mapBuilder, "m_DiscMidMaterial", GridboxMaterial("Orange"));
             SetRef(mapBuilder, "m_DiscLowMaterial", GridboxMaterial("Yellow"));

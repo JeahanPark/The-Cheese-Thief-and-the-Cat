@@ -42,6 +42,9 @@ namespace CTC.Runtime.Map
         // 비어 있으면 m_WallMaterial로 되돌아간다(옛 씬 호환).
         [SerializeField] private Material m_BoundaryMaterial;
         [SerializeField] private Material m_CorridorWallMaterial;
+        // 치즈 지점 리스킨(2026-08-31) — 원반 위에 앉는 쐐기 메시. 비면 원반만(옛 모습).
+        [SerializeField] private Mesh m_CheeseVisualMesh;
+        [SerializeField] private Material m_CheeseVisualMaterial;
 
         private Material BoundaryMat => m_BoundaryMaterial != null ? m_BoundaryMaterial : m_WallMaterial;
         private Material CorridorWallMat => m_CorridorWallMaterial != null ? m_CorridorWallMaterial : m_WallMaterial;
@@ -475,6 +478,20 @@ namespace CTC.Runtime.Map
             disc.transform.localPosition = new Vector3(0f, 0.05f, 0f);
             disc.transform.localScale = new Vector3(3f, 0.05f, 3f);
             disc.GetComponent<Renderer>().sharedMaterial = GradeDiscMaterial(_grade);
+
+            // 원반 위 치즈 쐐기 — 기능·색은 원반이 그대로 든다(리스킨만, 도판 5)
+            if (m_CheeseVisualMesh != null && m_CheeseVisualMaterial != null)
+            {
+                var wedge = new GameObject("CheeseWedge");
+                wedge.transform.SetParent(visual.transform, false);
+                wedge.transform.localPosition = new Vector3(0f, 0.08f, 0f);
+                wedge.transform.localRotation = Quaternion.Euler(0f, _grade * 47f, 0f); // 지점마다 다른 각
+                wedge.transform.localScale = Vector3.one * 1.6f;
+                wedge.AddComponent<MeshFilter>().sharedMesh = m_CheeseVisualMesh;
+                var wedgeRenderer = wedge.AddComponent<MeshRenderer>();
+                wedgeRenderer.sharedMaterial = m_CheeseVisualMaterial;
+                wedgeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            }
 
             var labelGo = new GameObject("GradeLabel");
             labelGo.transform.SetParent(visual.transform, false);
