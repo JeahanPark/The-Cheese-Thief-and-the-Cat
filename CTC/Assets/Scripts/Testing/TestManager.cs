@@ -84,6 +84,38 @@ namespace CTC.Runtime.Testing
 
         // ===== CTC 시나리오 (기존 public 메서드 조합만 — 신규 게임 로직 없음) =====
 
+        /// <summary>인트로 → 로비. 빌드 E2E QA용(2026-08-31) — 버튼과 같은 사(私)경로를 SendMessage로 탄다.</summary>
+        public void TestIntroStart()
+        {
+            var intro = FindAnyObjectByType<Intro.IntroController>();
+            if (intro == null) { GameDebug.LogError("[TestManager] IntroController 없음"); return; }
+            intro.SendMessage("OnClickStart");
+        }
+
+        /// <summary>로비 → 방 만들기(대기실). 빌드 E2E QA용 — 방장 NGO 호스트가 선다.</summary>
+        public void TestCreateRoom()
+        {
+            var browser = FindAnyObjectByType<Lobby.Browser.LobbyBrowserController>();
+            if (browser == null) { GameDebug.LogError("[TestManager] LobbyBrowserController 없음"); return; }
+            browser.SendMessage("OnClickCreate");
+        }
+
+        /// <summary>대기실 강제 시작(인원 조건 무시) — RoomDirector.DevForceStartMatch 통로.</summary>
+        public void TestRoomForceStart()
+        {
+            var director = FindAnyObjectByType<Room.RoomDirector>();
+            if (director == null) { GameDebug.LogError("[TestManager] RoomDirector 없음"); return; }
+            director.DevForceStartMatch();
+        }
+
+        /// <summary>프레임 시간 한 줄 — 개발 빌드 성능 측정용(2026-08-31). smooth는 최근 평균.</summary>
+        public string TestGetFrameStats()
+        {
+            float smooth = Time.smoothDeltaTime;
+            float raw = Time.unscaledDeltaTime;
+            return $"fps={(smooth > 0f ? 1f / smooth : 0f):F1} smoothMs={smooth * 1000f:F1} rawMs={raw * 1000f:F1}";
+        }
+
         /// <summary>씬·NetworkManager 상태 한 줄 — 클론이 왜 못 붙는지 가를 때(2026-08-31).</summary>
         public string TestGetNetDiag()
         {
