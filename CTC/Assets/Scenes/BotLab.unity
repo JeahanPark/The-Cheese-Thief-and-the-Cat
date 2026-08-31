@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &559151006
+--- !u!1 &1319259
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,173 +127,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 559151011}
-  - component: {fileID: 559151010}
-  - component: {fileID: 559151009}
-  - component: {fileID: 559151008}
-  - component: {fileID: 559151007}
-  m_Layer: 0
-  m_Name: Main Camera
-  m_TagString: MainCamera
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &559151007
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 559151006}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 70ca9aead47a19f4db5ac454208b31f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.BotPathDebug
---- !u!114 &559151008
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 559151006}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 970b51baf969d3c45a6354acaea433f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.BotLabCamera
-  m_StartPosition: {x: 0, y: 30, z: -18}
-  m_StartEuler: {x: 58, y: 0, z: 0}
---- !u!81 &559151009
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 559151006}
-  m_Enabled: 1
---- !u!20 &559151010
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 559151006}
-  m_Enabled: 1
-  serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_GateFitMode: 2
-  m_FOVAxisMode: 0
-  m_Iso: 200
-  m_ShutterSpeed: 0.005
-  m_Aperture: 16
-  m_FocusDistance: 10
-  m_FocalLength: 50
-  m_BladeCount: 5
-  m_Curvature: {x: 2, y: 11}
-  m_BarrelClipping: 0.25
-  m_Anamorphism: 0
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.3
-  far clip plane: 500
-  field of view: 60
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: -1
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
---- !u!4 &559151011
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 559151006}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &788857216
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 788857218}
-  - component: {fileID: 788857217}
-  m_Layer: 0
-  m_Name: LocalPlayerBinder
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &788857217
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 788857216}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe7e8ea3e2e520942886226b36c2a09b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Core.LocalPlayerBinder
---- !u!4 &788857218
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 788857216}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &838230205
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 838230208}
-  - component: {fileID: 838230207}
-  - component: {fileID: 838230206}
+  - component: {fileID: 1319262}
+  - component: {fileID: 1319261}
+  - component: {fileID: 1319260}
   m_Layer: 0
   m_Name: ChatManager
   m_TagString: Untagged
@@ -301,32 +137,32 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &838230206
+--- !u!114 &1319260
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 838230205}
+  m_GameObject: {fileID: 1319259}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: acceedf386351bf4e98e90caa2fa0813, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Managers.ChatManager
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &838230207
+--- !u!114 &1319261
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 838230205}
+  m_GameObject: {fileID: 1319259}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3618630355
+  GlobalObjectIdHash: 1081737043
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -339,13 +175,13 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!4 &838230208
+--- !u!4 &1319262
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 838230205}
+  m_GameObject: {fileID: 1319259}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -354,7 +190,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &921733391
+--- !u!1 &288092661
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -362,58 +198,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 921733393}
-  - component: {fileID: 921733392}
-  m_Layer: 0
-  m_Name: TestBotManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &921733392
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921733391}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0808f8d65d6d8944aab9360c0a2b7740, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.TestBotManager
-  m_Lobby: {fileID: 1762843425}
-  m_Spots: {fileID: 1762843427}
-  m_Map: {fileID: 1762843426}
-  m_CatPrefab: {fileID: 5090140034732257434, guid: be91784c8650a584990bee94d2a0ccd4, type: 3}
-  m_MousePrefab: {fileID: 618008594229528120, guid: db0ac1af22bbb7b4ebde6605cbda4382, type: 3}
---- !u!4 &921733393
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 921733391}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1583869097
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1583869100}
-  - component: {fileID: 1583869099}
-  - component: {fileID: 1583869098}
+  - component: {fileID: 288092664}
+  - component: {fileID: 288092663}
+  - component: {fileID: 288092662}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -421,13 +208,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1583869098
+--- !u!114 &288092662
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1583869097}
+  m_GameObject: {fileID: 288092661}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
@@ -450,13 +237,13 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
---- !u!108 &1583869099
+--- !u!108 &288092663
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1583869097}
+  m_GameObject: {fileID: 288092661}
   m_Enabled: 1
   serializedVersion: 13
   m_Type: 1
@@ -515,13 +302,13 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &1583869100
+--- !u!4 &288092664
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1583869097}
+  m_GameObject: {fileID: 288092661}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
   m_LocalPosition: {x: 0, y: 3, z: 0}
@@ -530,7 +317,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &1762843424
+--- !u!1 &679426293
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -538,19 +325,232 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1762843437}
-  - component: {fileID: 1762843436}
-  - component: {fileID: 1762843435}
-  - component: {fileID: 1762843434}
-  - component: {fileID: 1762843433}
-  - component: {fileID: 1762843432}
-  - component: {fileID: 1762843431}
-  - component: {fileID: 1762843426}
-  - component: {fileID: 1762843425}
-  - component: {fileID: 1762843428}
-  - component: {fileID: 1762843427}
-  - component: {fileID: 1762843430}
-  - component: {fileID: 1762843429}
+  - component: {fileID: 679426298}
+  - component: {fileID: 679426297}
+  - component: {fileID: 679426296}
+  - component: {fileID: 679426295}
+  - component: {fileID: 679426294}
+  m_Layer: 0
+  m_Name: Main Camera
+  m_TagString: MainCamera
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &679426294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679426293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70ca9aead47a19f4db5ac454208b31f4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.BotPathDebug
+--- !u!114 &679426295
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679426293}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 970b51baf969d3c45a6354acaea433f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.BotLabCamera
+  m_StartPosition: {x: 0, y: 30, z: -18}
+  m_StartEuler: {x: 58, y: 0, z: 0}
+--- !u!81 &679426296
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679426293}
+  m_Enabled: 1
+--- !u!20 &679426297
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679426293}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 500
+  field of view: 60
+  orthographic: 0
+  orthographic size: 5
+  m_Depth: -1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!4 &679426298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 679426293}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &890655079
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 890655081}
+  - component: {fileID: 890655080}
+  m_Layer: 0
+  m_Name: LocalPlayerBinder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &890655080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890655079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7e8ea3e2e520942886226b36c2a09b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Core.LocalPlayerBinder
+--- !u!4 &890655081
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890655079}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1103382172
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1103382174}
+  - component: {fileID: 1103382173}
+  m_Layer: 0
+  m_Name: TestBotManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1103382173
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103382172}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0808f8d65d6d8944aab9360c0a2b7740, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.TestBotManager
+  m_Lobby: {fileID: 1419619860}
+  m_Spots: {fileID: 1419619862}
+  m_Map: {fileID: 1419619861}
+  m_CatPrefab: {fileID: 5090140034732257434, guid: be91784c8650a584990bee94d2a0ccd4, type: 3}
+  m_MousePrefab: {fileID: 618008594229528120, guid: db0ac1af22bbb7b4ebde6605cbda4382, type: 3}
+--- !u!4 &1103382174
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1103382172}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1419619859
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1419619872}
+  - component: {fileID: 1419619871}
+  - component: {fileID: 1419619870}
+  - component: {fileID: 1419619869}
+  - component: {fileID: 1419619868}
+  - component: {fileID: 1419619867}
+  - component: {fileID: 1419619866}
+  - component: {fileID: 1419619861}
+  - component: {fileID: 1419619860}
+  - component: {fileID: 1419619863}
+  - component: {fileID: 1419619862}
+  - component: {fileID: 1419619865}
+  - component: {fileID: 1419619864}
   m_Layer: 0
   m_Name: LobbyController
   m_TagString: Untagged
@@ -558,26 +558,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1762843425
+--- !u!114 &1419619860
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 71828b31f6be6f7478020df89a50eec4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Lobby.LobbyController
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1762843426
+--- !u!114 &1419619861
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 26693b147160f814c85a3177024a399a, type: 3}
@@ -588,114 +588,115 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8851cd5488a21a341a36dda6ad875861, type: 2}
   - {fileID: 11400000, guid: 759e2760023dd1f4cbc380e9cd26a1d0, type: 2}
   - {fileID: 11400000, guid: 9a6a10c30404b0a4ba9a8b5569e08dc9, type: 2}
-  m_MapBuilder: {fileID: 1819130075}
-  m_CheeseDirector: {fileID: 1762843427}
---- !u!114 &1762843427
+  m_MapBuilder: {fileID: 1924708762}
+  m_Dresser: {fileID: 1924708761}
+  m_CheeseDirector: {fileID: 1419619862}
+--- !u!114 &1419619862
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 328b4de8f69ad3246903f5b1b633ad5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.CheeseSpotDirector
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Lobby: {fileID: 1762843425}
-  m_Match: {fileID: 1762843428}
---- !u!114 &1762843428
+  m_Lobby: {fileID: 1419619860}
+  m_Match: {fileID: 1419619863}
+--- !u!114 &1419619863
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e42b3e8bd1dded34798bb6b197ce22a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.MatchManager
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Lobby: {fileID: 1762843425}
---- !u!114 &1762843429
+  m_Lobby: {fileID: 1419619860}
+--- !u!114 &1419619864
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 860534ff3513953479f6c68af1b5c238, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.CheerDirector
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Lobby: {fileID: 1762843425}
+  m_Lobby: {fileID: 1419619860}
   m_Spectator: {fileID: 0}
---- !u!114 &1762843430
+--- !u!114 &1419619865
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8487617990d1c2b4f890ec59acc199fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.MatchSeries
   ShowTopMostFoldoutHeaderGroup: 1
-  m_Lobby: {fileID: 1762843425}
-  m_Match: {fileID: 1762843428}
+  m_Lobby: {fileID: 1419619860}
+  m_Match: {fileID: 1419619863}
   m_RoomSceneName: Room
---- !u!114 &1762843431
+--- !u!114 &1419619866
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 46bc04b1f341ac24dbb0436ec94fddee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Match.PhaseDirector
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1762843432
+--- !u!114 &1419619867
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 176ceedd402188147af0d75d38913551, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.LootBoxSpawner
   m_BoxPrefab: {fileID: 3628682520528616531, guid: bfd989f3b7843ba46ab1a24dc29be88f, type: 3}
---- !u!114 &1762843433
+--- !u!114 &1419619868
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a737e861d21899c4f92eb1d8cf602bf4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.AlcoveSpawner
   m_AlcovePrefab: {fileID: 1513205572188277050, guid: 949db8919c584154c80be5fcff9a71f7, type: 3}
---- !u!114 &1762843434
+--- !u!114 &1419619869
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 679343a93c8405648b854cf5ebf1ad81, type: 3}
@@ -703,32 +704,32 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Lobby.PlayerSpawner
   m_CatPrefab: {fileID: 5090140034732257434, guid: be91784c8650a584990bee94d2a0ccd4, type: 3}
   m_MousePrefab: {fileID: 618008594229528120, guid: db0ac1af22bbb7b4ebde6605cbda4382, type: 3}
---- !u!114 &1762843435
+--- !u!114 &1419619870
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df3e2d0813181d445984232026ed8a65, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Lobby.LobbySession
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!114 &1762843436
+--- !u!114 &1419619871
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 526329507
+  GlobalObjectIdHash: 1521590207
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -741,13 +742,13 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!4 &1762843437
+--- !u!4 &1419619872
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1762843424}
+  m_GameObject: {fileID: 1419619859}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -756,7 +757,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1801694519
+--- !u!1 &1924708760
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -764,10 +765,93 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1801694523}
-  - component: {fileID: 1801694522}
-  - component: {fileID: 1801694521}
-  - component: {fileID: 1801694520}
+  - component: {fileID: 1924708763}
+  - component: {fileID: 1924708762}
+  - component: {fileID: 1924708761}
+  m_Layer: 0
+  m_Name: MapBuilder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1924708761
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1924708760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f139384c6042ce945b6ca662dfc69e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapDresser
+  m_Builder: {fileID: 1924708762}
+  m_ShelfUnits:
+  - {fileID: 4389376254335032190, guid: 2e87ff516c489a040b0f807cfe343453, type: 3}
+  - {fileID: 8446646685913260975, guid: c9618de43b031e14a891047df89ed80f, type: 3}
+  - {fileID: 5208674372709187624, guid: 67303f70d33fe6440bd467c1e2239944, type: 3}
+  - {fileID: 3051142161514381037, guid: c40cd46c6f961e14fa456054dcbe3f2e, type: 3}
+  m_CrateUnits:
+  - {fileID: 6034232827808286881, guid: 780b7d3fbeb1da34c90f1ec37766a40c, type: 3}
+  - {fileID: 5086863702037886587, guid: 7314a94508f79ae4dbf3d036211a7299, type: 3}
+  - {fileID: 2994654407141197284, guid: 1761915107c630f4bab953592d7babcd, type: 3}
+  - {fileID: 7657063651523481233, guid: 2d4a1fdcca8eb824b9772b8d4c1f966c, type: 3}
+  m_ObstacleUnits:
+  - {fileID: 8982321192280136747, guid: 7dec5f95ceb65f2479bbbbe4854fe90d, type: 3}
+  - {fileID: 8832490862985002661, guid: 19dd9d81f2a2c4e4087ee452fca0a423, type: 3}
+  - {fileID: 1845094981175490283, guid: 5dd3485fcfeaa774b863a474478374c1, type: 3}
+  - {fileID: 5410079996121337794, guid: 9ab33fe4f048c254c9d3074977960cb0, type: 3}
+  - {fileID: 6673795607375077581, guid: 1e7b2b3e10d39ac47b04c07a34666326, type: 3}
+  m_UnitScale: 2
+--- !u!114 &1924708762
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1924708760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad7bd6940ccf85c41b56971542a17f46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapBuilder
+  m_WallMaterial: {fileID: 2100000, guid: 4f519634fcf12674d98ce478e7eb5d11, type: 2}
+  m_FloorMaterial: {fileID: 2100000, guid: d602ce470f8b0504eab06d5bb5a4881b, type: 2}
+  m_GroundMaterial: {fileID: 2100000, guid: 66804d7418d221a4894ee8a8df51eada, type: 2}
+  m_DiscHighMaterial: {fileID: 2100000, guid: a4b62a69d54e80347bd546999c6d4b9e, type: 2}
+  m_DiscMidMaterial: {fileID: 2100000, guid: d1a5903867c8f0a4a8a94c3fe36dad11, type: 2}
+  m_DiscLowMaterial: {fileID: 2100000, guid: d76d5dba59c8a824a8170635648a356c, type: 2}
+  m_BoundaryMaterial: {fileID: 2100000, guid: fc6ed1c0bbaec7e4f915e3813a636aab, type: 2}
+  m_CorridorWallMaterial: {fileID: 2100000, guid: 67ca41f06428ad246979ba6e4829fa7b, type: 2}
+--- !u!4 &1924708763
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1924708760}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1973568290
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1973568294}
+  - component: {fileID: 1973568293}
+  - component: {fileID: 1973568292}
+  - component: {fileID: 1973568291}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -775,13 +859,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1801694520
+--- !u!114 &1973568291
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1801694519}
+  m_GameObject: {fileID: 1973568290}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
@@ -806,13 +890,13 @@ MonoBehaviour:
     PacketDelayMS: 0
     PacketJitterMS: 0
     PacketDropRate: 0
---- !u!114 &1801694521
+--- !u!114 &1973568292
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1801694519}
+  m_GameObject: {fileID: 1973568290}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 593a2fe42fa9d37498c96f9a383b6521, type: 3}
@@ -821,7 +905,7 @@ MonoBehaviour:
   NetworkManagerExpanded: 0
   NetworkConfig:
     ProtocolVersion: 1
-    NetworkTransport: {fileID: 1801694520}
+    NetworkTransport: {fileID: 1973568291}
     PlayerPrefab: {fileID: 0}
     Prefabs:
       NetworkPrefabsLists:
@@ -848,25 +932,25 @@ MonoBehaviour:
     OldPrefabList: []
   RunInBackground: 1
   LogLevel: 1
---- !u!114 &1801694522
+--- !u!114 &1973568293
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1801694519}
+  m_GameObject: {fileID: 1973568290}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d818c0b5aefcd0b48b328f2e22178716, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Networking.NetworkRootGuard
---- !u!4 &1801694523
+--- !u!4 &1973568294
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1801694519}
+  m_GameObject: {fileID: 1973568290}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -875,7 +959,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1819130074
+--- !u!1 &1995207707
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -883,60 +967,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1819130076}
-  - component: {fileID: 1819130075}
-  m_Layer: 0
-  m_Name: MapBuilder
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1819130075
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1819130074}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ad7bd6940ccf85c41b56971542a17f46, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapBuilder
-  m_WallMaterial: {fileID: 2100000, guid: 4f519634fcf12674d98ce478e7eb5d11, type: 2}
-  m_FloorMaterial: {fileID: 2100000, guid: d602ce470f8b0504eab06d5bb5a4881b, type: 2}
-  m_GroundMaterial: {fileID: 2100000, guid: 66804d7418d221a4894ee8a8df51eada, type: 2}
-  m_DiscHighMaterial: {fileID: 2100000, guid: a4b62a69d54e80347bd546999c6d4b9e, type: 2}
-  m_DiscMidMaterial: {fileID: 2100000, guid: d1a5903867c8f0a4a8a94c3fe36dad11, type: 2}
-  m_DiscLowMaterial: {fileID: 2100000, guid: d76d5dba59c8a824a8170635648a356c, type: 2}
-  m_BoundaryMaterial: {fileID: 2100000, guid: fc6ed1c0bbaec7e4f915e3813a636aab, type: 2}
-  m_CorridorWallMaterial: {fileID: 2100000, guid: 67ca41f06428ad246979ba6e4829fa7b, type: 2}
---- !u!4 &1819130076
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1819130074}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1995778328
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1995778330}
-  - component: {fileID: 1995778329}
+  - component: {fileID: 1995207709}
+  - component: {fileID: 1995207708}
   m_Layer: 0
   m_Name: BotLab
   m_TagString: Untagged
@@ -944,32 +976,32 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1995778329
+--- !u!114 &1995207708
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1995778328}
+  m_GameObject: {fileID: 1995207707}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1947f785d9cea2438ac1868b4de02ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Bots.BotLab
-  m_Lobby: {fileID: 1762843425}
+  m_Lobby: {fileID: 1419619860}
   m_MapIndex: 0
   m_Mice: 8
   m_Cats: 2
   m_AutoStart: 1
   m_TimeScale: 1
   m_Overlay: 1
---- !u!4 &1995778330
+--- !u!4 &1995207709
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1995778328}
+  m_GameObject: {fileID: 1995207707}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -982,12 +1014,12 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 559151011}
-  - {fileID: 1583869100}
-  - {fileID: 1819130076}
-  - {fileID: 1801694523}
-  - {fileID: 1762843437}
-  - {fileID: 921733393}
-  - {fileID: 788857218}
-  - {fileID: 838230208}
-  - {fileID: 1995778330}
+  - {fileID: 679426298}
+  - {fileID: 288092664}
+  - {fileID: 1924708763}
+  - {fileID: 1973568294}
+  - {fileID: 1419619872}
+  - {fileID: 1103382174}
+  - {fileID: 890655081}
+  - {fileID: 1319262}
+  - {fileID: 1995207709}

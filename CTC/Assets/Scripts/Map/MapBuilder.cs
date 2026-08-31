@@ -56,6 +56,9 @@ namespace CTC.Runtime.Map
 
         public MapLayout CurrentLayout { get; private set; }
 
+        /// <summary>지어진 맵의 루트 — MapDresser가 세그먼트를 찾아 옷을 입힌다(2026-08-31). 빌드 전엔 null.</summary>
+        public Transform BuiltRoot => m_Root != null ? m_Root.transform : null;
+
         /// <summary>맵을 새로 짓는다. 기존 맵은 파괴 — 같은 레이아웃으로 여러 번 불러도 안전.</summary>
         public void Build(MapLayout _layout)
         {

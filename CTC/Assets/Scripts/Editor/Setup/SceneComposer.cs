@@ -117,6 +117,14 @@ namespace CTC.Editor
             SetRefArray(mapDirector, "m_MapLayouts", LoadMapLayouts());
             SetRef(mapDirector, "m_MapBuilder", mapBuilder);
 
+            // 가구 옷(2026-08-31) — 비주얼 전용. 팩이 없으면 배열이 비어 백킹만 남는다.
+            var dresser = mapBuilderGo.AddComponent<CTC.Runtime.Map.MapDresser>();
+            SetRef(dresser, "m_Builder", mapBuilder);
+            SetRefArray(dresser, "m_ShelfUnits", MapAssets.LoadPrefabs(MapAssets.SHELF_PREFABS));
+            SetRefArray(dresser, "m_CrateUnits", MapAssets.LoadPrefabs(MapAssets.CRATE_PREFABS));
+            SetRefArray(dresser, "m_ObstacleUnits", MapAssets.LoadPrefabs(MapAssets.OBSTACLE_PREFABS));
+            SetRef(mapDirector, "m_Dresser", dresser);
+
             var lobby = lobbyGo.AddComponent<LobbyController>();             // 조립자(Controller)
             var match = lobbyGo.AddComponent<MatchManager>(); // 동승 — 새 in-scene NetworkObject 없음
             SetRef(match, "m_Lobby", lobby);

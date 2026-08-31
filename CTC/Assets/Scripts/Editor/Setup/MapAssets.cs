@@ -24,6 +24,47 @@ namespace CTC.Editor
         public const string ROOM_WALL_MAT = MAT_DIR + "/M_MapRoomWall.mat";
         public const string CORRIDOR_WALL_MAT = MAT_DIR + "/M_MapCorridorWall.mat";
 
+        // ── 팬트리 가구(Poly Universal Pack 선별 임포트, 2026-08-31) ──
+        private const string PACK = "Assets/polyperfect/Poly Universal Pack/- Prefabs";
+
+        public static readonly string[] SHELF_PREFABS =
+        {
+            PACK + "/Fantasy/Bakery Fantasy/shelf-wall-a-fantasy.prefab",
+            PACK + "/Fantasy/Bakery Fantasy/shelf-wall-a-pastry-fantasy.prefab",
+            PACK + "/Survival/shelf-wall-wood.prefab",
+            PACK + "/Fantasy/Furniture Fantasy/shelf-simple-a-fantasy.prefab",
+        };
+
+        public static readonly string[] CRATE_PREFABS =
+        {
+            PACK + "/Farm/Crates Farm/crate-wood-big.prefab",
+            PACK + "/Farm/Crates Farm/crate-wood-medium.prefab",
+            PACK + "/Farm/Crates Farm/crate-wood-medium-potatoes-a.prefab",
+            PACK + "/Farm/Crates Farm/crate-wood-small.prefab",
+        };
+
+        public static readonly string[] OBSTACLE_PREFABS =
+        {
+            PACK + "/Fantasy/barrel-wood-a-closed-a-fantasy.prefab",
+            PACK + "/Fantasy/barrel-wood-a-closed-b-fantasy.prefab",
+            PACK + "/Fantasy/barrel-wood-b-closed-fantasy.prefab",
+            PACK + "/Farm/Crops Farm/pumpkin-b.prefab",
+            PACK + "/Farm/Crops Farm/pumpkin-ripe-a.prefab",
+        };
+
+        /// <summary>경로 배열 → 프리팹 배열. 없는 것은 건너뛴다(팩 미임포트 시 빈 배열 → 드레싱 생략).</summary>
+        public static GameObject[] LoadPrefabs(string[] _paths)
+        {
+            var list = new System.Collections.Generic.List<GameObject>();
+            foreach (string path in _paths)
+            {
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (go != null) list.Add(go);
+                else Debug.LogWarning($"[MapAssets] 가구 프리팹 없음(건너뜀): {path}");
+            }
+            return list.ToArray();
+        }
+
         /// <summary>없으면 null + 경고 — 부르는 쪽이 Gridbox로 되돌아간다(마젠타 방지, 함정 6).</summary>
         public static Material LoadMaterial(string _path)
         {

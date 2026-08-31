@@ -18,6 +18,8 @@ namespace CTC.Runtime.Map
     {
         [SerializeField] private MapLayout[] m_MapLayouts;
         [SerializeField] private MapBuilder m_MapBuilder;
+        // 가구 옷(2026-08-31) — 비주얼 전용 Worker. 없으면(옛 씬·실험실) 백킹만 그린다.
+        [SerializeField] private MapDresser m_Dresser;
         [SerializeField] private Economy.CheeseSpotDirector m_CheeseDirector;
 
         private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
@@ -73,6 +75,8 @@ namespace CTC.Runtime.Map
             if (m_MapBuilder == null || ActiveLayout == null) return;
 
             m_MapBuilder.Build(ActiveLayout);
+
+            if (m_Dresser != null) m_Dresser.Dress(m_MapIndex.Value);
 
             if (m_CheeseDirector != null)
             {
