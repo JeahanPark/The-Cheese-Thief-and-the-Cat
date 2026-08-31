@@ -619,11 +619,32 @@ namespace CTC.Editor
 
             RectTransform root = canvasGo.GetComponent<RectTransform>();
 
-            TMP_Text logo = MakeText(root, "Logo", "CANADIAN MOUSE", 96, FontStyles.Bold,
-                new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(1400f, 130f));
-            logo.color = new Color(1f, 0.914f, 0.639f);
-            logo.alignment = TextAlignmentOptions.Center;
-            logo.characterSpacing = 6f;
+            // 게임 이름은 텍스트가 아니라 로고 이미지다(2026-08-31 사용자 지시).
+            // 원본은 스팀 라이브러리 로고(1280×720 투명 PNG) — 스토어와 인게임이 같은 얼굴을 쓴다.
+            var logoSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Materials/UI/T_GameLogo.png");
+            if (logoSprite != null)
+            {
+                var logoGo = new GameObject("Logo", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+                var logoRect = logoGo.GetComponent<RectTransform>();
+                logoRect.SetParent(root, false);
+                logoRect.anchorMin = logoRect.anchorMax = new Vector2(0.5f, 1f);
+                logoRect.pivot = new Vector2(0.5f, 1f);
+                logoRect.anchoredPosition = new Vector2(0f, -60f);
+                logoRect.sizeDelta = new Vector2(760f, 428f);
+                var logoImage = logoGo.GetComponent<UnityEngine.UI.Image>();
+                logoImage.sprite = logoSprite;
+                logoImage.preserveAspect = true;
+                logoImage.raycastTarget = false;
+            }
+            else
+            {
+                // 스프라이트 미임포트 시 텍스트로 후퇴 — 씬 생성이 멈추면 안 된다
+                TMP_Text logo = MakeText(root, "Logo", "CANADIAN MOUSE", 96, FontStyles.Bold,
+                    new Vector2(0.5f, 1f), new Vector2(0f, -170f), new Vector2(1400f, 130f));
+                logo.color = new Color(1f, 0.914f, 0.639f);
+                logo.alignment = TextAlignmentOptions.Center;
+                logo.characterSpacing = 6f;
+            }
 
             // ── 메인 메뉴 (좌하단 세로 목록) ──
             // 커서가 올라간 줄에만 왼쪽 강조 막대와 뒤쪽 띠가 켜진다.
