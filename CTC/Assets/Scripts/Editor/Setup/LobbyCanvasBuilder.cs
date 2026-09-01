@@ -457,7 +457,8 @@ namespace CTC.Editor
             SetRef(popup, "m_CloseButton", close);
             SetRef(popup, "m_QuitButton", quit);
 
-            panel.SetActive(false);
+            // 프리팹은 **생성이 곧 열림**이다(2026-09-01) — 숨겨서 구우면 인스턴스는 있는데
+            // 화면에 아무것도 안 나온다(실측: IsOpen=True인데 무화면).
             return popup;
         }
 

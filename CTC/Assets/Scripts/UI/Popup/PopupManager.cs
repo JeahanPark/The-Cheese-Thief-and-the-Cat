@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CTC.Runtime.Core;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
@@ -117,7 +117,20 @@ namespace CTC.Runtime.UI.Popup
                 return null;
             }
 
-            GameObject go = Instantiate(prefab, m_Root);
+            // **worldPositionStays: false** — UI는 이걸 빼면 RectTransform이 월드 기준으로
+            // 재계산돼 앵커·크기가 틀어진다(2026-09-01 실측: 딤이 화면을 안 덮었다).
+            GameObject go = Instantiate(prefab, m_Root, false);
+
+            // 루트는 화면 전체를 덮는다 — 딤이 이 사각형을 채우기 때문이다.
+            var rootRect = go.transform as RectTransform;
+            if (rootRect != null)
+            {
+                rootRect.anchorMin = Vector2.zero;
+                rootRect.anchorMax = Vector2.one;
+                rootRect.offsetMin = Vector2.zero;
+                rootRect.offsetMax = Vector2.zero;
+                rootRect.localScale = Vector3.one;
+            }
             var popup = go.GetComponent<T>();
             if (popup == null)
             {
