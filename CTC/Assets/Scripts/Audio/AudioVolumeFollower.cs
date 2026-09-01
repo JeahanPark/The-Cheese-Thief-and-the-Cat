@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using R3;
 using UnityEngine;
 
@@ -20,6 +20,9 @@ namespace CTC.Runtime.Audio
         public enum Category { Sfx, Bgm }
 
         [SerializeField] private Category m_Category = Category.Sfx;
+
+        /// <summary>Awake 전에만 의미가 있다 — 코드로 세우는 재생기(BgmDirector)가 쓴다.</summary>
+        public void SetCategory(Category _category) => m_Category = _category;
 
         private AudioSource m_Source;
         private float m_DesignVolume;

@@ -698,7 +698,10 @@ namespace CTC.Editor
 
             // 설정 창은 **프리팹**이다(2026-09-01 팝업 시스템) — 씬은 매니저와 캔버스만 준다.
             var escGo = new GameObject("EscapeRouter");
-            escGo.AddComponent<CTC.Runtime.Core.EscapeRouter>();
+            var introEsc = escGo.AddComponent<CTC.Runtime.Core.EscapeRouter>();
+            var escSo = new SerializedObject(introEsc);
+            escSo.FindProperty("m_OpenOptionsOnEscape").boolValue = false;   // 메뉴에 '설정'이 있다
+            escSo.ApplyModifiedPropertiesWithoutUndo();
             PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
 
             var controller = canvasGo.AddComponent<IntroController>();

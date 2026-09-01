@@ -264,32 +264,9 @@ namespace CTC.Editor
             SetRef(seriesView, "m_Series", _series);
             SetRef(seriesView, "m_Label", seriesText);
 
-            // 인게임 BGM (게임 시작 시 루프 재생 — BgmPlayer가 제어)
-            var bgmGo = new GameObject("BgmPlayer");
-            var bgmSource = bgmGo.AddComponent<AudioSource>();
-            bgmSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/BGM/bgm_ingame.ogg");
-            bgmSource.loop = true;
-            bgmSource.playOnAwake = false;
-            bgmSource.volume = 0.35f;
-            bgmSource.spatialBlend = 0f; // 2D — 거리 감쇠 없음
-            var bgm = bgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
-            SetRef(bgm, "m_Lobby", _lobby);
-            SetRef(bgm, "m_Source", bgmSource);
-            AddVolumeFollower(bgmGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
-
-            // 로비 BGM — 게임이 안 도는 동안(접속 전·로비) 루프
-            var lobbyBgmGo = new GameObject("LobbyBgmPlayer");
-            var lobbyBgmSource = lobbyBgmGo.AddComponent<AudioSource>();
-            lobbyBgmSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/BGM/bgm_lobby.ogg");
-            lobbyBgmSource.loop = true;
-            lobbyBgmSource.playOnAwake = false;
-            lobbyBgmSource.volume = 0.35f;
-            lobbyBgmSource.spatialBlend = 0f;
-            var lobbyBgm = lobbyBgmGo.AddComponent<CTC.Runtime.Audio.BgmPlayer>();
-            SetRef(lobbyBgm, "m_Lobby", _lobby);
-            SetRef(lobbyBgm, "m_Source", lobbyBgmSource);
-            SetInt(lobbyBgm, "m_PlayWhenGameStopped", 1);
-            AddVolumeFollower(lobbyBgmGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
+            // 배경음(2026-09-01) — 재생기는 씬을 넘어 하나뿐이다(BgmDirector).
+            // 여기서는 "인게임 곡으로 바꿔라"만 말한다. 앞단 세 화면은 로비 곡을 이어서 튼다.
+            SceneBgmBuilder.Attach(SceneBgmBuilder.INGAME_BGM);
 
             // 부엌 앰비언스 — BGM과 동일 조건(게임 중 루프), 볼륨만 낮게
             var ambGo = new GameObject("AmbiencePlayer");

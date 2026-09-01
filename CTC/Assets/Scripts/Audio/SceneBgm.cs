@@ -3,36 +3,32 @@ using UnityEngine;
 namespace CTC.Runtime.Audio
 {
     /// <summary>
-    /// 씬에 깔리는 배경음 — **네트워크와 무관하게** 그 씬에 있는 동안 계속 돈다 (2026-09-01).
+    /// 이 씬에서 어떤 배경음을 틀지 <see cref="BgmDirector"/>에게 말한다 (2026-09-01).
     ///
-    /// <see cref="BgmPlayer"/>는 `LobbyController`(인게임의 NetworkObject)의 매치 상태를 보고
-    /// 켜고 끈다. 그래서 인게임 밖(인트로·로비·대기실)에서는 **재생기가 아예 없어 무음**이었다
-    /// (2026-09-01 실측: 빌드에서 인트로·대기실 볼륨 조회가 -1 = 소스 없음).
-    ///
-    /// 볼륨은 같은 오브젝트의 <see cref="AudioVolumeFollower"/>(Bgm)가 맞춘다 — 0이면 멈춘다.
+    /// 소리를 내는 건 이 컴포넌트가 아니다 — 재생기는 씬을 넘어 하나뿐이고, 같은 곡이면
+    /// 그대로 이어진다. 그래서 인트로·로비·대기실이 **한 곡으로 끊김 없이** 이어지고,
+    /// 인게임에 들어가면 그때 곡이 바뀐다.
     /// </summary>
-    [RequireComponent(typeof(AudioSource))]
     public class SceneBgm : MonoBehaviour
     {
-        private AudioSource m_Source;
+        [SerializeField] private AudioClip m_Clip;
 
-        private void Awake()
+        private void Start()
         {
-            m_Source = GetComponent<AudioSource>();
-        }
+            if (m_Clip == null) return;
 
-        private void Update()
-        {
-            if (m_Source == null || m_Source.clip == null) return;
-
-            // 배경음 볼륨 0은 "끔"이다 — 볼륨만 0으로 두고 돌리면 소리 없이 CPU만 쓴다.
-            if (m_Source.volume <= 0.0001f)
+            if (BgmDirector.Instance == null)
             {
-                if (m_Source.isPlaying) m_Source.Stop();
-                return;
+                var go = new GameObject(nameof(BgmDirector), typeof(AudioSource));
+                var source = go.GetComponent<AudioSource>();
+                source.volume = 0.35f;   // 설계 볼륨 — AudioVolumeFollower가 이 비율을 지킨다
+                go.AddComponent<BgmDirector>();
+                go.AddComponent<AudioVolumeFollower>();   // 기본 Category는 Sfx라 아래에서 바꾼다
+                var follower = go.GetComponent<AudioVolumeFollower>();
+                follower.SetCategory(AudioVolumeFollower.Category.Bgm);
             }
 
-            if (!m_Source.isPlaying) m_Source.Play();
+            BgmDirector.Instance.Play(m_Clip);
         }
     }
 }

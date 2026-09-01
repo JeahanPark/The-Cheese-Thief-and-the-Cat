@@ -23,6 +23,10 @@ namespace CTC.Runtime.Core
         [SerializeField] private Economy.ShopHotbar m_Hotbar;
         [SerializeField] private UI.ChatHud m_Chat;
 
+        // 인트로는 메뉴에 '설정'이 이미 있다 — ESC가 창을 여는 건 그 화면에서만 어색하다(2026-09-01).
+        // 팝업 닫기는 어디서나 그대로 돈다.
+        [SerializeField] private bool m_OpenOptionsOnEscape = true;
+
         private void Awake()
         {
             // 도메인 리로드를 끄고 플레이하면 정적 상태가 남는다
@@ -55,7 +59,7 @@ namespace CTC.Runtime.Core
             }
 
             // 아무것도 안 떠 있으면 옵션창을 연다 — ESC의 마지막 종착지다.
-            if (popups != null) popups.Open<UI.OptionsPopup>();
+            if (m_OpenOptionsOnEscape && popups != null) popups.Open<UI.OptionsPopup>();
         }
 
         /// <summary>옵션 창의 '게임 종료'가 부른다. 에디터에서는 플레이모드만 끝낸다.</summary>

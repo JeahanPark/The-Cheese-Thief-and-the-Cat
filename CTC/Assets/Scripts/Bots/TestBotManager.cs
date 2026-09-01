@@ -1,4 +1,4 @@
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using CTC.Runtime.Ai;
 using CTC.Runtime.Core;
@@ -157,6 +157,16 @@ namespace CTC.Runtime.Bots
             }
 
             GameObject go = Instantiate(prefab, _pos, Quaternion.identity);
+
+            // **사람 조작을 붙이는 부품을 스폰 전에 뗀다**(2026-09-01 실측 버그).
+            // 봇은 서버 소유로 스폰되는데, 호스트에서는 서버가 곧 로컬이라 `IsOwner`가 true다.
+            // 그대로 두면 봇이 스스로를 "내 플레이어"로 알리고 **카메라가 봇에게 붙는다**
+            // (대기실에서 봇을 채우고 시작하면 고양이 화면이 봇 시점이 됐다).
+            var publisher = go.GetComponent<Player.LocalPlayerPublisher>();
+            if (publisher != null) Destroy(publisher);
+            var camBinder = go.GetComponent<Cameras.PlayerCameraBinder>();
+            if (camBinder != null) Destroy(camBinder);
+
             var no = go.GetComponent<NetworkObject>();
             no.Spawn(true);   // SpawnAsPlayerObject가 아니다 — 붙일 클라이언트가 없다
 

@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace CTC.Editor
@@ -15,9 +15,9 @@ namespace CTC.Editor
     internal static class SceneBgmBuilder
     {
         public const string LOBBY_BGM = "Assets/Audio/BGM/bgm_lobby.ogg";
-        private const float DESIGN_VOLUME = 0.35f;
+        public const string INGAME_BGM = "Assets/Audio/BGM/bgm_ingame.ogg";
 
-        /// <summary>씬에 배경음 오브젝트를 세운다. 클립이 없으면 아무것도 안 한다(무음 유지).</summary>
+        /// <summary>씬에 "이 곡을 틀어라" 요청만 놓는다. 재생기는 씬을 넘어 하나뿐이다.</summary>
         public static void Attach(string _clipPath, string _name = "SceneBgm")
         {
             var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(_clipPath);
@@ -28,21 +28,11 @@ namespace CTC.Editor
             }
 
             var go = new GameObject(_name);
-            var source = go.AddComponent<AudioSource>();
-            source.clip = clip;
-            source.loop = true;
-            source.playOnAwake = false;   // SceneBgm이 볼륨을 보고 켠다
-            source.volume = DESIGN_VOLUME;
-            source.spatialBlend = 0f;     // 2D — 거리 감쇠 없음
-
-            go.AddComponent<CTC.Runtime.Audio.SceneBgm>();
-
-            // 옵션 창의 배경음 볼륨을 따라간다 — 0이면 SceneBgm이 정지시킨다.
-            var follower = go.AddComponent<CTC.Runtime.Audio.AudioVolumeFollower>();
-            var so = new SerializedObject(follower);
-            so.FindProperty("m_Category").enumValueIndex =
-                (int)CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm;
+            var scene = go.AddComponent<CTC.Runtime.Audio.SceneBgm>();
+            var so = new SerializedObject(scene);
+            so.FindProperty("m_Clip").objectReferenceValue = clip;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
+
     }
 }
