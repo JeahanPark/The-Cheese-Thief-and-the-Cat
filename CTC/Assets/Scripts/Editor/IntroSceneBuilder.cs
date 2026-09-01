@@ -81,6 +81,9 @@ namespace CTC.Editor
             IntroDirector director = new GameObject("IntroDirector").AddComponent<IntroDirector>();
             BuildCanvas(director);
 
+            // 배경음(2026-09-01) — 앞단 세 화면이 무음이었다. 인게임과 같은 비율(0.35)로 깐다.
+            SceneBgmBuilder.Attach(SceneBgmBuilder.LOBBY_BGM);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, SCENE_PATH);
             RegisterInBuildSettings();
@@ -654,9 +657,7 @@ namespace CTC.Editor
 
             // 설정 창은 아직 인게임 캔버스에만 있다 — 씬 독립이 되기 전까지 잠가 둔다.
             // 에디터에서 굽는 값이라 SerializedObject로 넣어야 플레이까지 남는다.
-            var optionsSo = new SerializedObject(optionsItem);
-            optionsSo.FindProperty("m_Locked").boolValue = true;
-            optionsSo.ApplyModifiedPropertiesWithoutUndo();
+            // 설정 잠금 해제(2026-09-01) — 인게임과 같은 OptionsPopup을 이 씬에도 세운다.
 
             // ── 실패 패널 (메뉴 아래) ──
             RectTransform errorRect = MakePanel(root, "ErrorPanel", new Color(0.235f, 0.086f, 0.078f, 0.88f),
@@ -695,15 +696,21 @@ namespace CTC.Editor
             viewSo.FindProperty("m_ErrorText").objectReferenceValue = errorText;
             viewSo.ApplyModifiedPropertiesWithoutUndo();
 
+            // 설정 창은 **프리팹**이다(2026-09-01 팝업 시스템) — 씬은 매니저와 캔버스만 준다.
+            var escGo = new GameObject("EscapeRouter");
+            escGo.AddComponent<CTC.Runtime.Core.EscapeRouter>();
+            PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
+
             var controller = canvasGo.AddComponent<IntroController>();
             var ctrlSo = new SerializedObject(controller);
             ctrlSo.FindProperty("m_Director").objectReferenceValue = _director;
             ctrlSo.FindProperty("m_StartButton").objectReferenceValue = startButton;
             ctrlSo.FindProperty("m_RetryButton").objectReferenceValue = retryButton;
             ctrlSo.FindProperty("m_QuitButton").objectReferenceValue = quitButton;
+            ctrlSo.FindProperty("m_OptionsButton").objectReferenceValue = optionsButton;
             ctrlSo.ApplyModifiedPropertiesWithoutUndo();
 
-            if (optionsButton != null) optionsButton.interactable = false;
+            if (optionsItem != null) optionsItem.Locked = false;
             if (quitItem != null) quitItem.Locked = false;
         }
 

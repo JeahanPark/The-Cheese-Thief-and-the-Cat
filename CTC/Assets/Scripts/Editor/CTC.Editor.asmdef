@@ -12,7 +12,10 @@
         "UnityEngine.UI",
         "Unity.TextMeshPro",
         "Unity.RenderPipelines.Universal.Runtime",
-        "Unity.RenderPipelines.Core.Runtime"
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.Addressables",
+        "Unity.ResourceManager",
+        "Unity.Addressables.Editor"
     ],
     "includePlatforms": [
         "Editor"

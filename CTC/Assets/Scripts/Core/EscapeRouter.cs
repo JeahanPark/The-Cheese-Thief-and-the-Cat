@@ -1,4 +1,4 @@
-using R3;
+﻿using R3;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,7 +21,6 @@ namespace CTC.Runtime.Core
     public class EscapeRouter : MonoBehaviour
     {
         [SerializeField] private Economy.ShopHotbar m_Hotbar;
-        [SerializeField] private UI.OptionsPopup m_Options;
         [SerializeField] private UI.ChatHud m_Chat;
 
         private void Awake()
@@ -47,13 +46,16 @@ namespace CTC.Runtime.Core
                 return;
             }
 
-            if (m_Options != null && m_Options.IsOpen)
+            // 팝업 스택(2026-09-01) — 위에서부터 하나씩 닫는다. 옵션창도 이 스택 위에 뜬다.
+            UI.Popup.PopupManager popups = UI.Popup.PopupManager.Instance;
+            if (popups != null && popups.OpenedCount > 0)
             {
-                m_Options.Close();
+                popups.CloseTop();
                 return;
             }
 
-            if (m_Options != null) m_Options.Open();
+            // 아무것도 안 떠 있으면 옵션창을 연다 — ESC의 마지막 종착지다.
+            if (popups != null) popups.Open<UI.OptionsPopup>();
         }
 
         /// <summary>옵션 창의 '게임 종료'가 부른다. 에디터에서는 플레이모드만 끝낸다.</summary>

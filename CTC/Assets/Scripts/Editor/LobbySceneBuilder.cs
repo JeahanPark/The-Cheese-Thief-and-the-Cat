@@ -60,6 +60,9 @@ namespace CTC.Editor
 
             BuildCanvas(browser);
 
+            // 배경음(2026-09-01) — 앞단 세 화면이 무음이었다. 인게임과 같은 비율(0.35)로 깐다.
+            SceneBgmBuilder.Attach(SceneBgmBuilder.LOBBY_BGM);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, SCENE_PATH);
             RegisterInBuildSettings();
@@ -121,6 +124,8 @@ namespace CTC.Editor
         {
             var canvasGo = new GameObject("LobbyCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGo.GetComponent<Canvas>();
+            // 팝업 매니저에 이 씬 캔버스를 물려준다(2026-09-01) — 로비에서도 옵션창이 뜬다.
+            PopupSceneBinder.Attach(canvas);
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = canvasGo.GetComponent<CanvasScaler>();

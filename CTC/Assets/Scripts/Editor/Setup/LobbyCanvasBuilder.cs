@@ -392,7 +392,8 @@ namespace CTC.Editor
             // FPS · 프레임 타임 (좌상단, ConnectionUI 오른쪽) — 개발용 빌드·에디터에서만 그린다
             new GameObject("FrameStatsOverlay").AddComponent<CTC.Runtime.Core.FrameStatsOverlay>();
 
-            BuildOptionsPopup(canvasGo, escRouter);
+            // 옵션창은 프리팹이다(2026-09-01) — 씬은 팝업 매니저에 캔버스만 물려준다.
+            PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
             BuildCatClassPopup(canvasGo);
             BuildChatHud(canvasGo, escRouter);
             BuildMouseJobHud(canvasGo, _phase);
@@ -406,7 +407,8 @@ namespace CTC.Editor
 
         // ===== 옵션 팝업 (2026-08-01 건의) =====
         // 게임을 멈추지 않는다(멀티플레이) — 커서만 풀고 UiFocus.ModalOpen으로 조작을 막는다.
-        private static void BuildOptionsPopup(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)
+        /// <summary>인트로 씬도 같은 옵션 창을 쓴다(2026-09-01) — 그래서 internal이고 팝업을 돌려준다.</summary>
+        internal static OptionsPopup BuildOptionsPopup(GameObject _canvasGo, CTC.Runtime.Core.EscapeRouter _esc)
         {
             var panel = new GameObject("OptionsPanel", typeof(RectTransform));
             panel.transform.SetParent(_canvasGo.transform, false);
@@ -454,9 +456,9 @@ namespace CTC.Editor
             SetRef(popup, "m_ConfirmButton", confirm);
             SetRef(popup, "m_CloseButton", close);
             SetRef(popup, "m_QuitButton", quit);
-            SetRef(_esc, "m_Options", popup);
 
             panel.SetActive(false);
+            return popup;
         }
 
         /// <summary>

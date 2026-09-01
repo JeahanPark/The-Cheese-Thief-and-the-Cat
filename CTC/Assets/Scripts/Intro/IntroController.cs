@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using Cysharp.Threading.Tasks;
 using R3;
 using UnityEngine;
@@ -24,6 +24,10 @@ namespace CTC.Runtime.Intro
         /// <summary>로비가 서면 "Lobby"로 바꾼다.</summary>
         [SerializeField] private string m_NextSceneName = "Lobby";
 
+        // 설정(2026-09-01) — 인게임과 **같은 OptionsPopup**을 쓴다. UI 컨셉이 갈라지면
+        // 같은 설정이 화면마다 다르게 보인다. 팝업이 없으면 버튼은 잠긴 채로 남는다.
+        [SerializeField] private Button m_OptionsButton;
+
         /// <summary>초대 자동 진입이 준비 체크를 기다리는 상한(초).</summary>
         private const float AUTO_START_TIMEOUT_SECONDS = 15f;
         private const int AUTO_START_POLL_MS = 200;
@@ -32,6 +36,9 @@ namespace CTC.Runtime.Intro
 
         private void Awake()
         {
+            if (m_OptionsButton != null)
+                m_OptionsButton.OnClickAsObservable().Subscribe(_ => OnClickOptions()).AddTo(this);
+
             if (m_StartButton != null)
                 m_StartButton.OnClickAsObservable().Subscribe(_ => OnClickStart()).AddTo(this);
 
@@ -70,6 +77,14 @@ namespace CTC.Runtime.Intro
             }
 
             OnClickStart();
+        }
+
+        /// <summary>설정 창을 연다 — 인게임·대기실과 같은 창이다.</summary>
+        private void OnClickOptions()
+        {
+            UI.Popup.PopupManager popups = UI.Popup.PopupManager.Instance;
+            if (popups == null) return;
+            popups.Open<UI.OptionsPopup>();
         }
 
         private void OnClickStart()

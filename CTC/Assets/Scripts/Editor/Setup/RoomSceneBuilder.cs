@@ -290,6 +290,9 @@ namespace CTC.Editor
 
             BuildRoomCanvas(session, director, catalog, spotlight, fillLight);
 
+            // 배경음(2026-09-01) — 앞단 세 화면이 무음이었다. 인게임과 같은 비율(0.35)로 깐다.
+            SceneBgmBuilder.Attach(SceneBgmBuilder.LOBBY_BGM);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, RoomScenePath);
             RegisterRoomInBuildSettings();

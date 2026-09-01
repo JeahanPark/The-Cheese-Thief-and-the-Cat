@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using R3;
 using TMPro;
 using UnityEngine;
@@ -25,7 +25,7 @@ namespace CTC.Runtime.UI
     /// `UiFocus.ModalOpen`을 세워 조작을 막는다 — 열어 둔 채로 죽을 수 있다는 뜻이라,
     /// 창을 크게 만들지 않고 화면을 다 가리지도 않는다.
     /// </summary>
-    public class OptionsPopup : MonoBehaviour
+    public class OptionsPopup : Popup.BasePopup
     {
         [SerializeField] private GameObject m_Panel;
         [SerializeField] private Slider m_SensitivitySlider;
@@ -48,7 +48,8 @@ namespace CTC.Runtime.UI
         [SerializeField] private Button m_CloseButton;
         [SerializeField] private Button m_QuitButton;
 
-        public bool IsOpen => m_Panel != null && m_Panel.activeSelf;
+        /// <summary>떠 있는가 — 인스턴스가 존재하면 열려 있다(프리팹 방식).</summary>
+        public bool IsOpen => isActiveAndEnabled;
 
         private void Start()
         {
@@ -69,30 +70,18 @@ namespace CTC.Runtime.UI
             if (m_CloseButton != null) m_CloseButton.OnClickAsObservable().Subscribe(_ => OnClickCancel()).AddTo(this);
             if (m_QuitButton != null) m_QuitButton.OnClickAsObservable().Subscribe(_ => OnClickQuit()).AddTo(this);
 
-            if (m_Panel != null) m_Panel.SetActive(false);
+            // 프리팹으로 뜨는 창이라 숨겨 둘 이유가 없다 — 생성 = 열림이다.
         }
 
-        public void Open()
+        /// <summary>
+        /// 창을 닫는 유일한 문 — 확정하지 않은 미리듣기는 여기서 되돌아간다.
+        /// 파괴와 모달 해제는 <see cref="Popup.PopupManager"/>가 한다(2026-09-01 팝업 시스템).
+        /// </summary>
+        public override void Close()
         {
-            if (m_Panel == null || m_Panel.activeSelf) return;
-            m_Panel.SetActive(true);
-            UiFocus.SetModalOpen(true);
-        }
-
-        /// <summary>창을 닫는 유일한 문 — 확정하지 않은 미리듣기는 여기서 되돌아간다.</summary>
-        public void Close()
-        {
-            if (m_Panel == null || !m_Panel.activeSelf) return;
             UserSettings.Revert();
             DisplaySettings.Revert();
-            m_Panel.SetActive(false);
-            UiFocus.SetModalOpen(false);
-        }
-
-        private void OnDisable()
-        {
-            // 씬 전환·파괴로 창이 사라져도 모달 플래그가 남으면 조작이 영영 막힌다
-            if (UiFocus.ModalOpen) UiFocus.SetModalOpen(false);
+            base.Close();
         }
 
         /// <summary>

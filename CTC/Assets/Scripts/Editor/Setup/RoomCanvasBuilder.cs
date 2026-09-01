@@ -1,4 +1,4 @@
-using CTC.Runtime.Room;
+﻿using CTC.Runtime.Room;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -128,7 +128,8 @@ namespace CTC.Editor
 
             // ── 채팅·옵션 (인게임과 같은 컴포넌트를 그대로 쓴다) ──
             // 이 둘은 캔버스 바로 밑에 붙는다 — Hud가 꺼져도 채팅은 남는다.
-            BuildOptionsPopup(canvasGo, escRouter);
+            // 옵션창은 프리팹이다(2026-09-01) — 씬은 팝업 매니저에 캔버스만 물려준다.
+            PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
             BuildChatHud(canvasGo, escRouter);
             MoveChatBelowBoard(canvasGo);
 

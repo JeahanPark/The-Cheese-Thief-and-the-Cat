@@ -197,8 +197,8 @@ namespace CTC.Runtime.Testing
 
         public void TestOpenOptions()
         {
-            var popup = FindFirstObjectByType<CTC.Runtime.UI.OptionsPopup>();
-            if (popup != null) popup.Open();
+            var popups = CTC.Runtime.UI.Popup.PopupManager.Instance;
+            if (popups != null) popups.Open<CTC.Runtime.UI.OptionsPopup>();
         }
 
         public void TestCloseOptions()
