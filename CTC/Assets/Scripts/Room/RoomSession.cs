@@ -24,6 +24,10 @@ namespace CTC.Runtime.Room
             new NetworkVariable<FixedString64Bytes>();
 
         private readonly NetworkVariable<int> m_MapIndex = new NetworkVariable<int>();
+        // 봇 자리(2026-09-01, 개발 빌드 전용 UI) — 혼자서도 판을 열어 보려고 둔다.
+        // 전원이 읽는다: 참가자 보드가 "봇 3"을 같이 보여 줘야 몇 명으로 시작하는지 안다.
+        private readonly NetworkVariable<int> m_BotCount = new NetworkVariable<int>();
+
         // 새 방의 기본 맵(2026-08-31) — 씬 빌더가 첫 정식 맵(대형) 인덱스를 굽는다.
         // 런타임에 카탈로그를 뒤지지 않는 이유: Model이 Worker를 모르게(MVC), 스폰 순서에도 안 걸리게.
         [SerializeField] private int m_DefaultMapIndex;
@@ -49,7 +53,7 @@ namespace CTC.Runtime.Room
         /// <summary>내가 방장인가 — NGO에서 방장은 곧 서버다.</summary>
         public bool IsHost => NetworkManager != null && NetworkManager.IsServer;
 
-        public bool CanStart => RoomLogic.CanStart(MemberCount, IsHost) && !Starting;
+        public bool CanStart => RoomBotLogic.CanStartWithBots(MemberCount, m_BotCount.Value, IsHost) && !Starting;
 
         /// <summary>
         /// 화면에 영향을 주는 모든 변화를 하나로 합친 신호 — 스폰·참가자·방 이름·맵·시작.
@@ -72,6 +76,7 @@ namespace CTC.Runtime.Room
                         m_Members.AsChangedObservable(),
                         m_RoomName.AsObservable().AsUnitObservable(),
                         m_MapIndex.AsObservable().AsUnitObservable(),
+                        m_BotCount.AsObservable().AsUnitObservable(),
                         m_Starting.AsObservable().AsUnitObservable())
                     .Prepend(Unit.Default);
             }
@@ -131,6 +136,23 @@ namespace CTC.Runtime.Room
         {
             if (!IsServer) return;
             m_RoomName.Value = new FixedString64Bytes(Truncate(_name, 60));
+        }
+
+        public int BotCount => m_BotCount.Value;
+
+        /// <summary>봇 수 요청(방장만). 남은 자리에 맞춰 서버가 깎는다.</summary>
+        public void SetBotCount(int _count)
+        {
+            SetBotCountRpc(_count);
+        }
+
+        [Rpc(SendTo.Server)]
+        private void SetBotCountRpc(int _count, RpcParams _rpcParams = default)
+        {
+            if (m_Starting.Value) return;
+            if (_rpcParams.Receive.SenderClientId != NetworkManager.ServerClientId) return;
+
+            m_BotCount.Value = RoomBotLogic.ClampBots(_count, MemberCount);
         }
 
         public void ServerSetMapIndex(int _index)

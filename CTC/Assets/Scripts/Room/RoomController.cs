@@ -22,6 +22,9 @@ namespace CTC.Runtime.Room
         [Header("버튼")]
         [SerializeField] private Button m_StartButton;
         [SerializeField] private Button m_LeaveButton;
+        // 봇 자리(개발 빌드 전용 UI — 표시 여부는 RoomHudView가 정한다)
+        [SerializeField] private Button m_BotPlusButton;
+        [SerializeField] private Button m_BotMinusButton;
 
         /// <summary>맵 버튼 — 배열 순서가 곧 맵 인덱스다(<see cref="RoomMapCatalog"/>와 같은 순서).</summary>
         [SerializeField] private Button[] m_MapButtons;
@@ -44,6 +47,12 @@ namespace CTC.Runtime.Room
 
             if (m_LeaveButton != null)
                 m_LeaveButton.OnClickAsObservable().Subscribe(_ => OnClickLeave()).AddTo(this);
+
+            if (m_BotPlusButton != null)
+                m_BotPlusButton.OnClickAsObservable().Subscribe(_ => OnClickBotPlus()).AddTo(this);
+
+            if (m_BotMinusButton != null)
+                m_BotMinusButton.OnClickAsObservable().Subscribe(_ => OnClickBotMinus()).AddTo(this);
 
             if (m_MapButtons == null) return;
             for (int i = 0; i < m_MapButtons.Length; i++)
@@ -73,6 +82,19 @@ namespace CTC.Runtime.Room
             if (!m_Session.CanStart) return;
 
             m_Director.ServerStartMatch();
+        }
+
+        /// <summary>봇 한 마리 추가 — 남은 자리를 넘으면 서버가 깎는다.</summary>
+        private void OnClickBotPlus()
+        {
+            if (m_Session == null || !m_Session.IsHost || m_Session.Starting) return;
+            m_Session.SetBotCount(m_Session.BotCount + 1);
+        }
+
+        private void OnClickBotMinus()
+        {
+            if (m_Session == null || !m_Session.IsHost || m_Session.Starting) return;
+            m_Session.SetBotCount(m_Session.BotCount - 1);
         }
 
         private void OnClickMap(int _index)

@@ -96,7 +96,10 @@ namespace CTC.Runtime.Lobby.Browser
         /// </summary>
         public bool Join(LobbyRoomInfo _room)
         {
-#if UNITY_EDITOR
+            // 스팀이 없으면 로컬 NGO로 후퇴 — 에디터 + **개발 빌드**(2026-09-01).
+            // 스팀 없이 전 구간(인트로→로비→대기실→인게임)을 보려면 이 길이 필요하다.
+            // 배포 빌드는 그대로 막는다: 스팀 없는 배포판이 로컬 방을 여는 건 사고다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!SteamBootstrap.Ready) return StartLocal(_host: false);
 #endif
             if (m_Steam == null || !SteamBootstrap.Ready)
@@ -119,7 +122,7 @@ namespace CTC.Runtime.Lobby.Browser
         /// <summary>방을 연다. 성공했으면 true.</summary>
         public bool Create(string _name, bool _isPublic)
         {
-#if UNITY_EDITOR
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!SteamBootstrap.Ready) return StartLocal(_host: true);
 #endif
             if (m_Steam == null || !SteamBootstrap.Ready)
@@ -133,8 +136,8 @@ namespace CTC.Runtime.Lobby.Browser
         }
 
         /// <summary>
-        /// 스팀 없이 NGO만 띄운다(에디터 전용). 대기실은 네트워크가 붙어야 화면이 서므로
-        /// 이게 없으면 에디터에서 대기실이 통째로 빈 화면이 된다.
+        /// 스팀 없이 NGO만 띄운다(에디터·개발 빌드). 대기실은 네트워크가 붙어야 화면이 서므로
+        /// 이게 없으면 대기실이 통째로 빈 화면이 된다.
         /// </summary>
         private static bool StartLocal(bool _host)
         {

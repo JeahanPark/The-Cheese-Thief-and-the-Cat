@@ -116,6 +116,16 @@ namespace CTC.Editor
                 new Vector2(0.5f, 0f), new Vector2(0f, 88f), new Vector2(900f, 34f));
             hint.color = ROOM_TEXT_DIM;
 
+            // ── 봇 자리(2026-09-01) — 시작 버튼 왼쪽. 혼자서도 판을 열어 보려고 둔다.
+            // 개발 빌드에서만 보인다(RoomHudView가 켠다) — 배포 빌드엔 UI가 뜨지 않는다.
+            Button botMinus = RoomButton(hud, "BotMinus", "−",
+                new Vector2(0.5f, 0f), new Vector2(-268f, 148f), new Vector2(64f, 64f), false);
+            Button botPlus = RoomButton(hud, "BotPlus", "+",
+                new Vector2(0.5f, 0f), new Vector2(268f, 148f), new Vector2(64f, 64f), false);
+            TMP_Text botLabel = RoomText(hud, "BotHint", "봇 없음", 18, FontStyles.Normal,
+                new Vector2(0.5f, 0f), new Vector2(0f, 56f), new Vector2(900f, 30f));
+            botLabel.color = ROOM_TEXT_DIM;
+
             // ── 채팅·옵션 (인게임과 같은 컴포넌트를 그대로 쓴다) ──
             // 이 둘은 캔버스 바로 밑에 붙는다 — Hud가 꺼져도 채팅은 남는다.
             BuildOptionsPopup(canvasGo, escRouter);
@@ -166,6 +176,10 @@ namespace CTC.Editor
             hudSo.FindProperty("m_CountLabel").objectReferenceValue = count;
             hudSo.FindProperty("m_StartButton").objectReferenceValue = start.gameObject;
             hudSo.FindProperty("m_StartHint").objectReferenceValue = hint;
+            hudSo.FindProperty("m_BotHint").objectReferenceValue = botLabel;
+            hudSo.FindProperty("m_BotButtons").objectReferenceValue = botPlus.transform.parent.gameObject;
+            hudSo.FindProperty("m_BotPlus").objectReferenceValue = botPlus.gameObject;
+            hudSo.FindProperty("m_BotMinus").objectReferenceValue = botMinus.gameObject;
             hudSo.ApplyModifiedPropertiesWithoutUndo();
 
             var mapView = canvasGo.AddComponent<RoomMapView>();
@@ -187,6 +201,8 @@ namespace CTC.Editor
             ctrlSo.FindProperty("m_Director").objectReferenceValue = _director;
             ctrlSo.FindProperty("m_StartButton").objectReferenceValue = start;
             ctrlSo.FindProperty("m_LeaveButton").objectReferenceValue = leave;
+            ctrlSo.FindProperty("m_BotPlusButton").objectReferenceValue = botPlus;
+            ctrlSo.FindProperty("m_BotMinusButton").objectReferenceValue = botMinus;
             SerializedProperty ctrlMaps = ctrlSo.FindProperty("m_MapButtons");
             ctrlMaps.arraySize = mapButtons.Length;
             for (int i = 0; i < mapButtons.Length; i++)

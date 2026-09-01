@@ -63,6 +63,22 @@ namespace CTC.Runtime.Match
             GameDebug.Log($"[AutoStart] 대기실에서 넘어온 판을 연다 — {m_Lobby.PlayerCount}명");
             m_Lobby.RequestStartGame();
 
+            // 대기실에서 채운 봇 쥐(2026-09-01). 판이 서고 스폰이 끝난 뒤에 세운다 —
+            // 먼저 세우면 매치 시작이 봇을 다시 배치하며 겹친다. 개발 빌드에만 존재한다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (MatchHandoff.BotMice > 0)
+            {
+                await UniTask.Delay(1000, cancellationToken: cancel);
+                var bots = Bots.TestBotManager.Instance;
+                if (bots != null)
+                {
+                    bots.ServerSpawn(MatchHandoff.BotMice, 0);
+                    GameDebug.Log($"[AutoStart] 봇 쥐 {MatchHandoff.BotMice}마리 투입");
+                }
+                else GameDebug.LogWarning("[AutoStart] TestBotManager가 없다 — 봇을 못 세운다");
+            }
+#endif
+
             // 역할은 다 쓰였다. 직전 고양이는 남긴다 — 재시작 때 연속 당첨을 빼는 데 쓴다.
             MatchHandoff.ConsumeRoles();
         }

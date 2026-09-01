@@ -21,6 +21,12 @@ namespace CTC.Runtime.Room
 
         [Header("하단")]
         [SerializeField] private GameObject m_StartButton;
+
+        [Header("봇 자리 — 개발 빌드에서만 보인다(2026-09-01)")]
+        [SerializeField] private TMPro.TMP_Text m_BotHint;
+        [SerializeField] private GameObject m_BotButtons;   // (미사용 — 개별 버튼으로 켠다)
+        [SerializeField] private GameObject m_BotPlus;
+        [SerializeField] private GameObject m_BotMinus;
         [SerializeField] private TMP_Text m_StartHint;
 
         private void Start()
@@ -52,6 +58,16 @@ namespace CTC.Runtime.Room
 
             // 방장이 아니면 버튼 자체를 안 보여 준다 — 못 누르는 버튼이 떠 있으면 기다리게 만든다.
             if (m_StartButton != null) m_StartButton.SetActive(isHost && !m_Session.Starting);
+
+            // 봇 자리 — 방장 + 개발 빌드에서만. 배포 빌드에선 버튼도 글자도 없다.
+            bool showBots = isHost && !m_Session.Starting && Debug.isDebugBuild;
+            if (m_BotPlus != null) m_BotPlus.SetActive(showBots);
+            if (m_BotMinus != null) m_BotMinus.SetActive(showBots);
+            if (m_BotHint != null)
+            {
+                m_BotHint.gameObject.SetActive(showBots);
+                m_BotHint.text = RoomBotLogic.BotHint(count, m_Session.BotCount);
+            }
         }
 
     }

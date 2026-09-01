@@ -25,6 +25,9 @@ namespace CTC.Runtime.Core
         /// <summary>직전 판의 고양이 — 다음 추첨에서 뺀다(연속 당첨 방지).</summary>
         public static ulong PreviousCat { get; private set; }
 
+        /// <summary>대기실에서 채운 봇 쥐 수(개발 빌드 전용). 인게임이 판을 연 뒤 세운다.</summary>
+        public static int BotMice { get; private set; }
+
         /// <summary>넘길 것이 있는가. 없으면 인게임은 예전 흐름 그대로 돈다.</summary>
         public static bool HasRoles => s_Roles.Count > 0;
 
@@ -44,8 +47,10 @@ namespace CTC.Runtime.Core
         }
 
         /// <summary>서버가 추첨 직후 한 번 채운다.</summary>
-        public static void Set(IReadOnlyDictionary<ulong, RoleId> _roles, int _mapIndex, ulong _cat)
+        public static void Set(IReadOnlyDictionary<ulong, RoleId> _roles, int _mapIndex, ulong _cat,
+            int _botMice = 0)
         {
+            BotMice = Mathf.Max(0, _botMice);
             s_Roles.Clear();
             if (_roles != null)
             {
@@ -55,7 +60,7 @@ namespace CTC.Runtime.Core
             MapIndex = _mapIndex;
             PreviousCat = _cat;
             FromRoom = true;
-            GameDebug.Log($"[Handoff] 역할 {s_Roles.Count}명 · 맵 {_mapIndex} · 고양이 {_cat}");
+            GameDebug.Log($"[Handoff] 역할 {s_Roles.Count}명 · 맵 {_mapIndex} · 고양이 {_cat} · 봇 {BotMice}");
         }
 
         /// <summary>
@@ -76,6 +81,7 @@ namespace CTC.Runtime.Core
             MapIndex = -1;
             PreviousCat = 0;
             FromRoom = false;
+            BotMice = 0;
         }
     }
 }

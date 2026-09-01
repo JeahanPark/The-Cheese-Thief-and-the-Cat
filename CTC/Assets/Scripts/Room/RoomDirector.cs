@@ -85,7 +85,7 @@ namespace CTC.Runtime.Room
 
             if (!m_Session.ServerBeginStart(cat)) return;
 
-            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat);
+            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat, m_Session.BotCount);
             GameDebug.Log($"[Room] 고양이 추첨 → client={cat} (후보 {members.Count}명)");
 
             m_Handing = true;
@@ -107,7 +107,7 @@ namespace CTC.Runtime.Room
             ulong cat = CatDrawLogic.Pick(members, MatchHandoff.PreviousCat, 0, nm.LocalClientId);
             if (!m_Session.ServerBeginStart(cat)) return;
 
-            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat);
+            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat, m_Session.BotCount);
             m_Handing = true;
             LoadGameScene().Forget();
         }
