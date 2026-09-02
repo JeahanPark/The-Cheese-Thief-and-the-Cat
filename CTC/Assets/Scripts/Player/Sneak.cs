@@ -1,4 +1,4 @@
-using CTC.Runtime.Combat;
+﻿using CTC.Runtime.Combat;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -50,7 +50,7 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            if (!IsOwner || !IsSpawned) return;
+            if (!LocalControl.Mine(this) || !IsSpawned) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             Keyboard kb = Keyboard.current;

@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using Unity.Netcode;
 
 namespace CTC.Runtime.Player
@@ -11,12 +11,12 @@ namespace CTC.Runtime.Player
     {
         public override void OnNetworkSpawn()
         {
-            if (IsOwner) LocalPlayerBinder.Publish(NetworkObject);
+            if (LocalControl.Mine(this)) LocalPlayerBinder.Publish(NetworkObject);
         }
 
         public override void OnNetworkDespawn()
         {
-            if (IsOwner) LocalPlayerBinder.Withdraw(NetworkObject);
+            if (LocalControl.Mine(this)) LocalPlayerBinder.Withdraw(NetworkObject);
         }
     }
 }

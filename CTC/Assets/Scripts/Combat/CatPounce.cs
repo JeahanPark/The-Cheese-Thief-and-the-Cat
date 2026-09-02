@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -39,7 +39,7 @@ namespace CTC.Runtime.Combat
 
         private void Update()
         {
-            if (!IsOwner || Cursor.lockState != CursorLockMode.Locked) return;
+            if (!Player.LocalControl.Mine(this) || Cursor.lockState != CursorLockMode.Locked) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             Mouse mouse = Mouse.current;

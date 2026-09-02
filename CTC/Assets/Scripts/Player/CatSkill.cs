@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using R3;
 using Unity.Netcode;
 using UnityEngine;
@@ -56,7 +56,7 @@ namespace CTC.Runtime.Player
         private void Update()
         {
             if (IsServer) TickServer();
-            if (IsOwner) ReadInput();
+            if (LocalControl.Mine(this)) ReadInput();
         }
 
         private void TickServer()

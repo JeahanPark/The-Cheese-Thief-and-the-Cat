@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
@@ -95,7 +95,8 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            if (!IsOwner) return;
+            // 봇은 서버 소유라 IsOwner가 true다 — 사람의 몸만 입력을 읽는다(2026-09-01).
+            if (!LocalControl.Mine(this)) return;
 
             // 프로젝트가 신형 Input System 전용(activeInputHandler=1)이라 레거시 Input 사용 불가
             var kb = Keyboard.current;

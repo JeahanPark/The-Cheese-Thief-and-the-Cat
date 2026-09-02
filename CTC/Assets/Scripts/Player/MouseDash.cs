@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -58,7 +58,7 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            if (!IsOwner) return;
+            if (!LocalControl.Mine(this)) return;
 
             if (m_DashRemainingSeconds > 0f)
             {
