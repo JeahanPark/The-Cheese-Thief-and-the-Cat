@@ -57,6 +57,12 @@ namespace CTC.Runtime.UI.Popup
         {
             CloseAll();
 
+            // 씬이 바뀌면 팝업은 캔버스와 함께 사라진다 — 스택을 비우고 **모달을 반드시 푼다**.
+            // 이게 없으면 옵션창을 연 채 화면을 옮겼을 때 조작이 막힌 채로 굳는다(실측).
+            m_Opened.Clear();
+            m_Handles.Clear();
+            UiFocus.SetModalOpen(false);
+
             if (_canvas == null)
             {
                 GameDebug.LogWarning("[Popup] 캔버스가 없다 — 이 씬에서는 팝업을 못 연다");
@@ -163,6 +169,21 @@ namespace CTC.Runtime.UI.Popup
             {
                 m_Handles.Remove(_popup);
                 Addressables.Release(handle);   // WES는 안 놓아 줬다 — 여기서 놓는다
+            }
+
+            UiFocus.SetModalOpen(PopupStackLogic.ModalOpen(m_Opened.Count));
+        }
+
+        /// <summary>팝업이 스스로 파괴됐다(씬 전환 등) — 스택에서 빼고 모달을 맞춘다.</summary>
+        public void NotifyDestroyed(BasePopup _popup)
+        {
+            if (_popup == null) return;
+            if (!m_Opened.Remove(_popup)) return;
+
+            if (m_Handles.TryGetValue(_popup, out AsyncOperationHandle<GameObject> handle))
+            {
+                m_Handles.Remove(_popup);
+                Addressables.Release(handle);
             }
 
             UiFocus.SetModalOpen(PopupStackLogic.ModalOpen(m_Opened.Count));

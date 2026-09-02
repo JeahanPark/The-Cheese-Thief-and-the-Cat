@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace CTC.Runtime.UI.Popup
@@ -46,7 +46,17 @@ namespace CTC.Runtime.UI.Popup
         /// <summary>닫기 버튼이 부르는 자리 — 실제 파괴는 매니저가 한다.</summary>
         public virtual void Close()
         {
-            PopupManager.Instance?.Close(this);
+            // 규칙 9 — Unity 객체는 `?.`를 안 쓴다(파괴된 객체가 통과한다).
+            if (PopupManager.Instance != null) PopupManager.Instance.Close(this);
+        }
+
+        /// <summary>
+        /// 씬 전환으로 캔버스째 파괴돼도 매니저가 알아야 한다 — 안 그러면 스택에 죽은 참조가 남고
+        /// **모달 플래그가 켜진 채 굳어 조작이 영영 막힌다**(2026-09-03 실측: 인게임에서 이동 불가).
+        /// </summary>
+        private void OnDestroy()
+        {
+            if (PopupManager.Instance != null) PopupManager.Instance.NotifyDestroyed(this);
         }
 
         protected virtual void OnOpened() { }
