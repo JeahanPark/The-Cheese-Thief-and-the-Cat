@@ -111,6 +111,21 @@ namespace CTC.Runtime.Testing
             browser.SendMessage("OnClickCreate");
         }
 
+        /// <summary>대기실 봇 수 지정 — 방장(서버)만. 남은 자리를 넘으면 서버가 깎는다.</summary>
+        public void TestSetRoomBots(int _count)
+        {
+            var session = FindAnyObjectByType<Room.RoomSession>();
+            if (session == null) { GameDebug.LogError("[TestManager] RoomSession 없음"); return; }
+            session.SetBotCount(_count);
+        }
+
+        /// <summary>대기실 봇 수 조회.</summary>
+        public int TestGetRoomBots()
+        {
+            var session = FindAnyObjectByType<Room.RoomSession>();
+            return session != null ? session.BotCount : -1;
+        }
+
         /// <summary>대기실 강제 시작(인원 조건 무시) — RoomDirector.DevForceStartMatch 통로.</summary>
         public void TestRoomForceStart()
         {

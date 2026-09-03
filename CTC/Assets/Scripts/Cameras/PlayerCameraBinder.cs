@@ -11,7 +11,9 @@ namespace CTC.Runtime.Cameras
 
         public override void OnNetworkSpawn()
         {
-            if (!IsOwner) return;
+            // 봇은 서버 소유라 호스트에선 IsOwner가 true다 — 그대로 두면 **카메라가 봇을 따라간다**
+            // (2026-09-03 실측: 고양이로 시작했는데 화면엔 봇 쥐가 보였다).
+            if (!Player.LocalControl.Mine(this)) return;
 
             var controller = FindFirstObjectByType<OrbitCameraController>();
             if (controller == null)
