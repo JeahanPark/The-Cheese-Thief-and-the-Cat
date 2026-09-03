@@ -24,4 +24,5 @@ EditorBuildSettings:
     path: Assets/Scenes/BotLab.unity
     guid: 42a6185fa24e72749a7aa877f9ad3a89
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: 9aa2fa7f3e15fce4d9d30c93dd89658a, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

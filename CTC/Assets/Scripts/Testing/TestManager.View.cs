@@ -284,6 +284,31 @@ namespace CTC.Runtime.Testing
 
         /// <summary>QA: 커서가 잠겨 있는가 — 옵션 창이 열리면 false, 닫히면 true여야 한다.</summary>
         public bool TestGetCursorLocked() => Cursor.lockState == CursorLockMode.Locked;
+
+        /// <summary>
+        /// 조작이 왜 안 먹는지 한 줄로 캔다(2026-09-03) — 조작 불가는 원인이 여럿이라
+        /// 하나씩 물어보면 왕복만 는다: 로컬 몸·소유·플레이어오브젝트·모달·타이핑·커서·팝업 수.
+        /// </summary>
+        public string TestGetControlDiag()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+
+            string body = "none";
+            if (me != null)
+            {
+                var move = me.GetComponent<Player.PlayerMovement>();
+                body = $"{me.gameObject.name} owner={me.IsOwner} playerObj={me.IsPlayerObject} " +
+                       $"mine={(move != null && Player.LocalControl.Mine(move))}";
+            }
+
+            int popups = UI.Popup.PopupManager.Instance != null
+                ? UI.Popup.PopupManager.Instance.OpenedCount : -1;
+
+            return $"body=({body}) modal={UiFocus.ModalOpen} typing={UiFocus.IsTyping} " +
+                   $"blocks={UiFocus.BlocksGameplay} cursor={Cursor.lockState} popups={popups}";
+        }
     }
 }
 #endif

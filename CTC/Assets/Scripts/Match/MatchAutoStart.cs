@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -61,7 +61,16 @@ namespace CTC.Runtime.Match
             await UniTask.Yield(cancel);
 
             GameDebug.Log($"[AutoStart] 대기실에서 넘어온 판을 연다 — {m_Lobby.PlayerCount}명");
+
+            // 봇을 채운 판은 **인원 조건을 건너뛴다**(2026-09-03 실측 버그).
+            // 시작 조건은 대기실 사람만 세는데 봇은 인게임에서 서므로, 혼자+봇이면 쥐 0명으로
+            // 판정돼 시작이 거부되고 **내 몸조차 안 생긴다**(조작 불가로 보였다).
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (MatchHandoff.BotMice > 0) m_Lobby.DevForceStartGame();
+            else m_Lobby.RequestStartGame();
+#else
             m_Lobby.RequestStartGame();
+#endif
 
             // 대기실에서 채운 봇 쥐(2026-09-01). 판이 서고 스폰이 끝난 뒤에 세운다 —
             // 먼저 세우면 매치 시작이 봇을 다시 배치하며 겹친다. 개발 빌드에만 존재한다.

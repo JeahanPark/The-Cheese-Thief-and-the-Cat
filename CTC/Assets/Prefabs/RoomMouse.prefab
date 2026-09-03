@@ -287,7 +287,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.PlayerMovement
   ShowTopMostFoldoutHeaderGroup: 1
-  m_MoveSpeed: 6
+  m_MoveSpeed: 6.6
   m_TurnSpeedDegPerSec: 720
 --- !u!114 &3274850377266695820
 MonoBehaviour:
