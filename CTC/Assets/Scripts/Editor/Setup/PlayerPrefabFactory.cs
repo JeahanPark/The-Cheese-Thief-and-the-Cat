@@ -73,11 +73,11 @@ namespace CTC.Editor
                 root.AddComponent<LocalPlayerPublisher>(); // 스폰/디스폰을 LocalPlayerBinder에 알린다
 
                 var shop = root.AddComponent<ShopController>();
-                root.AddComponent<TechSlots>(); // 테크 v3 — 보유 테크·레벨(NetworkList)
                 SetRef(shop, "m_FortressPrefab", _fortressPrefab);
                 // 요새가 내 위치 중심에 서면 겹친 남의 몸을 서버가 밀어낸다 — 소유자 RPC 수신처
                 root.AddComponent<BodyPush>();
                 SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
+                root.AddComponent<TechSlots>(); // 테크 v3 — 보유 테크·레벨(NetworkList)
 
                 // LShift 잠행 — 발소리 소거·이속 절반. **역할 분기 밖**이다: 2026-08-10에 쥐로
                 // 확장했는데 고양이 분기 안에 두면 쥐 프리팹에 조용히 안 붙는다(그렇게 한 번 놓쳤다).

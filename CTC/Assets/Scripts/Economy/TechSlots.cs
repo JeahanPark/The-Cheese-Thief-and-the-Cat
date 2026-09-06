@@ -13,22 +13,24 @@ namespace CTC.Runtime.Economy
     public class TechSlots : NetworkBehaviour
     {
         private NetworkList<TechEntry> m_Entries;
-        private readonly List<TechEntry> m_Snapshot = new List<TechEntry>();
 
-        /// <summary>보유 목록 스냅샷(구매 순 = 칸 순). 호출마다 내부 버퍼를 다시 채운다 — 순수 로직에 넘길 때 쓴다. 보관하지 말 것.</summary>
+        /// <summary>보유 목록(구매 순 = 칸 순). 호출마다 새 목록 — 5칸이라 비용 무시. 순수 로직에 넘길 때 쓴다.</summary>
         public IReadOnlyList<TechEntry> Owned
         {
             get
             {
-                m_Snapshot.Clear();
-                for (int i = 0; i < m_Entries.Count; i++) m_Snapshot.Add(m_Entries[i]);
-                return m_Snapshot;
+                var list = new List<TechEntry>(m_Entries.Count);
+                for (int i = 0; i < m_Entries.Count; i++) list.Add(m_Entries[i]);
+                return list;
             }
         }
 
         public int Count => m_Entries.Count;
 
-        /// <summary>변경 스트림 — 구독 즉시 한 번 흐른다(현재 상태를 그리라고).</summary>
+        /// <summary>
+        /// 변경 스트림 — 구독 즉시 한 번 흐른다(현재 상태를 그리라고).
+        /// 스폰 후에 구독할 것 — 초기 동기화(ReadField)는 OnListChanged를 쏘지 않는다.
+        /// </summary>
         public Observable<Unit> Changed => m_Entries.AsChangedObservable().Prepend(() => Unit.Default);
 
         public int LevelOf(TechId _id) => TechLogic.LevelOf(Owned, _id);
