@@ -3,6 +3,7 @@ using CTC.Runtime.Economy;
 using CTC.Runtime.Info;
 using CTC.Runtime.Lobby;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CTC.Tests
 {
@@ -41,13 +42,16 @@ namespace CTC.Tests
             Assert.AreEqual(3f, b.ShopSpotRadius, 1e-4f);
             // 대형 맵 시야 차폐 20.5m보다 멀어야 두 상점이 한 눈에 안 보인다
             Assert.AreEqual(25f, b.ShopSpotMinGap, 1e-4f);
-            // 고양이 발소리와 같은 거리(정보=소리) — 구매도 소리로 위치가 팔린다
+            // 기존 BoxBreakSoundMeters(상자 파괴음)와 같은 거리 — "찾은 사람만 조용히" 급의 소리.
+            // 상점 근처 고양이만 듣는다(정보=소리)
             Assert.AreEqual(12f, b.ShopBuySoundMeters, 1e-4f);
         }
 
         [Test]
         public void TechInfo_TableIsWellFormed()
         {
+            Assert.IsNotEmpty(InfoManager.Instance.Tech);
+
             var levelCostById = new Dictionary<TechId, List<(int Level, int Cost)>>();
             var roleById = new Dictionary<TechId, RoleId>();
             var axisById = new Dictionary<TechId, TechAxis>();
@@ -55,7 +59,7 @@ namespace CTC.Tests
 
             foreach (TechInfo row in InfoManager.Instance.Tech)
             {
-                Assert.AreNotEqual(TechId.None, row.TechId, "행에 TechId.None이 있으면 안 된다");
+                Assert.AreNotEqual(TechId.None, row.TechId, $"Lv{row.Level} 행에 TechId.None이 있으면 안 된다");
                 Assert.AreNotEqual(RoleId.None, row.Role, $"{row.TechId}: Role.None이면 안 된다");
 
                 var pair = (row.TechId, row.Level);
@@ -75,9 +79,21 @@ namespace CTC.Tests
 
                 Assert.IsFalse(string.IsNullOrEmpty(row.Label), $"{row.TechId} Lv{row.Level}: Label 비어있음");
                 Assert.IsFalse(string.IsNullOrEmpty(row.Hint), $"{row.TechId} Lv{row.Level}: Hint 비어있음");
-                // 로더가 줄을 콤마로 쪼갠다 — 유일한 안전장치
-                Assert.IsFalse(row.Label.Contains(","), $"{row.TechId} Lv{row.Level}: Label에 콤마가 있으면 로더가 깨진다");
-                Assert.IsFalse(row.Hint.Contains(","), $"{row.TechId} Lv{row.Level}: Hint에 콤마가 있으면 로더가 깨진다");
+            }
+
+            // Label/Hint에 콤마가 있으면 로더가 줄을 쪼갤 때 깨진다 — 이미 파싱된 값이 아니라
+            // 원본 CSV 텍스트를 직접 읽어 각 줄의 콤마 개수(헤더와 동일해야 함)로 검사한다.
+            var csv = Resources.Load<TextAsset>("CSVInfo/TechInfo");
+            Assert.IsNotNull(csv, "Resources/CSVInfo/TechInfo.csv 를 못 찾음");
+            string[] lines = csv.text.Split('\n');
+            string[] headerCols = lines[0].Trim().Split(',');
+            for (int i = 1; i < lines.Length; i++)
+            {
+                string line = lines[i].Trim();
+                if (line.Length == 0) continue;
+                string[] cols = line.Split(',');
+                Assert.AreEqual(headerCols.Length, cols.Length,
+                    $"TechInfo.csv {i + 1}번째 줄 컬럼 수가 헤더와 다르다 (Label/Hint에 콤마?): \"{line}\"");
             }
 
             foreach (KeyValuePair<TechId, List<(int Level, int Cost)>> entry in levelCostById)
