@@ -1,4 +1,3 @@
-// Assets/Scripts/Economy/TechLogic.cs
 using System.Collections.Generic;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
@@ -19,6 +18,8 @@ namespace CTC.Runtime.Economy
 
         public void NetworkSerialize<T>(BufferSerializer<T> _s) where T : IReaderWriter
         {
+            // enum이 아니라 int로 태운다 — 와이어 폭 4바이트 고정, TechId 밑 타입이 바뀌어도 프로토콜 불변.
+            // 이웃 struct(LootEntry 등)는 enum을 직접 넘기지만 여기선 의도적으로 다르게 간다.
             int id = (int)Id;
             _s.SerializeValue(ref id);
             _s.SerializeValue(ref Level);
@@ -121,17 +122,13 @@ namespace CTC.Runtime.Economy
         /// </summary>
         public static TechDeny CanBuy(IReadOnlyList<TechEntry> _owned, TechId _id, RoleId _role, int _cheese, int _slotCap)
         {
-            // 새 테크(미보유)인데 칸이 다 찼으면 — 표에 없는 테크라도 "칸이 없다"가 먼저다.
-            // (표에 없다는 이유로 Unknown을 앞세우면 칸이 찬 상태에서 미래 테크를 미리 안다는 오정보가 된다)
-            bool isNew = LevelOf(_owned, _id) == 0;
-            if (isNew && _owned.Count >= _slotCap) return TechDeny.SlotsFull;
-
+            // 역할 불일치는 행이 있을 때만 판단 가능하니 먼저 본다.
+            // 표에 없는 테크(next 무효)면서 칸이 찼으면 SlotsFull이 불가피 — Unknown보다 앞세운다
+            // (표에 없다는 이유로 Unknown을 앞세우면 칸이 찬 상태에서 미래 테크를 미리 안다는 오정보가 된다).
             TechRow next = NextRow(_owned, _id);
-            if (!next.IsValid)
-            {
-                return MaxLevel(_id) == 0 ? TechDeny.Unknown : TechDeny.MaxLevel;
-            }
-            if (next.Role != _role) return TechDeny.WrongRole;
+            if (next.IsValid && next.Role != _role) return TechDeny.WrongRole;
+            if (LevelOf(_owned, _id) == 0 && _owned.Count >= _slotCap) return TechDeny.SlotsFull;
+            if (!next.IsValid) return MaxLevel(_id) == 0 ? TechDeny.Unknown : TechDeny.MaxLevel;
             if (_cheese < next.Cost) return TechDeny.NotEnough;
             return TechDeny.None;
         }
@@ -145,13 +142,13 @@ namespace CTC.Runtime.Economy
         /// <summary>기획 규칙 3·5 — 쥐만 상점에 가야 한다.</summary>
         public static bool NeedsShopSpot(RoleId _role) => _role == RoleId.Mouse;
 
-        /// <summary>거절 사유 → 토스트 문구. 재화 이름은 역할별.</summary>
-        public static string DenyText(TechDeny _deny, RoleId _role, int _short)
+        /// <summary>거절 사유 → 토스트 문구. 재화 이름은 역할별, 칸 수는 CanBuy에 준 값과 같아야 한다(단일 출처).</summary>
+        public static string DenyText(TechDeny _deny, RoleId _role, int _short, int _slotCap)
         {
             switch (_deny)
             {
                 case TechDeny.MaxLevel: return "이미 만렙";
-                case TechDeny.SlotsFull: return $"칸이 다 찼다 — {Info.InfoManager.Instance.Balance.TechSlotCap}개까지";
+                case TechDeny.SlotsFull: return $"칸이 다 찼다 — {_slotCap}개까지";
                 case TechDeny.NotEnough: return $"{ShopLogic.CurrencyNameOf(_role)} 부족 · {_short} 모자람";
                 case TechDeny.NotInShop: return "상점에서만 살 수 있다";
                 case TechDeny.WrongRole: return "이 역할은 못 산다";

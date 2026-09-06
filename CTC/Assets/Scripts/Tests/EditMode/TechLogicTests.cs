@@ -1,4 +1,3 @@
-// Assets/Scripts/Tests/EditMode/TechLogicTests.cs
 using System.Collections.Generic;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
@@ -21,6 +20,13 @@ namespace CTC.Tests
             IReadOnlyList<TechId> c = TechLogic.Catalog(RoleId.Mouse);
             CollectionAssert.AreEqual(
                 new[] { TechId.Gun, TechId.Pepper, TechId.Fortress, TechId.Warehouse, TechId.Dash }, c);
+        }
+
+        [Test]
+        public void Catalog_Cat_IsClawThenStomp()
+        {
+            IReadOnlyList<TechId> c = TechLogic.Catalog(RoleId.Cat);
+            CollectionAssert.AreEqual(new[] { TechId.CatClaw, TechId.CatStomp }, c);
         }
 
         [Test]
@@ -107,7 +113,7 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void IsActive_FortressStickyDash_Only()
+        public void IsActive_FortressWarehouseStickyDash_Only()
         {
             Assert.IsTrue(TechLogic.IsActive(TechId.Fortress));
             Assert.IsTrue(TechLogic.IsActive(TechId.Dash));
@@ -122,6 +128,20 @@ namespace CTC.Tests
         {
             IReadOnlyList<TechId> c = TechLogic.Candidates(RoleId.Mouse, Owned((TechId.Gun, 1), (TechId.Dash, 1)));
             CollectionAssert.AreEqual(new[] { TechId.Pepper, TechId.Fortress, TechId.Warehouse }, c);
+        }
+
+        [Test]
+        public void Candidates_AllOwned_IsEmpty()
+        {
+            // 고양이가 발톱·발구르기를 다 샀으면 후보가 없다 — 핫바가 이 빈 목록에 기대 채울 칸이 없다고 판단한다
+            IReadOnlyList<TechId> c = TechLogic.Candidates(RoleId.Cat, Owned((TechId.CatClaw, 1), (TechId.CatStomp, 1)));
+            CollectionAssert.IsEmpty(c);
+        }
+
+        [Test]
+        public void RowOf_Level0_IsInvalid()
+        {
+            Assert.IsFalse(TechLogic.RowOf(TechId.Gun, 0).IsValid);
         }
 
         [Test]
