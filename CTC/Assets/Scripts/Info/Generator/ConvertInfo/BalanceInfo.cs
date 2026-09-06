@@ -75,6 +75,12 @@ namespace CTC.Runtime.Info
         public int PepperDotDamage;
         public float PepperDotSeconds;
         public int PepperDotMaxStacks;
+        public int TechSlotCap;
+        public int FortressPlaceCost;
+        public int ShopSpotCount;
+        public float ShopSpotRadius;
+        public float ShopSpotMinGap;
+        public float ShopBuySoundMeters;
     }
 
     public partial class InfoManager

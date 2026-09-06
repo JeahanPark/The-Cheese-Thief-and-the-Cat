@@ -10,6 +10,7 @@ namespace CTC.Runtime.Info
             BalanceInfoList = LoadInfo<BalanceInfo>();
             PlayerInfoList = LoadInfo<PlayerInfo>();
             ShopInfoList = LoadInfo<ShopInfo>();
+            TechInfoList = LoadInfo<TechInfo>();
             WeaponInfoList = LoadInfo<WeaponInfo>();
         }
     }

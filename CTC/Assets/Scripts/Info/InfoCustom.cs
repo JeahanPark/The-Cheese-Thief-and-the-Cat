@@ -47,5 +47,8 @@ namespace CTC.Runtime.Info
         }
 
         public IReadOnlyList<ShopInfo> Shop => ShopInfoList;
+
+        /// <summary>테크 표 전체 — 역할·레벨 필터는 나중에 만들 TechLogic이 한다.</summary>
+        public IReadOnlyList<TechInfo> Tech => TechInfoList;
     }
 }
