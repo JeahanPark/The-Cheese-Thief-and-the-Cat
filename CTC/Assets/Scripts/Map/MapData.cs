@@ -10,6 +10,8 @@ namespace CTC.Runtime.Map
         public string Id;
         public Vector2 Center;
         public Vector2 Size;
+        /// <summary>방 모듈 프리팹 id(2026-09-07). 비면 큐브 벽(옛 경로). <see cref="RoomModuleCatalog"/> 참조.</summary>
+        public string ModuleId;
 
         public Vector2 Min => Center - Size * 0.5f;
         public Vector2 Max => Center + Size * 0.5f;

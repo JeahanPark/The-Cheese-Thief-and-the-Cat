@@ -80,6 +80,9 @@ namespace CTC.Editor
             // 치즈 원반 리스킨 — 자체 쐐기 메시 재사용(없으면 원반만)
             SetRef(mapBuilder, "m_CheeseVisualMesh", PropAssets.LoadMesh(PropAssets.CHEESE_MESH));
             SetRef(mapBuilder, "m_CheeseVisualMaterial", PropAssets.LoadMaterial(PropAssets.CHEESE_MATERIAL));
+            // 방 모듈(2026-09-07) — 카탈로그가 없으면 큐브 벽 그대로
+            SetRef(mapBuilder, "m_ModuleCatalog",
+                AssetDatabase.LoadAssetAtPath<CTC.Runtime.Map.RoomModuleCatalog>(MapAssets.MODULE_CATALOG));
             SetRef(mapBuilder, "m_DiscHighMaterial", GridboxMaterial("Red"));      // 기능색 — 유지
             SetRef(mapBuilder, "m_DiscMidMaterial", GridboxMaterial("Orange"));
             SetRef(mapBuilder, "m_DiscLowMaterial", GridboxMaterial("Yellow"));

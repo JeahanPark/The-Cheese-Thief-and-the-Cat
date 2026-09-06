@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f31a2e3990b04bb429669273b94ab4fd, type: 3}
+  m_Name: RoomModuleCatalog
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.RoomModuleCatalog
+  m_Entries:
+  - ModuleId: Big_Pantry01
+    Prefab: {fileID: 7423012430660918777, guid: 90a681b41e5f29447b50007f725c27c2, type: 3}
+    Footprint: Big
+    Role: 0
+  - ModuleId: Small_Cellar01
+    Prefab: {fileID: 8794197921536737133, guid: 1869ab644fb1a9848a41e29719cc607b, type: 3}
+    Footprint: Small
+    Role: 0
+  m_DoorFrame: {fileID: 6853444624671187799, guid: 8a069d5d78df7b54bbe1ffbc1b3cab86, type: 3}
+  m_WallPlug: {fileID: 6934886567580102766, guid: 9adb691080182a7468957eed786b3302, type: 3}

@@ -46,6 +46,9 @@ namespace CTC.Runtime.Map
         [SerializeField] private Mesh m_CheeseVisualMesh;
         [SerializeField] private Material m_CheeseVisualMaterial;
 
+        // 방 모듈 카탈로그(2026-09-07). 없거나 RoomRect.ModuleId가 비면 큐브 벽(옛 경로).
+        [SerializeField] private RoomModuleCatalog m_ModuleCatalog;
+
         private Material BoundaryMat => m_BoundaryMaterial != null ? m_BoundaryMaterial : m_WallMaterial;
         private Material CorridorWallMat => m_CorridorWallMaterial != null ? m_CorridorWallMaterial : m_WallMaterial;
 
@@ -239,7 +242,10 @@ namespace CTC.Runtime.Map
         {
             // 방: 바닥 + 통로 접점만 개방한 4면 벽
             foreach (RoomRect r in _layout.Rooms)
-                BuildRoomWalls(r, _layout.Corridors);
+            {
+                // 모듈 프리팹(2026-09-07) — 카탈로그에 없으면 큐브 벽으로 후퇴
+                if (!BuildRoomModule(r, _layout.Corridors)) BuildRoomWalls(r, _layout.Corridors);
+            }
 
             // 통로(미로 포함): 중심선 세그먼트마다 폭만큼 바닥 + 양측 낮은 벽(접합부 개방)
             foreach (CorridorSeg c in _layout.Corridors)
@@ -251,6 +257,44 @@ namespace CTC.Runtime.Map
                 AddEndCapIfDeadEnd(c, c.From, _layout.Rooms, _layout.Corridors);
                 AddEndCapIfDeadEnd(c, c.To, _layout.Rooms, _layout.Corridors);
             }
+        }
+
+        /// <summary>
+        /// 모듈 프리팹으로 방을 세운다(2026-09-07). 카탈로그에 없으면 false — 큐브로 후퇴.
+        /// 4변의 DoorSocket에 복도 연결 여부로 문틀/막벽을 꽂는다. 모듈 안 `Wall_*`·`Obstacle_*`
+        /// 박스는 `NavGridBaker`가 이름으로 스탬프하므로 여기서 격자를 따로 손대지 않는다.
+        /// </summary>
+        private bool BuildRoomModule(RoomRect _r, IReadOnlyList<CorridorSeg> _corridors)
+        {
+            if (m_ModuleCatalog == null || string.IsNullOrEmpty(_r.ModuleId)) return false;
+            if (!m_ModuleCatalog.TryGet(_r.ModuleId, out GameObject prefab)) return false;
+
+            GameObject module = Instantiate(
+                prefab, new Vector3(_r.Center.x, 0f, _r.Center.y), Quaternion.identity, m_Root.transform);
+            module.name = $"Module_{_r.Id}_{_r.ModuleId}";
+
+            bool[] doors = RoomModuleLogic.DoorSides(_r, _corridors);
+            foreach (RoomModuleSocket socket in module.GetComponentsInChildren<RoomModuleSocket>(true))
+            {
+                if (socket.Kind != RoomModuleSocketKind.Door) continue;
+                int side = socket.Index;
+                if (side < 0 || side > 3) continue;
+
+                GameObject piece = doors[side] ? m_ModuleCatalog.DoorFrame : m_ModuleCatalog.WallPlug;
+                if (piece == null) continue;
+                GameObject go = Instantiate(piece, socket.transform.position, socket.transform.rotation, module.transform);
+                go.name = (doors[side] ? "DoorFrame_" : "Wall_Plug_") + _r.Id + "_" + side;
+            }
+            return true;
+        }
+
+        private static bool InsideModuleRoom(MapLayout _layout, Vector2 _pos)
+        {
+            foreach (RoomRect r in _layout.Rooms)
+            {
+                if (!string.IsNullOrEmpty(r.ModuleId) && r.Contains(_pos)) return true;
+            }
+            return false;
         }
 
         private void BuildRoomWalls(RoomRect _r, IReadOnlyList<CorridorSeg> _corridors)
@@ -427,6 +471,7 @@ namespace CTC.Runtime.Map
 
             foreach (ObstaclePlacement o in _layout.Obstacles)
             {
+                if (InsideModuleRoom(_layout, o.Pos)) continue;   // 모듈은 제 가구로 시야를 끊는다(2026-09-07)
                 AddBox(root, m_WallMaterial, "Obstacle",
                     new Vector3(o.Pos.x, OBSTACLE_HEIGHT * 0.5f, o.Pos.y),
                     new Vector3(o.Size.x, OBSTACLE_HEIGHT, o.Size.y));

@@ -24,6 +24,14 @@ namespace CTC.Editor
         public const string ROOM_WALL_MAT = MAT_DIR + "/M_MapRoomWall.mat";
         public const string CORRIDOR_WALL_MAT = MAT_DIR + "/M_MapCorridorWall.mat";
 
+        // ── 방 모듈(2026-09-07) — 굽는 쪽(RoomModuleBuilder)과 배선(SceneComposer)·풀 빌더가 같이 본다 ──
+        public const string MODULE_DIR = "Assets/Prefabs/Maps/Modules";
+        public const string MODULE_CATALOG = "Assets/Prefabs/Maps/RoomModuleCatalog.asset";
+        public const string DOOR_FRAME_PREFAB = MODULE_DIR + "/DoorFrame.prefab";
+        public const string WALL_PLUG_PREFAB = MODULE_DIR + "/WallPlug.prefab";
+        public const string MODULE_BIG_PANTRY01 = MODULE_DIR + "/Module_Big_Pantry01.prefab";
+        public const string MODULE_SMALL_CELLAR01 = MODULE_DIR + "/Module_Small_Cellar01.prefab";
+
         // ── 팬트리 가구(Poly Universal Pack 선별 임포트, 2026-08-31) ──
         private const string PACK = "Assets/polyperfect/Poly Universal Pack/- Prefabs";
 

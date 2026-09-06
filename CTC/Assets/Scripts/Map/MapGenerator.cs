@@ -19,8 +19,9 @@ namespace CTC.Runtime.Map
         {
             public readonly string Id; public readonly Vector2 Center, Size;
             public readonly Tag Tag; public readonly bool Always;
-            public RoomOption(string id, Vector2 c, Vector2 s, Tag t, bool a)
-            { Id = id; Center = c; Size = s; Tag = t; Always = a; }
+            public readonly string ModuleId;   // 방 모듈(2026-09-07) — 비면 큐브 벽
+            public RoomOption(string id, Vector2 c, Vector2 s, Tag t, bool a, string moduleId = "")
+            { Id = id; Center = c; Size = s; Tag = t; Always = a; ModuleId = moduleId ?? ""; }
         }
         public readonly struct CorridorOption
         {
@@ -106,7 +107,7 @@ namespace CTC.Runtime.Map
             var chosenIds = chosen.Select(r => r.Id).ToHashSet();
 
             var result = new LayoutResult { Seed = _seed };
-            result.Rooms = chosen.Select(r => new RoomRect { Id = r.Id, Center = r.Center, Size = r.Size }).ToList();
+            result.Rooms = chosen.Select(r => new RoomRect { Id = r.Id, Center = r.Center, Size = r.Size, ModuleId = r.ModuleId }).ToList();
 
             // 2. 통로 — 양 끝 방이 모두 선택됐으면 채택
             foreach (var c in _pool.Corridors)

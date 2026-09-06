@@ -26,21 +26,25 @@ namespace CTC.Editor
         private const float CELL = 17f;              // 칸 간격(m) — 방 사이 간격이 통로 길이가 된다
         private const float CORRIDOR_WIDTH = 3.0f;   // 3인칭 카메라·스프링암 여유
         private const float HALF_EXTENT = 60f;       // 120 ÷ 2
-        private const float JITTER = 0.75f;          // 방 중심 흔들기 — 격자 티를 지운다
+        // 지터 0(2026-09-07): 방 모듈의 문 소켓이 변 한가운데라 방 중심이 흔들리면 복도가 소켓을 빗나간다.
+        // 격자 티는 지터가 아니라 모듈 내부 차이로 지운다(REPO 방식).
+        private const float JITTER = 0f;
         private const float CHEESE_RADIUS = 2f;
         private const int CHEESE_SETS = 2;           // 등급 1~7을 2벌 = 14지점
         private const int FORTRESS_COUNT = 8;        // 쥐 최대 8
         private const int EXTRA_EDGE_PERCENT = 40;   // 신장 트리에 더할 여분 간선 비율
         private const int BUILD_SEED = 20260810;     // 툴 자체의 시드 — 고정이라 결과가 재현된다
 
-        // 방 크기 후보. 칸 간격 17에서 최대 12를 써도 이웃과 3.5m 이상 벌어져 통로가 들어간다.
-        private static readonly float[] WIDTHS = { 10f, 12f };
-        private static readonly float[] HEIGHTS = { 9f, 11f };
+        // 방 크기는 모듈 발자국 2종(2026-09-07) — 큰방 12×11 · 작은방 10×9. 칸 간격 17이라 12를 써도 통로 5m가 남는다.
 
         [MenuItem("Tools/CTC/Build Large Map Pool")]
         public static void Build()
         {
             var rng = new System.Random(BUILD_SEED);
+
+            // 방 모듈 카탈로그 — 없으면 ModuleId가 비어 큐브 벽으로 굽는다(먼저 Tools/CTC/Map/Build Room Modules)
+            var catalog = AssetDatabase.LoadAssetAtPath<RoomModuleCatalog>(MapAssets.MODULE_CATALOG);
+            if (catalog == null) Debug.LogWarning("[LargeMapPool] 방 모듈 카탈로그 없음 — 큐브 벽으로 굽는다: " + MapAssets.MODULE_CATALOG);
 
             // ---- 1. 방 ----
             var rooms = new List<Pool.RoomCandidate>();
@@ -59,8 +63,8 @@ namespace CTC.Editor
                     // 요새 방은 크기를 고정한다 — 스폰 자리와 치즈 이격을 계산으로 보장하려면 변수를 줄여야 한다
                     bool isFortressRoom = fortressCells.Contains((i, j));
                     var size = isFortressRoom
-                        ? new Vector2(12f, 11f)
-                        : new Vector2(WIDTHS[rng.Next(WIDTHS.Length)], HEIGHTS[rng.Next(HEIGHTS.Length)]);
+                        ? RoomModuleLogic.BIG_SIZE
+                        : rng.Next(2) == 0 ? RoomModuleLogic.BIG_SIZE : RoomModuleLogic.SMALL_SIZE;
 
                     var center = new Vector2(
                         (i - (GRID - 1) * 0.5f) * CELL + Jitter(rng),
@@ -80,6 +84,7 @@ namespace CTC.Editor
                         Size = size,
                         Tag = TagOf(i, j),
                         AlwaysInclude = true,   // 격자는 통째로 쓴다 — 빼면 통로가 끊긴다
+                        ModuleId = ModuleFor(catalog, size, index),
                     });
                 }
             }
@@ -128,6 +133,15 @@ namespace CTC.Editor
         }
 
         private static float Jitter(System.Random _rng) => (float)(_rng.NextDouble() * 2.0 - 1.0) * JITTER;
+
+        // 발자국이 맞는 Normal 모듈 중 하나(시드 결정적). 1단계는 요새방·중앙도 Normal을 쓴다 — 역할별은 2단계.
+        private static string ModuleFor(RoomModuleCatalog _catalog, Vector2 _size, int _index)
+        {
+            if (_catalog == null) return "";
+            string footprint = RoomModuleLogic.FootprintKey(_size);
+            if (string.IsNullOrEmpty(footprint)) return "";
+            return RoomModuleLogic.PickModule(_catalog.IdsFor(footprint, RoomModuleRole.Normal), _index, BUILD_SEED);
+        }
 
         // 바깥 테두리를 한 바퀴 돌며 8칸을 고르게 집는다 — 쥐 8명이 맵 전체에 흩어져 시작한다.
         private static HashSet<(int, int)> FortressCells()

@@ -17,7 +17,8 @@ namespace CTC.Runtime.Map
             public Vector2 Center;
             public Vector2 Size;
             public RoomTag Tag;
-            public bool AlwaysInclude;   // R3·R5
+            public bool AlwaysInclude;   // R3, R5
+            public string ModuleId;      // 방 모듈(2026-09-07) — 비면 큐브 벽
         }
 
         [System.Serializable]

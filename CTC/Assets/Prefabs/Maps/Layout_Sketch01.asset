@@ -22,21 +22,27 @@ MonoBehaviour:
   - Id: R3
     Center: {x: 0, y: 1.5}
     Size: {x: 7, y: 9}
+    ModuleId: 
   - Id: R5
     Center: {x: -10.5, y: -10.5}
     Size: {x: 7, y: 8}
+    ModuleId: 
   - Id: R7
     Center: {x: 0, y: 12}
     Size: {x: 5, y: 4}
+    ModuleId: 
   - Id: R4
     Center: {x: 11, y: 2}
     Size: {x: 5.5, y: 7}
+    ModuleId: 
   - Id: R2
     Center: {x: -12.5, y: 3}
     Size: {x: 4, y: 6}
+    ModuleId: 
   - Id: R1
     Center: {x: 10.5, y: 12}
     Size: {x: 4.5, y: 5.5}
+    ModuleId: 
   m_Corridors:
   - From: {x: -3.5, y: 2.5}
     To: {x: -10.5, y: 2.5}

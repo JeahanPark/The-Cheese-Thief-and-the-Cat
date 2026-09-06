@@ -95,7 +95,7 @@ namespace CTC.Editor
         public static MapGenerator.PoolData ToDto(Pool _p)
         {
             var rooms = _p.Rooms.Select(r => new MapGenerator.RoomOption(
-                r.Id, r.Center, r.Size, (MapGenerator.Tag)(int)r.Tag, r.AlwaysInclude)).ToList();
+                r.Id, r.Center, r.Size, (MapGenerator.Tag)(int)r.Tag, r.AlwaysInclude, r.ModuleId ?? "")).ToList();
             var corr = _p.Corridors.Select(c => new MapGenerator.CorridorOption(
                 c.Id, c.RoomA, c.RoomB, c.Waypoints.ToArray(), c.Width)).ToList();
             var cheese = _p.CheeseSlots.Select(c => new MapGenerator.CheeseSlotOption(
