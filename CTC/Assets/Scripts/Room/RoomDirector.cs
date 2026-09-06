@@ -78,15 +78,17 @@ namespace CTC.Runtime.Room
             if (nm == null || !nm.IsServer || m_Session == null) return;
             if (!m_Session.CanStart || m_Handing) return;
 
+            // 봇 자리도 후보다(2026-09-06). 사람만 뽑으면 혼자+봇일 때 사람이 늘 고양이였다.
             List<ulong> members = m_Session.SnapshotClientIds();
+            List<ulong> pool = CatDrawLogic.WithBots(members, m_Session.BotCount);
             ulong cat = CatDrawLogic.Pick(
-                members, MatchHandoff.PreviousCat,
-                Random.Range(0, members.Count * 7 + 1), nm.LocalClientId);
+                pool, MatchHandoff.PreviousCat,
+                Random.Range(0, pool.Count * 7 + 1), nm.LocalClientId);
 
             if (!m_Session.ServerBeginStart(cat)) return;
 
-            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat, m_Session.BotCount);
-            GameDebug.Log($"[Room] 고양이 추첨 → client={cat} (후보 {members.Count}명)");
+            Handoff(members, cat);
+            GameDebug.Log($"[Room] 고양이 추첨 → client={cat} (후보 {pool.Count}명, 봇 {m_Session.BotCount})");
 
             m_Handing = true;
             LoadGameScene().Forget();
@@ -104,14 +106,22 @@ namespace CTC.Runtime.Room
             if (nm == null || !nm.IsServer || m_Session == null || m_Handing) return;
 
             List<ulong> members = m_Session.SnapshotClientIds();
-            ulong cat = CatDrawLogic.Pick(members, MatchHandoff.PreviousCat, 0, nm.LocalClientId);
+            List<ulong> pool = CatDrawLogic.WithBots(members, m_Session.BotCount);
+            ulong cat = CatDrawLogic.Pick(pool, MatchHandoff.PreviousCat, 0, nm.LocalClientId);
             if (!m_Session.ServerBeginStart(cat)) return;
 
-            MatchHandoff.Set(CatDrawLogic.RoleTable(members, cat), m_Session.MapIndex, cat, m_Session.BotCount);
+            Handoff(members, cat);
             m_Handing = true;
             LoadGameScene().Forget();
         }
 #endif
+
+        /// <summary>역할표는 사람만, 봇은 (쥐, 고양이) 수로 넘긴다 — 봇이 걸렸으면 봇 고양이 1.</summary>
+        private void Handoff(List<ulong> _members, ulong _cat)
+        {
+            (int mice, int cats) = CatDrawLogic.BotSplit(m_Session.BotCount, _cat);
+            MatchHandoff.Set(CatDrawLogic.RoleTable(_members, _cat), m_Session.MapIndex, _cat, mice, cats);
+        }
 
         // 결과가 화면에 뜰 시간을 준 뒤 넘긴다. **NGO의 SceneManager로만** 넘긴다 —
         // UnityEngine.SceneManagement를 직접 부르면 클라이언트가 따라오지 않는다.

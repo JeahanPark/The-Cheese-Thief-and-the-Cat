@@ -95,21 +95,22 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            // 봇은 서버 소유라 IsOwner가 true다 — 사람의 몸만 입력을 읽는다(2026-09-01).
-            if (!LocalControl.Mine(this)) return;
+            // 내 몸이거나 서버가 조종하는 봇만 움직인다. 봇은 서버 소유라 IsOwner가 true인데
+            // Mine으로만 막으면 봇이 한 발도 못 뗀다(2026-09-06 실측: 길은 있는데 이동 0m).
+            if (!LocalControl.Drives(this)) return;
 
-            // 프로젝트가 신형 Input System 전용(activeInputHandler=1)이라 레거시 Input 사용 불가
-            var kb = Keyboard.current;
-            if (kb == null) return;
-
+            // **키보드는 사람의 몸만 읽는다**(2026-09-01) — 안 그러면 내 WASD를 봇이 같이 먹는다.
             // 채팅 타이핑·옵션 창 중에는 WASD가 이동으로 새면 안 된다. 중력은 계속 먹어야 하므로
             // early-return이 아니라 입력만 0으로 둔다(공중에서 채팅 열면 떠 있게 되는 걸 막는다).
-            // "입력을 무시하는 이유"가 한 줄에 모이게 둔다.
-            bool blocked = Core.UiFocus.BlocksGameplay;
-            float h = blocked ? 0f : (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
+            float h = 0f, v = 0f;
+            var kb = Keyboard.current;   // 신형 Input System 전용(activeInputHandler=1)
+            if (LocalControl.Mine(this) && kb != null && !Core.UiFocus.BlocksGameplay)
+            {
+                h = (kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
                     - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f);
-            float v = blocked ? 0f : (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
+                v = (kb.wKey.isPressed || kb.upArrowKey.isPressed ? 1f : 0f)
                     - (kb.sKey.isPressed || kb.downArrowKey.isPressed ? 1f : 0f);
+            }
 
             float camYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : 0f;
             Vector3 dir = MovementInput.ToWorldDirection(h, v, camYaw);

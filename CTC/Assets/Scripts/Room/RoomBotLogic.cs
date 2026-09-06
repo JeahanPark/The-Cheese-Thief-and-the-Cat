@@ -4,7 +4,8 @@ namespace CTC.Runtime.Room
 {
     /// <summary>
     /// 대기실 봇 자리의 순수 판정(2026-09-01) — 혼자서도 판을 열어 보려고 만든다.
-    /// 봇은 **쥐만** 채운다: 고양이는 추첨으로 사람에게 가야 하고, 봇 고양이는 실험실(BotLab)의 몫이다.
+    /// 봇도 **추첨 후보**다(2026-09-06): 봇 자리가 걸리면 그 봇이 고양이, 사람은 전원 쥐.
+    /// 처음엔 쥐만 채웠는데, 혼자+봇이면 사람이 무조건 고양이라 쥐 플레이를 못 봤다.
     /// </summary>
     public static class RoomBotLogic
     {
@@ -27,7 +28,7 @@ namespace CTC.Runtime.Room
             int bots = Mathf.Max(0, _botCount);
             return bots == 0
                 ? "봇 없음"
-                : $"봇 쥐 {bots} · 총 {_humanCount + bots}명으로 시작";
+                : $"봇 {bots} · 총 {_humanCount + bots}명으로 시작 (고양이는 봇 포함 추첨)";
         }
     }
 }

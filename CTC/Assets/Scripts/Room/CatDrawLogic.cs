@@ -14,6 +14,32 @@ namespace CTC.Runtime.Room
         public const int REPEAT_GUARD_MIN_PLAYERS = 3;
 
         /// <summary>
+        /// 봇 자리의 가짜 clientId(2026-09-06). 봇은 clientId가 없으므로 후보 목록에 이 값을
+        /// 봇 수만큼 넣어 사람과 같은 확률로 뽑히게 한다. 실제 NGO clientId와 겹치지 않는다.
+        /// 직전 고양이가 봇이면 다음 판은 봇 전원이 후보에서 빠진다 — 봇은 한 자리로 본다.
+        /// </summary>
+        public const ulong BOT_CAT = ulong.MaxValue;
+
+        public static bool IsBot(ulong _cat) => _cat == BOT_CAT;
+
+        /// <summary>사람 목록 뒤에 봇 자리를 봇 수만큼 붙인 후보 풀.</summary>
+        public static List<ulong> WithBots(IReadOnlyList<ulong> _members, int _botCount)
+        {
+            var pool = new List<ulong>(_members.Count + System.Math.Max(0, _botCount));
+            pool.AddRange(_members);
+            for (int i = 0; i < _botCount; i++) pool.Add(BOT_CAT);
+            return pool;
+        }
+
+        /// <summary>봇 수를 (쥐, 고양이)로 나눈다 — 봇이 걸렸으면 한 자리가 고양이가 된다.</summary>
+        public static (int mice, int cats) BotSplit(int _botCount, ulong _cat)
+        {
+            int bots = System.Math.Max(0, _botCount);
+            if (bots == 0 || !IsBot(_cat)) return (bots, 0);
+            return (bots - 1, 1);
+        }
+
+        /// <summary>
         /// 후보 목록을 만든다 — 직전 판의 고양이는 뺀다(3명 이상일 때).
         /// 2명뿐이면 빼는 순간 남는 사람이 하나라 "무작위"가 아니게 되므로 그대로 둔다.
         /// </summary>
@@ -47,7 +73,10 @@ namespace CTC.Runtime.Room
             return candidates[index];
         }
 
-        /// <summary>뽑힌 고양이를 빼고 전원을 쥐로 — 인게임에 넘길 역할표.</summary>
+        /// <summary>
+        /// 뽑힌 고양이를 빼고 전원을 쥐로 — 인게임에 넘길 역할표.
+        /// **사람 목록만 넣는다**(봇 자리 제외). 고양이가 봇이면 사람은 전원 쥐가 된다.
+        /// </summary>
         public static Dictionary<ulong, Lobby.RoleId> RoleTable(IReadOnlyList<ulong> _members, ulong _cat)
         {
             var table = new Dictionary<ulong, Lobby.RoleId>(_members.Count);

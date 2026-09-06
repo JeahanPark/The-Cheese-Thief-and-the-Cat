@@ -87,5 +87,57 @@ namespace CTC.Tests
             Assert.AreEqual(RoleId.Mouse, table[2UL]);
             Assert.AreEqual(RoleId.Mouse, table[3UL]);
         }
+        // ---- 봇 자리 (2026-09-06) — 혼자+봇이면 사람이 늘 고양이였다. 봇도 후보다. ----
+
+        [Test]
+        public void WithBots_AppendsOneSeatPerBot()
+        {
+            List<ulong> pool = CatDrawLogic.WithBots(Members(1), 2);
+            CollectionAssert.AreEqual(
+                new ulong[] { 1, CatDrawLogic.BOT_CAT, CatDrawLogic.BOT_CAT }, pool);
+        }
+
+        [Test]
+        public void WithBots_Zero_KeepsHumansOnly()
+        {
+            CollectionAssert.AreEqual(new ulong[] { 1, 2 }, CatDrawLogic.WithBots(Members(1, 2), 0));
+        }
+
+        [Test]
+        public void Pick_SoloWithBots_CanPickBot()
+        {
+            List<ulong> pool = CatDrawLogic.WithBots(Members(1), 2);
+            bool botPicked = false;
+            for (int roll = 0; roll < 3; roll++)
+            {
+                if (CatDrawLogic.IsBot(CatDrawLogic.Pick(pool, 0UL, roll, 1UL))) botPicked = true;
+            }
+            Assert.IsTrue(botPicked);
+        }
+
+        [Test]
+        public void IsBot_OnlyForBotSeat()
+        {
+            Assert.IsTrue(CatDrawLogic.IsBot(CatDrawLogic.BOT_CAT));
+            Assert.IsFalse(CatDrawLogic.IsBot(0UL));
+        }
+
+        /// <summary>봇이 걸리면 사람은 전원 쥐 — 역할표에 봇 자리는 안 들어간다.</summary>
+        [Test]
+        public void RoleTable_BotCat_EveryHumanIsMouse()
+        {
+            Dictionary<ulong, RoleId> table = CatDrawLogic.RoleTable(Members(1, 2), CatDrawLogic.BOT_CAT);
+            Assert.AreEqual(2, table.Count);
+            Assert.AreEqual(RoleId.Mouse, table[1UL]);
+            Assert.AreEqual(RoleId.Mouse, table[2UL]);
+        }
+
+        [Test]
+        public void BotSplit_BotCat_TakesOneSeatFromMice()
+        {
+            Assert.AreEqual((2, 1), CatDrawLogic.BotSplit(3, CatDrawLogic.BOT_CAT));
+            Assert.AreEqual((3, 0), CatDrawLogic.BotSplit(3, 5UL));
+            Assert.AreEqual((0, 0), CatDrawLogic.BotSplit(0, CatDrawLogic.BOT_CAT));
+        }
     }
 }

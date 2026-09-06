@@ -13,12 +13,22 @@ namespace CTC.Runtime.Player
     /// </summary>
     public static class LocalControl
     {
+        /// <summary>내가 조종하는 몸 — 키보드·마우스를 읽어도 되는 유일한 경우.</summary>
         public static bool Mine(NetworkBehaviour _behaviour)
         {
-            return _behaviour != null
-                   && _behaviour.IsOwner
-                   && _behaviour.NetworkObject != null
-                   && _behaviour.NetworkObject.IsPlayerObject;
+            if (_behaviour == null || _behaviour.NetworkObject == null) return false;
+            return LocalControlLogic.Mine(_behaviour.IsOwner, _behaviour.NetworkObject.IsPlayerObject);
+        }
+
+        /// <summary>
+        /// 이 프로세스가 몸을 **움직여야** 하는가 — 내 몸, 또는 서버가 조종하는 봇(2026-09-06).
+        /// 이동·대시처럼 "입력이 아니라 몸을 미는" Update는 이걸로 막고, 입력 읽기만 <see cref="Mine"/>로 막는다.
+        /// </summary>
+        public static bool Drives(NetworkBehaviour _behaviour)
+        {
+            if (_behaviour == null || _behaviour.NetworkObject == null) return false;
+            return LocalControlLogic.Drives(
+                _behaviour.IsOwner, _behaviour.NetworkObject.IsPlayerObject, _behaviour.IsServer);
         }
     }
 }

@@ -58,7 +58,8 @@ namespace CTC.Runtime.Player
 
         private void Update()
         {
-            if (!LocalControl.Mine(this)) return;
+            // 대시 이동은 봇 몸에서도 돌아야 한다(서버가 조종) — 입력만 사람의 몸에서 읽는다(2026-09-06).
+            if (!LocalControl.Drives(this)) return;
 
             if (m_DashRemainingSeconds > 0f)
             {
@@ -68,6 +69,7 @@ namespace CTC.Runtime.Player
                 return;
             }
 
+            if (!LocalControl.Mine(this)) return;
             if (!m_Owned.Value) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다

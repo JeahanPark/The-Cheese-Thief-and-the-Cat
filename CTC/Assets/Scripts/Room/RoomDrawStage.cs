@@ -83,7 +83,8 @@ namespace CTC.Runtime.Room
 
             int count = m_Session.MemberCount;
             int target = m_Session.IndexOf(_cat);
-            if (count <= 0 || target < 0)
+            bool bot = CatDrawLogic.IsBot(_cat);
+            if (!bot && (count <= 0 || target < 0))
             {
                 // 목록이 흔들렸다 — 연출을 억지로 돌리기보다 결과만 띄운다.
                 ShowCard(_cat);
@@ -93,8 +94,13 @@ namespace CTC.Runtime.Room
             Dim();
             await UniTask.Delay(Milli(DIM_SECONDS), cancellationToken: cancel);
 
-            await Roulette(count, target, cancel);
-            await Land(target, cancel);
+            // 봇 고양이는 세워 둔 몸이 없어 비출 자리가 없다(2026-09-06) — 룰렛을 건너뛰고 카드만.
+            if (!bot)
+            {
+                await Roulette(count, target, cancel);
+                await Land(target, cancel);
+            }
+            else await UniTask.Delay(Milli(ROULETTE_SECONDS + LAND_SECONDS), cancellationToken: cancel);
 
             ShowCard(_cat);
             await UniTask.Delay(Milli(HOLD_SECONDS), cancellationToken: cancel);
@@ -175,7 +181,7 @@ namespace CTC.Runtime.Room
             int idx = m_Session != null ? m_Session.IndexOf(_cat) : -1;
             string who = idx >= 0
                 ? RoomLogic.DisplayName(m_Session.GetMember(idx).Name.ToString(), idx)
-                : "누군가";
+                : CatDrawLogic.IsBot(_cat) ? "봇 고양이" : "누군가";
 
             if (m_CardTitle != null)
                 m_CardTitle.text = mine ? "고양이는 바로 당신" : "고양이가 정해졌다";
