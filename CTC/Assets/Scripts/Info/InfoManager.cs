@@ -16,7 +16,7 @@ namespace CTC.Runtime.Info
     /// CTC는 배포용 빌드를 테스터에게 주므로 `Resources.Load<TextAsset>`로 읽는다 —
     /// 에디터·빌드·EditMode 테스트에서 모두 같은 경로로 동작한다.
     ///
-    /// 로드는 **동기**다. 데이터가 4개 표뿐이고, 어떤 게임플레이 코드보다 먼저 값이 확정돼야 한다
+    /// 로드는 **동기**다. 데이터가 5개 표뿐이고, 어떤 게임플레이 코드보다 먼저 값이 확정돼야 한다
     /// (비동기로 두면 첫 프레임에 가격이 0인 상점이 잠깐 보인다).
     /// </summary>
     public partial class InfoManager
