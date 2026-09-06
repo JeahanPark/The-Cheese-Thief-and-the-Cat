@@ -73,6 +73,7 @@ namespace CTC.Editor
                 root.AddComponent<LocalPlayerPublisher>(); // 스폰/디스폰을 LocalPlayerBinder에 알린다
 
                 var shop = root.AddComponent<ShopController>();
+                root.AddComponent<TechSlots>(); // 테크 v3 — 보유 테크·레벨(NetworkList)
                 SetRef(shop, "m_FortressPrefab", _fortressPrefab);
                 // 요새가 내 위치 중심에 서면 겹친 남의 몸을 서버가 밀어낸다 — 소유자 RPC 수신처
                 root.AddComponent<BodyPush>();
