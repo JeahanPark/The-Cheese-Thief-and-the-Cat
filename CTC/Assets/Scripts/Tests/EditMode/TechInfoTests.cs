@@ -36,6 +36,9 @@ namespace CTC.Tests
             Assert.AreEqual(5, b.TechSlotCap);
             // 즉발 방패 값 유지(2026-08-15) — 요새 설치 1회 비용
             Assert.AreEqual(80, b.FortressPlaceCost);
+            // 창고 설치 1회 비용 — 설치권 50과 합쳐 첫 창고가 옛 값(150) 그대로가 되게 잡은 수다.
+            // 재설치가 공짜면 고양이가 창고를 째도 응징이 안 된다(2026-09-07).
+            Assert.AreEqual(100, b.WarehousePlaceCost);
             // 한 곳이면 고양이가 지킨다 — 상점 스팟은 최소 4곳
             Assert.AreEqual(4, b.ShopSpotCount);
             // 요새 풋프린트(2.4)보다 살짝 큼 — 겹쳐 놓지 못하게

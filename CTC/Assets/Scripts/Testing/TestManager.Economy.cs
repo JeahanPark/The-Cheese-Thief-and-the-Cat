@@ -37,23 +37,53 @@ namespace CTC.Runtime.Testing
             GameDebug.Log("[TestManager] TestGrantCheeseAll → 전 지갑 +1000");
         }
 
+        // ===== 구매 훅 (테크 v3로 이관, 2026-09-07) =====
+        //
+        // **이름은 그대로 둔다** — wesqa 스크립트가 문자열로 부른다. 속만 TechId로 바꿨다.
+        // 옛 상점 항목 ↔ 테크 대응: 새총/기관총 = Gun Lv1/Lv2(두 번째 호출이 Lv2), 후추 탄 = Pepper,
+        // 발톱 강화 = CatClaw, 이속 강화 = CatStomp.
+        //
+        // **전부 로컬 플레이어에만 작동한다.** Buy/Use는 `RequireOwnership` 소유자 RPC라
+        // 남의 몸에서 불러도 서버가 버린다. 클론(다른 클라이언트)을 움직이려면
+        // `MultiplayerQaProbe`의 `TestMp*` 커맨드를 쓴다.
+        //
+        // 상점 자리 규칙은 **면제되지 않는다** — 같은 `ShopController.Buy`를 타므로 상점 밖 쥐는
+        // 서버가 거절한다. 시간 결핍을 건너뛰고 구매만 보려면 `TestWarpToNearestShop`을 먼저 부른다.
+
         /// <summary>로컬 플레이어 구매 — QA용 파라미터리스 래퍼.</summary>
-        public void TestBuySlingshot() => BuyLocal(ShopItemId.Slingshot);
+        public void TestBuySlingshot() => BuyLocal(TechId.Gun);
 
-        public void TestBuyMachineGun() => BuyLocal(ShopItemId.MachineGun);
+        /// <summary>두 번째 Gun 구매 = Lv2(기관총). 새총을 먼저 사 둬야 한다.</summary>
+        public void TestBuyMachineGun() => BuyLocal(TechId.Gun);
 
-        public void TestBuyDash() => BuyLocal(ShopItemId.Dash);
+        public void TestBuyDash() => BuyLocal(TechId.Dash);
 
-        public void TestBuyPepperShot() => BuyLocal(ShopItemId.PepperShot);   // 후추 탄(빌드 심화 v1)
+        public void TestBuyPepperShot() => BuyLocal(TechId.Pepper);   // 후추 탄(빌드 심화 v1)
 
-        public void TestBuyFortress() => BuyLocal(ShopItemId.Fortress);
+        /// <summary>
+        /// 옛 훅은 "요새가 선다"였다 — 테크 v3에서 구매(설치권)와 설치가 갈렸으므로 둘 다 한다.
+        /// 이미 설치권이 있으면 구매는 서버가 만렙으로 거절하고 설치만 남는다.
+        /// </summary>
+        public void TestBuyFortress()
+        {
+            ShopController shop = LocalComponent<ShopController>();
+            TechSlots slots = LocalComponent<TechSlots>();
+            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
 
-        public void TestBuyCatAttack() => BuyLocal(ShopItemId.CatAttack);
+            if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
+            if (shop.CanUse(TechId.Fortress)) shop.Use(TechId.Fortress);
+            GameDebug.Log("[TestManager] TestBuyFortress → 설치권 구매 + 즉발 설치 요청");
+        }
 
-        public void TestBuyCatSpeed() => BuyLocal(ShopItemId.CatSpeed);
+        public void TestBuyCatAttack() => BuyLocal(TechId.CatClaw);
 
-        /// <summary>위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용. 창고만 조준 설치다.</summary>
-        public void TestPlaceWarehouseAt(float _x, float _z) => PlaceLocal(ShopItemId.Warehouse, _x, _z);
+        public void TestBuyCatSpeed() => BuyLocal(TechId.CatStomp);
+
+        /// <summary>
+        /// 위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용. 창고만 조준 설치다.
+        /// 설치권(Lv1)이 없으면 먼저 사고, 그다음 놓는다. 설치비는 서버가 따로 깎는다.
+        /// </summary>
+        public void TestPlaceWarehouseAt(float _x, float _z) => PlaceLocal(TechId.Warehouse, _x, _z);
 
         /// <summary>QA: 지정 좌표에서 가장 가까운 치즈 지점을 점유한 클라이언트 ID(없으면 -1).</summary>
         public long TestGetCheeseEarnerNear(float _x, float _z)
@@ -388,26 +418,30 @@ namespace CTC.Runtime.Testing
             return TestGetDistanceTo(p.x, p.z);
         }
 
-        private static void PlaceLocal(ShopItemId _itemId, float _x, float _z)
+        /// <summary>설치권을 사고(미보유 시) 지정 좌표에 놓는다 — 옛 `BuyAt` 한 방을 두 단계로 나눈 것.</summary>
+        private static void PlaceLocal(TechId _techId, float _x, float _z)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var shop = local != null ? local.GetComponent<ShopController>() : null;
             if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
+
+            var slots = local.GetComponent<TechSlots>();
+            if (slots == null || slots.LevelOf(_techId) == 0) shop.Buy(_techId);
 
             var pos = new UnityEngine.Vector3(_x, local.transform.position.y, _z);
-            shop.BuyAt(_itemId, pos);
-            GameDebug.Log($"[TestManager] PlaceLocal({_itemId}) @ {pos} 요청");
+            if (shop.CanUse(_techId)) shop.UseAt(_techId, pos);
+            GameDebug.Log($"[TestManager] PlaceLocal({_techId}) @ {pos} 요청");
         }
 
-        private static void BuyLocal(ShopItemId _itemId)
+        private static void BuyLocal(TechId _techId)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var shop = local != null ? local.GetComponent<ShopController>() : null;
             if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
-            shop.Buy(_itemId);
-            GameDebug.Log($"[TestManager] BuyLocal({_itemId}) 요청");
+            shop.Buy(_techId);
+            GameDebug.Log($"[TestManager] BuyLocal({_techId}) 요청");
         }
     }
 }

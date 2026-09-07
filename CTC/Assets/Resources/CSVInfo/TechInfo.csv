@@ -3,7 +3,7 @@ Gun,Mouse,Attack,1,150,새총,한 방 5→12 · 더 멀리
 Gun,Mouse,Attack,2,600,기관총,5배 연사 — 고양이 사냥
 Pepper,Mouse,Attack,1,120,후추 탄,총알에 매운맛 — 지속피해
 Fortress,Mouse,Defense,1,100,요새,즉석 벙커 — 설치마다 80
-Warehouse,Mouse,Resource,1,150,창고,자동 치즈 생산 · 소리로 위치가 팔린다
+Warehouse,Mouse,Resource,1,50,창고,설치권 — 설치마다 100 · 자동 치즈 생산
 Dash,Mouse,Utility,1,100,대시,Space 순간 가속
 CatClaw,Cat,Attack,1,100,발톱,덮치기 +10
 CatClaw,Cat,Attack,2,140,발톱,덮치기 +20

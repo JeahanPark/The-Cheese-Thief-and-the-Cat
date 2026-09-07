@@ -153,6 +153,32 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void Warehouse_FirstBuildCostsSameAsBefore()
+        {
+            // 설치권 50 + 설치비 100 = 150 — 옛 창고 값 그대로. 재설치만 100이 붙는다(째기 응징).
+            int b = CTC.Runtime.Info.InfoManager.Instance.Balance.WarehousePlaceCost;
+            Assert.AreEqual(150, TechLogic.RowOf(TechId.Warehouse, 1).Cost + b);
+            float payback = (TechLogic.RowOf(TechId.Warehouse, 1).Cost + b) / (float)ShopLogic.WAREHOUSE_INCOME_PER_SECOND;
+            Assert.Less(payback, CTC.Runtime.Match.MatchFlowLogic.MATCH_DURATION_SECONDS * 0.5f);
+        }
+
+        [Test]
+        public void Fortress_PlaceCost_IsCheapInstantShield()
+        {
+            // 즉발 방패 — 쫓기는 순간 살 수 있는 값이어야 한다(2026-08-15). 설치권 100은 따로.
+            Assert.AreEqual(80, CTC.Runtime.Info.InfoManager.Instance.Balance.FortressPlaceCost);
+            Assert.AreEqual(100, TechLogic.RowOf(TechId.Fortress, 1).Cost);
+        }
+
+        [Test]
+        public void CatStackCap_MatchesTechMaxLevel()
+        {
+            // 두 상한이 갈리면 HUD가 "3/5"처럼 거짓말한다
+            Assert.AreEqual(TechLogic.MaxLevel(TechId.CatClaw), ShopLogic.MAX_UPGRADE_STACKS);
+            Assert.AreEqual(TechLogic.MaxLevel(TechId.CatStomp), ShopLogic.MAX_UPGRADE_STACKS);
+        }
+
+        [Test]
         public void CanBuy_NoneWhenMaxLevelZero_IsUnknownNotMaxLevel()
         {
             // 표에 없는 테크(계획 2 전 CheeseShield)는 "만렙"이 아니라 "모름"이어야 UI 문구가 거짓이 안 된다

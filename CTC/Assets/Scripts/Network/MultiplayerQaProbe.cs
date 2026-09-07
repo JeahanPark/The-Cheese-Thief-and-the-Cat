@@ -110,14 +110,16 @@ namespace CTC.Runtime.Networking
                 case "TestMpShootAtCat":
                     ShootAtCat();
                     break;
+                // 이름은 그대로 둔다 — QA 스크립트가 문자열로 부른다. 속만 TechId로 바꿨다(2026-09-07).
                 case "TestMpBuySlingshot":
-                    BuyLocal(ShopItemId.Slingshot);
+                    BuyLocal(TechId.Gun);
                     break;
                 case "TestMpBuyDash":
-                    BuyLocal(ShopItemId.Dash);
+                    BuyLocal(TechId.Dash);
                     break;
                 case "TestMpBuyFortress":
-                    BuyLocal(ShopItemId.Fortress);
+                    // 테크 v3: 설치권 구매 + 즉발 설치가 갈렸다 — 옛 훅의 결과(요새가 선다)를 지킨다
+                    BuyFortressLocal();
                     break;
                 case "TestMpEnterNearestFortress":
                     EnterNearestFortress();
@@ -175,19 +177,40 @@ namespace CTC.Runtime.Networking
             gun.DevShootAtNearestCat();
         }
 
-        // 클론 로컬 플레이어의 상점 구매 — 상점 QA용.
-        private void BuyLocal(ShopItemId _itemId)
+        // 클론 로컬 플레이어의 테크 구매 — 상점 QA용. 소유자 RPC라 **자기 몸에만** 쓸 수 있다.
+        // 상점 자리 규칙은 서버가 그대로 본다 — 상점 밖 쥐는 거절된다.
+        private void BuyLocal(TechId _techId)
         {
-            NetworkObject local = NetworkManager.Singleton != null
-                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
-                : null;
-            var shop = local != null ? local.GetComponent<ShopController>() : null;
+            ShopController shop = LocalShop();
             if (shop == null)
             {
                 Debug.LogWarning("[MultiplayerQaProbe] BuyLocal — ShopController 없음");
                 return;
             }
-            shop.Buy(_itemId);
+            shop.Buy(_techId);
+        }
+
+        // 설치권을 사고 즉발 설치까지 — 옛 ShopItemId.Fortress 한 방과 같은 결과를 낸다.
+        private void BuyFortressLocal()
+        {
+            ShopController shop = LocalShop();
+            if (shop == null)
+            {
+                Debug.LogWarning("[MultiplayerQaProbe] BuyFortressLocal — ShopController 없음");
+                return;
+            }
+
+            var slots = shop.GetComponent<TechSlots>();
+            if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
+            if (shop.CanUse(TechId.Fortress)) shop.Use(TechId.Fortress);
+        }
+
+        private static ShopController LocalShop()
+        {
+            NetworkObject local = NetworkManager.Singleton != null
+                ? NetworkManager.Singleton.SpawnManager?.GetLocalPlayerObject()
+                : null;
+            return local != null ? local.GetComponent<ShopController>() : null;
         }
 
         // 클론 쥐를 가장 가까운 요새 중심으로 순간이동(CC 토글) — 내부 회복/차폐 QA용.

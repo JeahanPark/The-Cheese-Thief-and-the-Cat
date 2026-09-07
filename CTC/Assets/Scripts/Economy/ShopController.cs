@@ -82,8 +82,10 @@ namespace CTC.Runtime.Economy
                 case TechId.Warehouse:
                     // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
+                    // 설치마다 치즈 — 재설치가 공짜면 째기 응징이 안 된다(2026-09-07).
                     return m_WarehousePrefab != null
-                           && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE;
+                           && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE
+                           && m_Wallet != null && m_Wallet.CheeseValue >= Balance.WarehousePlaceCost;
                 case TechId.Dash:
                     return true;   // 쿨다운은 MouseDash가 본다
                 default:
@@ -154,6 +156,9 @@ namespace CTC.Runtime.Economy
             Vector3 flat = _position - transform.position;
             flat.y = 0f;
             if (flat.magnitude > MAX_PLACE_DISTANCE || !PlacementFits(id, _position)) { ResultRpc(false); return; }
+
+            // 설치마다 치즈 — 재설치가 공짜면 째기 응징이 안 된다. 자리 검증을 통과한 뒤에만 깎는다.
+            if (!m_Wallet.TrySpend(Balance.WarehousePlaceCost)) { ResultRpc(false); return; }
 
             GameObject go = Instantiate(m_WarehousePrefab, _position, Quaternion.identity);
             go.GetComponent<NetworkObject>().Spawn(true);

@@ -28,7 +28,6 @@ namespace CTC.Runtime.Info
         public float DashDurationSeconds;
         public float DashCooldownSeconds;
         public float PlaceMaxDistanceMeters;
-        public float PlaceForwardMeters;
         public float PlaceGhostMaxMeters;
         public float FarmingSoundRangeMeters;
         public float CamDefaultPitchDeg;
@@ -81,6 +80,7 @@ namespace CTC.Runtime.Info
         public float ShopSpotRadius;
         public float ShopSpotMinGap;
         public float ShopBuySoundMeters;
+        public int WarehousePlaceCost;
     }
 
     public partial class InfoManager
