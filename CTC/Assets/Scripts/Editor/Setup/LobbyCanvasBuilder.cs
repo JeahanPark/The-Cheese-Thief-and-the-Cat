@@ -391,6 +391,9 @@ namespace CTC.Editor
             BuildChatHud(canvasGo, escRouter);
             BuildMouseJobHud(canvasGo, _phase);
 
+            // 예민한 귀(고양이 유틸 테크) — 내 클라의 가청 배율만 세운다. 그릴 게 없어 배선도 없다.
+            canvasGo.AddComponent<CTC.Runtime.Audio.ListenerRangeBinder>();
+
             // 밸런스 데이터 로거(스펙 v3.3) — 매치 종료 시 persistentDataPath/MatchStats/*.json
             var statsGo = new GameObject("MatchStatsRecorder");
             var stats = statsGo.AddComponent<MatchStatsRecorder>();

@@ -34,6 +34,12 @@ namespace CTC.Runtime.Audio
         /// <summary>지금 발소리가 닿는 반경(m). 안 움직이면 0(QA·봇 청각).</summary>
         public float CurrentRange { get; private set; }
 
+        /// <summary>
+        /// 내 화면에서 실제로 AudioSource에 걸린 반경(m) — <see cref="CurrentRange"/> × <see cref="ListenerRange"/>.
+        /// 설계값이 아니라 **이 클라가 듣는 거리**다. 밸런스를 재는 쪽은 CurrentRange를 봐야 한다.
+        /// </summary>
+        public float HeardRange { get; private set; }
+
         private void Start()
         {
             m_LastPosition = transform.position;
@@ -57,8 +63,13 @@ namespace CTC.Runtime.Audio
             IsStepping = moving;
             CurrentRange = range;
 
+            // 예민한 귀(내 클라의 가청 배율)는 여기서만 곱한다 — CurrentRange는 원본으로 남긴다.
+            // 봇 청각(BotSenses)과 QA(TestGetFootstepRange)가 설계값을 재고 있어서다.
+            float heard = range * ListenerRange.Multiplier;
+            HeardRange = heard;
+
             // 반경을 바꿔 '들리는 거리'를 줄인다 — 재생을 끄면 잠행이 다시 완전 무음이 된다
-            if (range > 0f && !Mathf.Approximately(m_Source.maxDistance, range)) m_Source.maxDistance = range;
+            if (heard > 0f && !Mathf.Approximately(m_Source.maxDistance, heard)) m_Source.maxDistance = heard;
 
             if (!moving)
             {

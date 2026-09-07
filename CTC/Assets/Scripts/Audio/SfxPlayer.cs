@@ -119,7 +119,8 @@ namespace CTC.Runtime.Audio
             source.spatialBlend = 1f;
             source.rolloffMode = AudioRolloffMode.Linear;
             source.minDistance = WORLD_MIN_DISTANCE;
-            source.maxDistance = _maxDistance;
+            // 예민한 귀는 **듣는 쪽**에서만 곱한다 — 위 Played에는 원본을 넘겼다(봇 청각·QA는 설계값을 봐야 한다).
+            source.maxDistance = _maxDistance * ListenerRange.Multiplier;
             source.Play();
 
             Core.PoolManager.Instance.DespawnAfter(go, clip.length + 0.1f);
