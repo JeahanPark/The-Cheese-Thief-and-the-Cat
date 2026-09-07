@@ -2,35 +2,6 @@ using CTC.Runtime.Lobby;
 
 namespace CTC.Runtime.Economy
 {
-    public enum ShopItemId
-    {
-        None = 0,
-        Slingshot = 1,
-        MachineGun = 2,
-        Dash = 3,
-        // 4 = Decoy(미끼) — 2026-08-15 삭제. 값은 복제·직렬화되므로 재사용하지 않는다.
-        Fortress = 5,
-        CatAttack = 6,
-        CatSpeed = 7,
-        Warehouse = 8,
-        PepperShot = 9,   // 후추 탄(빌드 심화 v1 · 후추 선반 ①) — 총알에 지속피해
-    }
-
-    /// <summary>카탈로그 한 줄. 정적 데이터 — CSV 파이프라인은 아이템 수가 늘면 도입.</summary>
-    public readonly struct ShopItem
-    {
-        public readonly ShopItemId Id;
-        public readonly RoleId Role;
-        public readonly int Cost;
-
-        public ShopItem(ShopItemId _id, RoleId _role, int _cost)
-        {
-            Id = _id;
-            Role = _role;
-            Cost = _cost;
-        }
-    }
-
     public readonly struct WeaponStats
     {
         public readonly int Damage;
@@ -46,8 +17,10 @@ namespace CTC.Runtime.Economy
     }
 
     /// <summary>
-    /// 상점 판정 수학·정적 카탈로그. MonoBehaviour와 분리된 순수 로직 — EditMode TDD.
-    /// 가격은 원작 약올리기 DX 대응(새총150/기관총600/벙커220).
+    /// 밸런스 접근자 + 순수 수학. MonoBehaviour와 분리된 순수 로직 — EditMode TDD.
+    /// **카탈로그는 여기 없다**(테크 v3, 2026-09-07) — 무엇을 파는지·값이 얼마인지는
+    /// `TechInfo.csv` + <see cref="TechLogic"/>로 옮겼다. 여기 남은 건 표에 안 내리는
+    /// 구조 수치(스택 상한·창고 파생값)와 역할별 이름·무기 티어 조회뿐이다.
     /// </summary>
     public static class ShopLogic
     {
@@ -79,33 +52,6 @@ namespace CTC.Runtime.Economy
         public static float WarehouseTickSeconds =>
             WAREHOUSE_TICK_CHEESE / (float)WAREHOUSE_INCOME_PER_SECOND;
 
-        /// <summary>상점 카탈로그 — ShopInfo.csv 순서 그대로(핫바 슬롯 순서와 같다).</summary>
-        public static ShopItem[] CATALOG
-        {
-            get
-            {
-                var rows = Info.InfoManager.Instance.Shop;
-                var catalog = new ShopItem[rows.Count];
-                for (int i = 0; i < rows.Count; i++)
-                {
-                    catalog[i] = new ShopItem(rows[i].ItemId, rows[i].Role, rows[i].Cost);
-                }
-                return catalog;
-            }
-        }
-
-        // DescriptionOf(수치 포함 장문 설명)는 HUD 개편(2026-08-15)으로 삭제 — 좌하단 장문이
-        // 사라지며 읽는 곳이 없어졌다. 항목 안내는 핫바 반줄 힌트 + 구매 토스트(ShopHotbar)가 맡는다.
-
-        public static ShopItem Find(ShopItemId _id)
-        {
-            foreach (ShopItem item in CATALOG)
-            {
-                if (item.Id == _id) return item;
-            }
-            return default;
-        }
-
         public static bool CanBuy(int _cheese, int _cost)
         {
             return _cost > 0 && _cheese >= _cost;
@@ -124,30 +70,6 @@ namespace CTC.Runtime.Economy
         public static float MoveSpeed(float _baseSpeed, int _stacks)
         {
             return _baseSpeed + SPEED_PER_STACK * _stacks;
-        }
-
-        /// <summary>핫바 슬롯 수 — 역할별 카탈로그가 이보다 길면 잘린다(현재 쥐 6/고양이 2).</summary>
-        public const int HOTBAR_SLOTS = 6;
-
-        /// <summary>역할별 카탈로그 인덱스(카탈로그 순서 유지) — 핫바 1~5번 키 매핑.</summary>
-        public static System.Collections.Generic.List<int> RoleCatalogIndices(RoleId _role)
-        {
-            var list = new System.Collections.Generic.List<int>();
-            for (int i = 0; i < CATALOG.Length && list.Count < HOTBAR_SLOTS; i++)
-            {
-                if (CATALOG[i].Role == _role) list.Add(i);
-            }
-            return list;
-        }
-
-        /// <summary>
-        /// 고스트 조준(위치 지정) 설치인가 — 창고뿐이다.
-        /// 요새는 2026-08-15부터 **내 위치 중심 즉시 설치**다: 쫓기는 중에 쓰는 방패인데
-        /// 고스트 조준을 요구하면 그 순간에 못 쓴다(예전 미끼가 즉시 설치였던 이유와 같다 — 미끼는 요새에 흡수됐다).
-        /// </summary>
-        public static bool IsPlaceable(ShopItemId _id)
-        {
-            return _id == ShopItemId.Warehouse;
         }
 
         /// <summary>

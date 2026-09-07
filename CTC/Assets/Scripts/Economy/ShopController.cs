@@ -6,14 +6,14 @@ using UnityEngine;
 namespace CTC.Runtime.Economy
 {
     /// <summary>
-    /// 구매 진입점(플레이어 프리팹). 소유자 Buy → ServerRpc → 서버가
-    /// 역할·적용가능 검증 → TrySpend → 효과 적용/설치물 스폰. 검증 실패 시 차감 없음.
+    /// 테크 구매·업그레이드·사용 진입점(플레이어 프리팹) — 테크 v3(2026-09-07).
+    /// 소유자 Buy → ServerRpc → 서버가 역할·상점 안(쥐)·TechLogic·TrySpend 검증 → 레벨 적용.
+    /// 사용(Use)은 상점 밖 숫자키 — 요새 즉발·창고 조준·대시.
     /// </summary>
     public class ShopController : NetworkBehaviour
     {
         // 밸런스 원본은 BalanceInfo.csv — 재컴파일 없이 다음 플레이에 반영된다.
         private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
-        private static float PLACE_FORWARD_METERS => Balance.PlaceForwardMeters;
 
         [SerializeField] private GameObject m_FortressPrefab;
         [SerializeField] private GameObject m_WarehousePrefab;
@@ -21,105 +21,182 @@ namespace CTC.Runtime.Economy
         /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프보다 넉넉히.</summary>
         public static float MAX_PLACE_DISTANCE => Balance.PlaceMaxDistanceMeters;
 
-        /// <summary>로컬 UI/QA 진입점.</summary>
-        public void Buy(ShopItemId _itemId)
+        private TechSlots m_Slots;
+        private RoleTag m_Tag;
+        private CheeseWallet m_Wallet;
+
+        public override void OnNetworkSpawn()
         {
-            BuyRpc((int)_itemId);
+            m_Slots = GetComponent<TechSlots>();
+            m_Tag = GetComponent<RoleTag>();
+            m_Wallet = GetComponent<CheeseWallet>();
         }
 
-        /// <summary>설치물 위치 지정 구매(고스트 확정). 서버가 거리·겹침을 재검증한다.</summary>
-        public void BuyAt(ShopItemId _itemId, Vector3 _position)
-        {
-            BuyAtRpc((int)_itemId, _position);
-        }
+        // ===== 로컬 진입점 =====
 
-        /// <summary>구매 가능 여부(로컬 UI 표시용 — 판정 권위는 서버 BuyRpc).</summary>
-        public bool CanApply(ShopItemId _itemId)
+        /// <summary>산다(미보유) 또는 키운다(보유). 로컬 UI·봇·QA 공용.</summary>
+        public void Buy(TechId _id) => BuyRpc((int)_id);
+
+        /// <summary>
+        /// 즉발 액티브 — 요새·대시.
+        ///
+        /// **대시만 서버를 돌지 않는다.** 이동이 소유자 권위(ClientNetworkTransform)라
+        /// `MouseDash.TryDash`가 `IsOwner`를 보고 끊는다 — 서버가 남의 몸에서 불러 봐야
+        /// 아무 일도 안 일어난다. 그래서 대시는 여기(소유자 프로세스)서 바로 쏜다.
+        /// 봇은 서버가 소유하므로 같은 경로로 통과한다.
+        /// </summary>
+        public void Use(TechId _id)
         {
-            switch (_itemId)
+            if (_id == TechId.Dash)
             {
-                case ShopItemId.Slingshot:
-                    MousePopgun gun1 = GetComponent<MousePopgun>();
-                    return gun1 != null && gun1.Tier < 1;
-                case ShopItemId.MachineGun:
-                    MousePopgun gun2 = GetComponent<MousePopgun>();
-                    return gun2 != null && gun2.Tier < 2;
-                case ShopItemId.Dash:
-                    Player.MouseDash dash = GetComponent<Player.MouseDash>();
-                    return dash != null && !dash.Owned;
-                case ShopItemId.Fortress:
+                if (!CanUse(_id)) { Audio.SfxPlayer.PlayUi(Audio.SfxId.ShopDeny); return; }
+                Player.MouseDash dash = GetComponent<Player.MouseDash>();
+                if (dash != null) dash.DevDash();
+                return;
+            }
+            UseRpc((int)_id);
+        }
+
+        /// <summary>조준 액티브 — 창고. 고스트 확정 위치를 서버가 재검증한다.</summary>
+        public void UseAt(TechId _id, Vector3 _position) => UseAtRpc((int)_id, _position);
+
+        /// <summary>로컬 표시용 판정(권위는 서버). 상점 안 여부까지 본다.</summary>
+        public TechDeny CanBuyNow(TechId _id)
+        {
+            if (m_Slots == null || m_Tag == null || m_Wallet == null) return TechDeny.Unknown;
+            if (TechLogic.NeedsShopSpot(m_Tag.Role) && !IsBotExempt() && !Map.ShopSpot.AnyContains(transform.position))
+                return TechDeny.NotInShop;
+            return TechLogic.CanBuy(m_Slots.Owned, _id, m_Tag.Role, m_Wallet.CheeseValue, Balance.TechSlotCap);
+        }
+
+        /// <summary>쓸 수 있는가 — 보유·상황(요새 겹침·창고 상한).</summary>
+        public bool CanUse(TechId _id)
+        {
+            if (m_Slots == null || m_Slots.LevelOf(_id) == 0 || !TechLogic.IsActive(_id)) return false;
+            switch (_id)
+            {
+                case TechId.Fortress:
                     // 서 있는 요새 안에서는 못 세운다 — 겹치기 금지(FortressShield.AnyContains 주석)
-                    return m_FortressPrefab != null && !FortressShield.AnyContains(transform.position);
-                case ShopItemId.Warehouse:
+                    return m_FortressPrefab != null && !FortressShield.AnyContains(transform.position)
+                           && m_Wallet != null && m_Wallet.CheeseValue >= Balance.FortressPlaceCost;
+                case TechId.Warehouse:
                     // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
                     return m_WarehousePrefab != null
                            && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE;
-                case ShopItemId.PepperShot:
-                    PepperRounds pepper = GetComponent<PepperRounds>();
-                    return pepper != null && !pepper.Owned;
-                case ShopItemId.CatAttack:
-                    CatPounce pounce = GetComponent<CatPounce>();
-                    return pounce != null && ShopLogic.CanAddStack(pounce.DamageStacks);
-                case ShopItemId.CatSpeed:
-                    Player.PlayerMovement move = GetComponent<Player.PlayerMovement>();
-                    return move != null && ShopLogic.CanAddStack(move.SpeedStacks);
+                case TechId.Dash:
+                    return true;   // 쿨다운은 MouseDash가 본다
                 default:
                     return false;
             }
         }
 
-        [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 오브젝트로 대리 구매 차단 — 리뷰 I2
-        private void BuyRpc(int _itemId)
+        // 계획 1 한정: 봇은 상점까지 가지 않는다(경로는 계획 3). 계측치에 "상점 이동 비용 제외"를 적는다.
+        // 봇의 몸만 `SpawnAsPlayerObject`를 안 거친다 — LocalControl이 사람과 봇을 가르는 것과 같은 표식.
+        private bool IsBotExempt()
         {
-            ShopItem item = ShopLogic.Find((ShopItemId)_itemId);
-            if (item.Id == ShopItemId.None) { BuyResultRpc(false); return; }
-
-            RoleTag tag = GetComponent<RoleTag>();
-            if (tag == null || tag.Role != item.Role) { BuyResultRpc(false); return; }
-
-            if (!CanApply(item.Id)) { BuyResultRpc(false); return; }
-
-            CheeseWallet wallet = GetComponent<CheeseWallet>();
-            if (wallet == null || !wallet.TrySpend(item.Cost)) { BuyResultRpc(false); return; }
-
-            Apply(item.Id);
-            Debug.Log($"[ShopController] {OwnerClientId} 구매: {item.Id} (-{item.Cost})");
-            BuyResultRpc(true);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            return NetworkObject != null && !NetworkObject.IsPlayerObject;
+#else
+            return false;
+#endif
         }
 
-        // 설치물 전용: 클라가 고스트로 확정한 위치에 스폰. 위치는 서버가 재검증(거리·겹침).
-        [Rpc(SendTo.Server, RequireOwnership = true)]
-        private void BuyAtRpc(int _itemId, Vector3 _position)
-        {
-            ShopItem item = ShopLogic.Find((ShopItemId)_itemId);
-            if (item.Id == ShopItemId.None || !ShopLogic.IsPlaceable(item.Id)) { BuyResultRpc(false); return; }
+        // ===== 서버 =====
 
-            RoleTag tag = GetComponent<RoleTag>();
-            if (tag == null || tag.Role != item.Role) { BuyResultRpc(false); return; }
-            if (!CanApply(item.Id)) { BuyResultRpc(false); return; }
+        [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 오브젝트로 대리 구매 차단 — 리뷰 I2
+        private void BuyRpc(int _id)
+        {
+            var id = (TechId)_id;
+            if (CanBuyNow(id) != TechDeny.None) { ResultRpc(false); return; }
+
+            TechRow row = TechLogic.NextRow(m_Slots.Owned, id);
+            if (!m_Wallet.TrySpend(row.Cost)) { ResultRpc(false); return; }
+
+            m_Slots.ServerApplyNextLevel(id);
+            ApplyLevel(id, row.Level);
+            BuySoundRpc(transform.position);
+            Core.GameDebug.Log($"[ShopController] {OwnerClientId} {id} Lv{row.Level} (-{row.Cost})");
+            ResultRpc(true);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void UseRpc(int _id)
+        {
+            var id = (TechId)_id;
+            if (!CanUse(id)) { ResultRpc(false); return; }
+            switch (id)
+            {
+                case TechId.Fortress:
+                    // 즉발 방패(2026-08-15): **내 위치 중심**, 입구(로컬 +Z) = 내가 보는 방향.
+                    // 나는 이미 안에 있고, 겹친 남의 몸은 FortressShield가 밀어낸다.
+                    if (!m_Wallet.TrySpend(Balance.FortressPlaceCost)) { ResultRpc(false); return; }
+                    SpawnFortressAround(m_FortressPrefab);
+                    break;
+                // 대시는 여기 없다 — 소유자 권위라 Use()가 로컬에서 처리한다(위 주석 참조).
+                default:
+                    ResultRpc(false);
+                    return;
+            }
+            ResultRpc(true);
+        }
+
+        [Rpc(SendTo.Server, RequireOwnership = true)]
+        private void UseAtRpc(int _id, Vector3 _position)
+        {
+            var id = (TechId)_id;
+            if (id != TechId.Warehouse || !CanUse(id)) { ResultRpc(false); return; }
 
             Vector3 flat = _position - transform.position;
             flat.y = 0f;
-            if (flat.magnitude > MAX_PLACE_DISTANCE) { BuyResultRpc(false); return; }
+            if (flat.magnitude > MAX_PLACE_DISTANCE || !PlacementFits(id, _position)) { ResultRpc(false); return; }
 
-            GameObject prefab = PrefabOf(item.Id);
-            if (prefab == null || !PlacementFits(item.Id, _position)) { BuyResultRpc(false); return; }
-
-            CheeseWallet wallet = GetComponent<CheeseWallet>();
-            if (wallet == null || !wallet.TrySpend(item.Cost)) { BuyResultRpc(false); return; }
-
-            // 요새 입구(로컬 +Z)가 구매자를 향하게 — 쫓기며 지어도 바로 들어갈 수 있다
-            Quaternion rot = item.Id == ShopItemId.Fortress
-                ? Quaternion.LookRotation(-FlatForward())
-                : Quaternion.identity;
-            GameObject go = Instantiate(prefab, _position, rot);
+            GameObject go = Instantiate(m_WarehousePrefab, _position, Quaternion.identity);
             go.GetComponent<NetworkObject>().Spawn(true);
             BindWarehouseOwner(go);
-
-            Debug.Log($"[ShopController] {OwnerClientId} 설치: {item.Id} @ {_position} (-{item.Cost})");
-            BuyResultRpc(true);
+            ResultRpc(true);
         }
+
+        /// <summary>레벨이 오른 순간 기존 컴포넌트에 반영. 계획 2가 신규 테크를 여기에 붙인다.</summary>
+        private void ApplyLevel(TechId _id, int _level)
+        {
+            switch (_id)
+            {
+                case TechId.Gun:
+                    GetComponent<MousePopgun>().ServerSetTier(_level);          // Lv1 새총 · Lv2 기관총
+                    break;
+                case TechId.Pepper:
+                    GetComponent<PepperRounds>().ServerSetOwned();
+                    break;
+                case TechId.Dash:
+                    GetComponent<Player.MouseDash>().ServerSetOwned();
+                    break;
+                case TechId.Fortress:
+                case TechId.Warehouse:
+                    break;                                                      // 설치권만 — 실제 설치는 Use
+                case TechId.CatClaw:
+                    GetComponent<CatPounce>().ServerAddDamageStack();           // 레벨 = 스택
+                    break;
+                case TechId.CatStomp:
+                    GetComponent<Player.PlayerMovement>().ServerAddSpeedStack();
+                    break;
+            }
+        }
+
+        // 구매음은 12m로 퍼진다(정보=소리) — 상점 근처 고양이가 듣는다. 실패음은 구매자만.
+        [Rpc(SendTo.Everyone)]
+        private void BuySoundRpc(Vector3 _at)
+        {
+            Audio.SfxPlayer.PlayAt(Audio.SfxId.ShopBuy, _at, 1f, Balance.ShopBuySoundMeters);
+        }
+
+        [Rpc(SendTo.Owner)]
+        private void ResultRpc(bool _success)
+        {
+            if (!_success) Audio.SfxPlayer.PlayUi(Audio.SfxId.ShopDeny);
+        }
+
+        // ===== 설치 공용 =====
 
         private const int PLACE_OVERLAP_BUFFER = 16;
         private static readonly Collider[] s_PlaceOverlap = new Collider[PLACE_OVERLAP_BUFFER];
@@ -129,9 +206,9 @@ namespace CTC.Runtime.Economy
         /// 플레이어는 방해물로 치지 않는다: 제 몸이나 옆 쥐에 걸려 설치가 거절되는 게
         /// "설치가 너무 힘들다"의 절반이었다(2026-07-28). 겹쳐 놓아도 CC가 서로 밀어낸다.
         /// </summary>
-        public static bool PlacementFits(ShopItemId _itemId, Vector3 _position)
+        public static bool PlacementFits(TechId _id, Vector3 _position)
         {
-            Vector3 half = HalfExtentsOf(_itemId);
+            Vector3 half = HalfExtentsOf(_id);
             Vector3 center = _position + Vector3.up * half.y;
             // 바닥(Ignore Raycast 레이어 2)은 제외 — 벽·구조물만 방해물로 본다
             int count = Physics.OverlapBoxNonAlloc(center, half * 0.95f, s_PlaceOverlap,
@@ -146,25 +223,16 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>설치물 반경(고스트 표시·겹침 판정 공용).</summary>
-        public static Vector3 HalfExtentsOf(ShopItemId _itemId)
+        public static Vector3 HalfExtentsOf(TechId _id)
         {
-            switch (_itemId)
+            switch (_id)
             {
-                case ShopItemId.Fortress:
+                case TechId.Fortress:
                     return new Vector3(1.2f, 0.6f, 1.2f);   // 요새 풋프린트 2.4²·벽높이 1.2
-                case ShopItemId.Warehouse:
+                case TechId.Warehouse:
                     return new Vector3(0.5f, 0.4f, 0.5f);   // 창고 1.0²×0.8 — 요새보다 작아 구석에 끼워 넣을 수 있다
                 default:
-                    return new Vector3(0.25f, 0.25f, 0.25f); // 미끼(캡슐 0.4²)
-            }
-        }
-
-        private GameObject PrefabOf(ShopItemId _itemId)
-        {
-            switch (_itemId)
-            {
-                case ShopItemId.Fortress: return m_FortressPrefab;
-                default: return m_WarehousePrefab;
+                    return new Vector3(0.25f, 0.25f, 0.25f);
             }
         }
 
@@ -173,59 +241,6 @@ namespace CTC.Runtime.Economy
         {
             var production = _spawned.GetComponent<WarehouseProduction>();
             if (production != null) production.ServerSetOwner(OwnerClientId);
-        }
-
-        // 구매자에게만 결과음 — 성공 카칭 / 실패 붑
-        [Rpc(SendTo.Owner)]
-        private void BuyResultRpc(bool _success)
-        {
-            Audio.SfxPlayer.PlayUi(_success ? Audio.SfxId.ShopBuy : Audio.SfxId.ShopDeny);
-        }
-
-        // 서버 전용 — BuyRpc에서 검증·차감 후 호출.
-        private void Apply(ShopItemId _itemId)
-        {
-            switch (_itemId)
-            {
-                case ShopItemId.Slingshot:
-                    GetComponent<MousePopgun>().ServerSetTier(1);
-                    break;
-                case ShopItemId.MachineGun:
-                    GetComponent<MousePopgun>().ServerSetTier(2);
-                    break;
-                case ShopItemId.Dash:
-                    GetComponent<Player.MouseDash>().ServerSetOwned();
-                    break;
-                case ShopItemId.Fortress:
-                    // 즉발 방패(2026-08-15): **내 위치 중심**, 입구(로컬 +Z) = 내가 보는 방향.
-                    // 나는 이미 안에 있고, 겹친 남의 몸은 FortressShield가 밀어낸다.
-                    SpawnFortressAround(m_FortressPrefab);
-                    break;
-                case ShopItemId.Warehouse:
-                    SpawnStructure(_itemId, m_WarehousePrefab, Quaternion.identity);
-                    break;
-                case ShopItemId.PepperShot:
-                    GetComponent<PepperRounds>().ServerSetOwned();
-                    break;
-                case ShopItemId.CatAttack:
-                    GetComponent<CatPounce>().ServerAddDamageStack();
-                    break;
-                case ShopItemId.CatSpeed:
-                    GetComponent<Player.PlayerMovement>().ServerAddSpeedStack();
-                    break;
-            }
-        }
-
-        // 즉시 설치(창고 폴백 경로)는 조준이 없다 — 앞이 벽이면 제 발밑으로 물러선다.
-        // 여기서 그냥 실패시키면 치즈만 먹고 아무것도 안 나오는 꼴이 된다.
-        private void SpawnStructure(ShopItemId _itemId, GameObject _prefab, Quaternion _rotation)
-        {
-            Vector3 pos = transform.position + FlatForward() * PLACE_FORWARD_METERS;
-            if (!PlacementFits(_itemId, pos)) pos = transform.position;
-
-            GameObject go = Instantiate(_prefab, pos, _rotation);
-            go.GetComponent<NetworkObject>().Spawn(true);
-            BindWarehouseOwner(go);
         }
 
         // 요새는 겹침 검사를 하지 않는다 — 벽에 물려도 방패 구실은 하고, 쫓기는 순간에
