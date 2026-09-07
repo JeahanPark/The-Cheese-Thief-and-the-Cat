@@ -117,10 +117,13 @@ namespace CTC.Runtime.Combat
                     }
                     else
                     {
-                        // 요새는 테크 레벨로 HP가 커진다 — 그대로 나누면 Lv3 벽이 Lv1의 2.5배를
+                        // 요새·창고는 테크 레벨로 HP가 커진다 — 그대로 나누면 Lv3 벽이 Lv1의 2.5배를
                         // 벌어 v3.6에서 잡았던 '벽 때리기 최고 수입'이 되살아난다. 기본 HP로 환산한다.
-                        bool isFortress = target.GetComponent<FortressShield>() != null;
-                        int baseHp = isFortress ? ShopLogic.FORTRESS_HP : target.MaxHp;
+                        // 창고도 같다: 숨은 창고 Lv3은 HP 450(기본 150)이라 빠뜨리면 3배를 벌었다.
+                        // 레벨을 안 타는 구조물(미끼·벽감)은 실제 최대 HP가 곧 기본 HP다.
+                        int baseHp = target.MaxHp;
+                        if (target.GetComponent<FortressShield>() != null) baseHp = ShopLogic.FORTRESS_HP;
+                        else if (target.GetComponent<WarehouseProduction>() != null) baseHp = ShopLogic.WAREHOUSE_MAX_HP;
                         myWallet.AddCheese(FunLogic.StructureFun(dealt, target.MaxHp, baseHp));
                     }
                 }

@@ -33,6 +33,13 @@ namespace CTC.Runtime.Economy
 
         private readonly HashSet<Player.PlayerMovement> m_Slowed = new HashSet<Player.PlayerMovement>();
 
+        // 서버 전용 — 스폰 순간에 한 번 훑어 둔 고양이 목록.
+        // 매 틱 FindObjectsByType을 돌면 장판 8장 × 초당 10틱 = 씬 전수 조사 80회/초에
+        // 플레이어마다 GetComponent<RoleTag>까지 붙는다. 명단은 한 번만 만든다.
+        // **절충: 판 도중 새로 들어온 고양이는 이미 깔린 장판에 안 걸린다.** 장판 수명이 10초라
+        // 그 사이 난입은 무시할 만하고, 다음에 까는 장판부터는 정상이다.
+        private readonly List<Player.PlayerMovement> m_Cats = new List<Player.PlayerMovement>();
+
         /// <summary>서버 전용 — 스폰 **전에** 부른다(반경은 클라의 쿼드 크기이기도 하다).</summary>
         public void ServerSetup(float _radius, float _slowRatio)
         {
@@ -52,7 +59,11 @@ namespace CTC.Runtime.Economy
             if (IsServer) m_Radius.Value = m_PendingRadius;
             m_Radius.OnValueChanged += OnRadiusChanged;
             ApplyRadiusToQuad(m_Radius.Value);
-            if (IsServer) RunAsync(this.GetCancellationTokenOnDestroy()).Forget();
+            if (IsServer)
+            {
+                ServerBuildCatRoster();
+                RunAsync(this.GetCancellationTokenOnDestroy()).Forget();
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -69,40 +80,64 @@ namespace CTC.Runtime.Economy
             quad.localScale = new Vector3(_radius * 2f, _radius * 2f, 1f);
         }
 
+        // 스폰 순간의 고양이 명단(서버). 쥐는 제가 깐 것에 안 붙으므로 여기서 걸러 둔다.
+        private void ServerBuildCatRoster()
+        {
+            m_Cats.Clear();
+            foreach (Player.PlayerMovement body in
+                     FindObjectsByType<Player.PlayerMovement>(FindObjectsSortMode.None))
+            {
+                RoleTag tag = body.GetComponent<RoleTag>();
+                if (tag != null && tag.Role == RoleId.Cat) m_Cats.Add(body);
+            }
+        }
+
         /// <summary>
-        /// 서버 루프 — 지속(BalanceInfo.StickySeconds) 동안 0.1초마다 반경 안을 훑는다.
-        /// 플레이어 ≤10 · 장판 ≤8이라 <c>FindObjectsByType</c>이 무해하다.
-        /// 겹친 장판 둘이 한 고양이를 다루면 **마지막 값이 이긴다** — 더 센 쪽이 이기게 만들려면
-        /// 배율을 누가 걸었는지 추적해야 해서, 지금은 겹쳐 깔아도 이득이 없다는 규칙으로 둔다.
+        /// 서버 루프 — 지속(BalanceInfo.StickySeconds) 동안 0.1초마다 명단을 훑는다.
+        /// 겹친 장판 둘이 한 고양이를 다루면 **더 센 쪽이 이긴다** — 감속은 건 장판마다
+        /// 한 칸씩 <see cref="Player.PlayerMovement"/>에 쌓이고, 거기서 최솟값을 고른다.
         /// </summary>
         private async UniTaskVoid RunAsync(CancellationToken _ct)
         {
             float life = Info.InfoManager.Instance.Balance.StickySeconds;
             double endAt = Time.timeAsDouble + life;
             float mul = StickyLogic.SpeedMultiplier(m_SlowRatio);
+            ulong sourceId = NetworkObjectId;   // 파괴 뒤엔 못 읽는다 — 풀어 줄 열쇠를 미리 쥔다
+            bool cancelled = false;
 
-            while (Time.timeAsDouble < endAt && !_ct.IsCancellationRequested)
+            try
             {
-                foreach (Player.PlayerMovement body in
-                         FindObjectsByType<Player.PlayerMovement>(FindObjectsSortMode.None))
+                while (Time.timeAsDouble < endAt && !_ct.IsCancellationRequested)
                 {
-                    RoleTag tag = body.GetComponent<RoleTag>();
-                    if (tag == null || tag.Role != RoleId.Cat) continue;   // 쥐는 제가 깐 것에 안 붙는다
+                    foreach (Player.PlayerMovement body in m_Cats)
+                    {
+                        if (body == null) continue;   // 판 도중 despawn된 고양이
 
-                    bool inside = StickyLogic.Inside(transform.position, body.transform.position, m_Radius.Value);
-                    if (inside && m_Slowed.Add(body)) body.ServerSetExternalSpeedMul(mul);
-                    else if (!inside && m_Slowed.Remove(body)) body.ServerSetExternalSpeedMul(1f);
+                        bool inside = StickyLogic.Inside(
+                            transform.position, body.transform.position, m_Radius.Value);
+                        if (inside && m_Slowed.Add(body)) body.ServerAddSlowSource(sourceId, mul);
+                        else if (!inside && m_Slowed.Remove(body)) body.ServerRemoveSlowSource(sourceId);
+                    }
+                    await UniTask.Delay(TimeSpan.FromSeconds(TICK_SECONDS), cancellationToken: _ct);
                 }
-                await UniTask.Delay(TimeSpan.FromSeconds(TICK_SECONDS), cancellationToken: _ct);
+            }
+            catch (OperationCanceledException)
+            {
+                // 판이 끝나거나 씬이 바뀌면 Delay가 예외로 빠져나온다 — 예전엔 그대로 죽어서
+                // 밟고 있던 고양이가 영구 감속으로 남았다. despawn만 건너뛴다(이미 사라지는 중).
+                cancelled = true;
+            }
+            finally
+            {
+                // 어떻게 끝나든 밟고 있던 고양이는 원래 속도로 되돌린다.
+                foreach (Player.PlayerMovement body in m_Slowed)
+                {
+                    if (body != null) body.ServerRemoveSlowSource(sourceId);
+                }
+                m_Slowed.Clear();
             }
 
-            // 끝나면 밟고 있던 고양이도 원래 속도로 — 여기서 안 풀면 영구 감속이다.
-            foreach (Player.PlayerMovement body in m_Slowed)
-            {
-                if (body != null) body.ServerSetExternalSpeedMul(1f);
-            }
-            m_Slowed.Clear();
-            if (IsSpawned) NetworkObject.Despawn(true);
+            if (!cancelled && IsSpawned) NetworkObject.Despawn(true);
         }
     }
 }

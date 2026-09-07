@@ -1,4 +1,5 @@
-﻿using CTC.Runtime.Core;
+﻿using System.Collections.Generic;
+using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
@@ -31,6 +32,12 @@ namespace CTC.Runtime.Player
         // 이동은 소유자 권위(ClientNetworkTransform)라 값이 복제돼야 그 몸이 실제로 느려진다.
         private readonly NetworkVariable<float> m_ExternalSpeedMul = new NetworkVariable<float>(1f);
 
+        // 감속을 건 쪽마다 한 칸(서버 전용 — 복제되는 건 위의 합산 결과 하나뿐이다).
+        // 칸이 하나뿐이던 시절엔 겹친 장판 둘 중 나중에 나간 쪽이 1을 덮어써서, 아직 밟고 있는
+        // 장판 위에서 고양이가 제 속도로 달렸다. 이제 건 쪽(NetworkObjectId)마다 기록하고
+        // 가장 센 것 하나를 고른다.
+        private readonly Dictionary<ulong, float> m_SlowSources = new Dictionary<ulong, float>();
+
         private CharacterController m_Controller;
         private Sneak m_Sneak;      // 고양이·쥐 공통(2026-08-10 쥐로 확장)
         private TechSlots m_TechSlots;  // Awake에서 한 번 — 속도 식은 매 프레임 돈다
@@ -52,11 +59,29 @@ namespace CTC.Runtime.Player
         /// <summary>바깥 감속 배율(1 = 없음) — QA·핫바가 실제로 걸렸는지 본다.</summary>
         public float ExternalSpeedMultiplier => m_ExternalSpeedMul.Value;
 
-        /// <summary>서버 전용(끈끈이 장판). 1을 넣으면 해제다 — 나갈 때 반드시 되돌린다.</summary>
-        public void ServerSetExternalSpeedMul(float _mul)
+        /// <summary>
+        /// 서버 전용(끈끈이 장판 등). 건 쪽의 <c>NetworkObjectId</c>를 열쇠로 준다 —
+        /// 같은 열쇠로 다시 걸면 값만 바뀐다. 나갈 때 <see cref="ServerRemoveSlowSource"/>로 반드시 뗀다.
+        /// </summary>
+        public void ServerAddSlowSource(ulong _sourceId, float _mul)
         {
             if (!IsServer) return;
-            m_ExternalSpeedMul.Value = _mul;
+            m_SlowSources[_sourceId] = _mul;
+            ApplySlowSources();
+        }
+
+        /// <summary>서버 전용 — 그 쪽이 건 감속만 뗀다. 남은 게 있으면 그 중 가장 센 것이 이어진다.</summary>
+        public void ServerRemoveSlowSource(ulong _sourceId)
+        {
+            if (!IsServer) return;
+            if (!m_SlowSources.Remove(_sourceId)) return;
+            ApplySlowSources();
+        }
+
+        // 복제되는 값은 언제나 "지금 걸린 것들 중 가장 센 배율" 하나다(하나도 없으면 1).
+        private void ApplySlowSources()
+        {
+            m_ExternalSpeedMul.Value = StickyLogic.MinMultiplier(m_SlowSources.Values);
         }
 
         /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
@@ -139,10 +164,7 @@ namespace CTC.Runtime.Player
             if (m_Controller.isGrounded && m_VerticalVelocity < 0f) m_VerticalVelocity = -1f;
             m_VerticalVelocity += GRAVITY * Time.deltaTime;
 
-            // 순서가 뜻이다: 기본 + 강화 + 빠른 발을 다 더한 **뒤에** 바깥 배율을 곱한다 —
-            // 끈끈이는 "지금 낼 수 있는 속도의 40%를 뺀다"지 "기본 속도만 깎는다"가 아니다.
-            float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value) + FastFeetBonus();
-            speed *= m_ExternalSpeedMul.Value;   // 끈끈이 — 서버가 걸어 준 배율
+            float speed = CurrentSpeed;
             if (m_Sneak != null && m_Sneak.Sneaking) speed *= m_Sneak.SpeedMultiplier;
             speed *= WindMultiplier();   // 바람 전직(v3.9) — 스킬 중에만 1이 아니다
 
@@ -160,6 +182,15 @@ namespace CTC.Runtime.Player
 
 
     
+        /// <summary>
+        /// 지금 걸을 수 있는 이속. 순서가 뜻이다: 기본 + 강화 + 빠른 발을 다 더한 **뒤에**
+        /// 바깥 배율을 곱한다 — 끈끈이는 "지금 낼 수 있는 속도의 40%를 뺀다"지 "기본 속도만
+        /// 깎는다"가 아니다. 잠행·바람 전직은 여기 없다: 둘 다 누르고 있는 동안만인 순간 값이라
+        /// Update가 따로 곱한다(QA가 재는 것도 이 값이다 — TestGetMoveSpeedOf).
+        /// </summary>
+        public float CurrentSpeed =>
+            (ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value) + FastFeetBonus()) * m_ExternalSpeedMul.Value;
+
         /// <summary>
         /// 빠른 발(테크 v3) — 이속 가산(TechInfo P1: +0.3/0.7/1.2). 미보유·컴포넌트 없음은 0.
         /// 만렙이어도 고양이 기본 이속을 못 넘는다(가위바위보 표 — 발 싸움은 고양이가 이긴다).

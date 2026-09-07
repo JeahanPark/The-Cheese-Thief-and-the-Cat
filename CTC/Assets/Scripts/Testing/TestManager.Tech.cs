@@ -245,11 +245,9 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// 지금 걸을 수 있는 이속(-1 = 못 찾음) — 빠른 발(가산)·강화 스택·끈끈이 배율이 다 섞인 값.
-        ///
-        /// **주의: <see cref="PlayerMovement"/>의 식을 손으로 베낀 것이다.** 그쪽이 아직 현재 속도를
-        /// 밖에 내주지 않아(공개 프로퍼티 없음) QA가 같은 계산을 다시 한다 — 식이 갈라지면 이 훅이
-        /// 조용히 거짓말을 하므로, `PlayerMovement`에 `CurrentSpeed`가 생기면 **이 본문을 그걸로 바꾼다**.
-        /// 잠행(LShift)·바람 전직 배율은 일부러 뺐다 — 순간 입력이라 QA가 재는 값이 아니다.
+        /// 계산은 <see cref="PlayerMovement.CurrentSpeed"/>가 단독으로 갖는다 — 여기서 식을 베끼면
+        /// 갈라졌을 때 훅이 조용히 거짓말을 한다. 잠행(LShift)·바람 전직 배율은 그쪽에도 없다:
+        /// 누르고 있는 동안만인 순간 값이라 QA가 재는 값이 아니다.
         /// </summary>
         public float TestGetMoveSpeedOf(long _clientId)
         {
@@ -257,9 +255,7 @@ namespace CTC.Runtime.Testing
             PlayerMovement move = p != null ? p.GetComponent<PlayerMovement>() : null;
             if (move == null) return -1f;
 
-            float speed = ShopLogic.MoveSpeed(move.BaseSpeed, move.SpeedStacks)
-                          + TechOwner.Param(p, TechId.FastFeet, 1);
-            return speed * move.ExternalSpeedMultiplier;
+            return move.CurrentSpeed;
         }
     }
 }

@@ -75,6 +75,16 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        public void StructureFun_HiddenLv3Warehouse_EarnsSameAsLv1() // 창고도 레벨을 탄다 — 요새만 막으면 새는 곳이 하나 남는다
+        {
+            int baseHp = ShopLogic.WAREHOUSE_MAX_HP;
+            int lv3Hp = WarehouseLogic.MaxHp(baseHp, 3);   // 숨은 창고 Lv3(TechInfo P2)
+            Assert.Greater(lv3Hp, baseHp, "숨은 창고 Lv3 HP가 기본보다 커야 이 테스트가 뜻을 가진다");
+            Assert.AreEqual(FunLogic.StructureFun(baseHp, baseHp, baseHp),
+                FunLogic.StructureFun(lv3Hp, lv3Hp, baseHp));
+        }
+
+        [Test]
         public void StructureFun_NonFortress_Unchanged() // 레벨 없는 구조물은 기본=최대라 그대로다
         {
             int hp = ShopLogic.WAREHOUSE_MAX_HP;

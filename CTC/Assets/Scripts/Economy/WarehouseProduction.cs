@@ -104,14 +104,26 @@ namespace CTC.Runtime.Economy
         {
             if (!IsServer) return;
 
-            int refund = WarehouseLogic.Refund(m_PlaceCost.Value, m_HiddenLevel.Value);
+            // 값을 **맨 위에서 먼저 뜬다** — 같은 Died에 물린 PlayerDeath가 먼저 돌면 이 창고가
+            // 이미 despawn된 뒤라 NetworkVariable을 못 읽는다. 컴포넌트 순서에 기대지 않는다.
+            int placeCost = m_PlaceCost.Value;
+            int hiddenLevel = m_HiddenLevel.Value;
+            ulong ownerId = m_OwnerClientId.Value;
+
+            int refund = WarehouseLogic.Refund(placeCost, hiddenLevel);
             if (refund <= 0) return;
 
             CheeseWallet wallet = ResolveWallet();
-            if (wallet == null) return;
+            if (wallet == null)
+            {
+                // 환급이 "안 일어난 것"과 "일어났는데 줄 곳이 없어 사라진 것"은 다르다 — 남긴다.
+                Core.GameDebug.LogWarning(
+                    $"[Warehouse] {ownerId} 지갑을 못 찾아 환급 {refund}을 버렸다 (나갔거나 죽은 뒤 despawn).");
+                return;
+            }
 
             wallet.AddCheese(refund);
-            Core.GameDebug.Log($"[Warehouse] {m_OwnerClientId.Value} 창고 파괴 환급 +{refund} (숨은 창고 Lv{m_HiddenLevel.Value})");
+            Core.GameDebug.Log($"[Warehouse] {ownerId} 창고 파괴 환급 +{refund} (숨은 창고 Lv{hiddenLevel})");
         }
 
         // 소유 쥐가 죽으면 지갑도 사라진다 — 캐시를 매번 유효성 검사한다.

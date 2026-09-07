@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CTC.Runtime.Economy
@@ -23,5 +24,24 @@ namespace CTC.Runtime.Economy
 
         /// <summary>쿨다운이 끝났는가(서버 시계 기준).</summary>
         public static bool Ready(double _readyAt, double _now) => _now >= _readyAt;
+
+        /// <summary>
+        /// 겹친 장판들이 건 배율 중 **가장 센 것**(=최솟값)이 이긴다. 하나도 없으면 1(감속 없음).
+        /// 예전엔 배율이 한 칸뿐이라 나중에 나간 장판이 1을 덮어써서, 아직 밟고 있는 장판 위에서
+        /// 고양이가 제 속도로 달렸다. 이제 건 쪽마다 한 칸을 갖고 여기서 최솟값을 고른다.
+        /// </summary>
+        public static float MinMultiplier(IEnumerable<float> _multipliers)
+        {
+            if (_multipliers == null) return 1f;
+
+            float min = 1f;
+            bool any = false;
+            foreach (float m in _multipliers)
+            {
+                if (!any || m < min) min = m;
+                any = true;
+            }
+            return any ? min : 1f;
+        }
     }
 }
