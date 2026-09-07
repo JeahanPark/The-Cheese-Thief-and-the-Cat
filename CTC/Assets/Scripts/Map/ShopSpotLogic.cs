@@ -39,6 +39,17 @@ namespace CTC.Runtime.Map
             return picked;
         }
 
+        /// <summary>
+        /// 손 배치 맵(2026-09-07, `Layout_Warehouse01`)은 레벨디자이너가 찍은 자리를 그대로 쓴다 —
+        /// 방 중심 규칙은 절차 맵(방 목록이 있는)에만. 손 배치인데 자리가 비어 있으면 방 규칙으로 후퇴한다.
+        /// </summary>
+        public static List<Vector2> Resolve(bool _handPlaced, IReadOnlyList<Vector2> _placed,
+            IReadOnlyList<Vector2> _roomCenters, int _count, float _minGap, int _seed)
+        {
+            if (_handPlaced && _placed != null && _placed.Count > 0) return new List<Vector2>(_placed);
+            return Pick(_roomCenters, _count, _minGap, _seed);
+        }
+
         /// <summary>수평 반경 판정 — 높이는 무시(평면 맵).</summary>
         public static bool Contains(Vector3 _center, Vector3 _point, float _radius)
         {

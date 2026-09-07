@@ -55,6 +55,31 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void Resolve_HandPlaced_UsesPlacedAsIs()
+        {
+            // 창고 맵(2026-09-07)은 방 목록이 비어 있고 상점 4곳이 손으로 찍혀 있다 — 간격 규칙을 안 탄다
+            var placed = new List<Vector2> { new Vector2(-36, -28), new Vector2(40, -24), new Vector2(-40, 36), new Vector2(36, 32) };
+            List<Vector2> got = ShopSpotLogic.Resolve(true, placed, new List<Vector2>(), 4, 25f, 1);
+            CollectionAssert.AreEqual(placed, got);
+        }
+
+        [Test]
+        public void Resolve_HandPlacedButEmpty_FallsBackToRooms()
+        {
+            List<Vector2> got = ShopSpotLogic.Resolve(true, new List<Vector2>(), Grid(7, 20f), 4, 25f, 1);
+            Assert.AreEqual(4, got.Count);
+        }
+
+        [Test]
+        public void Resolve_Procedural_IgnoresPlaced()
+        {
+            var placed = new List<Vector2> { new Vector2(1, 1) };
+            List<Vector2> got = ShopSpotLogic.Resolve(false, placed, Grid(7, 20f), 4, 25f, 1);
+            Assert.AreEqual(4, got.Count);
+            CollectionAssert.DoesNotContain(got, new Vector2(1, 1));
+        }
+
+        [Test]
         public void Contains_UsesRadius_IgnoresHeight()
         {
             Assert.IsTrue(ShopSpotLogic.Contains(new Vector3(0, 0, 0), new Vector3(2.9f, 5f, 0), 3f));
