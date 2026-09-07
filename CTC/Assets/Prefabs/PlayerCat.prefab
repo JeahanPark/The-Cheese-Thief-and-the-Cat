@@ -22,8 +22,8 @@ GameObject:
   - component: {fileID: 4826755275216159815}
   - component: {fileID: 2686438700027045997}
   - component: {fileID: 3722839825644162623}
-  - component: {fileID: 6843619496559565652}
   - component: {fileID: 2456762595811932099}
+  - component: {fileID: 6843619496559565652}
   - component: {fileID: 868449302951146565}
   - component: {fileID: 1825586617100723517}
   - component: {fileID: 8188860910711169595}
@@ -297,19 +297,6 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_FortressPrefab: {fileID: 3525953091307173698, guid: 77dfa9cb7fe111c47b7456c5fcfceab1, type: 3}
   m_WarehousePrefab: {fileID: 2931954466690270675, guid: af09db80bdf16a04d9c393a9ce7e6ab6, type: 3}
---- !u!114 &6843619496559565652
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5090140034732257434}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2e735be8169015449a82a6f8f2f6fdb9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.TechSlots
-  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &2456762595811932099
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -322,6 +309,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2f456b0fa063ea469a5c3ed7b847b9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.BodyPush
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6843619496559565652
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e735be8169015449a82a6f8f2f6fdb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.TechSlots
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &868449302951146565
 MonoBehaviour:

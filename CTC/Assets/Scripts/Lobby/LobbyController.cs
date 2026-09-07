@@ -27,6 +27,7 @@ namespace CTC.Runtime.Lobby
         private MapDirector m_MapDirector;
         private Map.AlcoveSpawner m_AlcoveSpawner;
         private Map.LootBoxSpawner m_BoxSpawner;
+        private Map.ShopSpotSpawner m_ShopSpawner;
 
         private void Awake()
         {
@@ -35,6 +36,7 @@ namespace CTC.Runtime.Lobby
             m_MapDirector = GetComponent<MapDirector>();
             m_AlcoveSpawner = GetComponent<Map.AlcoveSpawner>();
             m_BoxSpawner = GetComponent<Map.LootBoxSpawner>();
+            m_ShopSpawner = GetComponent<Map.ShopSpotSpawner>();
         }
 
         // ---- 상태 조회 (View·QA가 읽는다) ----
@@ -113,6 +115,7 @@ namespace CTC.Runtime.Lobby
             // 벽감은 판이 시작할 때 맵이 깐다(요새·창고는 쥐가 산다)
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
+            if (m_ShopSpawner != null) m_ShopSpawner.ServerSpawnAll(ActiveLayout);   // 상점 자리(테크 v3)
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -126,6 +129,7 @@ namespace CTC.Runtime.Lobby
             if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
+            if (m_ShopSpawner != null) m_ShopSpawner.ServerSpawnAll(ActiveLayout);   // 상점 자리(테크 v3)
         }
 
         /// <summary>
@@ -185,6 +189,7 @@ namespace CTC.Runtime.Lobby
             if (m_Session != null) m_Session.ServerResetToLobby();
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerDespawnAll();
             if (m_BoxSpawner != null) m_BoxSpawner.ServerDespawnAll();
+            if (m_ShopSpawner != null) m_ShopSpawner.ServerDespawnAll();
         }
 
         // ---- 스폰 공식 (소유자 클라가 자기 자리를 계산할 때) ----

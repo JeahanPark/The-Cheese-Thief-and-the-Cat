@@ -101,8 +101,16 @@ namespace CTC.Editor
             // 구버전 클라이언트가 신버전 호스트에 붙는 것을 막는다 — 0이면 아무나 붙는다.
             // 씬에 굽히는 값이라 **버전을 올리면 씬을 다시 구워야** 반영된다.
             nm.NetworkConfig.ProtocolVersion = NetVersionLogic.Protocol(PlayerSettings.bundleVersion);
+            // 상점 자리(테크 v3) — 있으면 그대로 쓴다. 다른 프리팹처럼 Run()이 넘겨주지 않는 이유는
+            // 실험실(BotLab) 경로도 같은 것을 세워야 하기 때문이다.
+            GameObject shopSpotPrefab = ShopSpotPrefabFactory.Build();
+            // 저장 후에 굽는다 — 임시 오브젝트에서는 GlobalObjectId가 무효라 해시가 충돌한다.
+            // 이미 맞는 값이면 같은 값이 다시 써지므로 돌려도 안전하다.
+            if (shopSpotPrefab != null) BakeGlobalObjectIdHash(shopSpotPrefab.GetComponent<NetworkObject>());
+
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _warehousePrefab,
-                _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket);
+                _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket,
+                shopSpotPrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체.
             // 실험실은 혼자 도는 판이라 접속·스팀·MPPM 배선을 전부 뺀다(화면도 로그도 깨끗해진다).
@@ -135,6 +143,10 @@ namespace CTC.Editor
             // **같은 오브젝트에 있어야 한다** (안 붙여서 상자가 0개 스폰된 적이 있다, 2026-08-10).
             var boxSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.LootBoxSpawner>();
             SetRef(boxSpawner, "m_BoxPrefab", _lootBoxPrefab);
+
+            // 상점 자리(Worker, 테크 v3) — 상자와 같은 취급. LobbyController가 GetComponent로 찾는다.
+            var shopSpawner = lobbyGo.AddComponent<CTC.Runtime.Map.ShopSpotSpawner>();
+            SetRef(shopSpawner, "m_SpotPrefab", shopSpotPrefab);
 
             // 2단계 감독(Worker, v3.9) — 고양이가 죽어도 깡패가 있으면 판이 안 끝난다.
             var phaseDirector = lobbyGo.AddComponent<CTC.Runtime.Match.PhaseDirector>();
