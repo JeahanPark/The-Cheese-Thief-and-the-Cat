@@ -33,7 +33,16 @@ namespace CTC.Runtime.Economy
         /// </summary>
         public Observable<Unit> Changed => m_Entries.AsChangedObservable().Prepend(() => Unit.Default);
 
-        public int LevelOf(TechId _id) => TechLogic.LevelOf(Owned, _id);
+        /// <summary>
+        /// 보유 레벨(미보유 0). 총알 명중·피해 이벤트마다 불리므로 Owned를 거치지 않는다 —
+        /// 거치면 호출마다 List를 새로 만든다(리뷰 4). 순수 로직에 넘길 때만 Owned를 쓴다.
+        /// </summary>
+        public int LevelOf(TechId _id)
+        {
+            for (int i = 0; i < m_Entries.Count; i++)
+                if (m_Entries[i].Id == _id) return m_Entries[i].Level;
+            return 0;
+        }
 
         private void Awake()
         {

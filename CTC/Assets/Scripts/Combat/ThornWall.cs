@@ -12,16 +12,25 @@ namespace CTC.Runtime.Combat
     {
         private readonly NetworkVariable<int> m_Reflect = new NetworkVariable<int>();
 
+        // 스폰 전에 받아 두는 값 — 스폰 전 NetworkVariable에 직접 쓰면 NGO가
+        // "doesn't know its NetworkBehaviour yet" 경고를 매 Lv3 요새마다 뱉는다.
+        private int m_PendingReflect;
+
         /// <summary>타격 1회당 되돌려주는 피해. 0이면 가시 벽이 아니다.</summary>
         public int Reflect => m_Reflect.Value;
 
         /// <summary>서버 전용 — 스폰 전에 부른다.</summary>
         public void ServerSet(int _reflect)
         {
-            // 스폰 전에는 IsServer가 아직 false다. NetworkVariable은 스폰 전 쓰기를 허용하므로
-            // 스폰 뒤(서버)와 스폰 전(호스트 로컬) 둘 다 통과시킨다.
-            if (IsSpawned && !IsServer) return;
-            m_Reflect.Value = _reflect;
+            // 스폰 전이면 보관만 하고 OnNetworkSpawn에서 쓴다(경고 회피).
+            m_PendingReflect = _reflect;
+            if (IsSpawned && IsServer) m_Reflect.Value = _reflect;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            // 스폰 전에 받아 둔 값을 여기서 한 번에 올린다 — 서버만 쓴다.
+            if (IsServer) m_Reflect.Value = m_PendingReflect;
         }
     }
 }

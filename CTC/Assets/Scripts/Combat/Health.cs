@@ -56,6 +56,8 @@ namespace CTC.Runtime.Combat
         {
             if (!IsServer || IsDead) return 0;
 
+            // 인터페이스 타입 필드는 Unity의 == 오버로드를 건너뛴다(규칙 9) — 파괴된 컴포넌트를
+            // 캐시해 두면 조용히 통과한다. 그래서 여기만은 캐시하지 않고 매번 찾는다.
             IDamageAbsorber absorber = GetComponent<IDamageAbsorber>();
             if (absorber != null) _damage = absorber.ServerAbsorb(_damage);
 

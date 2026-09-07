@@ -20,7 +20,15 @@ namespace CTC.Runtime.Combat
 
         private double m_LastUseTime = -999.0;
 
+        // 총알 한 발마다 GetComponent를 돌리지 않는다 — 명중 처리에서 테크 레벨을 읽는다(리뷰 4).
+        private TechSlots m_Slots;
+
         public int Tier => m_Tier.Value;
+
+        private void Awake()
+        {
+            m_Slots = GetComponent<TechSlots>();
+        }
 
         /// <summary>무기 티어 스트림(우상단 상태 배지용) — 구독 즉시 현재 값이 흐른다.</summary>
         public R3.Observable<int> TierChanged => m_Tier.AsObservableWithCurrent();
@@ -114,12 +122,13 @@ namespace CTC.Runtime.Combat
                 // 후추 탄(빌드 심화 v1) — 고양이·강아지(RoleTag None인 제3세력)에게만 도트.
                 // 구조물·상자·쥐엔 안 붙는다: 벽감 치즈 총량 QA(qa_v38)를 흔들면 안 되고,
                 // 쥐끼리는 매울 이유가 없다. 강아지는 hitIsPlayer=false·비노획물로 걸러진다.
-                var pepper = GetComponent<PepperRounds>();
+                // 후추 보유의 단일 원본은 **테크 레벨**이다. PepperRounds.Owned와 둘로 나누면
+                // 어긋났을 때 0중첩·0초짜리 도트가 조용히 붙는다 — 컴포넌트는 HUD 스트림용으로만 남긴다.
                 bool livingEnemy = tag.Role == RoleId.Cat || (tag.Role == RoleId.None && !hitIsMapLoot);
-                if (pepper != null && pepper.Owned && livingEnemy)
+                int pepperLv = m_Slots != null ? m_Slots.LevelOf(TechId.Pepper) : 0;
+                if (pepperLv > 0 && livingEnemy)
                 {
                     // 후추 레벨이 중첩·지속을 정한다(TechInfo P1·P2). Lv1 = 3중첩·4초(옛 BalanceInfo 값과 같다)
-                    int pepperLv = TechOwner.LevelOf(gameObject, TechId.Pepper);
                     PepperDot.ServerApply(target,
                         Mathf.RoundToInt(TechLogic.ParamOf(TechId.Pepper, pepperLv, 1)),
                         TechLogic.ParamOf(TechId.Pepper, pepperLv, 2));

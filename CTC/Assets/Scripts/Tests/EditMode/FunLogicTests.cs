@@ -1,5 +1,6 @@
 using CTC.Runtime.Economy;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CTC.Tests.EditMode
 {
@@ -54,6 +55,30 @@ namespace CTC.Tests.EditMode
         public void AccruedFun_OddDamage_RoundsDown() // 정수 유지 — 잔돈은 버린다
         {
             Assert.AreEqual(2, FunLogic.AccruedFun(5, false, false));
+        }
+
+        [Test]
+        public void StructureFun_BaseLevelFortress_SameAsAccruedFun() // Lv1은 그대로다
+        {
+            int hp = ShopLogic.FORTRESS_HP;
+            Assert.AreEqual(FunLogic.AccruedFun(hp, false, true), FunLogic.StructureFun(hp, hp, hp));
+        }
+
+        [Test]
+        public void StructureFun_Lv3Fortress_EarnsSameAsLv1() // 요새를 올려도 고양이 수입은 그대로
+        {
+            int baseHp = ShopLogic.FORTRESS_HP;
+            int lv3Hp = Mathf.RoundToInt(TechLogic.ParamOf(TechId.Fortress, 3, 1));
+            Assert.Greater(lv3Hp, baseHp, "Lv3 요새 HP가 기본보다 커야 이 테스트가 뜻을 가진다");
+            Assert.AreEqual(FunLogic.StructureFun(baseHp, baseHp, baseHp),
+                FunLogic.StructureFun(lv3Hp, lv3Hp, baseHp));
+        }
+
+        [Test]
+        public void StructureFun_NonFortress_Unchanged() // 레벨 없는 구조물은 기본=최대라 그대로다
+        {
+            int hp = ShopLogic.WAREHOUSE_MAX_HP;
+            Assert.AreEqual(FunLogic.AccruedFun(hp, false, true), FunLogic.StructureFun(hp, hp, hp));
         }
     }
 }

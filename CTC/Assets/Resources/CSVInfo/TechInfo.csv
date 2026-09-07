@@ -11,7 +11,7 @@ CatClaw,Cat,Attack,3,180,발톱,덮치기 +30,0,0,0
 CatStomp,Cat,Utility,1,80,발 구르기,이속 +0.2,0,0,0
 CatStomp,Cat,Utility,2,120,발 구르기,이속 +0.4,0,0,0
 CatStomp,Cat,Utility,3,160,발 구르기,이속 +0.6,0,0,0
-Gun,Mouse,Attack,3,450,긴 총열,사거리 14m · 피해 ×1.3,3,0,0
+Gun,Mouse,Attack,3,450,긴 총열,사거리 14m · DPS ×1.4,3,0,0
 Pepper,Mouse,Attack,2,180,매운 맛,도트 4중첩,4,4,0
 Pepper,Mouse,Attack,3,240,오래 감,도트 6초,4,6,0
 Fortress,Mouse,Defense,2,260,두꺼운 벽,요새 HP 900,900,0,0

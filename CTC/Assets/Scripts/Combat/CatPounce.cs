@@ -61,6 +61,10 @@ namespace CTC.Runtime.Combat
             AttackAnimRpc();
 
             CheeseWallet myWallet = GetComponent<CheeseWallet>();
+            // 자기 컴포넌트는 루프 밖에서 한 번만 찾는다 — 부채꼴 안 대상마다 GetComponent를
+            // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
+            Health self = GetComponent<Health>();
+            float fireMultiplier = FireMultiplier();
 
             foreach (Health target in FindObjectsByType<Health>(FindObjectsSortMode.None))
             {
@@ -88,7 +92,7 @@ namespace CTC.Runtime.Combat
 
                 int damage = ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value);
                 // 불(v3.9) — 스킬이 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
-                damage = Mathf.RoundToInt(damage * FireMultiplier());
+                damage = Mathf.RoundToInt(damage * fireMultiplier);
                 int dealt = target.TakeDamage(damage);
 
                 // 가시 벽(요새 Lv3) — 벽을 친 고양이가 되맞는다. 실피해가 0이면(막혔거나 이미 죽음)
@@ -96,16 +100,29 @@ namespace CTC.Runtime.Combat
                 ThornWall thorn = target.GetComponent<ThornWall>();
                 if (thorn != null && thorn.Reflect > 0 && dealt > 0)
                 {
-                    Health self = GetComponent<Health>();
                     if (self != null) self.TakeDamage(thorn.Reflect);   // 사망 판정은 Health가 한다
                 }
+
+                // 반사에 죽었으면 부채꼴의 나머지를 계속 때리지 않는다 — PlayerDeath는 고양이를
+                // despawn하지 않아서, 막지 않으면 죽은 고양이가 계속 때리고 장난기까지 벌었다(리뷰 2).
+                if (self != null && self.IsDead) break;
 
                 // 장난기 적립(v3.6): 플레이어 실피해 ×0.5 + 킬 보너스, 구조물은 ×0.25.
                 // 요새 1채 300pt는 벽 때리기를 최고 효율 수입원으로 만들었다.
                 if (myWallet != null && !exempt)
                 {
-                    myWallet.AddCheese(FunLogic.AccruedFun(
-                        dealt, target.IsDead && isPlayerTarget, !isPlayerTarget));
+                    if (isPlayerTarget)
+                    {
+                        myWallet.AddCheese(FunLogic.AccruedFun(dealt, target.IsDead, false));
+                    }
+                    else
+                    {
+                        // 요새는 테크 레벨로 HP가 커진다 — 그대로 나누면 Lv3 벽이 Lv1의 2.5배를
+                        // 벌어 v3.6에서 잡았던 '벽 때리기 최고 수입'이 되살아난다. 기본 HP로 환산한다.
+                        bool isFortress = target.GetComponent<FortressShield>() != null;
+                        int baseHp = isFortress ? ShopLogic.FORTRESS_HP : target.MaxHp;
+                        myWallet.AddCheese(FunLogic.StructureFun(dealt, target.MaxHp, baseHp));
+                    }
                 }
             }
         }

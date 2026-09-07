@@ -6,8 +6,9 @@ using UnityEngine;
 namespace CTC.Runtime.Economy
 {
     /// <summary>
-    /// 요새 = **즉발 방패** (2026-08-15). 내 위치 중심에 즉시 서고, 회복은 없고, 노업 덮치기 3방에
-    /// 부서진다(HP는 BalanceInfo.FortressHp). 요새 자체는 Health+RoleTag(Mouse)+PlayerDeath —
+    /// 요새 = **즉발 방패** (2026-08-15). 내 위치 중심에 즉시 서고, 회복은 없고, 노업 덮치기
+    /// 8방에 부서진다(HP 원본은 TechInfo Fortress P1 — 기본 480 · Lv2 900 · Lv3 1200. 2026-08-18에
+    /// 180→480으로 올렸다). 요새 자체는 Health+RoleTag(Mouse)+PlayerDeath —
     /// 부서지면 despawn. 이 컴포넌트가 하는 일은 하나 — **서는 순간 겹친 몸을 밀어낸다.**
     ///
     /// 고양이는 풋프린트 안이면 무조건 바깥으로(안에 남으면 방패가 아니라 관이다),
@@ -21,8 +22,8 @@ namespace CTC.Runtime.Economy
 
         /// <summary>
         /// 이 지점이 서 있는 요새 안인가 — **요새 안에서는 요새를 못 세운다**(2026-08-16).
-        /// 겹쳐 세우면 3방짜리 방패가 9방·12방이 되고, 겹친 벽끼리 서로를 가려 한때는 전부 무적이었다.
-        /// 지금 것이 부서지면 그때 다시 사면 된다 — 80치즈에 3방씩이라는 경제가 그대로 선다.
+        /// 겹쳐 세우면 한 겹짜리 방패가 두 겹·세 겹이 되고, 겹친 벽끼리 서로를 가려 한때는 전부 무적이었다.
+        /// 지금 것이 부서지면 그때 다시 사면 된다 — 설치비 한 번에 벽 한 겹이라는 경제가 그대로 선다.
         /// </summary>
         public static bool AnyContains(Vector3 _point)
         {
