@@ -34,12 +34,63 @@ namespace CTC.Runtime.UI
 
         private readonly List<Image> m_Pool = new List<Image>();
 
+        // 풀 칸마다 「지금 무엇을 그리고 있나」. QA가 Model 목록이 아니라 **켜진 아이콘**을 셀 수
+        // 있어야 배선 누락이 잡힌다 — 목록만 보면 View가 하나도 안 켜도 통과한다(2026-08-09 실측).
+        private readonly List<MinimapMarkerKind> m_PoolKinds = new List<MinimapMarkerKind>();
+
         private MapLayout m_BakedLayout;
         private Texture2D m_Texture;
         private float m_HalfExtent;
 
         private static int SizePx => Info.InfoManager.Instance.Balance.MinimapSizePx;
         private static int TexturePx => Info.InfoManager.Instance.Balance.MinimapTexturePx;
+
+        /// <summary>미니맵이 실제로 화면에 떠 있는가 — 켜졌다는 Model 값이 아니라 판이 켜졌는지를 본다.</summary>
+        public bool IsShown => m_Root != null && m_Root.activeInHierarchy;
+
+        /// <summary>
+        /// QA: 지금 이 화면에 **실제로 켜진** 마커 아이콘 수(종류를 안 주면 전부).
+        ///
+        /// 총계와 종류별 합이 어긋나면 세 종류가 아닌 무언가가 그려지고 있다는 뜻이다 —
+        /// 「남은 절대 안 그린다」(기획 2절)가 깨진 자리를 여기서 잡는다.
+        /// </summary>
+        public int CountShownIcons(MinimapMarkerKind? _kind)
+        {
+            int count = 0;
+            for (int i = 0; i < m_Pool.Count; i++)
+            {
+                Image icon = m_Pool[i];
+                if (icon == null || !icon.gameObject.activeInHierarchy) continue;
+                if (_kind.HasValue && m_PoolKinds[i] != _kind.Value) continue;
+                count++;
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// QA: 켜진 마커 중 그 월드 좌표에 가장 가까운 것까지의 거리(m). 하나도 없으면 -1.
+        /// 「상대가 서 있는 자리에 점이 찍히지 않는다」를 재는 자다 — 종류를 세는 것만으로는
+        /// 적 마커가 <see cref="MinimapMarkerKind.Shop"/>인 척 섞여 들어와도 안 걸린다.
+        /// </summary>
+        public float NearestShownIconMeters(Vector2 _world)
+        {
+            if (m_HalfExtent <= 0f) return -1f;
+
+            float best = -1f;
+            for (int i = 0; i < m_Pool.Count; i++)
+            {
+                Image icon = m_Pool[i];
+                if (icon == null || !icon.gameObject.activeInHierarchy) continue;
+
+                // 아이콘이 실제로 놓인 픽셀을 다시 월드로 되돌린다 — Model 목록이 아니라
+                // **화면에 놓인 자리**를 재야 View가 엉뚱한 데 찍는 사고도 같이 잡힌다.
+                Vector2 at = MinimapLogic.PixelToWorld(
+                    icon.rectTransform.anchoredPosition, m_HalfExtent, SizePx);
+                float meters = Vector2.Distance(at, _world);
+                if (best < 0f || meters < best) best = meters;
+            }
+            return best;
+        }
 
         private void Start()
         {
@@ -81,6 +132,7 @@ namespace CTC.Runtime.UI
             for (int i = 0; i < _markers.Count; i++)
             {
                 Image icon = IconAt(i);
+                m_PoolKinds[i] = _markers[i].Kind;
                 icon.color = ColorOf(_markers[i].Kind);
                 Place(icon.rectTransform, _markers[i].World);
                 if (!icon.gameObject.activeSelf) icon.gameObject.SetActive(true);
@@ -121,6 +173,8 @@ namespace CTC.Runtime.UI
 
         private Image CreateIcon()
         {
+            m_PoolKinds.Add(MinimapMarkerKind.Shop);   // 첫 그리기에서 바로 덮인다
+
             var go = new GameObject($"Marker{m_Pool.Count}", typeof(RectTransform));
             go.transform.SetParent(m_MarkerLayer, false);
             var rt = (RectTransform)go.transform;

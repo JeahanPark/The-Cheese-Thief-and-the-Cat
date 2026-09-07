@@ -37,6 +37,21 @@ namespace CTC.Runtime.UI
         }
 
         /// <summary>
+        /// <see cref="WorldToPixel"/>의 역 — 지도 위 픽셀이 가리키는 월드 (x, z).
+        ///
+        /// QA가 「저 점이 진짜 어디를 가리키나」를 되물을 때 쓴다(적 자리에 점이 안 찍히는지).
+        /// 픽셀은 정수로 반올림된 값이라 되돌린 좌표에는 **픽셀 한 칸만큼의 오차**가 남는다 —
+        /// 「같은 자리인가」를 재는 데는 되지만 좌표를 복원하는 데 쓰면 안 된다.
+        /// </summary>
+        public static Vector2 PixelToWorld(Vector2 _pixel, float _halfExtent, int _px)
+        {
+            if (_px <= 0) return Vector2.zero;
+            float extent = Mathf.Max(_halfExtent, 1e-4f);
+            float scale = _px / (extent * 2f);
+            return new Vector2(_pixel.x / scale - extent, _pixel.y / scale - extent);
+        }
+
+        /// <summary>
         /// 월드 사각형(중심·크기 m)을 텍스처 픽셀 사각형으로.
         /// 폭/높이가 <paramref name="_minThickness"/>보다 얇으면 **중심을 지킨 채** 그만큼 벌린다.
         /// 텍스처 밖으로 나간 부분은 잘라내고, 완전히 밖이면 width·height가 0인 사각형을 준다.

@@ -1,4 +1,4 @@
-using CTC.Runtime.Lobby;
+﻿using CTC.Runtime.Lobby;
 using CTC.Runtime.UI;
 using NUnit.Framework;
 using UnityEngine;
@@ -33,6 +33,27 @@ namespace CTC.Tests
             // 맵 밖으로 밀려나도 텍스처 밖을 찍으면 안 된다
             Assert.AreEqual(new Vector2Int(PX - 1, 0), MinimapLogic.WorldToPixel(new Vector2(1000f, -1000f), HALF, PX));
             Assert.AreEqual(new Vector2Int(0, PX - 1), MinimapLogic.WorldToPixel(new Vector2(-1000f, 1000f), HALF, PX));
+        }
+
+        [Test]
+        public void PixelToWorld_RoundTripsWithinOnePixel()
+        {
+            // QA가 「저 점이 가리키는 자리」를 되물을 때 쓰는 역변환 — 픽셀 한 칸 안으로 돌아와야 한다.
+            float pixelMeters = (HALF * 2f) / PX;
+            foreach (Vector2 world in new[] { Vector2.zero, new Vector2(17.5f, -42.25f), new Vector2(-59f, 59f) })
+            {
+                Vector2Int px = MinimapLogic.WorldToPixel(world, HALF, PX);
+                Vector2 back = MinimapLogic.PixelToWorld(new Vector2(px.x + 0.5f, px.y + 0.5f), HALF, PX);
+                Assert.Less(Vector2.Distance(back, world), pixelMeters, $"{world} 왕복이 한 픽셀을 넘었다");
+            }
+        }
+
+        [Test]
+        public void PixelToWorld_CenterPixelIsOrigin()
+        {
+            Vector2 origin = MinimapLogic.PixelToWorld(new Vector2(PX * 0.5f, PX * 0.5f), HALF, PX);
+            Assert.AreEqual(0f, origin.x, 1e-3f);
+            Assert.AreEqual(0f, origin.y, 1e-3f);
         }
 
         [Test]
