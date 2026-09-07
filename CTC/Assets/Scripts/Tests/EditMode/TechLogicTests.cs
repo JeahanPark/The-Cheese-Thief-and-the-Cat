@@ -128,14 +128,39 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void IsActive_FortressWarehouseStickyDash_Only()
+        public void IsActive_FortressWarehouseStickyDashFrenzy_Only()
         {
             Assert.IsTrue(TechLogic.IsActive(TechId.Fortress));
             Assert.IsTrue(TechLogic.IsActive(TechId.Dash));
             Assert.IsTrue(TechLogic.IsActive(TechId.Sticky));
-            Assert.IsTrue(TechLogic.IsActive(TechId.Warehouse)); // 조준 설치 — 밖에서 숫자키로 놓는다
+            Assert.IsTrue(TechLogic.IsActive(TechId.Warehouse));  // 조준 설치 — 밖에서 숫자키로 놓는다
+            Assert.IsTrue(TechLogic.IsActive(TechId.CatFrenzy));  // 고양이 첫 액티브 테크 — 숫자키로 켠다
             Assert.IsFalse(TechLogic.IsActive(TechId.Gun));
             Assert.IsFalse(TechLogic.IsActive(TechId.CatClaw));
+            Assert.IsFalse(TechLogic.IsActive(TechId.CatHide));   // 산 순간 끝 — 누를 게 없다
+            Assert.IsFalse(TechLogic.IsActive(TechId.CatHunger));
+            Assert.IsFalse(TechLogic.IsActive(TechId.CatEar));
+        }
+
+        [Test]
+        public void Frenzy_TimesFire_CannotOneShotLv3Fortress()
+        {
+            // 광분(테크)과 불(전직)은 서로를 모른다 — 둘 다 켜면 곱연산이 된다(기획서에 없는 조합).
+            // 못 박을 것은 "요새 Lv3을 한 방에 부수지는 못한다"이다. 이 선이 무너지면
+            // 쥐가 돈을 다 쓴 방벽이 고양이 클릭 한 번에 사라져 방어 축이 통째로 죽는다.
+            int maxPounce = ShopLogic.PounceDamage(
+                CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Cat).PounceDamage,
+                ShopLogic.MAX_UPGRADE_STACKS);
+            float frenzy = TechLogic.ParamOf(TechId.CatFrenzy, TechLogic.MaxLevel(TechId.CatFrenzy), 1);
+            float fire = CTC.Runtime.Player.CatClassLogic.FireDamageMultiplier;
+            Assert.Greater(frenzy, 1f, "광분 만렙 배율이 1보다 커야 이 테스트가 뜻을 가진다");
+
+            int burst = UnityEngine.Mathf.RoundToInt(maxPounce * fire * frenzy);
+            int fortressLv3 = UnityEngine.Mathf.RoundToInt(
+                TechLogic.ParamOf(TechId.Fortress, TechLogic.MaxLevel(TechId.Fortress), 1));
+
+            Assert.Less(burst, fortressLv3,
+                $"한 방 {burst} ≥ 요새 Lv3 HP {fortressLv3} — 값을 고쳐야 한다(테스트가 아니라)");
         }
 
         [Test]

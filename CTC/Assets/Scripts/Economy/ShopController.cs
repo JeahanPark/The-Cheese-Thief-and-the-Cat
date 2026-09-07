@@ -108,6 +108,12 @@ namespace CTC.Runtime.Economy
                     return UseDeny.None;
                 case TechId.Dash:
                     return UseDeny.None;   // 쿨다운은 MouseDash가 본다
+                case TechId.CatFrenzy:
+                    Player.CatFrenzy frenzy = GetComponent<Player.CatFrenzy>();
+                    if (frenzy == null) return UseDeny.Unavailable;
+                    // 설치비가 없다 — 값은 쿨다운이다. 이유를 따로 말해야 핫바가 뭉뚱그리지 않는다.
+                    if (!frenzy.Ready) return UseDeny.Cooldown;
+                    return UseDeny.None;
                 default:
                     return UseDeny.Unavailable;
             }
@@ -173,6 +179,12 @@ namespace CTC.Runtime.Economy
                 case TechId.Sticky:
                     // 발밑에 깐다 — 조준이 없다. 쫓기는 중에 쓰는 물건이라 조준할 여유가 없다.
                     SpawnStickyPatch();
+                    break;
+                case TechId.CatFrenzy:
+                    // 몸에 켜지는 것뿐이라 스폰이 없다 — 지속·쿨·소리는 컴포넌트가 갖는다.
+                    Player.CatFrenzy frenzy = GetComponent<Player.CatFrenzy>();
+                    if (frenzy == null) { ResultRpc(false); return; }
+                    frenzy.ServerTryUse();
                     break;
                 // 대시는 여기 없다 — 소유자 권위라 Use()가 로컬에서 처리한다(위 주석 참조).
                 default:
@@ -242,6 +254,8 @@ namespace CTC.Runtime.Economy
                     return GetComponent<Player.CatHide>() != null;              // 최대 HP를 올릴 컴포넌트
                 case TechId.CatHunger:
                     return true;                                                // 순수 패시브 — 값은 덮칠 때 CatPounce가 읽는다
+                case TechId.CatFrenzy:
+                    return GetComponent<Player.CatFrenzy>() != null;            // 켜짐·쿨을 들 컴포넌트
                 case TechId.CatEar:
                     return true;                                                // 듣는 쪽 배율이라 몸에 적용할 것이 없다
                 default:
@@ -311,6 +325,9 @@ namespace CTC.Runtime.Economy
                 case TechId.CatHunger:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 덮치는 CatPounce가 적립할 때 읽는다.
                     return true;
+                case TechId.CatFrenzy:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, 켤 때 CatFrenzy가 지속·쿨·배율을 읽는다.
+                    return GetComponent<Player.CatFrenzy>() != null;
                 case TechId.CatEar:
                     // 예민한 귀는 듣는 쪽 배율이라 몸에 적용할 것이 없다 —
                     // ListenerRangeBinder가 TechSlots를 보고 세운다.

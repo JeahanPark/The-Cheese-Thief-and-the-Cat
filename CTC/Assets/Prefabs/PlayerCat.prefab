@@ -29,6 +29,7 @@ GameObject:
   - component: {fileID: 8188860910711169595}
   - component: {fileID: 559661421635657512}
   - component: {fileID: 4113821741810692290}
+  - component: {fileID: 3565572162635516458}
   - component: {fileID: 6558113436026960680}
   - component: {fileID: 2911770353754494756}
   - component: {fileID: 680282509390343821}
@@ -393,6 +394,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36c65019a943dd041a074aef920f446c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.CatHide
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3565572162635516458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 106a4b634883ff74d8790940ae812efb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.CatFrenzy
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!82 &6558113436026960680
 AudioSource:

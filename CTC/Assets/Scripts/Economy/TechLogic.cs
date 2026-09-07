@@ -170,7 +170,9 @@ namespace CTC.Runtime.Economy
         /// <summary>상점 밖에서 숫자키로 "쓰는" 테크 — 나머지는 패시브라 누를 게 없다.</summary>
         public static bool IsActive(TechId _id)
         {
-            return _id == TechId.Fortress || _id == TechId.Warehouse || _id == TechId.Sticky || _id == TechId.Dash;
+            // 광분은 고양이의 첫 액티브 테크다(테크 v3 계획 2b) — 전직 스킬(Q)과 달리 칸을 쓰고 숫자키로 켠다.
+            return _id == TechId.Fortress || _id == TechId.Warehouse || _id == TechId.Sticky
+                || _id == TechId.Dash || _id == TechId.CatFrenzy;
         }
 
         /// <summary>기획 규칙 3·5 — 쥐만 상점에 가야 한다.</summary>

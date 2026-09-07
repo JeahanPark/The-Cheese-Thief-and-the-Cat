@@ -74,6 +74,7 @@ namespace CTC.Runtime.Combat
             // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
             Health self = GetComponent<Health>();
             float fireMultiplier = FireMultiplier();
+            float frenzyMultiplier = FrenzyMultiplier();
             // 배고픔(테크 v3 계획 2b) — 적립 배율. 미보유면 0이 와서 WithHunger가 그대로 돌려준다.
             float hunger = m_TechSlots != null
                 ? Economy.TechLogic.ParamOf(Economy.TechId.CatHunger,
@@ -105,8 +106,10 @@ namespace CTC.Runtime.Combat
                 bool exempt = target.GetComponent<BountyExempt>() != null;
 
                 int damage = ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value);
-                // 불(v3.9) — 스킬이 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
-                damage = Mathf.RoundToInt(damage * fireMultiplier);
+                // 불(v3.9)·광분(테크 v3 계획 2b) — 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
+                // 둘은 서로를 모른다: 전직 불(×2)과 광분(×2.5)을 같이 켜면 ×5가 된다 — **기획서에 없는 조합**이다.
+                // 그래도 요새 Lv3(HP 1200)을 한 방에 부수지는 못한다(TechLogicTests가 그 선을 지킨다).
+                damage = Mathf.RoundToInt(damage * fireMultiplier * frenzyMultiplier);
                 int dealt = target.TakeDamage(damage);
 
                 // 가시 벽(요새 Lv3) — 벽을 친 고양이가 되맞는다. 실피해가 0이면(막혔거나 이미 죽음)
@@ -171,6 +174,14 @@ namespace CTC.Runtime.Combat
             if (cls.Value != Player.CatClassId.Fire || !skill.Active) return 1f;
 
             return Player.CatClassLogic.FireDamageMultiplier;
+        }
+
+        // 광분(테크) 배율 — 컴포넌트가 없으면(구 프리팹·쥐) 항상 1이다. 켜짐 판정과 배율은
+        // CatFrenzy가 갖는다(레벨별 값은 TechInfo P1).
+        private float FrenzyMultiplier()
+        {
+            var frenzy = GetComponent<Player.CatFrenzy>();
+            return frenzy != null ? frenzy.PounceMultiplier : 1f;
         }
 
         // 차폐 판정은 SightLine이 단독으로 갖는다 — 강아지(v3.8 5번)가 같은 규칙을 써야 해서

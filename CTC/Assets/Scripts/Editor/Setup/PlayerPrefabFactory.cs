@@ -104,6 +104,8 @@ namespace CTC.Editor
                     // 두꺼운 가죽(테크 v3 계획 2b) — 살 때 Health의 최대치를 올린다.
                     // 배고픔·예민한 귀는 컴포넌트가 없다(읽는 쪽이 TechSlots를 본다).
                     root.AddComponent<CatHide>();
+                    // 광분 — 켜짐·쿨을 복제한다. 입력은 읽지 않는다(핫바 숫자키 → ShopController.Use).
+                    root.AddComponent<CatFrenzy>();
                 }
                 else
                 {
