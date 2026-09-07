@@ -17,6 +17,8 @@ namespace CTC.Runtime.Economy
         // Lv1 새총 150 · Lv2 기관총 600(가격 봉우리) · Lv3 긴 총열 450 — 사거리·피해만 얹어 일부러 더 싸다(기획서 §4-1)
         Gun = 1,             // 총 — Lv1 새총 · Lv2 기관총 (기존 MousePopgun 티어)
         Pepper = 2,          // 후추 탄 (기존 PepperRounds, 200→120 — 테크 v3 초반형 재조정)
+        // HP·반사의 살아 있는 원본은 **TechInfo P1/P2**다(480·900·1200 / 0·0·25).
+        // BalanceInfo.FortressHp는 이제 프리팹을 구울 때의 기본값 겸 표를 못 읽었을 때의 대체값일 뿐이다.
         Fortress = 3,        // 요새 — Lv1 설치 "권한" 구매(100), 설치마다 FortressPlaceCost(80)
         CheeseShield = 4,    // 치즈 방패 (계획 2)
         // 창고 — 설치권 50 + 설치마다 BalanceInfo.WarehousePlaceCost 100 (기존 WarehouseProduction).

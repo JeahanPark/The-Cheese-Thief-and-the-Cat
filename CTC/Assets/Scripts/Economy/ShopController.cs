@@ -323,7 +323,32 @@ namespace CTC.Runtime.Economy
         private void SpawnFortressAround(GameObject _prefab)
         {
             GameObject go = Instantiate(_prefab, transform.position, Quaternion.LookRotation(FlatForward()));
+
+            // 요새 레벨(TechInfo P1 = HP · P2 = 반사) — **스폰 전에** 세운다.
+            // OnNetworkSpawn이 현재 HP를 최대치로 채우므로 그전이어야 그 HP로 시작한다.
+            int level = m_Slots != null ? m_Slots.LevelOf(TechId.Fortress) : 0;
+            Health hp = go.GetComponent<Health>();
+            if (hp != null) hp.ServerSetMaxHp(FortressMaxHp(level));
+
+            ThornWall thorn = go.GetComponent<ThornWall>();
+            if (thorn != null) thorn.ServerSet(Mathf.RoundToInt(TechLogic.ParamOf(TechId.Fortress, level, 2)));
+
             go.GetComponent<NetworkObject>().Spawn(true);
+        }
+
+        /// <summary>
+        /// 요새 최대 HP — TechInfo P1이 살아 있는 원본이다.
+        /// 표가 비었거나(레벨 0) 값을 못 읽은 경우에만 프리팹에 구워진 기본값(BalanceInfo.FortressHp)으로 물러난다.
+        /// 0을 그대로 넘기면 세우자마자 부서진 요새가 된다 — 여기서 막는다.
+        /// </summary>
+        private static int FortressMaxHp(int _level)
+        {
+            int fromTech = Mathf.RoundToInt(TechLogic.ParamOf(TechId.Fortress, _level, 1));
+            if (fromTech > 0) return fromTech;
+
+            Core.GameDebug.LogWarning(
+                $"[Shop] 요새 HP를 TechInfo에서 못 읽었다(레벨 {_level}) — BalanceInfo.FortressHp로 대체한다.");
+            return Balance.FortressHp;
         }
 
         private Vector3 FlatForward()

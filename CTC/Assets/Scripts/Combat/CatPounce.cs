@@ -90,6 +90,16 @@ namespace CTC.Runtime.Combat
                 // 불(v3.9) — 스킬이 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
                 damage = Mathf.RoundToInt(damage * FireMultiplier());
                 int dealt = target.TakeDamage(damage);
+
+                // 가시 벽(요새 Lv3) — 벽을 친 고양이가 되맞는다. 실피해가 0이면(막혔거나 이미 죽음)
+                // 반사도 없다. 요새엔 CatPounce가 없으니 되맞은 게 또 반사되는 일은 없다.
+                ThornWall thorn = target.GetComponent<ThornWall>();
+                if (thorn != null && thorn.Reflect > 0 && dealt > 0)
+                {
+                    Health self = GetComponent<Health>();
+                    if (self != null) self.TakeDamage(thorn.Reflect);   // 사망 판정은 Health가 한다
+                }
+
                 // 장난기 적립(v3.6): 플레이어 실피해 ×0.5 + 킬 보너스, 구조물은 ×0.25.
                 // 요새 1채 300pt는 벽 때리기를 최고 효율 수입원으로 만들었다.
                 if (myWallet != null && !exempt)

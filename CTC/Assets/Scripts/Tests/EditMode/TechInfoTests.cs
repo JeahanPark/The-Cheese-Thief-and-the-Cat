@@ -28,6 +28,21 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void TechInfo_Fortress_HpAndReflectLadder()
+        {
+            // 요새 HP(P1)·반사(P2) 사다리 — ShopController가 스폰 전에 이 값을 요새에 넣는다.
+            // BalanceInfo.FortressHp(480)는 Lv1과 같은 값이지만, 이제 프리팹 굽기·대체값 전용이다.
+            Assert.AreEqual(480f, TechLogic.ParamOf(TechId.Fortress, 1, 1), 1e-4f);
+            Assert.AreEqual(900f, TechLogic.ParamOf(TechId.Fortress, 2, 1), 1e-4f);
+            Assert.AreEqual(1200f, TechLogic.ParamOf(TechId.Fortress, 3, 1), 1e-4f);
+
+            // 가시 벽은 Lv3부터 — 그 아래는 0이라 ThornWall이 붙어 있어도 아무 일도 없다.
+            Assert.AreEqual(0f, TechLogic.ParamOf(TechId.Fortress, 1, 2), 1e-4f);
+            Assert.AreEqual(0f, TechLogic.ParamOf(TechId.Fortress, 2, 2), 1e-4f);
+            Assert.AreEqual(25f, TechLogic.ParamOf(TechId.Fortress, 3, 2), 1e-4f);
+        }
+
+        [Test]
         public void TechInfo_MouseCatalog_IsTen()
         {
             Assert.AreEqual(10, TechLogic.Catalog(RoleId.Mouse).Count);

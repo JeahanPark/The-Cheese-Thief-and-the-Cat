@@ -156,6 +156,9 @@ namespace CTC.Editor
                 root.AddComponent<HitFeedback>();
                 root.AddComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>(); // 기본값 FortressPlace
                 root.AddComponent<FortressShield>(); // 서는 순간 겹친 몸을 밀어낸다
+                // 가시 벽(요새 Lv3)은 **레벨과 무관하게 항상** 붙는다 — 값 0이면 아무 일도 없다.
+                // 레벨별 프리팹을 늘리지 않으려는 선택이다. 반사값은 ShopController가 스폰 전에 넣는다.
+                root.AddComponent<ThornWall>();
 
                 float h = FORTRESS_WALL_HEIGHT;
                 float half = FORTRESS_HALF;

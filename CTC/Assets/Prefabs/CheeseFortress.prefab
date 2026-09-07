@@ -304,6 +304,7 @@ GameObject:
   - component: {fileID: 7772771082947741418}
   - component: {fileID: 4516129377509583716}
   - component: {fileID: 8642063849032918311}
+  - component: {fileID: 9112633499098841784}
   - component: {fileID: 1157514815676050934}
   m_Layer: 0
   m_Name: CheeseFortress
@@ -447,6 +448,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea68b77d487204843b3fd7d6cf7148f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.FortressShield
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &9112633499098841784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3525953091307173698}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d34b8c3501b36d4fbf13c9f048decda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.ThornWall
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &1157514815676050934
 MonoBehaviour:
