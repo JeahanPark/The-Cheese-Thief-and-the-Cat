@@ -33,6 +33,7 @@ namespace CTC.Runtime.Player
 
         private CharacterController m_Controller;
         private Sneak m_Sneak;      // 고양이·쥐 공통(2026-08-10 쥐로 확장)
+        private TechSlots m_TechSlots;  // Awake에서 한 번 — 속도 식은 매 프레임 돈다
         private float m_VerticalVelocity;
         private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
 
@@ -69,6 +70,7 @@ namespace CTC.Runtime.Player
         {
             m_Controller = GetComponent<CharacterController>();
             m_Sneak = GetComponent<Sneak>();
+            m_TechSlots = GetComponent<TechSlots>();
         }
 
         /// <summary>
@@ -137,7 +139,9 @@ namespace CTC.Runtime.Player
             if (m_Controller.isGrounded && m_VerticalVelocity < 0f) m_VerticalVelocity = -1f;
             m_VerticalVelocity += GRAVITY * Time.deltaTime;
 
-            float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value);
+            // 순서가 뜻이다: 기본 + 강화 + 빠른 발을 다 더한 **뒤에** 바깥 배율을 곱한다 —
+            // 끈끈이는 "지금 낼 수 있는 속도의 40%를 뺀다"지 "기본 속도만 깎는다"가 아니다.
+            float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value) + FastFeetBonus();
             speed *= m_ExternalSpeedMul.Value;   // 끈끈이 — 서버가 걸어 준 배율
             if (m_Sneak != null && m_Sneak.Sneaking) speed *= m_Sneak.SpeedMultiplier;
             speed *= WindMultiplier();   // 바람 전직(v3.9) — 스킬 중에만 1이 아니다
@@ -156,6 +160,16 @@ namespace CTC.Runtime.Player
 
 
     
+        /// <summary>
+        /// 빠른 발(테크 v3) — 이속 가산(TechInfo P1: +0.3/0.7/1.2). 미보유·컴포넌트 없음은 0.
+        /// 만렙이어도 고양이 기본 이속을 못 넘는다(가위바위보 표 — 발 싸움은 고양이가 이긴다).
+        /// </summary>
+        private float FastFeetBonus()
+        {
+            if (m_TechSlots == null) return 0f;
+            return TechLogic.ParamOf(TechId.FastFeet, m_TechSlots.LevelOf(TechId.FastFeet), 1);
+        }
+
         // 바람 전직 + 스킬 활성일 때만 1이 아니다. 컴포넌트가 없으면(쥐·구 프리팹) 항상 1이라
         // 전직을 모르는 쪽에서도 그대로 돈다.
         private float WindMultiplier()

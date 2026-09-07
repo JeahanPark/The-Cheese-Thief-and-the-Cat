@@ -1,4 +1,5 @@
 ﻿using CTC.Runtime.Core;
+using CTC.Runtime.Economy;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -16,17 +17,32 @@ namespace CTC.Runtime.Player
         private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
         private static float DASH_DISTANCE => Balance.DashDistance;
         private static float DASH_DURATION_SECONDS => Balance.DashDurationSeconds;
-        private static float COOLDOWN_SECONDS => Balance.DashCooldownSeconds;
 
         // 구매 여부. 서버 기록(ShopController), 소유자 읽기.
         private readonly NetworkVariable<bool> m_Owned = new NetworkVariable<bool>();
 
         private CharacterController m_Controller;
+        private TechSlots m_TechSlots;      // Awake에서 한 번 — 쿨은 매 프레임 읽힌다
         private Vector3 m_DashDirection;
         private float m_DashRemainingSeconds;
         private double m_LastUseTime = -999.0;
 
         public bool Owned => m_Owned.Value;
+
+        /// <summary>
+        /// 쿨다운은 대시 레벨이 정한다(TechInfo P1 — Lv1 6초 · Lv2 4.5 · Lv3 3.5).
+        /// Lv1 값은 옛 BalanceInfo 값과 같아서 1레벨 감각은 그대로다.
+        /// 0이면 미보유거나 표 사고 — BalanceInfo로 후퇴한다. 쿨이 0초가 되는 일은 없다.
+        /// </summary>
+        private float CooldownSeconds
+        {
+            get
+            {
+                int level = m_TechSlots != null ? m_TechSlots.LevelOf(TechId.Dash) : 0;
+                float seconds = TechLogic.ParamOf(TechId.Dash, level, 1);
+                return seconds > 0f ? seconds : Balance.DashCooldownSeconds;
+            }
+        }
 
         /// <summary>구매 상태 스트림(HUD 칩·배지용) — 구독 즉시 현재 값이 흐른다.</summary>
         public R3.Observable<bool> OwnedChanged => m_Owned.AsObservableWithCurrent();
@@ -36,9 +52,9 @@ namespace CTC.Runtime.Player
         /// 쌓이므로 다른 클라에서는 항상 0으로 보인다(칩은 자기 화면에만 있으니 충분하다).
         /// </summary>
         public float CooldownRemaining => !m_Owned.Value ? 0f
-            : Mathf.Max(0f, (float)(COOLDOWN_SECONDS - (Time.timeAsDouble - m_LastUseTime)));
+            : Mathf.Max(0f, (float)(CooldownSeconds - (Time.timeAsDouble - m_LastUseTime)));
 
-        public float CooldownTotal => COOLDOWN_SECONDS;
+        public float CooldownTotal => CooldownSeconds;
 
         /// <summary>대시 진행 중 남은 시간(초) — 능력 슬롯 '지속 중' 표시용.</summary>
         public float ActiveRemaining => Mathf.Max(0f, m_DashRemainingSeconds);
@@ -54,6 +70,7 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             m_Controller = GetComponent<CharacterController>();
+            m_TechSlots = GetComponent<TechSlots>();
         }
 
         private void Update()
@@ -90,7 +107,7 @@ namespace CTC.Runtime.Player
             if (!IsOwner) return;
             if (m_DashRemainingSeconds > 0f) return;
             if (!m_Owned.Value) return;
-            if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, COOLDOWN_SECONDS)) return;
+            if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, CooldownSeconds)) return;
 
             m_LastUseTime = Time.timeAsDouble;
             m_DashDirection = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;

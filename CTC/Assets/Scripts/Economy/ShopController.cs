@@ -234,6 +234,8 @@ namespace CTC.Runtime.Economy
                 case TechId.BigPouch:
                     return true;                                                // 순수 패시브 — 값은 채굴할 때 CheeseSpot이 읽는다
                 case TechId.Sticky: return GetComponent<StickyUser>() != null;  // 쿨다운을 들 컴포넌트
+                case TechId.FastFeet:
+                    return GetComponent<Player.PlayerMovement>() != null;       // 이속 가산을 더할 몸
                 case TechId.CatClaw: return GetComponent<CatPounce>() != null;
                 case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
                 default:
@@ -281,6 +283,10 @@ namespace CTC.Runtime.Economy
                 case TechId.Sticky:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 장판을 깔 때 반경·감속·쿨을 읽는다.
                     return GetComponent<StickyUser>() != null;
+                case TechId.FastFeet:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, PlayerMovement가 매 프레임 읽는다.
+                    // (강화 스택과 달리 서버에 쌓을 상태가 없다 — 스택이 아니라 레벨이 곧 값이다.)
+                    return GetComponent<Player.PlayerMovement>() != null;
                 case TechId.CatClaw:
                     CatPounce pounce = GetComponent<CatPounce>();
                     if (pounce == null) return false;

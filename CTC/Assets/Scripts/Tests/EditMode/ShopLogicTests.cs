@@ -63,6 +63,19 @@ namespace CTC.Tests
         }
 
         [Test]
+        public void MoveSpeed_FastFeetLv3_ApproachesCat()
+        {
+            // 빠른 발은 "따라잡힐 뻔한 거리를 벌어 준다"지 "고양이를 떼어낸다"가 아니다 —
+            // 만렙 쥐가 고양이 기본 이속을 넘으면 가위바위보 표가 무너진다(발 싸움은 고양이 승).
+            float mouse = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Mouse).MoveSpeed;
+            float cat = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Cat).MoveSpeed;
+            float fastMouse = mouse + TechLogic.ParamOf(TechId.FastFeet, 3, 1);
+
+            Assert.Greater(fastMouse, mouse, "만렙인데 안 빨라지면 살 이유가 없다");
+            Assert.Less(fastMouse, cat, $"빠른 발 Lv3 쥐 {fastMouse} < 고양이 {cat}");
+        }
+
+        [Test]
         public void CanAddStack_BelowCap_True()
         {
             // 상한 3 = 테크 v3 발톱·발 구르기 최대 레벨(2026-09-07)
