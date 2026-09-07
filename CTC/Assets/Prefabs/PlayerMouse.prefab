@@ -29,6 +29,7 @@ GameObject:
   - component: {fileID: 2258780326856655791}
   - component: {fileID: 1990253744134766712}
   - component: {fileID: 2864371367524808278}
+  - component: {fileID: 3391428214594556749}
   - component: {fileID: 1160264544264784013}
   - component: {fileID: 3521756704669989981}
   - component: {fileID: 2937753257608233824}
@@ -302,6 +303,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_FortressPrefab: {fileID: 3525953091307173698, guid: 77dfa9cb7fe111c47b7456c5fcfceab1, type: 3}
   m_WarehousePrefab: {fileID: 2931954466690270675, guid: af09db80bdf16a04d9c393a9ce7e6ab6, type: 3}
+  m_StickyPrefab: {fileID: 1319585798006903055, guid: 736cc2ab0ececab4bbfb28bf6eeedc7e, type: 3}
 --- !u!114 &7525180262484511224
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -392,6 +394,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fff62ee2563e6e42929aae123bc5be3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.CheeseShield
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3391428214594556749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2aaedff8ca5326e41b36b44ca288c7f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Economy.StickyUser
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &1160264544264784013
 MonoBehaviour:

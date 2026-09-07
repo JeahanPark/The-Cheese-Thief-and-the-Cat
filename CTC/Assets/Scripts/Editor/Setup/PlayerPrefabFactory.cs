@@ -77,6 +77,9 @@ namespace CTC.Editor
                 // 요새가 내 위치 중심에 서면 겹친 남의 몸을 서버가 밀어낸다 — 소유자 RPC 수신처
                 root.AddComponent<BodyPush>();
                 SetRef(shop, "m_WarehousePrefab", _warehousePrefab);
+                // 끈끈이 장판(테크 v3) — 씬이 아니라 여기서 굽는다. 팩토리는 있으면 그대로 돌려주므로
+                // 씬 재생성과 순서를 다퉈도 같은 에셋을 가리킨다.
+                SetRef(shop, "m_StickyPrefab", StickyPatchPrefabFactory.Build());
                 root.AddComponent<TechSlots>(); // 테크 v3 — 보유 테크·레벨(NetworkList)
 
                 // LShift 잠행 — 발소리 소거·이속 절반. **역할 분기 밖**이다: 2026-08-10에 쥐로
@@ -105,6 +108,8 @@ namespace CTC.Editor
                     root.AddComponent<PepperRounds>();   // 후추 탄 보유 플래그(빌드 심화 v1)
                     // 치즈 방패(테크 v3 계획 2a) — 쥐만. Health가 피격 때 IDamageAbsorber로 집어 간다.
                     root.AddComponent<CheeseShield>();
+                    // 끈끈이 쿨다운(테크 v3 계획 2a) — 장판은 서버가 스폰하고, 이 컴포넌트는 쿨만 든다.
+                    root.AddComponent<StickyUser>();
                     root.AddComponent<CTC.Runtime.Audio.FarmingSfx>(); // 수입 짤랑 3D 공개음(20m)
 
                     // 직업(v3.9) — 상자에서 주운 직업권이 여기 새겨진다.

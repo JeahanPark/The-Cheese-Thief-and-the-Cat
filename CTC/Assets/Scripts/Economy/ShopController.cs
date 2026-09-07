@@ -17,6 +17,7 @@ namespace CTC.Runtime.Economy
 
         [SerializeField] private GameObject m_FortressPrefab;
         [SerializeField] private GameObject m_WarehousePrefab;
+        [SerializeField] private GameObject m_StickyPrefab;
 
         /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프보다 넉넉히.</summary>
         public static float MAX_PLACE_DISTANCE => Balance.PlaceMaxDistanceMeters;
@@ -97,6 +98,14 @@ namespace CTC.Runtime.Economy
                     // 설치마다 치즈 — 재설치가 공짜면 째기 응징이 안 된다(2026-09-07).
                     if (m_Wallet.CheeseValue < Balance.WarehousePlaceCost) return UseDeny.NotEnough;
                     return UseDeny.None;
+                case TechId.Sticky:
+                    if (m_StickyPrefab == null) return UseDeny.Unavailable;
+                    StickyUser sticky = GetComponent<StickyUser>();
+                    if (sticky == null) return UseDeny.Unavailable;
+                    // 설치비가 없는 대신 쿨다운이 값이다 — 이유를 따로 말해야
+                    // 핫바가 "지금은 못 쓴다"로 뭉뚱그리지 않는다.
+                    if (!sticky.Ready) return UseDeny.Cooldown;
+                    return UseDeny.None;
                 case TechId.Dash:
                     return UseDeny.None;   // 쿨다운은 MouseDash가 본다
                 default:
@@ -161,6 +170,10 @@ namespace CTC.Runtime.Economy
                     if (!m_Wallet.TrySpend(Balance.FortressPlaceCost)) { ResultRpc(false); return; }
                     SpawnFortressAround(m_FortressPrefab);
                     break;
+                case TechId.Sticky:
+                    // 발밑에 깐다 — 조준이 없다. 쫓기는 중에 쓰는 물건이라 조준할 여유가 없다.
+                    SpawnStickyPatch();
+                    break;
                 // 대시는 여기 없다 — 소유자 권위라 Use()가 로컬에서 처리한다(위 주석 참조).
                 default:
                     ResultRpc(false);
@@ -218,6 +231,9 @@ namespace CTC.Runtime.Economy
                     return true;                                                // 설치권만 — 실제 설치는 Use
                 case TechId.HiddenWarehouse:
                     return true;                                                // 순수 패시브 — 값은 창고를 세울 때 읽는다
+                case TechId.BigPouch:
+                    return true;                                                // 순수 패시브 — 값은 채굴할 때 CheeseSpot이 읽는다
+                case TechId.Sticky: return GetComponent<StickyUser>() != null;  // 쿨다운을 들 컴포넌트
                 case TechId.CatClaw: return GetComponent<CatPounce>() != null;
                 case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
                 default:
@@ -259,6 +275,12 @@ namespace CTC.Runtime.Economy
                 case TechId.HiddenWarehouse:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 창고를 세우는 UseAtRpc가 그때 읽는다.
                     return true;
+                case TechId.BigPouch:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, 채굴하는 CheeseSpot이 그때 읽는다.
+                    return true;
+                case TechId.Sticky:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, 장판을 깔 때 반경·감속·쿨을 읽는다.
+                    return GetComponent<StickyUser>() != null;
                 case TechId.CatClaw:
                     CatPounce pounce = GetComponent<CatPounce>();
                     if (pounce == null) return false;
@@ -334,6 +356,30 @@ namespace CTC.Runtime.Economy
         {
             var production = _spawned.GetComponent<WarehouseProduction>();
             if (production != null) production.ServerSetOwner(OwnerClientId);
+        }
+
+        /// <summary>
+        /// 끈끈이 장판을 발밑에 깐다(서버). 반경·감속·쿨은 지금 레벨의 TechInfo P1/P2/P3다 —
+        /// 나중에 테크를 키워도 이미 깔린 장판은 그대로다(요새·창고와 같은 규칙).
+        /// </summary>
+        private void SpawnStickyPatch()
+        {
+            int level = m_Slots != null ? m_Slots.LevelOf(TechId.Sticky) : 0;
+            float radius = TechLogic.ParamOf(TechId.Sticky, level, 1);
+            float slowRatio = TechLogic.ParamOf(TechId.Sticky, level, 2);
+            float cooldown = TechLogic.ParamOf(TechId.Sticky, level, 3);
+
+            GameObject go = Instantiate(m_StickyPrefab, transform.position, Quaternion.identity);
+
+            // 값은 **스폰 전에** 넣는다 — 클라가 받는 첫 상태에 반경이 들어 있어야
+            // 쿼드가 처음부터 제 크기로 보인다(스폰 후에 쓰면 한 틱 작게 그려진다).
+            StickyPatch patch = go.GetComponent<StickyPatch>();
+            if (patch != null) patch.ServerSetup(radius, slowRatio);
+
+            go.GetComponent<NetworkObject>().Spawn(true);
+
+            StickyUser user = GetComponent<StickyUser>();
+            if (user != null) user.ServerStartCooldown(cooldown);
         }
 
         // 요새는 겹침 검사를 하지 않는다 — 벽에 물려도 방패 구실은 하고, 쫓기는 순간에

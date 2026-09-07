@@ -61,7 +61,7 @@ namespace CTC.Runtime.Economy
     /// "쓰기"가 막힌 이유 (2026-09-07). 전에는 <c>CanUse</c>가 bool이라 View가 TechId로 이유를 추측했다 —
     /// 치즈가 모자란 건데 "창고는 하나까지"라고 거짓말을 했다. 이유는 판정한 쪽이 말한다.
     /// </summary>
-    public enum UseDeny { None, NotOwned, NotActive, InsideFortress, NotEnough, LimitReached, Unavailable }
+    public enum UseDeny { None, NotOwned, NotActive, InsideFortress, NotEnough, LimitReached, Unavailable, Cooldown }
 
     /// <summary>
     /// 테크 판정 순수 로직 (테크 v3, 2026-09-07). MonoBehaviour와 분리 — EditMode TDD.
@@ -200,6 +200,7 @@ namespace CTC.Runtime.Economy
                 case UseDeny.InsideFortress: return "요새 안에서는 못 세운다 — 밖으로";
                 case UseDeny.NotEnough: return $"{ShopLogic.CurrencyNameOf(_role)} 부족 · {_short} 모자람";
                 case UseDeny.LimitReached: return "창고는 하나까지";
+                case UseDeny.Cooldown: return "아직 쿨다운";
                 default: return "지금은 못 쓴다";
             }
         }

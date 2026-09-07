@@ -27,6 +27,10 @@ namespace CTC.Runtime.Player
         // 이속 강화 스택(상점, 고양이). 서버 기록·소유자 적용.
         private readonly NetworkVariable<int> m_SpeedStacks = new NetworkVariable<int>();
 
+        // 바깥에서 거는 이속 배율(끈끈이 등). **서버가 쓰고 소유자가 읽는다** —
+        // 이동은 소유자 권위(ClientNetworkTransform)라 값이 복제돼야 그 몸이 실제로 느려진다.
+        private readonly NetworkVariable<float> m_ExternalSpeedMul = new NetworkVariable<float>(1f);
+
         private CharacterController m_Controller;
         private Sneak m_Sneak;      // 고양이·쥐 공통(2026-08-10 쥐로 확장)
         private float m_VerticalVelocity;
@@ -42,6 +46,16 @@ namespace CTC.Runtime.Player
         public void DevSetMoveInput(Vector3 _worldDirection)
         {
             m_DevMoveInput = _worldDirection;
+        }
+
+        /// <summary>바깥 감속 배율(1 = 없음) — QA·핫바가 실제로 걸렸는지 본다.</summary>
+        public float ExternalSpeedMultiplier => m_ExternalSpeedMul.Value;
+
+        /// <summary>서버 전용(끈끈이 장판). 1을 넣으면 해제다 — 나갈 때 반드시 되돌린다.</summary>
+        public void ServerSetExternalSpeedMul(float _mul)
+        {
+            if (!IsServer) return;
+            m_ExternalSpeedMul.Value = _mul;
         }
 
         /// <summary>서버 전용(ShopController). 캡은 ShopLogic.MAX_UPGRADE_STACKS.</summary>
@@ -124,6 +138,7 @@ namespace CTC.Runtime.Player
             m_VerticalVelocity += GRAVITY * Time.deltaTime;
 
             float speed = ShopLogic.MoveSpeed(m_MoveSpeed, m_SpeedStacks.Value);
+            speed *= m_ExternalSpeedMul.Value;   // 끈끈이 — 서버가 걸어 준 배율
             if (m_Sneak != null && m_Sneak.Sneaking) speed *= m_Sneak.SpeedMultiplier;
             speed *= WindMultiplier();   // 바람 전직(v3.9) — 스킬 중에만 1이 아니다
 

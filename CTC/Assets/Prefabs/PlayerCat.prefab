@@ -297,6 +297,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   m_FortressPrefab: {fileID: 3525953091307173698, guid: 77dfa9cb7fe111c47b7456c5fcfceab1, type: 3}
   m_WarehousePrefab: {fileID: 2931954466690270675, guid: af09db80bdf16a04d9c393a9ce7e6ab6, type: 3}
+  m_StickyPrefab: {fileID: 1319585798006903055, guid: 736cc2ab0ececab4bbfb28bf6eeedc7e, type: 3}
 --- !u!114 &2456762595811932099
 MonoBehaviour:
   m_ObjectHideFlags: 0

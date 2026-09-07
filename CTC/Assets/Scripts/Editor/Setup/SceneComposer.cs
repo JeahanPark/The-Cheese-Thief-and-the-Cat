@@ -107,10 +107,13 @@ namespace CTC.Editor
             // 저장 후에 굽는다 — 임시 오브젝트에서는 GlobalObjectId가 무효라 해시가 충돌한다.
             // 이미 맞는 값이면 같은 값이 다시 써지므로 돌려도 안전하다.
             if (shopSpotPrefab != null) BakeGlobalObjectIdHash(shopSpotPrefab.GetComponent<NetworkObject>());
+            // 끈끈이 장판(테크 v3) — 상점 자리와 같은 취급. 쥐가 판 중에 스폰하므로 목록에 있어야 한다.
+            GameObject stickyPrefab = StickyPatchPrefabFactory.Build();
+            if (stickyPrefab != null) BakeGlobalObjectIdHash(stickyPrefab.GetComponent<NetworkObject>());
 
             RegisterNetworkPrefabs(nm, _catPrefab, _mousePrefab, _fortressPrefab, _warehousePrefab,
                 _alcovePrefab, _cheeseDropPrefab, _dogPrefab, _lootBoxPrefab, _heroTicket, _gangTicket,
-                shopSpotPrefab);
+                shopSpotPrefab, stickyPrefab);
 
             // 스팀 매칭(Plan 13): Facepunch 트랜스포트 동승 — 기본은 UTP, 스팀 방 경로에서만 교체.
             // 실험실은 혼자 도는 판이라 접속·스팀·MPPM 배선을 전부 뺀다(화면도 로그도 깨끗해진다).
