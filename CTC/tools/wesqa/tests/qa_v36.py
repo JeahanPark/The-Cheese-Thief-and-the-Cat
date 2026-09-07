@@ -33,6 +33,18 @@ def face_and_pounce(cat, tx, tz, cx, cz):
     time.sleep(0.6)
 
 
+def warp_to_shop(host, player, client_id):
+    """테크 v3(2026-09-07): 쥐는 **상점 자리 안에서만** 산다(기획 규칙 3).
+    치즈 지점에 선 채로 사면 서버가 NotInShop으로 거절하므로, 사기 직전에 상점으로 옮긴다.
+
+    TestWarpToNearestShop은 BodyPush.ServerPush 경유라 **서버(호스트) 인스턴스**로 불러야 하고,
+    그 안에서 다시 소유자 RPC를 타므로 클론의 몸은 왕복이 끝나야 실제로 움직인다 — 그래서 쉬었다 확인한다.
+    """
+    host.invoke("TestWarpToNearestShop", _clientId=client_id)
+    time.sleep(1.0)
+    return bool(player.invoke("TestIsInShop", _clientId=client_id))
+
+
 def main():
     cat = WesPoco(instance=0)
     m1 = WesPoco(instance=1)
@@ -105,7 +117,25 @@ def main():
     # 요새는 **내 위치 중심**에 즉시 선다. 그 자리에 있던 고양이는 밖으로 밀려나고,
     # 세운 쥐는 안에 남는다. 이걸 화면 밖 값이 아니라 실제 위치로 잰다.
     # 자리는 §8(sx+8 근처 덮치기)과 겹치지 않게 반대편 — 요새 벽이 남아 있으면 덮치기가 막힌다
+    # 테크 v3: 값이 둘로 갈렸다 — 설치권(TechInfo Lv1)은 상점에서 한 번, 설치비는 세울 때마다.
+    # 숫자를 여기 박지 않고 훅으로 읽는다(CSV가 원본).
+    fort_right_cost = cat.invoke("TestGetTechCost", _techId="Fortress", _level=1)
+    fort_place_cost = cat.invoke("TestGetPlaceCost", _techId="Fortress")
+
     fort_x = sx - 6.0
+    # (1) 설치권은 상점에서만 살 수 있다 — 옮겨 사고 자리로 돌아온다
+    in_shop = warp_to_shop(cat, m2, m2_id)
+    check("상점 — 쥐가 상점 자리로 들어갔다", in_shop, "inShop=%s" % in_shop)
+    right_before = m2.invoke("TestGetCheese")
+    m2.invoke("TestBuyTechLocal", _techId="Fortress")
+    time.sleep(1.2)
+    right_spent = right_before - m2.invoke("TestGetCheese")
+    check("요새 — 상점에서 설치권 구매",
+          m2.invoke("TestGetTechLevel", _clientId=m2_id, _techId="Fortress") == 1
+          and right_spent == fort_right_cost,
+          "설치권 %s 나감(기대 %s)" % (right_spent, fort_right_cost))
+
+    # (2) 자리로 돌아와 세운다
     m2.invoke("TestTeleportLocalPlayer", _x=fort_x, _z=sz)
     time.sleep(0.6)
     # 쥐 왼쪽 0.6m(풋프린트 안). 왼쪽인 이유: 밀려난 뒤 되돌아 밀어붙이는 방향이 +x가 되어
@@ -113,7 +143,7 @@ def main():
     cat.invoke("TestTeleportLocalPlayer", _x=fort_x - 0.6, _z=sz)
     time.sleep(0.8)
     fort_cheese_before = m2.invoke("TestGetCheese")
-    m2.invoke("TestBuyFortress")
+    m2.invoke("TestUseTechLocal", _techId="Fortress")
     time.sleep(1.5)
     fpos = m2.invoke("TestGetFortressPos")
     check("요새 — 즉시 설치(조준 없음)", fpos != "", "pos=%s" % fpos)
@@ -132,26 +162,41 @@ def main():
         time.sleep(1.0)
         cat_gap2 = cat.invoke("TestGetDistanceTo", _x=fx, _z=fz)
         check("요새 — 고양이는 못 들어간다", cat_gap2 > 1.2, "밀어붙인 뒤 %.2f" % cat_gap2)
-        check("요새 — 값 80이 나갔다", fort_cheese_before - m2.invoke("TestGetCheese") == 80,
-              "치즈 %s -> %s" % (fort_cheese_before, m2.invoke("TestGetCheese")))
+        # 첫 요새 = 설치권 + 설치비(=180). 부수고 다시 세우는 건 설치비(80)만 — 째기 응징이 살아 있다.
+        place_spent = fort_cheese_before - m2.invoke("TestGetCheese")
+        check("요새 — 설치마다 설치비가 나간다(재설치 값)", place_spent == fort_place_cost,
+              "설치 %s (기대 %s)" % (place_spent, fort_place_cost))
+        check("요새 — 첫 요새 총액 = 설치권 + 설치비",
+              right_spent + place_spent == fort_right_cost + fort_place_cost,
+              "총 %s (기대 %s)" % (right_spent + place_spent, fort_right_cost + fort_place_cost))
 
-        # 요새 안에서 또 사면 거부된다(2026-08-16) — 겹치면 벽끼리 서로를 가려 무적이 됐었다
+        # 요새 안에서 또 세우면 거부된다(2026-08-16) — 겹치면 벽끼리 서로를 가려 무적이 됐었다
         stack_before = m2.invoke("TestGetCheese")
-        m2.invoke("TestBuyFortress")
+        m2.invoke("TestUseTechLocal", _techId="Fortress")
         time.sleep(1.0)
         check("요새 — 요새 안에서는 겹쳐 못 세운다", m2.invoke("TestGetCheese") == stack_before,
               "치즈 %s -> %s" % (stack_before, m2.invoke("TestGetCheese")))
 
     # ---------- 5. 설치 편의: 제 발밑에 창고 ----------
+    # 요새와 같은 구조 — 설치권은 상점에서, 설치비는 놓을 때마다.
+    wh_place_cost = cat.invoke("TestGetPlaceCost", _techId="Warehouse")
+    wh_in_shop = warp_to_shop(cat, m1, m1_id)
+    check("상점 — 창고 설치권을 사러 상점에 들어갔다", wh_in_shop, "inShop=%s" % wh_in_shop)
+    m1.invoke("TestBuyTechLocal", _techId="Warehouse")
+    time.sleep(1.2)
+    check("창고 — 상점에서 설치권 구매",
+          m1.invoke("TestGetTechLevel", _clientId=m1_id, _techId="Warehouse") == 1,
+          "lv=%s" % m1.invoke("TestGetTechLevel", _clientId=m1_id, _techId="Warehouse"))
+
     m1.invoke("TestTeleportLocalPlayer", _x=sx + 2.0, _z=sz)
     time.sleep(0.6)
     before_ticks = m1.invoke("TestGetWarehouseTicks")
     cheese_before = m1.invoke("TestGetCheese")
-    m1.invoke("TestPlaceWarehouseAt", _x=sx + 2.0, _z=sz)
-    time.sleep(1.2)
+    m1.invoke("TestPlaceWarehouseAt", _x=sx + 2.0, _z=sz)   # 설치권은 이미 있다 → 설치비만 나간다
+    time.sleep(1.5)
     cheese_after = m1.invoke("TestGetCheese")
-    placed = cheese_before - cheese_after >= 150
-    check("설치 — 제 몸 위치에 창고 설치 성공", placed,
+    placed = cheese_before - cheese_after == wh_place_cost
+    check("설치 — 제 몸 위치에 창고 설치 성공(설치비 %s)" % wh_place_cost, placed,
           "치즈 %s -> %s" % (cheese_before, cheese_after))
 
     # ---------- 6. 장난기 구조물 x0.25 (방금 지은 창고를 때린다) ----------

@@ -170,6 +170,34 @@ namespace CTC.Tests
             Assert.AreEqual(100, TechLogic.RowOf(TechId.Fortress, 1).Cost);
         }
 
+        /// <summary>테크 하나를 1레벨부터 만렙까지 다 올리는 데 드는 총액.</summary>
+        private static int TotalCost(TechId _id)
+        {
+            int sum = 0;
+            for (int lv = 1; lv <= TechLogic.MaxLevel(_id); lv++) sum += TechLogic.RowOf(_id, lv).Cost;
+            return sum;
+        }
+
+        [Test]
+        public void CatAdvancement_ReachableWithinOneMatch()
+        {
+            // 고양이 수입은 덮치기 하나뿐이다 — 쥐(100HP)를 잡으면 100/나눗값 + 킬 보너스.
+            // 전직(강화 두 줄 만렙)이 그 수입으로 판 안에 안 닿으면 4종 전직이 통째로
+            // 죽은 콘텐츠가 된다(2026-08-10 실측: 비용 1750 = 16킬, 720초·120×120에선 불가능).
+            //
+            // 이 판정이 없으면 강화 가격이나 킬 보너스를 만질 때마다 조용히 다시 막힌다.
+            // 테크 v3에서는 "만렙 = 레벨을 1..N 다 사는 값"이라 표에서 합산한다(현재 780).
+            // 계획 3에서 전직 조건이 300으로 바뀌면 이 판정을 다시 본다.
+            int perCatch = 100 / FunLogic.PLAYER_DAMAGE_DIVISOR + FunLogic.KILL_BONUS;
+            int advanceCost = TotalCost(TechId.CatClaw) + TotalCost(TechId.CatStomp);
+
+            Assert.LessOrEqual(advanceCost, perCatch * 10,
+                $"전직 {advanceCost} — 열 번 잡아도 못 열면 없는 기능이다");
+            // 반대로 너무 싸면 초반에 열려 남은 판이 일방적이 된다
+            Assert.Greater(advanceCost, perCatch * 5,
+                $"전직 {advanceCost} — 다섯 번 만에 열리면 후반 카드가 아니다");
+        }
+
         [Test]
         public void CatStackCap_MatchesTechMaxLevel()
         {

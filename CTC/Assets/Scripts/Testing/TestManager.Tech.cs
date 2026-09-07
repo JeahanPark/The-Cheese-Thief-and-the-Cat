@@ -1,6 +1,8 @@
 // TestManager의 일부 — 테크 v3 훅 (2026-09-07). wesqa가 리플렉션으로 Instance.<method>를 부르므로
 // **타입을 쪼개지 않는다**(CLAUDE.md). 개발 빌드에도 실린다 — 배포 빌드에선 빠진다.
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using CTC.Runtime.Core;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Map;
@@ -12,6 +14,58 @@ namespace CTC.Runtime.Testing
 {
     public partial class TestManager
     {
+        /// <summary>구매가 실제로 반영될 때까지 기다리는 상한(초). 못 기다리면 경고를 남기고 포기한다.</summary>
+        private const float TECH_LEVEL_WAIT_SECONDS = 2f;
+
+        /// <summary>
+        /// 산 테크가 **눈에 보일 때까지** 기다린다 — "사고 바로 쓴다" 훅의 유일한 안전장치.
+        ///
+        /// 호스트에서는 서버 RPC가 그 자리에서 돌아 `Buy` 다음 줄이면 이미 레벨이 올라 있다.
+        /// 그런데 클론(원격 클라이언트)에서는 RPC가 왕복하고 `TechSlots`(NetworkList)가 복제될
+        /// 때까지 몇 프레임이 걸린다 — 그 사이에 `Use`를 부르면 "아직 없다"로 조용히 버려져
+        /// **설치가 아예 안 일어난 채 QA가 통과처럼 흘러간다**(2026-09-07 리뷰 C1).
+        /// </summary>
+        private static async UniTask<bool> WaitForTechLevel(
+            TechSlots _slots, TechId _id, int _level, CancellationToken _token)
+        {
+            if (_slots == null) return false;
+
+            float until = Time.realtimeSinceStartup + TECH_LEVEL_WAIT_SECONDS;
+            while (_slots.LevelOf(_id) < _level)
+            {
+                if (_token.IsCancellationRequested) return false;
+                if (Time.realtimeSinceStartup > until)
+                {
+                    GameDebug.LogWarning(
+                        $"[TestManager] {_id} Lv{_level} 반영을 {TECH_LEVEL_WAIT_SECONDS}초 안에 못 봤다 — 구매가 거절됐을 수 있다");
+                    return false;
+                }
+                await UniTask.Yield(PlayerLoopTiming.Update, _token);
+            }
+            return true;
+        }
+
+        /// <summary>QA: 테크 한 레벨의 값(없는 행이면 -1) — 스크립트가 가격을 손으로 적지 않게 한다.</summary>
+        public int TestGetTechCost(string _techId, int _level)
+        {
+            if (!System.Enum.TryParse(_techId, out TechId id)) return -1;
+            TechRow row = TechLogic.RowOf(id, _level);
+            return row.IsValid ? row.Cost : -1;
+        }
+
+        /// <summary>QA: 설치 1회 비용(설치권과 별개). 설치물이 아니면 0, 모르는 이름이면 -1.</summary>
+        public int TestGetPlaceCost(string _techId)
+        {
+            if (!System.Enum.TryParse(_techId, out TechId id)) return -1;
+            Info.BalanceInfo b = Info.InfoManager.Instance.Balance;
+            switch (id)
+            {
+                case TechId.Fortress: return b.FortressPlaceCost;
+                case TechId.Warehouse: return b.WarehousePlaceCost;
+                default: return 0;
+            }
+        }
+
         // NetUtil.FindPlayerObject(clientId)는 NetworkObject를 준다 — 이웃 partial(TestManager.Balance)과 같은 방식.
         private static GameObject FindPlayerGo(long _clientId)
         {
@@ -99,7 +153,12 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// QA: 가장 가까운 상점 자리로 옮긴다(시간 결핍을 건너뛰고 구매만 볼 때).
-        /// <see cref="BodyPush.ServerPush"/> 경유 — **서버 전용**이다. wesqa는 호스트에서 훅을 부르므로 문제없다.
+        ///
+        /// <see cref="BodyPush.ServerPush"/> 경유라 **호스트 인스턴스에서 불러야 한다** — 클론에서 부르면
+        /// 서버가 아니라 아무 일도 안 일어난다.
+        /// 그리고 ServerPush는 다시 **소유자 RPC**다: 클론의 몸은 왕복이 끝나야 실제로 움직인다.
+        /// 그래서 <c>true</c>는 "보냈다"지 "도착했다"가 아니다 — QA는 잠깐 쉰 뒤
+        /// <see cref="TestIsInShop"/>로 도착을 확인해야 한다.
         /// </summary>
         public bool TestWarpToNearestShop(long _clientId)
         {

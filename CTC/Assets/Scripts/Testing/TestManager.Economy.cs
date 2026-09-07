@@ -54,7 +54,14 @@ namespace CTC.Runtime.Testing
         public void TestBuySlingshot() => BuyLocal(TechId.Gun);
 
         /// <summary>두 번째 Gun 구매 = Lv2(기관총). 새총을 먼저 사 둬야 한다.</summary>
-        public void TestBuyMachineGun() => BuyLocal(TechId.Gun);
+        public void TestBuyMachineGun()
+        {
+            // Lv1이 없으면 이 호출은 기관총이 아니라 **새총**을 산다 — 조용히 어긋나면 QA가 오진한다
+            TechSlots slots = LocalComponent<TechSlots>();
+            if (slots != null && slots.LevelOf(TechId.Gun) == 0)
+                GameDebug.LogWarning("[TestManager] TestBuyMachineGun — 새총(Lv1)이 없다. 이번 구매는 Lv1이 된다");
+            BuyLocal(TechId.Gun);
+        }
 
         public void TestBuyDash() => BuyLocal(TechId.Dash);
 
@@ -62,17 +69,15 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// 옛 훅은 "요새가 선다"였다 — 테크 v3에서 구매(설치권)와 설치가 갈렸으므로 둘 다 한다.
-        /// 이미 설치권이 있으면 구매는 서버가 만렙으로 거절하고 설치만 남는다.
+        /// 이미 설치권이 있으면 구매를 건너뛰고 설치만 한다.
+        ///
+        /// 구매가 **복제될 때까지 기다렸다가** 설치한다(리뷰 C1) — 클론에서 같은 프레임에 이어 부르면
+        /// 아직 레벨이 0이라 설치가 조용히 버려진다. wesqa는 반환값을 안 보므로
+        /// fire-and-forget(`UniTaskVoid`)이면 된다 — 이웃 훅(`TestWalkTowards`)과 같은 꼴.
         /// </summary>
         public void TestBuyFortress()
         {
-            ShopController shop = LocalComponent<ShopController>();
-            TechSlots slots = LocalComponent<TechSlots>();
-            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
-
-            if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
-            if (shop.CanUse(TechId.Fortress) == UseDeny.None) shop.Use(TechId.Fortress);
-            GameDebug.Log("[TestManager] TestBuyFortress → 설치권 구매 + 즉발 설치 요청");
+            BuyThenPlaceAsync(TechId.Fortress, null, destroyCancellationToken).Forget();
         }
 
         public void TestBuyCatAttack() => BuyLocal(TechId.CatClaw);
@@ -81,9 +86,12 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// 위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용. 창고만 조준 설치다.
-        /// 설치권(Lv1)이 없으면 먼저 사고, 그다음 놓는다. 설치비는 서버가 따로 깎는다.
+        /// 설치권(Lv1)이 없으면 먼저 사고 **복제를 기다린 뒤** 놓는다. 설치비는 서버가 따로 깎는다.
         /// </summary>
-        public void TestPlaceWarehouseAt(float _x, float _z) => PlaceLocal(TechId.Warehouse, _x, _z);
+        public void TestPlaceWarehouseAt(float _x, float _z)
+        {
+            BuyThenPlaceAsync(TechId.Warehouse, new UnityEngine.Vector3(_x, 0f, _z), destroyCancellationToken).Forget();
+        }
 
         /// <summary>QA: 지정 좌표에서 가장 가까운 치즈 지점을 점유한 클라이언트 ID(없으면 -1).</summary>
         public long TestGetCheeseEarnerNear(float _x, float _z)
@@ -418,8 +426,12 @@ namespace CTC.Runtime.Testing
             return TestGetDistanceTo(p.x, p.z);
         }
 
-        /// <summary>설치권을 사고(미보유 시) 지정 좌표에 놓는다 — 옛 `BuyAt` 한 방을 두 단계로 나눈 것.</summary>
-        private static void PlaceLocal(TechId _techId, float _x, float _z)
+        /// <summary>
+        /// 설치권을 사고(미보유 시) **복제를 기다린 뒤** 설치한다 — 옛 `BuyAt` 한 방을 두 단계로 나눈 것.
+        /// <paramref name="_at"/>가 null이면 즉발 설치(요새), 있으면 그 좌표에 조준 설치(창고)다.
+        /// </summary>
+        private static async UniTaskVoid BuyThenPlaceAsync(
+            TechId _techId, UnityEngine.Vector3? _at, CancellationToken _token)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
@@ -427,11 +439,31 @@ namespace CTC.Runtime.Testing
             if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
 
             var slots = local.GetComponent<TechSlots>();
-            if (slots == null || slots.LevelOf(_techId) == 0) shop.Buy(_techId);
+            if (slots != null && slots.LevelOf(_techId) == 0)
+            {
+                shop.Buy(_techId);
+                // 여기서 기다리지 않으면 클론에서 설치가 통째로 사라진다(리뷰 C1)
+                if (!await WaitForTechLevel(slots, _techId, 1, _token)) return;
+            }
 
-            var pos = new UnityEngine.Vector3(_x, local.transform.position.y, _z);
-            if (shop.CanUse(_techId) == UseDeny.None) shop.UseAt(_techId, pos);
-            GameDebug.Log($"[TestManager] PlaceLocal({_techId}) @ {pos} 요청");
+            UseDeny deny = shop.CanUse(_techId);
+            if (deny != UseDeny.None)
+            {
+                GameDebug.LogWarning($"[TestManager] {_techId} 설치 거절: {deny}");
+                return;
+            }
+
+            if (_at.HasValue)
+            {
+                var pos = new UnityEngine.Vector3(_at.Value.x, local.transform.position.y, _at.Value.z);
+                shop.UseAt(_techId, pos);
+                GameDebug.Log($"[TestManager] {_techId} 설치 요청 @ {pos}");
+            }
+            else
+            {
+                shop.Use(_techId);
+                GameDebug.Log($"[TestManager] {_techId} 즉발 설치 요청");
+            }
         }
 
         private static void BuyLocal(TechId _techId)

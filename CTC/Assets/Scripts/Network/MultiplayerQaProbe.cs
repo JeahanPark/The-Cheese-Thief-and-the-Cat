@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 
+using Cysharp.Threading.Tasks;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using CTC.Runtime.Lobby;
@@ -191,18 +193,51 @@ namespace CTC.Runtime.Networking
         }
 
         // 설치권을 사고 즉발 설치까지 — 옛 ShopItemId.Fortress 한 방과 같은 결과를 낸다.
+        //
+        // **여기는 늘 클론이다.** 구매는 서버를 왕복하고 TechSlots(NetworkList)가 복제될 때까지
+        // 몇 프레임이 걸리므로, 같은 프레임에 이어 설치를 부르면 "아직 없다"로 조용히 버려진다
+        // (2026-09-07 리뷰 C1). 레벨이 보일 때까지 기다린 뒤에 세운다.
         private void BuyFortressLocal()
         {
+            BuyFortressAsync(destroyCancellationToken).Forget();
+        }
+
+        private const float FORTRESS_WAIT_SECONDS = 2f;
+
+        private static async UniTaskVoid BuyFortressAsync(CancellationToken _token)
+        {
             ShopController shop = LocalShop();
-            if (shop == null)
+            var slots = shop != null ? shop.GetComponent<TechSlots>() : null;
+            if (shop == null || slots == null)
             {
-                Debug.LogWarning("[MultiplayerQaProbe] BuyFortressLocal — ShopController 없음");
+                Debug.LogWarning("[MultiplayerQaProbe] BuyFortressLocal — ShopController/TechSlots 없음");
                 return;
             }
 
-            var slots = shop.GetComponent<TechSlots>();
-            if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
-            if (shop.CanUse(TechId.Fortress) == UseDeny.None) shop.Use(TechId.Fortress);
+            if (slots.LevelOf(TechId.Fortress) == 0)
+            {
+                shop.Buy(TechId.Fortress);
+
+                float until = Time.realtimeSinceStartup + FORTRESS_WAIT_SECONDS;
+                while (slots.LevelOf(TechId.Fortress) == 0)
+                {
+                    if (_token.IsCancellationRequested) return;
+                    if (Time.realtimeSinceStartup > until)
+                    {
+                        Debug.LogWarning("[MultiplayerQaProbe] 요새 설치권 반영을 못 봤다 — 구매가 거절됐을 수 있다");
+                        return;
+                    }
+                    await UniTask.Yield(PlayerLoopTiming.Update, _token);
+                }
+            }
+
+            UseDeny deny = shop.CanUse(TechId.Fortress);
+            if (deny != UseDeny.None)
+            {
+                Debug.LogWarning($"[MultiplayerQaProbe] 요새 설치 거절: {deny}");
+                return;
+            }
+            shop.Use(TechId.Fortress);
         }
 
         private static ShopController LocalShop()
