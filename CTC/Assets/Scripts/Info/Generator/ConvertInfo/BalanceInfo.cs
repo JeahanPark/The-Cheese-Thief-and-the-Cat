@@ -72,8 +72,6 @@ namespace CTC.Runtime.Info
         public float HeroDamageMultiplier;
         public float GangRecruitRadius;
         public int PepperDotDamage;
-        public float PepperDotSeconds;
-        public int PepperDotMaxStacks;
         public int TechSlotCap;
         public int FortressPlaceCost;
         public int ShopSpotCount;

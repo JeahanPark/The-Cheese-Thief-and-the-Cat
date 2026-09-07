@@ -118,8 +118,11 @@ namespace CTC.Runtime.Combat
                 bool livingEnemy = tag.Role == RoleId.Cat || (tag.Role == RoleId.None && !hitIsMapLoot);
                 if (pepper != null && pepper.Owned && livingEnemy)
                 {
-                    var balance = Info.InfoManager.Instance.Balance;
-                    PepperDot.ServerApply(target, balance.PepperDotMaxStacks, balance.PepperDotSeconds);
+                    // 후추 레벨이 중첩·지속을 정한다(TechInfo P1·P2). Lv1 = 3중첩·4초(옛 BalanceInfo 값과 같다)
+                    int pepperLv = TechOwner.LevelOf(gameObject, TechId.Pepper);
+                    PepperDot.ServerApply(target,
+                        Mathf.RoundToInt(TechLogic.ParamOf(TechId.Pepper, pepperLv, 1)),
+                        TechLogic.ParamOf(TechId.Pepper, pepperLv, 2));
                 }
                 break;
             }
