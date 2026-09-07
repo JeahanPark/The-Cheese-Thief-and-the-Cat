@@ -240,6 +240,13 @@ namespace CTC.Runtime.Map
 
         private void BuildFromLayout(MapLayout _layout)
         {
+            // 창고 평면도(2026-09-07): 방·복도가 없다 — 차단물 박스만 세운다
+            if (_layout.HandPlaced)
+            {
+                BuildProps(_layout);
+                return;
+            }
+
             // 방: 바닥 + 통로 접점만 개방한 4면 벽
             foreach (RoomRect r in _layout.Rooms)
             {
@@ -464,6 +471,35 @@ namespace CTC.Runtime.Map
         /// 벽과 같은 재질·같은 콜라이더다. 시야 판정(`SightLine`)은 눈높이 1.0m 레이 하나라
         /// 이 높이(2.2m)면 확실히 끊긴다.
         /// </summary>
+        /// <summary>
+        /// 창고 평면도(2026-09-07) — 방·복도 대신 차단물 박스만. **이름이 곧 옷·격자다**:
+        /// `Wall_Shelf_*`(MapDresser 선반 타일링·5 m) · `CorridorWall_*`(궤짝 1.4배·2.4 m) ·
+        /// `Obstacle_Block_*`(작업대·자루·계단). 배럴은 <see cref="BuildObstacles"/>가 `Obstacles/Obstacle`로 세운다.
+        /// NavGridBaker는 이 이름들을 전부 찍는다.
+        /// </summary>
+        private void BuildProps(MapLayout _layout)
+        {
+            int i = 0;
+            foreach (PropPlacement p in _layout.Props)
+            {
+                i++;
+                Vector3 center = new Vector3(p.Pos.x, p.Height * 0.5f, p.Pos.y);
+                Vector3 size = new Vector3(p.Size.x, p.Height, p.Size.y);
+                switch (p.Kind)
+                {
+                    case PropKind.Shelf:
+                        AddBox(m_Root, m_WallMaterial, "Wall_Shelf_" + i, center, size);
+                        break;
+                    case PropKind.CrateWall:
+                        AddBox(m_Root, CorridorWallMat, "CorridorWall_" + i, center, size);
+                        break;
+                    case PropKind.Block:
+                        AddBox(m_Root, m_WallMaterial, "Obstacle_Block_" + i, center, size);
+                        break;
+                }
+            }
+        }
+
         private void BuildObstacles(MapLayout _layout)
         {
             var root = new GameObject("Obstacles");
@@ -475,6 +511,15 @@ namespace CTC.Runtime.Map
                 AddBox(root, m_WallMaterial, "Obstacle",
                     new Vector3(o.Pos.x, OBSTACLE_HEIGHT * 0.5f, o.Pos.y),
                     new Vector3(o.Size.x, OBSTACLE_HEIGHT, o.Size.y));
+            }
+
+            // 창고 평면도의 배럴 — 같은 "Obstacle" 이름이라 MapDresser가 배럴 비주얼로 바꾼다
+            foreach (PropPlacement p in _layout.Props)
+            {
+                if (p.Kind != PropKind.Barrel) continue;
+                AddBox(root, m_WallMaterial, "Obstacle",
+                    new Vector3(p.Pos.x, p.Height * 0.5f, p.Pos.y),
+                    new Vector3(p.Size.x, p.Height, p.Size.y));
             }
         }
 

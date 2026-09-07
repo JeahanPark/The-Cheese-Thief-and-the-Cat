@@ -1,0 +1,331 @@
+<title>밤의 식료품 창고 평면도</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f3ecdd; --paper: #fbf6ea; --ink: #241c14; --muted: #6b5d4a; --line: #d9ccb2;
+    --floor: #e6d8bb; --zone-line: #b79a6a;
+    --shelf: #7a4a1f; --crate: #b8905a; --barrel: #5c3d22; --bench: #8f6a3c; --sack: #8c8a5e;
+    --cheese: #e8b535; --cheese-ink: #3a2a00; --fort: #c9791c; --shop: #d9541e; --alcove: #2d8f88; --dog: #a03a2e;
+    --light: rgba(232,181,53,.22); --moon: rgba(90,140,200,.25); --cat: #d4652a; --gap: #fbf6ea;
+    --accent: #c9791c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f141c; --paper: #141b27; --ink: #ece4d2; --muted: #a49681; --line: #2a3442;
+      --floor: #221a12; --zone-line: #6b5232;
+      --shelf: #a86a33; --crate: #c9a06a; --barrel: #7d5330; --bench: #a37b46; --sack: #8f8b60;
+      --cheese: #ffd84d; --cheese-ink: #2a1e00; --fort: #e8b535; --shop: #ff7a3d; --alcove: #5fc7be; --dog: #e0574a;
+      --light: rgba(232,181,53,.20); --moon: rgba(120,170,230,.22); --cat: #ff8a4a; --gap: #221a12;
+      --accent: #e8b535;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f141c; --paper: #141b27; --ink: #ece4d2; --muted: #a49681; --line: #2a3442;
+    --floor: #221a12; --zone-line: #6b5232;
+    --shelf: #a86a33; --crate: #c9a06a; --barrel: #7d5330; --bench: #a37b46; --sack: #8f8b60;
+    --cheese: #ffd84d; --cheese-ink: #2a1e00; --fort: #e8b535; --shop: #ff7a3d; --alcove: #5fc7be; --dog: #e0574a;
+    --light: rgba(232,181,53,.20); --moon: rgba(120,170,230,.22); --cat: #ff8a4a; --gap: #221a12;
+    --accent: #e8b535;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif; font-size: 14px; line-height: 1.55; margin: 0; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 24px; border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+  .mapbox { background: var(--paper); border: 1px solid var(--line); padding: 10px; overflow-x: auto; }
+  svg { display: block; width: 100%; height: auto; }
+  aside { display: grid; gap: 14px; }
+  .panel { background: var(--paper); border: 1px solid var(--line); padding: 12px 14px; }
+  .panel h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 500; }
+  .legend { display: grid; grid-template-columns: 18px 1fr; gap: 6px 10px; align-items: center; font-size: 13px; }
+  .sw { width: 18px; height: 12px; border-radius: 2px; display: inline-block; }
+  .toggles label { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; cursor: pointer; }
+  .toggles input { accent-color: var(--accent); }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  .kv b { font-weight: 500; color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 6px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 500; color: var(--muted); font-size: 12px; letter-spacing: .04em; }
+  td.n { text-align: right; }
+  .tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 24px; }
+  .note { font-size: 13px; color: var(--muted); margin: 0; }
+  h3 { font-size: 15px; margin: 0 0 4px; }
+  .rules { margin-top: 22px; }
+  .rules ol { padding-left: 20px; margin: 6px 0 0; }
+  .rules li { margin: 4px 0; }
+  .zone-label { font-family: "Noto Sans KR", sans-serif; font-weight: 700; fill: var(--muted); font-size: 11px; letter-spacing: .06em; }
+  .axis { font-family: "IBM Plex Mono", monospace; font-size: 9px; fill: var(--muted); }
+  .badge { font-family: "IBM Plex Mono", monospace; font-size: 9px; font-weight: 500; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>밤의 식료품 창고 — 평면도 v2</h1>
+    <span class="sub">120×120 m · 격자 방 없음 · 존 5 + 랜드마크 1 · 오브젝트 좌표 포함 (x 동, z 북, 미터)</span>
+  </header>
+
+  <div class="layout">
+    <div class="mapbox"><svg id="map" viewBox="0 0 780 780" role="img" aria-label="창고 평면도"></svg></div>
+    <aside>
+      <div class="panel">
+        <h2>범례</h2>
+        <div class="legend">
+          <span class="sw" style="background:var(--shelf)"></span><span>선반 열 — 5 m, 시야·이동 차단 (<span class="mono">Obstacle_Shelf</span>)</span>
+          <span class="sw" style="background:var(--crate)"></span><span>궤짝 벽 — 2.4 m, 넘겨다보임 (<span class="mono">Obstacle_Crate</span>)</span>
+          <span class="sw" style="background:var(--barrel);border-radius:50%"></span><span>배럴 — 3 m, 차단 (<span class="mono">Obstacle_Barrel</span>)</span>
+          <span class="sw" style="background:var(--bench)"></span><span>작업대 · 자루 더미 · 계단</span>
+          <span class="sw" style="background:var(--cheese)"></span><span>치즈 지점 G1~G7 (r 2 m) · 2벌 = 14</span>
+          <span class="sw" style="background:transparent;border:2px solid var(--fort)"></span><span>요새 자리 8 (쥐 스폰 = 입구 앞 1.8 m)</span>
+          <span class="sw" style="background:var(--shop)"></span><span>상점 자리 4 (r 3 m, 서로 ≥ 25 m)</span>
+          <span class="sw" style="background:var(--alcove)"></span><span>벽감 6 (벽에 붙음) · <span style="color:var(--dog)">■</span> 강아지 벽감</span>
+          <span class="sw" style="background:var(--light)"></span><span>빛웅덩이 (앰버) · 파랑 = 달빛</span>
+          <span class="sw" style="background:var(--cat);border-radius:50%"></span><span>고양이 시작 (0,0)</span>
+        </div>
+      </div>
+      <div class="panel toggles">
+        <h2>레이어</h2>
+        <label><input type="checkbox" data-layer="zones" checked> 존 경계·이름</label>
+        <label><input type="checkbox" data-layer="lights" checked> 빛웅덩이</label>
+        <label><input type="checkbox" data-layer="blocks" checked> 선반·궤짝·배럴·가구</label>
+        <label><input type="checkbox" data-layer="cheese" checked> 치즈 지점</label>
+        <label><input type="checkbox" data-layer="forts" checked> 요새·스폰</label>
+        <label><input type="checkbox" data-layer="shops" checked> 상점 자리</label>
+        <label><input type="checkbox" data-layer="alcoves" checked> 벽감</label>
+        <label><input type="checkbox" data-layer="grid"> 10 m 눈금</label>
+      </div>
+      <div class="panel">
+        <h2>수치</h2>
+        <div class="kv mono">
+          <b>바닥</b><span>120 × 120 m (반치수 60)</span>
+          <b>골목 폭</b><span>최소 3.5 m · 주 통로 5 m</span>
+          <b>선반 틈</b><span>3 m, 열마다 어긋남</span>
+          <b>격자 셀</b><span>0.5 m — 가구 박스 자동 스탬프</span>
+          <b>치즈</b><span>중앙 G6·G7 ×2 · 중간 G4·G5 · 바깥 G1~G3</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="tables" id="tables"></div>
+
+  <div class="rules">
+    <h3>배치 규칙 (이 도면이 지키는 것)</h3>
+    <ol>
+      <li><b>방·복도 없음.</b> 존을 가르는 것은 벽이 아니라 선반 열·궤짝 벽이고, 열마다 틈이 2~3개 — 어느 존에서든 도망칠 길이 둘 이상이다.</li>
+      <li><b>중앙이 가장 밝고 가장 비었다.</b> 주방 홀은 12 m 빛웅덩이 + 빈 바닥. 고등급 치즈가 여기 있다 — 위험과 보상이 같은 자리.</li>
+      <li><b>바깥으로 갈수록 어둡고 촘촘하다.</b> 팬트리 미로·배럴 저장고는 시야가 짧다. 요새는 바깥 테두리 8곳.</li>
+      <li><b>상점 4곳은 전부 틈이 둘 이상인 골목 교차점.</b> 구매음 12 m가 새므로 막다른 곳에 두지 않는다. 판마다 무작위로 바뀌어도 후보는 이 조건을 만족하는 자리만.</li>
+      <li><b>가구는 벽에서 0.25 m 안쪽.</b> 벽 겹침 0. 통로 잔여 폭 &lt; 0.8 m 금지. 큰 가구는 실물 콜라이더, 소품(호박·견과)은 통과.</li>
+      <li><b>랜드마크 1</b> — 북쪽 계단실. 달빛 창(파랑)이 유일한 찬 빛이라 어디서든 "북쪽"을 안다.</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+// ---- 데이터 (미터, x 동 · z 북). 이 블록이 곧 레이아웃 데이터다 — 빌더가 그대로 읽을 수 있게 둔다.
+const MAP = {
+  half: 60,
+  zones: [
+    { id: "kitchen",  name: "주방 홀",       x: -18, z: -15, w: 36, h: 30, tone: "open" },
+    { id: "pantry",   name: "팬트리 선반 미로", x: -60, z: 15, w: 42, h: 45, tone: "maze" },
+    { id: "crates",   name: "궤짝 야적장",    x: 18,  z: 15, w: 42, h: 45, tone: "yard" },
+    { id: "cellar",   name: "배럴 저장고",    x: -60, z: -60, w: 42, h: 45, tone: "dark" },
+    { id: "loading",  name: "하역장",        x: 18,  z: -60, w: 42, h: 45, tone: "open" },
+    { id: "stairs",   name: "계단실 (랜드마크)", x: -18, z: 15, w: 36, h: 45, tone: "landmark" },
+    { id: "dock",     name: "남쪽 하역 골목",  x: -18, z: -60, w: 36, h: 45, tone: "aisle" },
+  ],
+  // 선반 열: 5m, 차단. seg = [x1,z1,x2,z2], gaps = 열 위 구간(축 좌표) 목록
+  shelves: [
+    { id: "S-hallN", seg: [-18, 15, 18, 15],  gaps: [[-12,-9],[6,9]] },
+    { id: "S-hallS", seg: [-18, -15, 18, -15], gaps: [[-6,-3],[10,13]] },
+    { id: "S-hallW", seg: [-18, -15, -18, 15], gaps: [[-10,-7],[5,8]] },
+    { id: "S-hallE", seg: [18, -15, 18, 15],   gaps: [[-8,-5],[8,11]] },
+    { id: "S-p1", seg: [-52, 20, -52, 56], gaps: [[34,37]] },
+    { id: "S-p2", seg: [-44, 20, -44, 56], gaps: [[24,27],[46,49]] },
+    { id: "S-p3", seg: [-36, 20, -36, 56], gaps: [[38,41]] },
+    { id: "S-p4", seg: [-28, 20, -28, 56], gaps: [[22,25],[50,53]] },
+    { id: "S-nW", seg: [-18, 15, -18, 48], gaps: [[30,33]] },
+    { id: "S-nE", seg: [18, 15, 18, 48],   gaps: [[30,33]] },
+    { id: "S-sW", seg: [-18, -48, -18, -15], gaps: [[-33,-30]] },
+    { id: "S-sE", seg: [18, -48, 18, -15],   gaps: [[-33,-30]] },
+    { id: "S-cellarN", seg: [-56, -15, -22, -15], gaps: [[-48,-45],[-30,-27]] },
+    { id: "S-loadN", seg: [22, -15, 56, -15], gaps: [[28,31],[46,49]] },
+  ],
+  // 궤짝 벽: 2.4m, 넘겨다보임. rect = [x, z, w, h]
+  crateWalls: [
+    { id: "C-y1", rect: [24, 20, 10, 4] }, { id: "C-y2", rect: [40, 18, 12, 4] },
+    { id: "C-y3", rect: [22, 30, 6, 14] }, { id: "C-y4", rect: [36, 28, 8, 8] },
+    { id: "C-y5", rect: [48, 30, 8, 10] }, { id: "C-y6", rect: [28, 48, 12, 4] },
+    { id: "C-y7", rect: [46, 46, 10, 8] },
+    { id: "C-n1", rect: [-12, 24, 12, 2] }, { id: "C-n2", rect: [3, 24, 9, 2] },
+    { id: "C-s1", rect: [-12, -32, 9, 2] }, { id: "C-s2", rect: [0, -32, 12, 2] },
+    { id: "C-l1", rect: [24, -38, 8, 2] }, { id: "C-l2", rect: [35, -38, 9, 2] },
+  ],
+  // 배럴: 3m 차단 (점)
+  barrels: [
+    [-56,-20],[-52,-24],[-48,-28],[-44,-32],[-40,-36],[-36,-40],[-32,-44],[-28,-48],[-24,-52],
+    [-56,-36],[-52,-40],[-48,-44],[-44,-48],[-40,-52],[-36,-56],
+    [-26,-22],[-22,-26],
+    [-14,-10],[14,10],
+    [54,-30],[56,-34],
+  ],
+  // 가구 (직사각 차단): 작업대·자루·계단
+  furniture: [
+    { id: "bench", name: "작업대", rect: [-7, 3, 14, 2] },
+    { id: "sack1", name: "자루 더미", rect: [27, -33, 6, 4] },
+    { id: "sack2", name: "자루 더미", rect: [44, -49, 5, 5] },
+    { id: "sack3", name: "자루 더미", rect: [50, -26, 4, 4] },
+    { id: "stairs", name: "거대 계단", rect: [-4, 50, 8, 8] },
+    { id: "sackN", name: "자루 더미", rect: [-14, 40, 4, 4] },
+    { id: "crateN", name: "궤짝 더미", rect: [10, 38, 4, 5] },
+  ],
+  lights: [
+    { at: [0, 0], r: 12, kind: "amber", name: "주방 홀 등" },
+    { at: [-44, 36], r: 8, kind: "amber", name: "팬트리 등" },
+    { at: [38, 30], r: 8, kind: "amber", name: "야적장 등" },
+    { at: [-40, -40], r: 5, kind: "amber", name: "저장고 등 (약함)" },
+    { at: [38, -38], r: 12, kind: "amber", name: "하역장 등" },
+    { at: [0, 56], r: 9, kind: "moon", name: "계단실 달빛 창" },
+    { at: [0, -44], r: 6, kind: "amber", name: "남쪽 골목 등" },
+  ],
+  cheese: [
+    { g: 7, at: [-8, -6] }, { g: 7, at: [0, 44] },
+    { g: 6, at: [10, 8] },  { g: 6, at: [-20, -20] },
+    { g: 5, at: [-32, 46] }, { g: 5, at: [34, 40] },
+    { g: 4, at: [-48, 30] }, { g: 4, at: [50, 26] },
+    { g: 3, at: [-40, 56] }, { g: 3, at: [26, -22] },
+    { g: 2, at: [-30, -48] }, { g: 2, at: [48, -36] },
+    { g: 1, at: [-48, -30] }, { g: 1, at: [56, -6] },
+  ],
+  forts: [
+    { id: "F0", at: [-54, 54], yaw: 135 }, { id: "F1", at: [18, 57], yaw: 180 },
+    { id: "F2", at: [54, 54], yaw: 225 },  { id: "F3", at: [57, -18], yaw: 270 },
+    { id: "F4", at: [54, -54], yaw: 315 }, { id: "F5", at: [-18, -57], yaw: 0 },
+    { id: "F6", at: [-54, -54], yaw: 45 }, { id: "F7", at: [-57, 18], yaw: 90 },
+  ],
+  shops: [
+    { id: "Shop0", at: [-36, -28], zone: "저장고 골목 교차" }, { id: "Shop1", at: [40, -24], zone: "하역장 북서" },
+    { id: "Shop2", at: [-40, 36], zone: "팬트리 중앙 틈" },    { id: "Shop3", at: [36, 32], zone: "야적장 중앙" },
+  ],
+  alcoves: [
+    { id: "A0", at: [-58, 40], yaw: 90, dog: false }, { id: "A1", at: [-40, 58], yaw: 180, dog: false },
+    { id: "A2", at: [58, 36], yaw: 270, dog: true },   { id: "A3", at: [30, -58], yaw: 0, dog: false },
+    { id: "A4", at: [-58, -40], yaw: 90, dog: false }, { id: "A5", at: [58, -46], yaw: 270, dog: false },
+  ],
+  catSpawn: [0, 0],
+};
+
+// ---- 그리기
+const S = 6, M = 30, H = MAP.half;
+const X = x => M + (x + H) * S, Y = z => M + (H - z) * S;
+const svg = document.getElementById("map");
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+const text = (x, y, s, cls, attrs, parent) => { const t = el("text", Object.assign({ x, y, class: cls }, attrs || {}), parent); t.textContent = s; return t; };
+const layer = id => el("g", { id: "L-" + id });
+
+// 바닥
+el("rect", { x: X(-H), y: Y(H), width: 120 * S, height: 120 * S, fill: "var(--floor)", stroke: "var(--ink)", "stroke-width": 3 });
+
+// 존
+const gZ = layer("zones");
+for (const z of MAP.zones) {
+  el("rect", { x: X(z.x), y: Y(z.z + z.h), width: z.w * S, height: z.h * S, fill: "none", stroke: "var(--zone-line)", "stroke-dasharray": "5 4", "stroke-width": 1 }, gZ);
+  text(X(z.x) + 6, Y(z.z + z.h) + 14, z.name, "zone-label", {}, gZ);
+}
+
+// 눈금
+const gG = layer("grid"); gG.style.display = "none";
+for (let v = -60; v <= 60; v += 10) {
+  el("line", { x1: X(v), y1: Y(H), x2: X(v), y2: Y(-H), stroke: "var(--line)", "stroke-width": .6 }, gG);
+  el("line", { x1: X(-H), y1: Y(v), x2: X(H), y2: Y(v), stroke: "var(--line)", "stroke-width": .6 }, gG);
+  text(X(v) - 6, Y(-H) + 14, String(v), "axis", {}, gG);
+  text(X(-H) - 26, Y(v) + 3, String(v), "axis", {}, gG);
+}
+
+// 빛
+const gL = layer("lights");
+for (const l of MAP.lights) {
+  el("circle", { cx: X(l.at[0]), cy: Y(l.at[1]), r: l.r * S, fill: l.kind === "moon" ? "var(--moon)" : "var(--light)" }, gL);
+}
+
+// 차단물
+const gB = layer("blocks");
+const T = 1.0; // 선반 두께(m)
+for (const s of MAP.shelves) {
+  const [x1, z1, x2, z2] = s.seg; const horiz = z1 === z2;
+  const lo = horiz ? Math.min(x1, x2) : Math.min(z1, z2), hi = horiz ? Math.max(x1, x2) : Math.max(z1, z2);
+  let cursor = lo; const gaps = [...s.gaps].sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i <= gaps.length; i++) {
+    const end = i < gaps.length ? gaps[i][0] : hi;
+    if (end - cursor > 0.2) {
+      if (horiz) el("rect", { x: X(cursor), y: Y(z1 + T / 2), width: (end - cursor) * S, height: T * S, fill: "var(--shelf)" }, gB);
+      else el("rect", { x: X(x1 - T / 2), y: Y(end), width: T * S, height: (end - cursor) * S, fill: "var(--shelf)" }, gB);
+    }
+    if (i < gaps.length) cursor = gaps[i][1];
+  }
+}
+for (const c of MAP.crateWalls) el("rect", { x: X(c.rect[0]), y: Y(c.rect[1] + c.rect[3]), width: c.rect[2] * S, height: c.rect[3] * S, fill: "var(--crate)", stroke: "var(--ink)", "stroke-width": .4 }, gB);
+for (const b of MAP.barrels) el("circle", { cx: X(b[0]), cy: Y(b[1]), r: 1.5 * S, fill: "var(--barrel)", stroke: "var(--ink)", "stroke-width": .4 }, gB);
+for (const f of MAP.furniture) {
+  el("rect", { x: X(f.rect[0]), y: Y(f.rect[1] + f.rect[3]), width: f.rect[2] * S, height: f.rect[3] * S, fill: f.id === "stairs" ? "var(--bench)" : "var(--sack)", stroke: "var(--ink)", "stroke-width": .5 }, gB);
+  text(X(f.rect[0] + f.rect[2] / 2), Y(f.rect[1] + f.rect[3] / 2) + 3, f.name, "badge", { "text-anchor": "middle", fill: "var(--ink)" }, gB);
+}
+
+// 치즈
+const gC = layer("cheese");
+for (const c of MAP.cheese) {
+  el("circle", { cx: X(c.at[0]), cy: Y(c.at[1]), r: 2 * S, fill: "var(--cheese)", stroke: "var(--cheese-ink)", "stroke-width": .8 }, gC);
+  text(X(c.at[0]), Y(c.at[1]) + 3.5, "G" + c.g, "badge", { "text-anchor": "middle", fill: "var(--cheese-ink)" }, gC);
+}
+
+// 요새 + 스폰
+const gF = layer("forts");
+for (const f of MAP.forts) {
+  const [x, z] = f.at, rad = f.yaw * Math.PI / 180, dx = Math.sin(rad), dz = Math.cos(rad);
+  el("rect", { x: X(x) - 2 * S, y: Y(z) - 2 * S, width: 4 * S, height: 4 * S, fill: "none", stroke: "var(--fort)", "stroke-width": 1.6, transform: `rotate(${f.yaw} ${X(x)} ${Y(z)})` }, gF);
+  el("circle", { cx: X(x + dx * 1.8), cy: Y(z + dz * 1.8), r: 3, fill: "var(--fort)" }, gF);
+  text(X(x), Y(z) + 3.5, f.id, "badge", { "text-anchor": "middle", fill: "var(--fort)" }, gF);
+}
+el("circle", { cx: X(MAP.catSpawn[0]), cy: Y(MAP.catSpawn[1]), r: 5, fill: "var(--cat)", stroke: "var(--ink)", "stroke-width": .8 }, gF);
+text(X(0) + 8, Y(0) + 3.5, "고양이", "badge", { fill: "var(--cat)" }, gF);
+
+// 상점
+const gS = layer("shops");
+for (const s of MAP.shops) {
+  el("circle", { cx: X(s.at[0]), cy: Y(s.at[1]), r: 3 * S, fill: "var(--shop)", "fill-opacity": .25, stroke: "var(--shop)", "stroke-width": 1.4 }, gS);
+  text(X(s.at[0]), Y(s.at[1]) + 3.5, "상점", "badge", { "text-anchor": "middle", fill: "var(--shop)" }, gS);
+}
+
+// 벽감
+const gA = layer("alcoves");
+for (const a of MAP.alcoves) {
+  el("rect", { x: X(a.at[0]) - 1.2 * S, y: Y(a.at[1]) - 0.8 * S, width: 2.4 * S, height: 1.6 * S, fill: a.dog ? "var(--dog)" : "var(--alcove)", transform: `rotate(${a.yaw} ${X(a.at[0])} ${Y(a.at[1])})` }, gA);
+}
+
+// 축 이름
+text(X(0), Y(H) - 10, "북 (+z)", "axis", { "text-anchor": "middle" });
+text(X(H) + 6, Y(0) + 3, "동 (+x)", "axis", {});
+
+// 토글
+document.querySelectorAll("[data-layer]").forEach(cb => cb.addEventListener("change", () => {
+  const g = document.getElementById("L-" + cb.dataset.layer); if (g) g.style.display = cb.checked ? "" : "none";
+}));
+
+// ---- 표
+const tables = document.getElementById("tables");
+function table(title, note, head, rows) {
+  const box = document.createElement("div"); box.className = "panel";
+  box.innerHTML = `<h3>${title}</h3><p class="note">${note}</p><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i > 0 ? "n mono" : ""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  tables.appendChild(box);
+}
+table("치즈 지점 14", "등급 7 → 1 순. 중앙(주방 홀·계단실)이 고등급.", ["등급", "x", "z"], MAP.cheese.map(c => ["G" + c.g, c.at[0], c.at[1]]));
+table("요새 8 · 상점 4", "요새 yaw = 입구 방향(맵 안쪽). 쥐 스폰 = 입구 앞 1.8 m.", ["id", "x", "z", "yaw"],
+  MAP.forts.map(f => [f.id, f.at[0], f.at[1], f.yaw + "°"]).concat(MAP.shops.map(s => [s.id + " · " + s.zone, s.at[0], s.at[1], "r 3"])));
+table("벽감 6", "벽에 붙는다. 하나는 강아지 벽감.", ["id", "x", "z", "yaw"], MAP.alcoves.map(a => [a.id + (a.dog ? " 🐕" : ""), a.at[0], a.at[1], a.yaw + "°"]));
+table("선반 열 " + MAP.shelves.length + " · 궤짝 벽 " + MAP.crateWalls.length + " · 배럴 " + MAP.barrels.length, "선반은 [x1,z1]→[x2,z2] 위에 틈(3 m) 구간을 뺀 것. 궤짝 벽은 [x, z, 폭, 깊이].", ["id", "좌표", "틈"],
+  MAP.shelves.map(s => [s.id, s.seg.join(", "), s.gaps.map(g => g.join("–")).join(" · ")]).concat(MAP.crateWalls.map(c => [c.id, c.rect.join(", "), "—"])));
+</script>

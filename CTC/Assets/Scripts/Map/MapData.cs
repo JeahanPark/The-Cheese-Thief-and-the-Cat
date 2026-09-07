@@ -86,4 +86,34 @@ namespace CTC.Runtime.Map
         public string ExclusiveRoomId;   // 이 방과 동시 선택 금지
         public List<CorridorSeg> Segments;
     }
+
+    /// <summary>창고 평면도의 차단물(2026-09-07). 이름 규약이 곧 옷·격자다 — MapBuilder가 Kind로 이름을 정한다.</summary>
+    public enum PropKind { Shelf, CrateWall, Barrel, Block }
+
+    [System.Serializable]
+    public struct PropPlacement
+    {
+        public string Name;
+        public PropKind Kind;
+        public Vector2 Pos;      // 중심(x, z)
+        public Vector2 Size;     // (x폭, z깊이)
+        public float YawDeg;     // 1단계는 0만 쓴다
+        public float Height;
+    }
+
+    /// <summary>손 배치 빛웅덩이(2026-09-07). Moon이면 찬 파랑 — 계단실 랜드마크.</summary>
+    [System.Serializable]
+    public struct LightPlacement
+    {
+        public Vector2 Pos;
+        public float Radius;
+        public bool Moon;
+    }
+
+    /// <summary>상점 자리(2026-09-07) — 골목 교차점. ShopSpotSpawner가 읽는다(ctc-d8 합의).</summary>
+    [System.Serializable]
+    public struct ShopPlacement
+    {
+        public Vector2 Pos;
+    }
 }

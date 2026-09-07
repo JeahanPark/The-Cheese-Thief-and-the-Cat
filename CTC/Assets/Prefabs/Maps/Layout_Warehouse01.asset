@@ -1,0 +1,610 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b02ac3fb85d99642af7c46dd9ecdd89, type: 3}
+  m_Name: Layout_Warehouse01
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapLayout
+  m_Seed: 1
+  m_Source: hand-authored
+  m_HalfExtent: 60
+  m_DisplayName: "\uCC3D\uACE0 (120\xD7120)"
+  m_RecommendedMiceMin: 6
+  m_RecommendedMiceMax: 8
+  m_Rooms: []
+  m_Corridors: []
+  m_Cheese:
+  - Pos: {x: -8, y: -6}
+    Grade: 7
+    Radius: 2
+  - Pos: {x: 0, y: 44}
+    Grade: 7
+    Radius: 2
+  - Pos: {x: 10, y: 8}
+    Grade: 6
+    Radius: 2
+  - Pos: {x: -20, y: -20}
+    Grade: 6
+    Radius: 2
+  - Pos: {x: -32, y: 46}
+    Grade: 5
+    Radius: 2
+  - Pos: {x: 34, y: 40}
+    Grade: 5
+    Radius: 2
+  - Pos: {x: -48, y: 30}
+    Grade: 4
+    Radius: 2
+  - Pos: {x: 50, y: 26}
+    Grade: 4
+    Radius: 2
+  - Pos: {x: -40, y: 56}
+    Grade: 3
+    Radius: 2
+  - Pos: {x: 26, y: -22}
+    Grade: 3
+    Radius: 2
+  - Pos: {x: -30, y: -48}
+    Grade: 2
+    Radius: 2
+  - Pos: {x: 48, y: -36}
+    Grade: 2
+    Radius: 2
+  - Pos: {x: -48, y: -30}
+    Grade: 1
+    Radius: 2
+  - Pos: {x: 56, y: -6}
+    Grade: 1
+    Radius: 2
+  m_Fortresses:
+  - Pos: {x: -54, y: 54}
+    YawDeg: 135
+  - Pos: {x: 18, y: 57}
+    YawDeg: 180
+  - Pos: {x: 54, y: 54}
+    YawDeg: 225
+  - Pos: {x: 57, y: -18}
+    YawDeg: 270
+  - Pos: {x: 54, y: -54}
+    YawDeg: 315
+  - Pos: {x: -18, y: -57}
+    YawDeg: 0
+  - Pos: {x: -54, y: -54}
+    YawDeg: 45
+  - Pos: {x: -57, y: 18}
+    YawDeg: 90
+  m_Alcoves:
+  - Pos: {x: -58, y: 40}
+    YawDeg: 90
+    Payload: 0
+    BoxContents:
+    - Id: 2
+      Amount: 1
+  - Pos: {x: -40, y: 58}
+    YawDeg: 180
+    Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
+  - Pos: {x: 58, y: 36}
+    YawDeg: 270
+    Payload: 1
+    BoxContents: []
+  - Pos: {x: 30, y: -58}
+    YawDeg: 0
+    Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
+  - Pos: {x: -58, y: -40}
+    YawDeg: 90
+    Payload: 0
+    BoxContents:
+    - Id: 0
+      Amount: 250
+  - Pos: {x: 58, y: -46}
+    YawDeg: 270
+    Payload: 0
+    BoxContents:
+    - Id: 1
+      Amount: 1
+  m_Boxes: []
+  m_Obstacles: []
+  m_HandPlaced: 1
+  m_Props:
+  - Name: S-hallN-0
+    Kind: 0
+    Pos: {x: -15, y: 15}
+    Size: {x: 6, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallN-1
+    Kind: 0
+    Pos: {x: -1.5, y: 15}
+    Size: {x: 15, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallN-2
+    Kind: 0
+    Pos: {x: 13.5, y: 15}
+    Size: {x: 9, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallS-0
+    Kind: 0
+    Pos: {x: -12, y: -15}
+    Size: {x: 12, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallS-1
+    Kind: 0
+    Pos: {x: 3.5, y: -15}
+    Size: {x: 13, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallS-2
+    Kind: 0
+    Pos: {x: 15.5, y: -15}
+    Size: {x: 5, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallW-0
+    Kind: 0
+    Pos: {x: -18, y: -12.5}
+    Size: {x: 1, y: 5}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallW-1
+    Kind: 0
+    Pos: {x: -18, y: -1}
+    Size: {x: 1, y: 12}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallW-2
+    Kind: 0
+    Pos: {x: -18, y: 11.5}
+    Size: {x: 1, y: 7}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallE-0
+    Kind: 0
+    Pos: {x: 18, y: -11.5}
+    Size: {x: 1, y: 7}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallE-1
+    Kind: 0
+    Pos: {x: 18, y: 1.5}
+    Size: {x: 1, y: 13}
+    YawDeg: 0
+    Height: 5
+  - Name: S-hallE-2
+    Kind: 0
+    Pos: {x: 18, y: 13}
+    Size: {x: 1, y: 4}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p1-0
+    Kind: 0
+    Pos: {x: -52, y: 27}
+    Size: {x: 1, y: 14}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p1-1
+    Kind: 0
+    Pos: {x: -52, y: 46.5}
+    Size: {x: 1, y: 19}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p2-0
+    Kind: 0
+    Pos: {x: -44, y: 22}
+    Size: {x: 1, y: 4}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p2-1
+    Kind: 0
+    Pos: {x: -44, y: 36.5}
+    Size: {x: 1, y: 19}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p2-2
+    Kind: 0
+    Pos: {x: -44, y: 52.5}
+    Size: {x: 1, y: 7}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p3-0
+    Kind: 0
+    Pos: {x: -36, y: 29}
+    Size: {x: 1, y: 18}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p3-1
+    Kind: 0
+    Pos: {x: -36, y: 48.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p4-0
+    Kind: 0
+    Pos: {x: -28, y: 21}
+    Size: {x: 1, y: 2}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p4-1
+    Kind: 0
+    Pos: {x: -28, y: 37.5}
+    Size: {x: 1, y: 25}
+    YawDeg: 0
+    Height: 5
+  - Name: S-p4-2
+    Kind: 0
+    Pos: {x: -28, y: 54.5}
+    Size: {x: 1, y: 3}
+    YawDeg: 0
+    Height: 5
+  - Name: S-nW-0
+    Kind: 0
+    Pos: {x: -18, y: 22.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-nW-1
+    Kind: 0
+    Pos: {x: -18, y: 40.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-nE-0
+    Kind: 0
+    Pos: {x: 18, y: 22.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-nE-1
+    Kind: 0
+    Pos: {x: 18, y: 40.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-sW-0
+    Kind: 0
+    Pos: {x: -18, y: -40.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-sW-1
+    Kind: 0
+    Pos: {x: -18, y: -22.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-sE-0
+    Kind: 0
+    Pos: {x: 18, y: -40.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-sE-1
+    Kind: 0
+    Pos: {x: 18, y: -22.5}
+    Size: {x: 1, y: 15}
+    YawDeg: 0
+    Height: 5
+  - Name: S-cellarN-0
+    Kind: 0
+    Pos: {x: -52, y: -15}
+    Size: {x: 8, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-cellarN-1
+    Kind: 0
+    Pos: {x: -37.5, y: -15}
+    Size: {x: 15, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-cellarN-2
+    Kind: 0
+    Pos: {x: -24.5, y: -15}
+    Size: {x: 5, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-loadN-0
+    Kind: 0
+    Pos: {x: 25, y: -15}
+    Size: {x: 6, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-loadN-1
+    Kind: 0
+    Pos: {x: 38.5, y: -15}
+    Size: {x: 15, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: S-loadN-2
+    Kind: 0
+    Pos: {x: 52.5, y: -15}
+    Size: {x: 7, y: 1}
+    YawDeg: 0
+    Height: 5
+  - Name: C-y1
+    Kind: 1
+    Pos: {x: 29, y: 22}
+    Size: {x: 10, y: 4}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y2
+    Kind: 1
+    Pos: {x: 46, y: 20}
+    Size: {x: 12, y: 4}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y3
+    Kind: 1
+    Pos: {x: 25, y: 37}
+    Size: {x: 6, y: 14}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y4
+    Kind: 1
+    Pos: {x: 40, y: 32}
+    Size: {x: 8, y: 8}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y5
+    Kind: 1
+    Pos: {x: 52, y: 35}
+    Size: {x: 8, y: 10}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y6
+    Kind: 1
+    Pos: {x: 34, y: 50}
+    Size: {x: 12, y: 4}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-y7
+    Kind: 1
+    Pos: {x: 51, y: 50}
+    Size: {x: 10, y: 8}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-n1
+    Kind: 1
+    Pos: {x: -6, y: 25}
+    Size: {x: 12, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-n2
+    Kind: 1
+    Pos: {x: 7.5, y: 25}
+    Size: {x: 9, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-s1
+    Kind: 1
+    Pos: {x: -7.5, y: -31}
+    Size: {x: 9, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-s2
+    Kind: 1
+    Pos: {x: 6, y: -31}
+    Size: {x: 12, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-l1
+    Kind: 1
+    Pos: {x: 28, y: -37}
+    Size: {x: 8, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: C-l2
+    Kind: 1
+    Pos: {x: 39.5, y: -37}
+    Size: {x: 9, y: 2}
+    YawDeg: 0
+    Height: 2.4
+  - Name: B
+    Kind: 2
+    Pos: {x: -56, y: -20}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -52, y: -24}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -48, y: -28}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -44, y: -32}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -40, y: -36}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -36, y: -40}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -32, y: -44}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -28, y: -48}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -24, y: -52}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -56, y: -36}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -52, y: -40}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -48, y: -44}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -44, y: -48}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -40, y: -52}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -36, y: -56}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -26, y: -22}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -22, y: -26}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: -14, y: -10}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: 14, y: 10}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: 54, y: -30}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: B
+    Kind: 2
+    Pos: {x: 56, y: -34}
+    Size: {x: 2.4, y: 2.4}
+    YawDeg: 0
+    Height: 3
+  - Name: K-bench
+    Kind: 3
+    Pos: {x: 0, y: 4}
+    Size: {x: 14, y: 2}
+    YawDeg: 0
+    Height: 3
+  - Name: K-sack1
+    Kind: 3
+    Pos: {x: 30, y: -31}
+    Size: {x: 6, y: 4}
+    YawDeg: 0
+    Height: 3
+  - Name: K-sack2
+    Kind: 3
+    Pos: {x: 46.5, y: -46.5}
+    Size: {x: 5, y: 5}
+    YawDeg: 0
+    Height: 3
+  - Name: K-sack3
+    Kind: 3
+    Pos: {x: 52, y: -24}
+    Size: {x: 4, y: 4}
+    YawDeg: 0
+    Height: 3
+  - Name: K-stairs
+    Kind: 3
+    Pos: {x: 0, y: 54}
+    Size: {x: 8, y: 8}
+    YawDeg: 0
+    Height: 5
+  - Name: K-sackN
+    Kind: 3
+    Pos: {x: -12, y: 42}
+    Size: {x: 4, y: 4}
+    YawDeg: 0
+    Height: 3
+  - Name: K-crateN
+    Kind: 3
+    Pos: {x: 12, y: 40.5}
+    Size: {x: 4, y: 5}
+    YawDeg: 0
+    Height: 3
+  m_Lights:
+  - Pos: {x: 0, y: 0}
+    Radius: 12
+    Moon: 0
+  - Pos: {x: -44, y: 36}
+    Radius: 8
+    Moon: 0
+  - Pos: {x: 38, y: 30}
+    Radius: 8
+    Moon: 0
+  - Pos: {x: -40, y: -40}
+    Radius: 5
+    Moon: 0
+  - Pos: {x: 38, y: -38}
+    Radius: 12
+    Moon: 0
+  - Pos: {x: 0, y: 56}
+    Radius: 9
+    Moon: 1
+  - Pos: {x: 0, y: -44}
+    Radius: 6
+    Moon: 0
+  m_Shops:
+  - Pos: {x: -36, y: -28}
+  - Pos: {x: 40, y: -24}
+  - Pos: {x: -40, y: 36}
+  - Pos: {x: 36, y: 32}

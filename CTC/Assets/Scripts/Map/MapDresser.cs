@@ -59,6 +59,25 @@ namespace CTC.Runtime.Map
             MapLayout layout = m_Builder != null ? m_Builder.CurrentLayout : null;
             if (layout == null) return;
 
+            // 창고 평면도(2026-09-07)는 빛 자리를 직접 든다 — "3방 중 1" 규칙을 안 쓴다
+            if (layout.HandPlaced)
+            {
+                for (int i = 0; i < layout.Lights.Count; i++)
+                {
+                    LightPlacement lp = layout.Lights[i];
+                    var lgo = new GameObject("LightPool_" + i);
+                    lgo.transform.SetParent(_parent, false);
+                    lgo.transform.position = new Vector3(lp.Pos.x, lp.Moon ? 6f : 3.5f, lp.Pos.y);
+                    var lt = lgo.AddComponent<Light>();
+                    lt.type = LightType.Point;
+                    lt.color = lp.Moon ? new Color(0.55f, 0.70f, 1.0f) : new Color(0.91f, 0.71f, 0.21f);
+                    lt.intensity = lp.Moon ? 3.5f : 5.5f;
+                    lt.range = lp.Radius;
+                    lt.shadows = LightShadows.None;
+                }
+                return;
+            }
+
             for (int i = 0; i < layout.Rooms.Count; i++)
             {
                 if (MapDressLogic.Pick(i, 3, _seed + 3) != 0) continue;

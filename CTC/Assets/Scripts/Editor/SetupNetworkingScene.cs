@@ -82,6 +82,7 @@ namespace CTC.Editor
             "Assets/Prefabs/Maps/Layout_Sketch01.asset",
             "Assets/Prefabs/Maps/Layout_Expanded01.asset",
             "Assets/Prefabs/Maps/Layout_Large01.asset",
+            "Assets/Prefabs/Maps/Layout_Warehouse01.asset",   // 창고 평면도(2026-09-07) — 손 배치
         };
 
         // 아직 굽지 않은 레이아웃은 건너뛴다 — 확장 맵 생성 전에도 Setup이 돌아야 한다
@@ -195,6 +196,7 @@ namespace CTC.Editor
             {
                 MapLayout layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
                 if (layout == null) continue;
+                if (layout.HandPlaced) continue;   // 창고 평면도는 좌표를 직접 든다 — 자동 계획 금지
                 PlanAlcovesInto(layout, AlcoveCountFor(layout));
                 PlanBoxesInto(layout, BOXES_PER_MAP);   // 벽감 자리를 피하므로 벽감 뒤에 온다
                 PlanObstaclesInto(layout);              // 위의 것들을 전부 피하므로 마지막이다

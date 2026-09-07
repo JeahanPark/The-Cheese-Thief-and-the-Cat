@@ -221,7 +221,7 @@ namespace CTC.Editor
         /// 깡패권과 영웅권은 **서로 가장 먼 두 벽**에 나눠 둔다. 나란히 두면 한 사람이 둘 다 먹는다.
         /// 강아지 벽은 건너뛴다 — 거긴 상자가 없다.
         /// </summary>
-        private static void FillBoxContents(List<AlcovePlacement> _placed)
+        internal static void FillBoxContents(List<AlcovePlacement> _placed)
         {
             var boxes = new List<int>();
             for (int i = 0; i < _placed.Count; i++)
