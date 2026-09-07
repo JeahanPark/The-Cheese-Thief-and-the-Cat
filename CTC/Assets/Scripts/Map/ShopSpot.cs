@@ -18,6 +18,9 @@ namespace CTC.Runtime.Map
         // IsSpawned를 따로 안 본다.
         private static readonly List<ShopSpot> s_All = new List<ShopSpot>();
 
+        /// <summary>스폰된 상점 자리 전부(읽기 전용) — 미니맵이 상점 마커를 여기서 읽는다.</summary>
+        public static IReadOnlyList<ShopSpot> All => s_All;
+
         private static float Radius => Info.InfoManager.Instance.Balance.ShopSpotRadius;
 
         /// <summary>이 지점이 어느 상점 안인가 — 서버 검증·핫바 모드 공용.</summary>

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CTC.Runtime.Combat;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,6 +12,13 @@ namespace CTC.Runtime.Economy
     /// </summary>
     public class WarehouseProduction : NetworkBehaviour
     {
+        // 스폰된 창고 명부 — ShopSpot.s_All과 같은 이유다. 미니맵이 0.2초마다 "내 창고 어디"를
+        // 물으므로 그때마다 씬을 뒤지지 않는다. **서버·클라 양쪽이 채운다**(클라도 그려야 한다).
+        private static readonly List<WarehouseProduction> s_All = new List<WarehouseProduction>();
+
+        /// <summary>스폰돼 서 있는 창고 전부(읽기 전용). 명부에 있다는 것이 곧 스폰됐다는 뜻이다.</summary>
+        public static IReadOnlyList<WarehouseProduction> All => s_All;
+
         // 소유 쥐의 클라이언트 ID. 스폰 직후 서버가 설정한다(NGO 오너십 대신 명시 필드 —
         // 구조물은 소유자 권위 이동이 없어 오너십을 줄 이유가 없다).
         private readonly NetworkVariable<ulong> m_OwnerClientId =
@@ -55,6 +63,7 @@ namespace CTC.Runtime.Economy
 
         public override void OnNetworkSpawn()
         {
+            s_All.Add(this);
             if (!IsServer) return;
 
             // 파괴 환급(숨은 창고 Lv3) — 부서지는 순간 서버에서만 판정한다.
@@ -64,6 +73,7 @@ namespace CTC.Runtime.Economy
 
         public override void OnNetworkDespawn()
         {
+            s_All.Remove(this);
             if (m_Health != null) m_Health.Died -= OnDied;
         }
 
@@ -144,9 +154,9 @@ namespace CTC.Runtime.Economy
         public static int CountOwnedBy(ulong _clientId)
         {
             int count = 0;
-            foreach (WarehouseProduction w in FindObjectsByType<WarehouseProduction>(FindObjectsSortMode.None))
+            foreach (WarehouseProduction w in s_All)
             {
-                if (w.IsSpawned && w.m_OwnerClientId.Value == _clientId) count++;
+                if (w.m_OwnerClientId.Value == _clientId) count++;
             }
             return count;
         }

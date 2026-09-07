@@ -470,6 +470,11 @@ namespace CTC.Runtime.Economy
             if (thorn != null) thorn.ServerSet(Mathf.RoundToInt(TechLogic.ParamOf(TechId.Fortress, level, 2)));
 
             go.GetComponent<NetworkObject>().Spawn(true);
+
+            // 누가 세웠는지 — 미니맵이 「내 요새만」 그린다. 창고(BindWarehouseOwner)와 같이
+            // **스폰 뒤**에 새긴다: 스폰 전에 NetworkVariable을 쓰면 NGO가 경고를 뱉는다.
+            FortressShield shield = go.GetComponent<FortressShield>();
+            if (shield != null) shield.ServerSetOwner(OwnerClientId);
         }
 
         /// <summary>

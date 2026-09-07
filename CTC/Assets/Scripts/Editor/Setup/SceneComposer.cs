@@ -190,7 +190,7 @@ namespace CTC.Editor
             SetRef(series, "m_Lobby", lobby);
             SetRef(series, "m_Match", match);
 
-            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector, series);
+            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector, series, cheeseDirector);
 
             // 밸런스 측정용 봇을 **밖에서** 조종하는 매니저(2026-08-11) — 개발 빌드 전용.
             // 봇의 몸에는 아무것도 안 붙는다. 여기서 플레이어 프리팹을 그대로 세우고 손만 움직인다.

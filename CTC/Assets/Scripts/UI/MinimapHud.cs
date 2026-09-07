@@ -1,0 +1,148 @@
+using System.Collections.Generic;
+using CTC.Runtime.Lobby;
+using CTC.Runtime.Map;
+using R3;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace CTC.Runtime.UI
+{
+    /// <summary>
+    /// 좌상단 미니맵 View (2026-09-08) — 「나 어디 · 상점 어디 · 내 창고 어디」에만 답한다.
+    ///
+    /// **입력이 없다.** 클릭도 토글도 확대도 없다(기획 4절: 새 화면 0 · 커서 해제 0).
+    /// 그래서 raycastTarget을 전부 끈다 — 코너에 깔린 판이 뒤의 조작을 먹으면 안 된다.
+    ///
+    /// 하는 일은 셋뿐이다.
+    /// ⑴ 지형: <see cref="MinimapPainter"/>로 **판 시작에 한 장** 굽는다(맵이 바뀌면 다시).
+    /// ⑵ 마커: <see cref="MinimapMarkers"/>가 0.2초마다 흘려 주는 목록을 **풀에 재사용**해 찍는다.
+    /// ⑶ 나: 화살표만 매 프레임 따라간다 — 목록과 달리 5 Hz면 회전이 눈에 띄게 튄다.
+    ///
+    /// 무엇을 그릴지는 하나도 여기서 안 정한다. 역할 판정은 <see cref="MinimapLogic"/>,
+    /// 목록은 Model이 걸러 준다(규칙 5).
+    /// </summary>
+    public class MinimapHud : MonoBehaviour
+    {
+        private const float MARKER_PX = 7f;   // 200 px 평면도에서 점으로 읽히는 최소 크기
+
+        [SerializeField] private LobbyController m_Lobby;
+        [SerializeField] private MinimapMarkers m_Markers;
+        [SerializeField] private GameObject m_Root;
+        [SerializeField] private RawImage m_Terrain;
+        [SerializeField] private RectTransform m_MarkerLayer;
+        [SerializeField] private RectTransform m_MeIcon;
+
+        private readonly List<Image> m_Pool = new List<Image>();
+
+        private MapLayout m_BakedLayout;
+        private Texture2D m_Texture;
+        private float m_HalfExtent;
+
+        private static int SizePx => Info.InfoManager.Instance.Balance.MinimapSizePx;
+        private static int TexturePx => Info.InfoManager.Instance.Balance.MinimapTexturePx;
+
+        private void Start()
+        {
+            m_Root.SetActive(false);
+
+            m_Markers.Active.Subscribe(OnActiveChanged).AddTo(this);
+            m_Markers.MarkersChanged.Subscribe(DrawMarkers).AddTo(this);
+        }
+
+        private void OnDestroy()
+        {
+            // 구운 텍스처는 에셋이 아니라 런타임 생성물이다 — 안 지우면 판마다 한 장씩 샌다
+            if (m_Texture != null) Destroy(m_Texture);
+        }
+
+        private void OnActiveChanged(bool _active)
+        {
+            if (_active) BakeTerrainIfNeeded();
+            if (m_Root.activeSelf != _active) m_Root.SetActive(_active);
+        }
+
+        // 지형은 판 중에 안 변한다. 맵이 바뀌었을 때만 다시 굽는다(매 프레임·매 갱신 금지).
+        private void BakeTerrainIfNeeded()
+        {
+            MapLayout layout = m_Lobby.ActiveLayout;
+            if (layout == null || layout == m_BakedLayout) return;
+
+            if (m_Texture != null) Destroy(m_Texture);
+            m_Texture = MinimapPainter.Paint(layout, TexturePx);
+            m_Terrain.texture = m_Texture;
+            m_BakedLayout = layout;
+            m_HalfExtent = layout.HalfExtent;
+        }
+
+        private void DrawMarkers(IReadOnlyList<MinimapMarker> _markers)
+        {
+            if (m_HalfExtent <= 0f) return;
+
+            for (int i = 0; i < _markers.Count; i++)
+            {
+                Image icon = IconAt(i);
+                icon.color = ColorOf(_markers[i].Kind);
+                Place(icon.rectTransform, _markers[i].World);
+                if (!icon.gameObject.activeSelf) icon.gameObject.SetActive(true);
+            }
+
+            // 남는 아이콘은 지우지 않고 끈다 — 다음 갱신에 그대로 다시 쓴다
+            for (int i = _markers.Count; i < m_Pool.Count; i++)
+            {
+                if (m_Pool[i].gameObject.activeSelf) m_Pool[i].gameObject.SetActive(false);
+            }
+        }
+
+        // 내 화살표만 매 프레임이다. 위치는 북 고정 지도 위 픽셀, 각은 MinimapLogic이 준다.
+        private void LateUpdate()
+        {
+            if (!m_Root.activeSelf || m_HalfExtent <= 0f) return;
+
+            Transform me = m_Markers.Me;
+            if (me == null) return;
+
+            Place(m_MeIcon, new Vector2(me.position.x, me.position.z));
+            m_MeIcon.localRotation = Quaternion.Euler(0f, 0f,
+                MinimapLogic.YawToUiAngle(me.eulerAngles.y));
+        }
+
+        // 마커 레이어는 좌하단(0,0) 기준이라 픽셀 좌표가 그대로 anchoredPosition이 된다.
+        private void Place(RectTransform _rt, Vector2 _world)
+        {
+            Vector2Int px = MinimapLogic.WorldToPixel(_world, m_HalfExtent, SizePx);
+            _rt.anchoredPosition = new Vector2(px.x + 0.5f, px.y + 0.5f);
+        }
+
+        private Image IconAt(int _index)
+        {
+            while (m_Pool.Count <= _index) m_Pool.Add(CreateIcon());
+            return m_Pool[_index];
+        }
+
+        private Image CreateIcon()
+        {
+            var go = new GameObject($"Marker{m_Pool.Count}", typeof(RectTransform));
+            go.transform.SetParent(m_MarkerLayer, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(MARKER_PX, MARKER_PX);
+
+            var image = go.AddComponent<Image>();
+            image.raycastTarget = false;   // 미니맵은 입력을 안 받는다
+            return image;
+        }
+
+        /// <summary>기획 6절 표 — 색은 <see cref="UiPalette"/>에서만 온다.</summary>
+        private static Color ColorOf(MinimapMarkerKind _kind)
+        {
+            switch (_kind)
+            {
+                case MinimapMarkerKind.Shop: return UiPalette.Accent;
+                case MinimapMarkerKind.Cheese: return UiPalette.AccentSoft;
+                case MinimapMarkerKind.Structure: return UiPalette.Good;
+                default: return UiPalette.TextDim;
+            }
+        }
+    }
+}

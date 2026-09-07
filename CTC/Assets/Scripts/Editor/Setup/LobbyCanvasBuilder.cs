@@ -47,7 +47,8 @@ namespace CTC.Editor
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
         private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match,
-            CTC.Runtime.Match.PhaseDirector _phase, CTC.Runtime.Match.MatchSeries _series)
+            CTC.Runtime.Match.PhaseDirector _phase, CTC.Runtime.Match.MatchSeries _series,
+            CheeseSpotDirector _cheeseDirector)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -116,6 +117,9 @@ namespace CTC.Editor
 
             // 우상단 상태 클러스터 — 구 WalletText(우상단)·CombatText(좌상단)를 대체(HUD 개편 2026-08-15)
             BuildStatusCluster(canvasGo, _lobby);
+
+            // 좌상단 미니맵 (2026-09-08) — 지형 한 장 + 마커. 입력은 없다.
+            BuildMinimap(canvasGo, _lobby, _cheeseDirector);
 
             // 상점 핫바 (하단 중앙 상시 표시, 숫자키 즉시 구매 — UX 개정 2026-07-27)
             var hotbarRoot = new GameObject("ShopHotbar", typeof(RectTransform));
@@ -801,6 +805,96 @@ namespace CTC.Editor
             img.color = _color;
             img.raycastTarget = false;
             return img;
+        }
+
+        // ===== 좌상단 미니맵 (2026-09-08) =====
+        // 지형(RawImage) + 마커 레이어 + 내 화살표. 크기는 CSV(BalanceInfo.MinimapSizePx)가 원본이다.
+        //
+        // 좌상단은 **개발용 IMGUI 두 개가 이미 쓰고 있다** — ConnectionUI(x 10~250, 세로 100 남짓)와
+        // FrameStatsOverlay(x 260~480). 배포 빌드에선 둘 다 안 그리지만, 그것 때문에 개발 중에만
+        // 가려지면 QA가 미니맵을 못 본다. 그래서 그 아래로 내려 시작한다.
+        private const float MINIMAP_MARGIN_X = 24f;
+        private const float MINIMAP_TOP = 128f;
+
+        private static void BuildMinimap(GameObject _canvasGo, LobbyController _lobby,
+            CheeseSpotDirector _cheeseDirector)
+        {
+            float size = CTC.Runtime.Info.InfoManager.Instance.Balance.MinimapSizePx;
+            if (size < 1f)
+            {
+                throw new System.InvalidOperationException(
+                    $"[SetupNetworkingScene] BalanceInfo.MinimapSizePx={size} — 미니맵을 만들 수 없다. BalanceInfo.csv 확인");
+            }
+
+            var root = new GameObject("Minimap", typeof(RectTransform));
+            root.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)root.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
+            rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(MINIMAP_MARGIN_X, -MINIMAP_TOP);
+            rt.sizeDelta = new Vector2(size, size);
+
+            // 테두리 — 지형보다 **먼저** 만들어 뒤에 깔고, 사방 2 px 크게 잡아 가장자리만 보이게 한다.
+            // (스프라이트 없는 Image는 통짜라 위에 덮으면 지형이 통째로 가려진다.)
+            var frameGo = new GameObject("Frame", typeof(RectTransform));
+            frameGo.transform.SetParent(root.transform, false);
+            var frameRt = StretchToParent((RectTransform)frameGo.transform);
+            frameRt.offsetMin = new Vector2(-2f, -2f);
+            frameRt.offsetMax = new Vector2(2f, 2f);
+            var frame = frameGo.AddComponent<Image>();
+            frame.color = UiPalette.WithAlpha(UiPalette.Line, 0.9f);
+            frame.raycastTarget = false;
+
+            // 지형 — 텍스처는 런타임에 MinimapPainter가 굽는다(맵이 시드로 지어져 미리 못 굽는다).
+            // **루트와 정확히 같은 크기**여야 마커 픽셀 좌표(MinimapSizePx 기준)가 그대로 맞는다.
+            var terrainGo = new GameObject("Terrain", typeof(RectTransform));
+            terrainGo.transform.SetParent(root.transform, false);
+            StretchToParent((RectTransform)terrainGo.transform);
+            var terrain = terrainGo.AddComponent<RawImage>();
+            terrain.color = Color.white;
+            terrain.raycastTarget = false;   // 미니맵은 입력을 안 받는다(기획 4절)
+
+            var markerLayer = new GameObject("Markers", typeof(RectTransform));
+            markerLayer.transform.SetParent(root.transform, false);
+            RectTransform markerRt = StretchToParent((RectTransform)markerLayer.transform);
+
+            // 나 — 삼각형 글리프. 스프라이트를 새로 굽지 않고 돌릴 수 있는 아이콘이 필요했다.
+            var meGo = new GameObject("Me", typeof(RectTransform));
+            meGo.transform.SetParent(markerLayer.transform, false);
+            var meRt = (RectTransform)meGo.transform;
+            meRt.anchorMin = meRt.anchorMax = Vector2.zero;
+            meRt.pivot = new Vector2(0.5f, 0.5f);
+            meRt.sizeDelta = new Vector2(18f, 18f);
+            var meText = meGo.AddComponent<TextMeshProUGUI>();
+            meText.text = "▲";
+            meText.fontSize = 18f;
+            meText.alignment = TextAlignmentOptions.Center;
+            meText.color = UiPalette.TextOn;
+            meText.raycastTarget = false;
+
+            root.SetActive(false);   // MinimapHud가 게임 시작 시 켠다
+
+            // Model(Worker) — 마커 수집·발견 기억. View보다 먼저 붙여 Start 순서를 맞춘다.
+            var markers = _canvasGo.AddComponent<CTC.Runtime.UI.MinimapMarkers>();
+            SetRef(markers, "m_Lobby", _lobby);
+            SetRef(markers, "m_CheeseDirector", _cheeseDirector);
+
+            var hud = _canvasGo.AddComponent<CTC.Runtime.UI.MinimapHud>();
+            SetRef(hud, "m_Lobby", _lobby);
+            SetRef(hud, "m_Markers", markers);
+            SetRef(hud, "m_Root", root);
+            SetRef(hud, "m_Terrain", terrain);
+            SetRef(hud, "m_MarkerLayer", markerRt);
+            SetRef(hud, "m_MeIcon", meRt);
+        }
+
+        private static RectTransform StretchToParent(RectTransform _rt)
+        {
+            _rt.anchorMin = Vector2.zero;
+            _rt.anchorMax = Vector2.one;
+            _rt.offsetMin = Vector2.zero;
+            _rt.offsetMax = Vector2.zero;
+            return _rt;
         }
 
         // ===== 우상단 상태 클러스터 (HUD 개편 2026-08-15) =====
