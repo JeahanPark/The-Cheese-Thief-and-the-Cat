@@ -15,23 +15,35 @@ namespace CTC.Tests.EditMode
         [Test]
         public void NextPurchase_Dash_First()
         {
-            Assert.AreEqual(TechId.Dash, MouseBotLogic.NextPurchase(100, false, false, false, false));
+            int cost = TechLogic.RowOf(TechId.Dash, 1).Cost;
+            Assert.AreEqual(TechId.Dash, MouseBotLogic.NextPurchase(cost, false, false, false, false));
         }
 
         [Test]
         public void NextPurchase_Fortress_BeforeWarehouse()
         {
-            Assert.AreEqual(TechId.Fortress, MouseBotLogic.NextPurchase(100, true, false, false, false));
+            // 넉넉히 줘서 대시·요새·창고 값 전부 감당할 수 있는 상태로 — 그래도 대시부터 있으면 요새다
+            Assert.AreEqual(TechId.Fortress, MouseBotLogic.NextPurchase(1000, true, false, false, false));
         }
 
         [Test]
-        public void NextPurchase_Warehouse_KeepsFortressPlaceCost()
+        public void NextPurchase_WarehouseReserve_IncludesPlaceCosts()
         {
-            // 창고 Lv1 값 + 요새 설치비(80)를 남겨야 창고 — 값은 CSV에서 읽는다
+            // 창고 Lv1 값 + **창고 설치비** + 요새 설치비를 모두 남겨야 창고다(Task 8 갱신, 2026-09-07) —
+            // 테크 v3부터 창고도 요새처럼 Lv1(권한) 따로 · 설치마다 WarehousePlaceCost 따로 낸다.
+            var balance = CTC.Runtime.Info.InfoManager.Instance.Balance;
             int need = TechLogic.RowOf(TechId.Warehouse, 1).Cost
-                       + CTC.Runtime.Info.InfoManager.Instance.Balance.FortressPlaceCost;
+                       + balance.WarehousePlaceCost
+                       + balance.FortressPlaceCost;
             Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(need - 1, true, false, false, true));
             Assert.AreEqual(TechId.Warehouse, MouseBotLogic.NextPurchase(need, true, false, false, true));
+        }
+
+        [Test]
+        public void NextPurchase_NeverBuysGun()
+        {
+            // 2026-08-14 결정 — 봇은 맞서 쏘지 않는다. 총이 없어도(hasGun:false), 돈이 넘쳐도 안 산다.
+            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(99999, true, false, true, true));
         }
 
         [Test]

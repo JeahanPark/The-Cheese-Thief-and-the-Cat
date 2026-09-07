@@ -79,7 +79,8 @@ namespace CTC.Runtime.Bots
         /// 지금 살 것. 살 게 없으면 None.
         ///
         /// **수급·성장 빌드다**(2026-08-12). 도망칠 수단(대시)을 먼저 쥐고, 그다음은
-        /// **수입(창고) → 생존(요새)**. 도주 중 요새는 여기와 별개로 즉석에서 산다(BotShopper.BuyFortressShield).
+        /// **생존(요새) → 수입(창고)**(2026-08-18에 뒤집었다). 도주 중 요새는 여기와 별개로
+        /// 즉석에서 산다(BotShopper.BuyFortressShield).
         ///
         /// **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않으므로(그랬더니 쥐 여덟이
         /// 도망치며 쏴 97초 만에 고양이 둘을 죽였다 — 실측) 안 쓸 총에 치즈를 태우면
@@ -88,7 +89,7 @@ namespace CTC.Runtime.Bots
         public static Economy.TechId NextPurchase(
             int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
         {
-            int placeCost = Info.InfoManager.Instance.Balance.FortressPlaceCost;
+            Info.BalanceInfo balance = Info.InfoManager.Instance.Balance;
             int CostOf(Economy.TechId _id) => Economy.TechLogic.RowOf(_id, 1).Cost;
 
             // ① 대시 — 눈앞에서 쫓길 때 거리를 벌리는 유일한 수단
@@ -103,9 +104,12 @@ namespace CTC.Runtime.Bots
             //    테크 v3에선 Lv1(설치 "권한")만 사면 되고, 실제 설치는 매번 FortressPlaceCost를 낸다.
             if (!_hasFortress && _cheese >= CostOf(Economy.TechId.Fortress)) return Economy.TechId.Fortress;
 
-            // ③ 창고 — **비상 벽 값을 남기고 산다.** 전부 털어 창고를 세우면 그 직후 쫓길 때
+            // ③ 창고 — **비상 벽 값(요새 설치비)뿐 아니라 창고 자체 설치비도 남기고 산다**(Task 8 갱신,
+            //    2026-09-07). 테크 v3부터 창고도 Lv1(권한) + 설치마다 WarehousePlaceCost를 따로 낸다 —
+            //    Lv1만 사고 설치비가 없으면 전부 털어 창고를 세운 것과 같아 그 직후 쫓길 때
             //    `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
-            if (!_hasWarehouse && _cheese >= CostOf(Economy.TechId.Warehouse) + placeCost)
+            if (!_hasWarehouse
+                && _cheese >= CostOf(Economy.TechId.Warehouse) + balance.WarehousePlaceCost + balance.FortressPlaceCost)
                 return Economy.TechId.Warehouse;
 
             return Economy.TechId.None;

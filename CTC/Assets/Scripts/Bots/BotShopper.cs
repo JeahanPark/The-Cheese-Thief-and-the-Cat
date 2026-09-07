@@ -26,6 +26,7 @@ namespace CTC.Runtime.Bots
 
         private bool m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress;
         private bool m_PendingWarehousePlace;
+        private int m_WarehouseCountBeforePlace;
 
         public BotShopper(Transform _body, ShopController _shop, CheeseWallet _wallet, CatClass _class)
         {
@@ -50,16 +51,38 @@ namespace CTC.Runtime.Bots
         {
             if (m_Shop == null || m_Wallet == null) return;
 
-            // 창고 설치권을 샀으면 다음 틱에 제자리에 놓는다(서버가 레벨을 올린 뒤라야 CanUse가 참)
-            if (m_PendingWarehousePlace && m_Shop.CanUse(TechId.Warehouse) == UseDeny.None)
+            // 창고 설치권을 산 직후엔 보통 설치비(WarehousePlaceCost)까지 낼 돈이 안 남는다 —
+            // 서버 RPC 자체는 호스트가 곧 서버라 인라인으로 바로 처리되니 지연이 아니라 **지갑**이
+            // 진짜 이유다. 돈이 모일 때까지 기다렸다가 실제로 세워질 때만 플래그를 내린다.
+            if (m_PendingWarehousePlace)
             {
-                m_Shop.UseAt(TechId.Warehouse, m_Body.position);
-                m_PendingWarehousePlace = false;
+                ulong owner = m_Shop.OwnerClientId;
+                if (WarehouseProduction.CountOwnedBy(owner) > m_WarehouseCountBeforePlace)
+                {
+                    m_PendingWarehousePlace = false;   // 실제로 섰다 — 확인 완료
+                }
+                else if (m_Shop.CanUse(TechId.Warehouse) == UseDeny.LimitReached)
+                {
+                    // 봇들은 서버가 주인이라 OwnerClientId를 공유한다 — 다른 봇이 같은 한도를
+                    // 이미 채웠으면 이 봇은 영영 못 세운다. 계속 기다려 봐야 소용없으니 포기한다.
+                    m_PendingWarehousePlace = false;
+                }
+                else if (m_Shop.CanUse(TechId.Warehouse) == UseDeny.None)
+                {
+                    m_WarehouseCountBeforePlace = WarehouseProduction.CountOwnedBy(owner);
+                    m_Shop.UseAt(TechId.Warehouse, m_Body.position);
+                }
             }
 
             TechId next = MouseBotLogic.NextPurchase(
                 m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress);
             if (next == TechId.None) return;
+
+            // 창고는 봇끼리 OwnerClientId를 공유해 한도(1)도 같이 쓴다 — 이미 다른 봇이 채웠으면
+            // 권한만 사도 영영 못 세운다. 죽은 구매라 치즈를 아낀다.
+            if (next == TechId.Warehouse
+                && WarehouseProduction.CountOwnedBy(m_Shop.OwnerClientId) >= ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE)
+                return;
 
             m_Shop.Buy(next);
 
