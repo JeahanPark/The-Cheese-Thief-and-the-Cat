@@ -12,6 +12,17 @@ namespace CTC.Runtime.Player
         public const string Attack = "Attack"; // AC_Cat·AC_Mouse 공통 원샷 상태
         public const string Hit = "Hit";       // AC_Cat·AC_Mouse 공통 원샷 상태
 
+        // 테크 v3 계획 2b Task 5 — **새 클립은 하나도 만들지 않았다.**
+        // Quirky 팩(AC_Cat·AC_Mouse)이 이미 가지고 있으면서 안 쓰던 상태 여섯을 동작에 붙인 것뿐이다.
+        // 이름이 틀리면 CrossFadeInFixedTime은 **에러 없이 조용히 아무 일도 안 한다** —
+        // 그래서 문자열을 호출부에 흘리지 않고 여기 모아 EditMode가 철자를 묶어 둔다.
+        public const string Roll = "Roll";       // 대시 — 구르기
+        public const string Bounce = "Bounce";   // 끈끈이 — 발밑에 내려찍기
+        public const string Jump = "Jump";       // 요새 — 뛰어올랐다 내려오며 벽이 선다
+        public const string Spin = "Spin";       // 광분 — 한 바퀴
+        public const string Clicked = "Clicked"; // 구매 — 짧은 끄덕임
+        public const string Eat = "Eat";         // 채굴 — 갉아먹기(반복)
+
         public static string FromSpeed(float _speed, float _walkThreshold, float _runThreshold)
         {
             if (_speed >= _runThreshold) return Run;

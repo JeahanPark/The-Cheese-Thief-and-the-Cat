@@ -22,15 +22,23 @@ namespace CTC.Runtime.Economy
         /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프보다 넉넉히.</summary>
         public static float MAX_PLACE_DISTANCE => Balance.PlaceMaxDistanceMeters;
 
+        // 동작이 보이는 시간(테크 v3 계획 2b Task 5) — 팩에 이미 있던 클립을 원샷으로 쓴다.
+        private const float BUY_ANIM_SECONDS = 0.35f;      // Clicked — 짧은 끄덕임
+        private const float FORTRESS_ANIM_SECONDS = 0.5f;  // Jump — 뛰어올랐다 내려오며 벽이 선다
+        private const float STICKY_ANIM_SECONDS = 0.5f;    // Bounce — 발밑에 내려찍는다
+
         private TechSlots m_Slots;
         private RoleTag m_Tag;
         private CheeseWallet m_Wallet;
+        private Player.PlayerAnimationDriver m_AnimationDriver; // 쓸 때마다 찾지 않는다
 
         public override void OnNetworkSpawn()
         {
             m_Slots = GetComponent<TechSlots>();
             m_Tag = GetComponent<RoleTag>();
             m_Wallet = GetComponent<CheeseWallet>();
+            // 전 클라에서 잡는다 — 원샷 Rpc가 각자의 프로세스에서 이 드라이버를 부른다.
+            m_AnimationDriver = GetComponentInChildren<Player.PlayerAnimationDriver>();
         }
 
         // ===== 로컬 진입점 =====
@@ -175,10 +183,12 @@ namespace CTC.Runtime.Economy
                     // 나는 이미 안에 있고, 겹친 남의 몸은 FortressShield가 밀어낸다.
                     if (!m_Wallet.TrySpend(Balance.FortressPlaceCost)) { ResultRpc(false); return; }
                     SpawnFortressAround(m_FortressPrefab);
+                    FortressFxRpc();
                     break;
                 case TechId.Sticky:
                     // 발밑에 깐다 — 조준이 없다. 쫓기는 중에 쓰는 물건이라 조준할 여유가 없다.
                     SpawnStickyPatch();
+                    StickyFxRpc();
                     break;
                 case TechId.CatFrenzy:
                     // 몸에 켜지는 것뿐이라 스폰이 없다 — 지속·쿨·소리는 컴포넌트가 갖는다.
@@ -339,10 +349,31 @@ namespace CTC.Runtime.Economy
         }
 
         // 구매음은 12m로 퍼진다(정보=소리) — 상점 근처 고양이가 듣는다. 실패음은 구매자만.
+        // 모션(Clicked)도 여기서 함께 튼다 — 이미 전 클라가 도는 길이라 새 Rpc가 필요 없다.
         [Rpc(SendTo.Everyone)]
         private void BuySoundRpc(Vector3 _at)
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.ShopBuy, _at, 1f, Balance.ShopBuySoundMeters);
+            PlayOneShot(Player.AnimationStateLogic.Clicked, BUY_ANIM_SECONDS);
+        }
+
+        /// <summary>
+        /// 설치 동작(요새·끈끈이)을 전 클라에 보인다 — 테크 v3 계획 2b Task 5.
+        ///
+        /// **설치음이 나는 파일에는 못 붙인다.** 요새 설치음은 `PlaceSfxOnSpawn`(요새 몸)과
+        /// `FortressShield.PushSfxRpc`(밀린 고양이 쪽)에서 나는데, 둘 다 **누가 세웠는지를 모른다** —
+        /// 모션이 붙어야 하는 몸은 설치한 쥐다. 그래서 설치를 부른 이 몸에서 직접 쏜다.
+        /// `UseRpc`는 서버 전용이라 여기서 한 번 더 전 클라로 펴 준다.
+        /// </summary>
+        [Rpc(SendTo.Everyone)]
+        private void FortressFxRpc() => PlayOneShot(Player.AnimationStateLogic.Jump, FORTRESS_ANIM_SECONDS);
+
+        [Rpc(SendTo.Everyone)]
+        private void StickyFxRpc() => PlayOneShot(Player.AnimationStateLogic.Bounce, STICKY_ANIM_SECONDS);
+
+        private void PlayOneShot(string _state, float _seconds)
+        {
+            if (m_AnimationDriver != null) m_AnimationDriver.PlayOneShot(_state, _seconds);
         }
 
         [Rpc(SendTo.Owner)]

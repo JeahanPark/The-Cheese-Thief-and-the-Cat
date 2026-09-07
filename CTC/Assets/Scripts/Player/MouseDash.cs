@@ -21,8 +21,13 @@ namespace CTC.Runtime.Player
         // 구매 여부. 서버 기록(ShopController), 소유자 읽기.
         private readonly NetworkVariable<bool> m_Owned = new NetworkVariable<bool>();
 
+        // 대시 구르기 모션 지속(이동 애니메이션 잠금 시간) — 대시 자체(0.2초대)보다 조금 길게
+        // 잡아 착지까지 보이게 한다. 클립은 팩의 Roll을 그대로 쓴다(새 클립 0).
+        private const float ROLL_ANIM_SECONDS = 0.45f;
+
         private CharacterController m_Controller;
         private TechSlots m_TechSlots;      // Awake에서 한 번 — 쿨은 매 프레임 읽힌다
+        private PlayerAnimationDriver m_AnimationDriver; // 매 대시마다 찾지 않는다
         private Vector3 m_DashDirection;
         private float m_DashRemainingSeconds;
         private double m_LastUseTime = -999.0;
@@ -71,6 +76,7 @@ namespace CTC.Runtime.Player
         {
             m_Controller = GetComponent<CharacterController>();
             m_TechSlots = GetComponent<TechSlots>();
+            m_AnimationDriver = GetComponentInChildren<PlayerAnimationDriver>();
         }
 
         private void Update()
@@ -115,11 +121,18 @@ namespace CTC.Runtime.Player
             DashSfxRpc();
         }
 
-        // 대시는 소유자 권위(RPC 없음)라 소리만 전 클라 전파 — 고양이도 들리는 도주 신호
+        // 대시는 소유자 권위(RPC 없음)라 소리·모션만 전 클라 전파 — 고양이도 듣고 보는 도주 신호.
+        // **모션을 로컬에서 걸면 소유자 화면에서만 구른다**: 몸의 이동은 ClientNetworkTransform이
+        // 옮겨 주지만 애니메이터 상태는 복제되지 않는다. 그래서 이미 있던 이 소리 Rpc에 얹는다.
         [Rpc(SendTo.Everyone)]
         private void DashSfxRpc()
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.MouseDash, transform.position);
+
+            if (m_AnimationDriver != null)
+            {
+                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Roll, ROLL_ANIM_SECONDS);
+            }
         }
 
 

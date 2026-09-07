@@ -27,7 +27,11 @@ namespace CTC.Runtime.Player
         private readonly NetworkVariable<double> m_ReadyAt = new NetworkVariable<double>();
         private readonly NetworkVariable<double> m_ActiveUntil = new NetworkVariable<double>();
 
+        // 광분 한 바퀴(팩 Spin) — 지속(10초)이 아니라 "켜졌다"를 알리는 한 번짜리다.
+        private const float SPIN_ANIM_SECONDS = 0.6f;
+
         private TechSlots m_Slots;
+        private PlayerAnimationDriver m_AnimationDriver; // 켤 때마다 찾지 않는다
 
         /// <summary>지금 켜져 있는가(전원 읽기 — CatPounce·HUD가 본다).</summary>
         public bool Active => m_Active.Value;
@@ -51,6 +55,7 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             m_Slots = GetComponent<TechSlots>();
+            m_AnimationDriver = GetComponentInChildren<PlayerAnimationDriver>();
         }
 
         private void Update()
@@ -116,8 +121,12 @@ namespace CTC.Runtime.Player
             Audio.SfxPlayer.PlayAt(Audio.SfxId.CatSkill, transform.position, 1f,
                 Info.InfoManager.Instance.Balance.CatSkillSoundMeters);
 
-            // TODO 계획 2b Task 5 — 여기에 Spin 원샷(PlayerAnimationDriver.PlayOneShot)을 얹는다.
-            // 상태 이름 상수(AnimationStateLogic.Spin)가 그 태스크에서 생긴다.
+            // 소리와 같은 이유로 **모션도 전 클라**다 — 쥐가 "지금 뭔가 켜졌다"를 눈으로도
+            // 알아야 흩어질 수 있다. 애니메이터 상태는 복제되지 않으므로 이 Rpc가 유일한 길이다.
+            if (m_AnimationDriver != null)
+            {
+                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Spin, SPIN_ANIM_SECONDS);
+            }
         }
     }
 }

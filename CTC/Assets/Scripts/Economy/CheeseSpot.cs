@@ -206,6 +206,54 @@ namespace CTC.Runtime.Economy
             }
         }
 
+        // ===== 채굴 모션(테크 v3 계획 2b Task 5) =====
+        //
+        // "저 쥐가 지금 돈을 캐는 중"이 화면에서 읽혀야 고양이가 달려올 이유가 생긴다.
+        // **여기는 Rpc를 쓰지 않는다** — 지점은 NetworkBehaviour가 아니고(복제는 Director가 대신한다),
+        // 선점자(m_Earner)는 이미 전 클라에 있다: 서버는 Advance가, 클라는 ApplyState가 세운다.
+        // 그러니 각 클라가 제 화면의 선점자에게 원샷을 걸면 된다 — 대역폭 0, 소리 없는 반복.
+        //
+        // 0.5초 걸고 0.8초마다 갱신하는 것은 **일부러**다. PlayOneShot은 그 시간 동안 이동 전이를
+        // 잠그므로 0.8초 중 0.3초는 항상 풀려 있다 — 캐다 말고 걷기 시작한 쥐도 그 틈에 Walk로 넘어간다.
+        // (지점 밖으로 나가면 선점이 풀려 아래 첫 줄에서 바로 멈춘다.)
+        private const float EAT_ANIM_SECONDS = 0.5f;
+        private const float EAT_ANIM_INTERVAL_SECONDS = 0.8f;
+
+        private ulong m_FxEarner = CheeseSpotLogic.NO_EARNER;
+        private Player.PlayerAnimationDriver m_FxDriver; // 선점자가 바뀔 때만 다시 찾는다
+        private float m_NextEatAnimTime;
+
+        private void Update()
+        {
+            if (Depleted || m_Earner == CheeseSpotLogic.NO_EARNER)
+            {
+                m_FxEarner = CheeseSpotLogic.NO_EARNER;
+                m_FxDriver = null;
+                return;
+            }
+
+            if (m_Earner != m_FxEarner)
+            {
+                m_FxEarner = m_Earner;
+                m_FxDriver = FindDriver(m_Earner);
+                m_NextEatAnimTime = 0f;   // 막 자리를 잡은 쥐는 기다리지 않고 바로 한 번 갉는다
+            }
+
+            if (m_FxDriver == null || Time.time < m_NextEatAnimTime) return;
+            m_NextEatAnimTime = Time.time + EAT_ANIM_INTERVAL_SECONDS;
+            m_FxDriver.PlayOneShot(Player.AnimationStateLogic.Eat, EAT_ANIM_SECONDS);
+        }
+
+        // 열쇠가 clientId가 아니라 NetworkObjectId라 NetUtil.FindPlayerObject를 못 쓴다(위 주석).
+        // 스폰 목록에서 바로 집는다 — 서버·클라 어디서든 같은 표다.
+        private static Player.PlayerAnimationDriver FindDriver(ulong _networkObjectId)
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return null;
+            if (!nm.SpawnManager.SpawnedObjects.TryGetValue(_networkObjectId, out NetworkObject body)) return null;
+            return body != null ? body.GetComponentInChildren<Player.PlayerAnimationDriver>() : null;
+        }
+
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.yellow;
