@@ -110,11 +110,15 @@ namespace CTC.Runtime.Economy
             var id = (TechId)_id;
             if (CanBuyNow(id) != TechDeny.None) { ResultRpc(false); return; }
 
+            // 효과를 붙일 컴포넌트가 없으면 **차감 전에** 끊는다 — 예전 CanApply가 겸하던 일이다.
+            // 안 그러면 치즈만 먹고 레벨만 오른 뒤 NRE로 ResultRpc도 못 보낸다(응답 없는 구매).
+            if (!CanApplyLevel(id)) { ResultRpc(false); return; }
+
             TechRow row = TechLogic.NextRow(m_Slots.Owned, id);
             if (!m_Wallet.TrySpend(row.Cost)) { ResultRpc(false); return; }
 
             m_Slots.ServerApplyNextLevel(id);
-            ApplyLevel(id, row.Level);
+            TryApplyLevel(id, row.Level);
             BuySoundRpc(transform.position);
             Core.GameDebug.Log($"[ShopController] {OwnerClientId} {id} Lv{row.Level} (-{row.Cost})");
             ResultRpc(true);
@@ -157,29 +161,69 @@ namespace CTC.Runtime.Economy
             ResultRpc(true);
         }
 
-        /// <summary>레벨이 오른 순간 기존 컴포넌트에 반영. 계획 2가 신규 테크를 여기에 붙인다.</summary>
-        private void ApplyLevel(TechId _id, int _level)
+        /// <summary>
+        /// 이 테크를 실제로 적용할 수 있는가 — 부작용 없는 사전 검사(차감 전에 부른다).
+        /// <see cref="TryApplyLevel"/>과 **같은 목록**을 봐야 한다: 여기서 통과한 게 저기서 실패하면
+        /// 치즈만 사라진다.
+        /// </summary>
+        private bool CanApplyLevel(TechId _id)
+        {
+            switch (_id)
+            {
+                case TechId.Gun: return GetComponent<MousePopgun>() != null;
+                case TechId.Pepper: return GetComponent<PepperRounds>() != null;
+                case TechId.Dash: return GetComponent<Player.MouseDash>() != null;
+                case TechId.Fortress:
+                case TechId.Warehouse:
+                    return true;                                                // 설치권만 — 실제 설치는 Use
+                case TechId.CatClaw: return GetComponent<CatPounce>() != null;
+                case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
+                default:
+                    // CSV 행이 코드보다 먼저 들어온 경우(계획 2 테크). 조용히 돈만 받지 않는다.
+                    Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// 레벨이 오른 순간 기존 컴포넌트에 반영. 계획 2가 신규 테크를 여기에 붙인다.
+        /// 컴포넌트가 없으면 false — 프리팹 배선이 빠진 것이라 조용히 넘기지 않는다.
+        /// </summary>
+        private bool TryApplyLevel(TechId _id, int _level)
         {
             switch (_id)
             {
                 case TechId.Gun:
-                    GetComponent<MousePopgun>().ServerSetTier(_level);          // Lv1 새총 · Lv2 기관총
-                    break;
+                    MousePopgun gun = GetComponent<MousePopgun>();
+                    if (gun == null) return false;
+                    gun.ServerSetTier(_level);                                  // Lv1 새총 · Lv2 기관총
+                    return true;
                 case TechId.Pepper:
-                    GetComponent<PepperRounds>().ServerSetOwned();
-                    break;
+                    PepperRounds pepper = GetComponent<PepperRounds>();
+                    if (pepper == null) return false;
+                    pepper.ServerSetOwned();
+                    return true;
                 case TechId.Dash:
-                    GetComponent<Player.MouseDash>().ServerSetOwned();
-                    break;
+                    Player.MouseDash dash = GetComponent<Player.MouseDash>();
+                    if (dash == null) return false;
+                    dash.ServerSetOwned();
+                    return true;
                 case TechId.Fortress:
                 case TechId.Warehouse:
-                    break;                                                      // 설치권만 — 실제 설치는 Use
+                    return true;                                                // 설치권만 — 실제 설치는 Use
                 case TechId.CatClaw:
-                    GetComponent<CatPounce>().ServerAddDamageStack();           // 레벨 = 스택
-                    break;
+                    CatPounce pounce = GetComponent<CatPounce>();
+                    if (pounce == null) return false;
+                    pounce.ServerAddDamageStack();                              // 레벨 = 스택
+                    return true;
                 case TechId.CatStomp:
-                    GetComponent<Player.PlayerMovement>().ServerAddSpeedStack();
-                    break;
+                    Player.PlayerMovement move = GetComponent<Player.PlayerMovement>();
+                    if (move == null) return false;
+                    move.ServerAddSpeedStack();
+                    return true;
+                default:
+                    Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");
+                    return false;
             }
         }
 
@@ -232,6 +276,7 @@ namespace CTC.Runtime.Economy
                 case TechId.Warehouse:
                     return new Vector3(0.5f, 0.4f, 0.5f);   // 창고 1.0²×0.8 — 요새보다 작아 구석에 끼워 넣을 수 있다
                 default:
+                    // 알 수 없는 테크 — 작은 캡슐 폭, 예전 미끼 크기
                     return new Vector3(0.25f, 0.25f, 0.25f);
             }
         }
