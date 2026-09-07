@@ -3,7 +3,8 @@ namespace CTC.Runtime.Economy
     /// <summary>
     /// 테크 = 판 안에서 얻는 모든 구매·업그레이드 (테크 v3, 2026-09-07).
     /// **값은 NetworkList·CSV에 직렬화될 것이므로 바꾸지 않는다** — 새 테크는 뒤에만 추가한다.
-    /// 계획 1은 기존 8항목만 쓴다. 나머지는 계획 2에서 효과가 붙을 때까지 CSV에 행이 없다.
+    /// 계획 1은 기존 8항목만 쓴다. 쥐 테크는 계획 2a에서 전 레벨 행이 들어왔고,
+    /// 고양이 신규 4종(CatHide·CatHunger·CatFrenzy·CatEar)만 아직 행이 없다.
     ///
     /// `TechInfo.csv`가 **판매 목록의 단일 원본**이다(2026-09-07 — 구 `ShopInfo.csv`는 제거됐다).
     /// 가격은 테크 v3 기획 값이라 구 표와 일부러 다르다 — 예: Pepper 200→120(초반형으로 재조정),
@@ -13,6 +14,7 @@ namespace CTC.Runtime.Economy
     {
         None = 0,
         // 쥐
+        // Lv1 새총 150 · Lv2 기관총 600(가격 봉우리) · Lv3 긴 총열 450 — 사거리·피해만 얹어 일부러 더 싸다(기획서 §4-1)
         Gun = 1,             // 총 — Lv1 새총 · Lv2 기관총 (기존 MousePopgun 티어)
         Pepper = 2,          // 후추 탄 (기존 PepperRounds, 200→120 — 테크 v3 초반형 재조정)
         Fortress = 3,        // 요새 — Lv1 설치 "권한" 구매(100), 설치마다 FortressPlaceCost(80)

@@ -130,7 +130,13 @@ namespace CTC.Tests
                 // 총만 값이 내려간다(기획서 §4) — 기관총(Lv2 600)이 값의 봉우리고
                 // 긴 총열(Lv3 450)은 그 위에 얹는 사거리·피해라 일부러 더 싸다.
                 // 예외는 여기 한 곳에만 적는다 — 다른 테크가 내려가면 이 테스트가 잡는다.
-                if (entry.Key == TechId.Gun) continue;
+                if (entry.Key == TechId.Gun)
+                {
+                    // 오르내림 검사에서 빠지는 대신, 정확한 비용 사다리를 여기서 핀으로 고정한다.
+                    CollectionAssert.AreEqual(new[] { 150, 600, 450 }, rows.ConvertAll(_r => _r.Cost),
+                        "Gun 비용 사다리가 150/600/450에서 벗어났다");
+                    continue;
+                }
 
                 for (int i = 1; i < rows.Count; i++)
                 {

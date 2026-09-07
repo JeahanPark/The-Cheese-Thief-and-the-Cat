@@ -75,8 +75,10 @@ namespace CTC.Runtime.Economy
         public static IReadOnlyList<TechId> Catalog(RoleId _role)
         {
             var list = new List<TechId>();
-            foreach (Info.TechInfo r in Rows)
+            IReadOnlyList<Info.TechInfo> rows = Rows;
+            for (int i = 0; i < rows.Count; i++)
             {
+                Info.TechInfo r = rows[i];
                 if (r.Role != _role || list.Contains(r.TechId)) continue;
                 list.Add(r.TechId);
             }
@@ -97,8 +99,10 @@ namespace CTC.Runtime.Economy
         public static int MaxLevel(TechId _id)
         {
             int max = 0;
-            foreach (Info.TechInfo r in Rows)
+            IReadOnlyList<Info.TechInfo> rows = Rows;
+            for (int i = 0; i < rows.Count; i++)
             {
+                Info.TechInfo r = rows[i];
                 if (r.TechId == _id && r.Level > max) max = r.Level;
             }
             return max;
@@ -113,10 +117,13 @@ namespace CTC.Runtime.Economy
             return 0;
         }
 
+        // 매 프레임 경로에서 불린다 — 열거자 할당을 피한다.
         public static TechRow RowOf(TechId _id, int _level)
         {
-            foreach (Info.TechInfo r in Rows)
+            IReadOnlyList<Info.TechInfo> rows = Rows;
+            for (int i = 0; i < rows.Count; i++)
             {
+                Info.TechInfo r = rows[i];
                 if (r.TechId == _id && r.Level == _level) return new TechRow(r);
             }
             return default;
