@@ -198,8 +198,8 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
-        /// 최대 HP(-1 = 못 찾음). <c>Health.MaxHp</c>는 **직렬화 필드라 복제되지 않는다** —
-        /// <c>ServerSetMaxHp</c>로 바뀐 값은 서버(호스트)에서만 보인다. QA는 호스트에서 묻는다.
+        /// 최대 HP(-1 = 못 찾음). <c>Health.MaxHp</c>는 스폰 뒤 <c>NetworkVariable</c>이라
+        /// **어느 인스턴스에서 물어도 같은 값**이다(2026-09-08 — 두꺼운 가죽이 판 도중 올린다).
         /// </summary>
         public int TestGetMaxHpOf(long _clientId)
         {
@@ -222,7 +222,7 @@ namespace CTC.Runtime.Testing
 
         /// <summary>
         /// 이 플레이어에게 가장 가까운 요새의 최대 HP(-1 = 요새 없음). 요새 레벨(TechInfo P1)이
-        /// 스폰 시 실제로 박혔는지 본다. <see cref="TestGetMaxHpOf"/>와 같은 이유로 **호스트에서** 묻는다.
+        /// 스폰 시 실제로 박혔는지 본다. <see cref="TestGetMaxHpOf"/>와 같이 복제되는 값이다.
         /// </summary>
         public int TestGetNearestFortressMaxHp(long _clientId)
         {

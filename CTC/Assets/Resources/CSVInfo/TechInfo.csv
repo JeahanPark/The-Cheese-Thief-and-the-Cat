@@ -35,3 +35,15 @@ Dash,Mouse,Utility,3,180,대시,쿨 3.5초,3.5,0,0
 FastFeet,Mouse,Utility,1,160,빠른 발,이속 +0.3,0.3,0,0
 FastFeet,Mouse,Utility,2,260,빠른 발,이속 +0.7,0.7,0,0
 FastFeet,Mouse,Utility,3,360,빠른 발,이속 +1.2,1.2,0,0
+CatHide,Cat,Defense,1,120,두꺼운 가죽,HP 1150,1150,0,0
+CatHide,Cat,Defense,2,200,두꺼운 가죽,HP 1300,1300,0,0
+CatHide,Cat,Defense,3,280,두꺼운 가죽,HP 1450,1450,0,0
+CatHunger,Cat,Resource,1,80,배고픔,장난기 ×1.2,1.2,0,0
+CatHunger,Cat,Resource,2,120,배고픔,장난기 ×1.4,1.4,0,0
+CatHunger,Cat,Resource,3,160,배고픔,장난기 ×1.6,1.6,0,0
+CatFrenzy,Cat,Escape,1,200,광분,10초 덮치기 ×1.5 · 쿨 40,1.5,10,40
+CatFrenzy,Cat,Escape,2,300,광분,10초 덮치기 ×2 · 쿨 40,2,10,40
+CatFrenzy,Cat,Escape,3,400,광분,10초 덮치기 ×2.5 · 쿨 20,2.5,10,20
+CatEar,Cat,Utility,1,160,예민한 귀,소리가 1.3배 멀리 들린다,1.3,0,0
+CatEar,Cat,Utility,2,260,예민한 귀,소리가 1.6배,1.6,0,0
+CatEar,Cat,Utility,3,380,예민한 귀,소리가 2배 — 창고 48m,2,0,0

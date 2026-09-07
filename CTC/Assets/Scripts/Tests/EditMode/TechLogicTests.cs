@@ -28,10 +28,17 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void Catalog_Cat_IsClawThenStomp()
+        public void Catalog_Cat_IsClawStompThenNewFour()
         {
             IReadOnlyList<TechId> c = TechLogic.Catalog(RoleId.Cat);
-            CollectionAssert.AreEqual(new[] { TechId.CatClaw, TechId.CatStomp }, c);
+            // 계획 2b에서 고양이도 6종이 됐다 — 순서는 CSV 등장 순(기존 2종 뒤에 신규 4종).
+            // 칸은 5뿐이라 6종 중 하나는 포기해야 한다(기획서 §5 의도).
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    TechId.CatClaw, TechId.CatStomp,
+                    TechId.CatHide, TechId.CatHunger, TechId.CatFrenzy, TechId.CatEar,
+                }, c);
         }
 
         [Test]
@@ -41,7 +48,8 @@ namespace CTC.Tests
             Assert.AreEqual(3, TechLogic.MaxLevel(TechId.Gun));
             Assert.AreEqual(3, TechLogic.MaxLevel(TechId.Dash));
             Assert.AreEqual(3, TechLogic.MaxLevel(TechId.CheeseShield));
-            Assert.AreEqual(0, TechLogic.MaxLevel(TechId.CatHide)); // 고양이 신규는 계획 2b — 아직 행이 없다
+            Assert.AreEqual(3, TechLogic.MaxLevel(TechId.CatHide));  // 계획 2b에서 행이 들어왔다
+            Assert.AreEqual(0, TechLogic.MaxLevel(TechId.None));     // 없는 테크는 0
         }
 
         [Test]
@@ -145,8 +153,11 @@ namespace CTC.Tests
         [Test]
         public void Candidates_AllOwned_IsEmpty()
         {
-            // 고양이가 발톱·발구르기를 다 샀으면 후보가 없다 — 핫바가 이 빈 목록에 기대 채울 칸이 없다고 판단한다
-            IReadOnlyList<TechId> c = TechLogic.Candidates(RoleId.Cat, Owned((TechId.CatClaw, 1), (TechId.CatStomp, 1)));
+            // 고양이가 6종을 다 샀으면 후보가 없다 — 핫바가 이 빈 목록에 기대 채울 칸이 없다고 판단한다.
+            // (칸 상한 5는 CanBuy가 보는 규칙이고 여기는 "안 산 것 고르기"만 본다.)
+            IReadOnlyList<TechId> c = TechLogic.Candidates(RoleId.Cat, Owned(
+                (TechId.CatClaw, 1), (TechId.CatStomp, 1), (TechId.CatHide, 1),
+                (TechId.CatHunger, 1), (TechId.CatFrenzy, 1), (TechId.CatEar, 1)));
             CollectionAssert.IsEmpty(c);
         }
 
@@ -221,9 +232,10 @@ namespace CTC.Tests
         [Test]
         public void CanBuy_NoneWhenMaxLevelZero_IsUnknownNotMaxLevel()
         {
-            // 표에 없는 테크(계획 2b 전 CatHide)는 "만렙"이 아니라 "모름"이어야 UI 문구가 거짓이 안 된다
+            // 표에 없는 테크는 "만렙"이 아니라 "모름"이어야 UI 문구가 거짓이 안 된다.
+            // 계획 2b로 고양이 4종에 행이 생겨서, 이제 표에 없는 것은 None뿐이다.
             Assert.AreEqual(TechDeny.Unknown,
-                TechLogic.CanBuy(Owned(), TechId.CatHide, RoleId.Cat, 9999, 5));
+                TechLogic.CanBuy(Owned(), TechId.None, RoleId.Cat, 9999, 5));
         }
 
         [Test]

@@ -10,10 +10,11 @@ namespace CTC.Tests
     public class TechInfoTests
     {
         [Test]
-        public void TechInfo_LoadsThirtySixRows()
+        public void TechInfo_LoadsFortyEightRows()
         {
             // 계획 2a: 계획 1의 12행 + 쥐 테크 24행(상위 레벨 9 + 신규 5종 15)
-            Assert.AreEqual(36, InfoManager.Instance.Tech.Count);
+            // 계획 2b: 고양이 신규 4종 × 3레벨 = 12행
+            Assert.AreEqual(48, InfoManager.Instance.Tech.Count);
         }
 
         [Test]
@@ -46,6 +47,25 @@ namespace CTC.Tests
         public void TechInfo_MouseCatalog_IsTen()
         {
             Assert.AreEqual(10, TechLogic.Catalog(RoleId.Mouse).Count);
+        }
+
+        [Test]
+        public void TechInfo_CatCatalog_IsSix()
+        {
+            // 계획 2b: 발톱·발 구르기에 두꺼운 가죽·배고픔·광분·예민한 귀가 붙었다.
+            Assert.AreEqual(6, TechLogic.Catalog(RoleId.Cat).Count);
+        }
+
+        [Test]
+        public void TechInfo_CatTech_LaddersMatchSpec()
+        {
+            // 기획서 §5 값 — CatHide P1은 최대 HP, CatFrenzy는 P1 배율·P2 지속·P3 쿨.
+            Assert.AreEqual(1450f, TechLogic.ParamOf(TechId.CatHide, 3, 1), 1e-4f);
+            Assert.AreEqual(1.6f, TechLogic.ParamOf(TechId.CatHunger, 3, 1), 1e-4f);
+            Assert.AreEqual(2.5f, TechLogic.ParamOf(TechId.CatFrenzy, 3, 1), 1e-4f);
+            Assert.AreEqual(10f, TechLogic.ParamOf(TechId.CatFrenzy, 3, 2), 1e-4f);
+            Assert.AreEqual(20f, TechLogic.ParamOf(TechId.CatFrenzy, 3, 3), 1e-4f);
+            Assert.AreEqual(2f, TechLogic.ParamOf(TechId.CatEar, 3, 1), 1e-4f);
         }
 
         [Test]

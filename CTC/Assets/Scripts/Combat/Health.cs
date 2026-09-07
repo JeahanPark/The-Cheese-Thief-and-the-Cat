@@ -14,15 +14,27 @@ namespace CTC.Runtime.Combat
     /// <summary>HP. 서버만 기록, 전원 읽기(HUD). 사망 이벤트는 서버에서만 발화.</summary>
     public class Health : NetworkBehaviour
     {
+        // 프리팹에 구워지는 시작값(에디터 팩토리들이 `m_MaxHp`라는 이름으로 직접 찍는다) 겸
+        // **스폰 전 서버 원본**이다. 이름을 바꾸면 구운 프리팹 값이 조용히 날아간다.
         [SerializeField] private int m_MaxHp = 100;
 
         private readonly NetworkVariable<int> m_Hp = new NetworkVariable<int>();
+
+        // 최대 HP도 복제한다(2026-09-08) — HUD(`StatusHud`)가 클라에서 "지금/최대"를 그리고
+        // QA 훅도 아무 인스턴스에서나 묻는다. 두꺼운 가죽처럼 **판 도중 최대치가 오르는** 길이
+        // 생기면서 직렬화 필드만으로는 서버 밖이 옛 값을 그리게 됐다.
+        private readonly NetworkVariable<int> m_MaxHpNet = new NetworkVariable<int>();
 
         public int Hp => m_Hp.Value;
 
         /// <summary>HP 스트림(MVC의 Model 노출) — 구독 즉시 현재 값이 흐른다.</summary>
         public Observable<int> HpChangedRx => m_Hp.AsObservableWithCurrent();
-        public int MaxHp => m_MaxHp;
+
+        /// <summary>
+        /// 최대 HP. 스폰 뒤에는 복제본을 본다(전 클라 동일) — 스폰 전에는 아직 복제가 없으니
+        /// 서버가 세워 둔 직렬화 값을 그대로 돌려준다(요새·창고가 스폰 전에 이 값을 세운다).
+        /// </summary>
+        public int MaxHp => IsSpawned ? m_MaxHpNet.Value : m_MaxHp;
         public bool IsDead => CombatLogic.IsDead(m_Hp.Value);
 
         /// <summary>서버 전용 사망 알림 (1회).</summary>
@@ -33,7 +45,12 @@ namespace CTC.Runtime.Combat
 
         public override void OnNetworkSpawn()
         {
-            if (IsServer) m_Hp.Value = m_MaxHp;
+            // 서버의 이 대입은 스폰 메시지가 만들어지기 전이라 초기값 그대로 복제된다(m_Hp와 동일).
+            if (IsServer)
+            {
+                m_MaxHpNet.Value = m_MaxHp;
+                m_Hp.Value = m_MaxHp;
+            }
             m_Hp.OnValueChanged += OnHpValueChanged;
         }
 
@@ -89,7 +106,25 @@ namespace CTC.Runtime.Combat
             if (_maxHp <= 0) return;
 
             m_MaxHp = _maxHp;
-            if (IsSpawned && IsServer) m_Hp.Value = UnityEngine.Mathf.Clamp(m_Hp.Value, 0, m_MaxHp);
+            if (IsSpawned && IsServer)
+            {
+                m_MaxHpNet.Value = m_MaxHp;
+                m_Hp.Value = UnityEngine.Mathf.Clamp(m_Hp.Value, 0, m_MaxHp);
+            }
+        }
+
+        /// <summary>
+        /// 서버 전용 — **이미 스폰된 몸**의 최대 HP를 올린다. 늘어난 만큼 현재 HP도 함께 오른다
+        /// (두꺼운 가죽을 사자마자 체력이 비어 있으면 산 값을 못 느낀다). 내리지는 않는다.
+        /// </summary>
+        public void ServerRaiseMaxHp(int _newMax)
+        {
+            if (!IsServer || _newMax <= m_MaxHp) return;
+
+            int gain = _newMax - m_MaxHp;
+            m_MaxHp = _newMax;
+            if (IsSpawned) m_MaxHpNet.Value = m_MaxHp;
+            m_Hp.Value = UnityEngine.Mathf.Min(m_MaxHp, m_Hp.Value + gain);
         }
 
         /// <summary>서버 전용 회복(요새 거점). 죽은 대상은 회복 불가 — 부활 없음(원작 동일).</summary>
