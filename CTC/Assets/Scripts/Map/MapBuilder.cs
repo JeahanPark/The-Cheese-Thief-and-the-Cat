@@ -21,6 +21,7 @@ namespace CTC.Runtime.Map
         private const float CORRIDOR_WALL_HEIGHT = 2.4f;
         private const float BOUNDARY_THICK = 0.5f;
         private const float FLOOR_THICK = 0.5f;
+        private const float FLOOR_TILE_METERS = 20f;   // 오브젝트당 광원 4개 한도 때문에 바닥을 쪼갠다
         // 엄폐물 높이 — 눈높이 레이(1.0m)보다 확실히 높고, 방 벽(5m)보다는 낮아 답답하지 않다
         private const float OBSTACLE_HEIGHT = 3f;
 
@@ -221,9 +222,19 @@ namespace CTC.Runtime.Map
         {
             float span = _halfExtent * 2f;
 
-            GameObject floor = AddBox(m_Root, m_GroundMaterial, "Floor",
-                new Vector3(0f, -FLOOR_THICK * 0.5f, 0f), new Vector3(span, FLOOR_THICK, span));
-            floor.layer = 2;
+            // 바닥을 20 m 타일로 쪼갠다(2026-09-07). URP는 오브젝트당 추가 광원이 4개라 120 m 바닥 한 장이면
+            // 빛웅덩이 7개 중 4개만 붙어 나머지 존이 캄캄했다(창고 맵 밤 실측). 타일마다 제 근처 빛만 받는다.
+            int tiles = Mathf.Max(1, Mathf.CeilToInt(span / FLOOR_TILE_METERS));
+            float tile = span / tiles;
+            for (int ix = 0; ix < tiles; ix++)
+            for (int iz = 0; iz < tiles; iz++)
+            {
+                float cx = -_halfExtent + tile * (ix + 0.5f);
+                float cz = -_halfExtent + tile * (iz + 0.5f);
+                GameObject floor = AddBox(m_Root, m_GroundMaterial, "Floor",
+                    new Vector3(cx, -FLOOR_THICK * 0.5f, cz), new Vector3(tile, FLOOR_THICK, tile));
+                floor.layer = 2;
+            }
 
             // 지오메트리 틈으로 새어나가도 바닥 밖으로 못 나가게
             float h = ROOM_WALL_HEIGHT;

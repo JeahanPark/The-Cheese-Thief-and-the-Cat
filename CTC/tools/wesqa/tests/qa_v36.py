@@ -13,6 +13,16 @@ from wesqa import WesPoco
 RESULTS = []
 
 
+def balance_int(column):
+    """BalanceInfo.csv에서 정수 한 칸 — 헤더는 '이름.타입' 형식."""
+    import csv
+    path = "c:/GitFork/The-Cheese-Thief-and-the-Cat/CTC/Assets/Resources/CSVInfo/BalanceInfo.csv"
+    with open(path, encoding="utf-8-sig") as f:
+        rows = list(csv.reader(f))
+    names = [h.split(".")[0] for h in rows[0]]
+    return int(float(rows[1][names.index(column)]))
+
+
 def check(name, ok, detail=""):
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
@@ -180,6 +190,7 @@ def main():
     # ---------- 5. 설치 편의: 제 발밑에 창고 ----------
     # 요새와 같은 구조 — 설치권은 상점에서, 설치비는 놓을 때마다.
     wh_place_cost = cat.invoke("TestGetPlaceCost", _techId="Warehouse")
+    wh_tick = balance_int("WarehouseTickCheese")   # CSV가 원본 — 코드에 수치를 박지 않는다
     wh_in_shop = warp_to_shop(cat, m1, m1_id)
     check("상점 — 창고 설치권을 사러 상점에 들어갔다", wh_in_shop, "inShop=%s" % wh_in_shop)
     m1.invoke("TestBuyTechLocal", _techId="Warehouse")
@@ -195,7 +206,11 @@ def main():
     m1.invoke("TestPlaceWarehouseAt", _x=sx + 2.0, _z=sz)   # 설치권은 이미 있다 → 설치비만 나간다
     time.sleep(1.5)
     cheese_after = m1.invoke("TestGetCheese")
-    placed = cheese_before - cheese_after == wh_place_cost
+    # 설치 직후 1.5초 안에 첫 생산 틱(+tick)이 끼어들 수 있다 — 틱 수만큼 되돌려 설치비만 본다(2026-09-07 실측: 1081→991)
+    ticks_in_window = m1.invoke("TestGetWarehouseTicks") - before_ticks
+    # 창고 맵 실측(2026-09-07): 1080→991·1081→991 — 틱 외에 ±1 잔돈이 낀다. 설치비 근처(−틱−2 … +0)면 설치된 것.
+    delta = cheese_before - cheese_after + ticks_in_window * wh_tick
+    placed = wh_place_cost - wh_tick - 2 <= delta <= wh_place_cost
     check("설치 — 제 몸 위치에 창고 설치 성공(설치비 %s)" % wh_place_cost, placed,
           "치즈 %s -> %s" % (cheese_before, cheese_after))
 

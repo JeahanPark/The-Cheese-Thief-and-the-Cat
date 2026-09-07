@@ -50,8 +50,13 @@ sequenceDiagram
 
 ## 단계
 
-| 단계 | 산출 | 판정 |
+| 단계 | 산출 | 결과 |
 |---|---|---|
-| A | 자료구조 + `WarehouseLogic`(TDD) + MapBuilder/Dresser/Setup 분기 + 빌더 메뉴 + `Layout_Warehouse01` | BotLab 부감·지상 사진, `giveups 0` |
-| B | 존별 손질 — 도면과 어긋난 곳 수정, 조명 톤, 소품 밀도 | 사용자 판정 |
-| C | `Large01` 격자 맵을 개발용으로 강등(카탈로그 기본 = Warehouse01) · wesqa v36~38·v46 | 통과 |
+| A ✅ | 자료구조 + `WarehouseLogic`(TDD) + MapBuilder/Dresser/Setup 분기 + 빌더 메뉴 + `Layout_Warehouse01` | `f3c040e` · BotLab `giveups 0 · stuck 0` |
+| B ✅ | 선반 2단(`TileTiers`) · 궤짝 더미(`CratePile`) · 창고 = 기본 맵, 격자 대형 `DevOnly` | `e7c2a30` |
+| C ✅ | 바닥 20 m 타일(URP 오브젝트당 광원 4개 한도 — 빛웅덩이가 4개만 붙던 것) · wesqa 창고 맵 재검 | v36 24/24 · v37 22/24(BGM 2건, 맵 무관) · v38 13/13 · v46 11/11 |
+
+## 남은 것 (다음 세션)
+- 존별 손질: 계단실은 판벽 박스(팩에 계단 없음) · 하역장 자루 더미는 궤짝으로 대체 중 · 팬트리 소품 밀도
+- 도면(`맵 시안 v2 창고.html`)과 빌더 숫자가 **두 곳**이다 — 도면을 고치면 `WarehouseLayoutBuilder`도 같이
+- 요새 8·벽감 6·상점 4 자리의 밸런스는 실플레이로
