@@ -279,9 +279,13 @@ namespace CTC.Editor
             SetRefArray(catalog, "m_Layouts", layouts);
             // 새 방의 기본 맵 = 첫 정식(대형) 맵 — 배포에서 작은 맵이 기본으로 서는 것을 막는다(2026-08-31).
             var extents = new float[layouts.Length];
+            var devOnly = new bool[layouts.Length];
             for (int i = 0; i < layouts.Length; i++)
+            {
                 extents[i] = layouts[i] is CTC.Runtime.Map.MapLayout ml ? ml.HalfExtent : 0f;
-            SetInt(session, "m_DefaultMapIndex", CTC.Runtime.Map.MapCatalogLogic.DefaultIndex(extents));
+                devOnly[i] = layouts[i] is CTC.Runtime.Map.MapLayout md && md.DevOnly;
+            }
+            SetInt(session, "m_DefaultMapIndex", CTC.Runtime.Map.MapCatalogLogic.DefaultIndex(extents, devOnly));
 
             // 채팅 — 인게임과 똑같이 별도 in-scene NetworkObject다([Rpc]는 스폰된 NetworkBehaviour가 필요).
             var chatGo = new GameObject("ChatManager");

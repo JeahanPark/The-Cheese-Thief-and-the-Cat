@@ -169,3 +169,8 @@ MonoBehaviour:
     Size: {x: 0.8, y: 4.9}
   - Pos: {x: -10.4, y: -10}
     Size: {x: 2.8000002, y: 0.8}
+  m_DevOnly: 0
+  m_HandPlaced: 0
+  m_Props: []
+  m_Lights: []
+  m_Shops: []

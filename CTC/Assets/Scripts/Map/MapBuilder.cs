@@ -488,13 +488,13 @@ namespace CTC.Runtime.Map
                 switch (p.Kind)
                 {
                     case PropKind.Shelf:
-                        AddBox(m_Root, m_WallMaterial, "Wall_Shelf_" + i, center, size);
+                        AddBox(m_Root, BoundaryMat, "Wall_Shelf_" + i, center, size);   // 판벽 — 선반 뒷판으로 읽힌다
                         break;
                     case PropKind.CrateWall:
                         AddBox(m_Root, CorridorWallMat, "CorridorWall_" + i, center, size);
                         break;
                     case PropKind.Block:
-                        AddBox(m_Root, m_WallMaterial, "Obstacle_Block_" + i, center, size);
+                        AddBox(m_Root, BoundaryMat, "Obstacle_Block_" + i, center, size);
                         break;
                 }
             }

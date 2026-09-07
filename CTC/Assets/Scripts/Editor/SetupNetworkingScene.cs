@@ -77,12 +77,15 @@ namespace CTC.Editor
         private const string BotLabScenePath = "Assets/Scenes/BotLab.unity";
 
         // 로비에서 고를 수 있는 맵들 — 배열 순서가 곧 맵 인덱스다
+        /// <summary>크기는 정식이지만 배포 카탈로그에서 빼는 맵(2026-09-07) — 격자 대형은 봇 실험실·비교용으로만.</summary>
+        private static readonly string[] DevOnlyLayoutPaths = { "Assets/Prefabs/Maps/Layout_Large01.asset" };
+
         private static readonly string[] MapLayoutPaths =
         {
             "Assets/Prefabs/Maps/Layout_Sketch01.asset",
             "Assets/Prefabs/Maps/Layout_Expanded01.asset",
-            "Assets/Prefabs/Maps/Layout_Large01.asset",
-            "Assets/Prefabs/Maps/Layout_Warehouse01.asset",   // 창고 평면도(2026-09-07) — 손 배치
+            "Assets/Prefabs/Maps/Layout_Warehouse01.asset",   // 창고 평면도(2026-09-07) — 정식 기본 맵
+            "Assets/Prefabs/Maps/Layout_Large01.asset",       // 격자 대형 — 개발 전용으로 강등(2026-09-07)
         };
 
         // 아직 굽지 않은 레이아웃은 건너뛴다 — 확장 맵 생성 전에도 Setup이 돌아야 한다
@@ -196,6 +199,8 @@ namespace CTC.Editor
             {
                 MapLayout layout = AssetDatabase.LoadAssetAtPath<MapLayout>(path);
                 if (layout == null) continue;
+                layout.SetDevOnly(System.Array.IndexOf(DevOnlyLayoutPaths, path) >= 0);
+                EditorUtility.SetDirty(layout);
                 if (layout.HandPlaced) continue;   // 창고 평면도는 좌표를 직접 든다 — 자동 계획 금지
                 PlanAlcovesInto(layout, AlcoveCountFor(layout));
                 PlanBoxesInto(layout, BOXES_PER_MAP);   // 벽감 자리를 피하므로 벽감 뒤에 온다

@@ -30,6 +30,8 @@ namespace CTC.Runtime.Map
         // 엄폐물(2026-08-11) — 벽감·상자와 같은 취급: 맵마다 자리가 다르다
         [SerializeField] private List<ObstaclePlacement> m_Obstacles = new();
         // 창고 평면도(2026-09-07) — 손으로 그린 맵. 켜지면 방·복도를 안 짓고 자동 계획(벽감·상자·장애물)도 건너뛴다.
+        // 개발 전용(2026-09-07) — 크기는 정식이어도 배포 카탈로그에서 뺀다(격자 대형 맵).
+        [SerializeField] private bool m_DevOnly;
         [SerializeField] private bool m_HandPlaced;
         [SerializeField] private List<PropPlacement> m_Props = new();
         [SerializeField] private List<LightPlacement> m_Lights = new();
@@ -51,6 +53,10 @@ namespace CTC.Runtime.Map
         public IReadOnlyList<AlcovePlacement> Alcoves => m_Alcoves;
         public IReadOnlyList<BoxPlacement> Boxes => m_Boxes;
         public IReadOnlyList<ObstaclePlacement> Obstacles => m_Obstacles;
+        public bool DevOnly => m_DevOnly;
+
+        /// <summary>개발 전용 표시만 덧쓴다(에디터 전용) — Setup Networking Scene이 경로 목록으로 정한다.</summary>
+        public void SetDevOnly(bool _devOnly) { m_DevOnly = _devOnly; }
         public bool HandPlaced => m_HandPlaced;
         public IReadOnlyList<PropPlacement> Props => m_Props;
         public IReadOnlyList<LightPlacement> Lights => m_Lights;

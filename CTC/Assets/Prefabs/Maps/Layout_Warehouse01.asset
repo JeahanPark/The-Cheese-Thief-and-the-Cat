@@ -117,6 +117,7 @@ MonoBehaviour:
       Amount: 1
   m_Boxes: []
   m_Obstacles: []
+  m_DevOnly: 0
   m_HandPlaced: 1
   m_Props:
   - Name: S-hallN-0

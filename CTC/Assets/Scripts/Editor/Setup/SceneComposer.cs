@@ -225,6 +225,17 @@ namespace CTC.Editor
 
                 var labGo = new GameObject("BotLab");
                 var lab = labGo.AddComponent<CTC.Runtime.Bots.BotLab>();
+                // 실험실 기본 맵 = 첫 정식 맵(창고) — 격자 대형은 개발 전용으로 밀렸다(2026-09-07)
+                {
+                    var labLayouts = LoadMapLayouts();
+                    var ext = new float[labLayouts.Length]; var dev = new bool[labLayouts.Length];
+                    for (int li = 0; li < labLayouts.Length; li++)
+                    {
+                        var ml = labLayouts[li] as CTC.Runtime.Map.MapLayout;
+                        ext[li] = ml != null ? ml.HalfExtent : 0f; dev[li] = ml != null && ml.DevOnly;
+                    }
+                    SetInt(lab, "m_MapIndex", CTC.Runtime.Map.MapCatalogLogic.DefaultIndex(ext, dev));
+                }
                 SetRef(lab, "m_Lobby", lobby);
             }
             else

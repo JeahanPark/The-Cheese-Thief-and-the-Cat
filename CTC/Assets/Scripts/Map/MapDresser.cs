@@ -41,10 +41,14 @@ namespace CTC.Runtime.Map
             foreach (Transform child in segments)
             {
                 string n = child.name;
-                if (n.StartsWith("Wall_"))
+                if (n.StartsWith("Wall_Shelf_"))
+                    TileTiers(child, m_ShelfUnits, dressRoot, _seed, m_UnitScale);   // 창고 선반 열 — 5m를 2단으로 채운다
+                else if (n.StartsWith("Wall_"))
                     TileAlong(child, m_ShelfUnits, dressRoot, _seed, m_UnitScale);
                 else if (n.StartsWith("CorridorWall") || n.StartsWith("CorridorEndCap"))
                     TileAlong(child, m_CrateUnits, dressRoot, _seed + 1, m_CrateScale);
+                else if (n.StartsWith("Obstacle_Block_"))
+                    CratePile(child, m_CrateUnits, dressRoot, _seed + 4);
                 else if (n == "Obstacles")
                     foreach (Transform o in child)
                         ReplaceVisual(o, m_ObstacleUnits, dressRoot, _seed + 2);
@@ -93,6 +97,77 @@ namespace CTC.Runtime.Map
                 light.intensity = 5.5f;   // 2.2는 바닥이 미지근했다 — 웅덩이는 한눈에 읽혀야 위험이다
                 light.range = 12f;
                 light.shadows = LightShadows.None;   // 웅덩이 수십 개 — 그림자는 달빛 하나면 된다
+            }
+        }
+
+        /// <summary>
+        /// 창고 선반 열(2026-09-07): 5 m 박스를 선반으로 **2단** 채운다 — 1단만 두면 위쪽 3 m가 맨 판벽으로 남아
+        /// 벽돌 벽처럼 읽혔다(BotLab 실측). 위 단은 아래 단의 렌더 높이만큼 올린다.
+        /// </summary>
+        private void TileTiers(Transform _wall, GameObject[] _units, Transform _parent, int _seed, float _scale)
+        {
+            if (_units == null || _units.Length == 0) return;
+
+            int before = _parent.childCount;
+            TileAlong(_wall, _units, _parent, _seed, _scale);
+            int firstTier = _parent.childCount - before;
+            if (firstTier == 0) return;
+
+            // 1단 높이 = 방금 놓은 것들의 렌더 높이 최대값
+            float tierHeight = 0f;
+            for (int i = before; i < _parent.childCount; i++)
+            {
+                if (TryGetWorldBounds(_parent.GetChild(i).gameObject, out Bounds b)) tierHeight = Mathf.Max(tierHeight, b.size.y);
+            }
+            if (tierHeight < 0.5f || tierHeight * 2f > _wall.localScale.y + 0.5f) return;
+
+            int mid = _parent.childCount;
+            TileAlong(_wall, _units, _parent, _seed + 7, _scale);
+            for (int i = mid; i < _parent.childCount; i++)
+            {
+                Transform t = _parent.GetChild(i);
+                t.position += Vector3.up * tierHeight;
+                t.name += "_T2";
+            }
+        }
+
+        /// <summary>
+        /// 작업대·자루 더미 박스(2026-09-07): 박스 렌더러를 끄고 발자국을 궤짝으로 채운다(2 m 격자, 높이 3 m면 2층).
+        /// 계단(5 m)은 그대로 판벽 박스 — 팩에 계단이 없다.
+        /// </summary>
+        private void CratePile(Transform _block, GameObject[] _units, Transform _parent, int _seed)
+        {
+            if (_units == null || _units.Length == 0) return;
+            Vector3 s = _block.localScale;
+            if (s.y > 4f) return;   // 계단
+
+            var renderer = _block.GetComponent<MeshRenderer>();
+            if (renderer != null) renderer.enabled = false;
+
+            const float UNIT = 2f;
+            int nx = Mathf.Max(1, Mathf.FloorToInt(s.x / UNIT));
+            int nz = Mathf.Max(1, Mathf.FloorToInt(s.z / UNIT));
+            int tiers = s.y >= 2.6f ? 2 : 1;
+            float x0 = _block.position.x - (nx - 1) * UNIT * 0.5f;
+            float z0 = _block.position.z - (nz - 1) * UNIT * 0.5f;
+            int key = Mathf.RoundToInt(_block.position.x * 7f + _block.position.z * 13f);
+
+            float tierHeight = 0f;
+            for (int tier = 0; tier < tiers; tier++)
+            {
+                for (int ix = 0; ix < nx; ix++)
+                for (int iz = 0; iz < nz; iz++)
+                {
+                    GameObject prefab = _units[MapDressLogic.Pick(key + ix * 3 + iz * 5 + tier * 11, _units.Length, _seed)];
+                    if (prefab == null) continue;
+                    float yaw = PantryTextureLogic.Hash(key + ix + iz * 7 + tier, 3, _seed) * 40f - 20f;
+                    var go = Instantiate(prefab, new Vector3(x0 + ix * UNIT, 0f, z0 + iz * UNIT), Quaternion.Euler(0f, yaw, 0f), _parent);
+                    go.transform.localScale *= m_CrateScale;
+                    AlignToFloor(go);
+                    if (tier > 0) go.transform.position += Vector3.up * tierHeight;
+                    else if (TryGetWorldBounds(go, out Bounds b)) tierHeight = Mathf.Max(tierHeight, b.size.y);
+                    StripPhysics(go);
+                }
             }
         }
 

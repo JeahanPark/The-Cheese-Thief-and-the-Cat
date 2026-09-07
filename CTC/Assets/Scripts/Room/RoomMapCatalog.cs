@@ -49,7 +49,7 @@ namespace CTC.Runtime.Room
         public bool IsSelectableAt(int _index)
         {
             MapLayout layout = LayoutAt(_index);
-            return layout != null && MapCatalogLogic.IsSelectable(layout.HalfExtent, Debug.isDebugBuild);
+            return layout != null && MapCatalogLogic.IsSelectable(layout.HalfExtent, layout.DevOnly, Debug.isDebugBuild);
         }
 
         private MapLayout LayoutAt(int _index)
