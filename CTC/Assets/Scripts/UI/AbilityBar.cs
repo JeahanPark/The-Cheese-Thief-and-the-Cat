@@ -18,8 +18,7 @@ namespace CTC.Runtime.UI
     public class AbilityBar : MonoBehaviour
     {
         private const float SLOT_STEP = HOTBAR_SLOT_WIDTH + HOTBAR_SLOT_GAP;   // 능력 칸은 핫바 칸과 같은 폭·간격
-        // 핫바 칸 치수(빌더 SLOT_WIDTH·SLOT_GAP과 같다). 핫바는 6칸 폭에서 왼쪽부터 채우므로
-        // 역할별로 '쓰는 칸'의 가운데가 다르다 — 능력 칸은 그 가운데 아래에 놓는다.
+        // 핫바 칸 치수(빌더 SLOT_WIDTH·SLOT_GAP과 같다). 능력 칸은 핫바가 쓰는 칸의 가운데 아래에 놓는다.
         private const float HOTBAR_SLOT_WIDTH = 132f;
         private const float HOTBAR_SLOT_GAP = 8f;
 
@@ -98,7 +97,10 @@ namespace CTC.Runtime.UI
                 return;
             }
             var rootRt = (RectTransform)m_Root.transform;
-            rootRt.anchoredPosition = new Vector2(HotbarUsedCenterX(ShopLogic.RoleCatalogIndices(m_Role).Count), rootRt.anchoredPosition.y);
+            // 테크 v3(2026-09-07): 핫바는 역할과 무관하게 칸 수만큼 늘 그린다 — 가운데가 곧 핫바 가운데
+            rootRt.anchoredPosition = new Vector2(
+                HotbarUsedCenterX(CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap),
+                rootRt.anchoredPosition.y);
             float left = -(m_Built.Length - 1) * SLOT_STEP * 0.5f;   // 쓰는 칸만 가운데 정렬
             for (int i = 0; i < m_Slots.Length; i++)
             {
@@ -115,7 +117,8 @@ namespace CTC.Runtime.UI
         /// <summary>핫바가 실제로 쓰는 n칸의 가운데 x(핫바 루트 중심 기준) — 순수.</summary>
         public static float HotbarUsedCenterX(int _usedSlots)
         {
-            float total = HOTBAR_SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + HOTBAR_SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
+            int cap = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            float total = HOTBAR_SLOT_WIDTH * cap + HOTBAR_SLOT_GAP * (cap - 1);
             float used = HOTBAR_SLOT_WIDTH * _usedSlots + HOTBAR_SLOT_GAP * Mathf.Max(0, _usedSlots - 1);
             return -total * 0.5f + used * 0.5f;
         }

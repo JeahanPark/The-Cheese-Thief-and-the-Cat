@@ -124,14 +124,17 @@ namespace CTC.Editor
             hotbarRt.anchorMin = hotbarRt.anchorMax = new Vector2(0.5f, 0f);
             hotbarRt.pivot = new Vector2(0.5f, 0f);
             hotbarRt.anchoredPosition = new Vector2(0f, HOTBAR_Y);   // 아래 줄은 능력 칸
-            hotbarRt.sizeDelta = new Vector2(SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * 4f, SLOT_HEIGHT);
 
-            var slotRoots = new Object[ShopLogic.HOTBAR_SLOTS];
-            var slotLabels = new Object[ShopLogic.HOTBAR_SLOTS];
-            var slotHints = new Object[ShopLogic.HOTBAR_SLOTS];
-            var slotCosts = new Object[ShopLogic.HOTBAR_SLOTS];
-            float totalWidth = SLOT_WIDTH * ShopLogic.HOTBAR_SLOTS + SLOT_GAP * (ShopLogic.HOTBAR_SLOTS - 1);
-            for (int i = 0; i < ShopLogic.HOTBAR_SLOTS; i++)
+            // = BalanceInfo.TechSlotCap — 칸 수는 구조 제약이라 씬을 구울 때 고정
+            int hotbarSlots = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            float totalWidth = SLOT_WIDTH * hotbarSlots + SLOT_GAP * (hotbarSlots - 1);
+            hotbarRt.sizeDelta = new Vector2(totalWidth, SLOT_HEIGHT);
+
+            var slotRoots = new Object[hotbarSlots];
+            var slotLabels = new Object[hotbarSlots];
+            var slotHints = new Object[hotbarSlots];
+            var slotCosts = new Object[hotbarSlots];
+            for (int i = 0; i < hotbarSlots; i++)
             {
                 float x = -totalWidth * 0.5f + SLOT_WIDTH * 0.5f + i * (SLOT_WIDTH + SLOT_GAP);
                 var slot = new GameObject($"Slot{i + 1}", typeof(RectTransform));
@@ -154,8 +157,14 @@ namespace CTC.Editor
                 slotRoots[i] = slot;
             }
 
+            // 모드 줄(테크 v3 2026-09-07) — 지금 숫자키가 "산다"인지 "쓴다"인지. 문구는 ShopHotbar가 채운다.
+            TMP_Text modeLabel = CreateTmpText("ModeLabel", hotbarRoot.transform, "",
+                13f, TextAlignmentOptions.Center, new Vector2(0f, 34f), new Vector2(totalWidth, 18f));
+            modeLabel.color = UiPalette.TextDim;
+
+            // 토스트는 모드 줄 위로 — 겹치면 둘 다 안 읽힌다
             TMP_Text toastText = CreateTmpText("ShopToast", hotbarRoot.transform, "",
-                26f, TextAlignmentOptions.Center, new Vector2(0f, 52f), new Vector2(640f, 36f));
+                26f, TextAlignmentOptions.Center, new Vector2(0f, 86f), new Vector2(640f, 36f));
             toastText.gameObject.SetActive(false);
             hotbarRoot.SetActive(false); // ShopHotbar가 게임 시작 시 켬
 
@@ -166,6 +175,7 @@ namespace CTC.Editor
             SetRefArray(hotbar, "m_SlotLabels", slotLabels);
             SetRefArray(hotbar, "m_SlotHints", slotHints);
             SetRefArray(hotbar, "m_SlotCosts", slotCosts);
+            SetRef(hotbar, "m_ModeLabel", modeLabel);
             SetRef(hotbar, "m_Toast", toastText);
             SetRef(hotbar, "m_GhostMaterialSource", CreateGhostMaterialAsset());
 
