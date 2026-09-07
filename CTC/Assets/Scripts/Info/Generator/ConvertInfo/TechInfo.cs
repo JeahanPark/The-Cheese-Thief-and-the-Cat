@@ -15,6 +15,9 @@ namespace CTC.Runtime.Info
         public int Cost;
         public string Label;
         public string Hint;
+        public float P1;
+        public float P2;
+        public float P3;
     }
 
     public partial class InfoManager

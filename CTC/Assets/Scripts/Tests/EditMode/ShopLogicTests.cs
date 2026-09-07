@@ -98,7 +98,7 @@ namespace CTC.Tests
         [Test]
         public void WeaponStats_OutOfRange_Clamps()
         {
-            Assert.AreEqual(ShopLogic.WeaponStatsForTier(2).Damage, ShopLogic.WeaponStatsForTier(99).Damage);
+            Assert.AreEqual(ShopLogic.WeaponStatsForTier(3).Damage, ShopLogic.WeaponStatsForTier(99).Damage);
             Assert.AreEqual(ShopLogic.WeaponStatsForTier(0).Damage, ShopLogic.WeaponStatsForTier(-1).Damage);
         }
 

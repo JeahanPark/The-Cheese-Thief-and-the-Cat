@@ -18,8 +18,13 @@ namespace CTC.Tests
         public void Catalog_Mouse_IsCsvOrderDistinct()
         {
             IReadOnlyList<TechId> c = TechLogic.Catalog(RoleId.Mouse);
+            // 계획 2a에서 쥐 테크가 10종이 됐다 — 순서는 CSV 등장 순(기존 5종 뒤에 신규 5종).
             CollectionAssert.AreEqual(
-                new[] { TechId.Gun, TechId.Pepper, TechId.Fortress, TechId.Warehouse, TechId.Dash }, c);
+                new[]
+                {
+                    TechId.Gun, TechId.Pepper, TechId.Fortress, TechId.Warehouse, TechId.Dash,
+                    TechId.CheeseShield, TechId.BigPouch, TechId.HiddenWarehouse, TechId.Sticky, TechId.FastFeet,
+                }, c);
         }
 
         [Test]
@@ -30,11 +35,13 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void MaxLevel_Gun2_Dash1_Unknown0()
+        public void MaxLevel_MouseTechs3_Unknown0()
         {
-            Assert.AreEqual(2, TechLogic.MaxLevel(TechId.Gun));
-            Assert.AreEqual(1, TechLogic.MaxLevel(TechId.Dash));
-            Assert.AreEqual(0, TechLogic.MaxLevel(TechId.CheeseShield)); // 계획 2 전엔 행이 없다
+            // 계획 2a: 쥐 테크는 전부 3레벨까지 열렸다
+            Assert.AreEqual(3, TechLogic.MaxLevel(TechId.Gun));
+            Assert.AreEqual(3, TechLogic.MaxLevel(TechId.Dash));
+            Assert.AreEqual(3, TechLogic.MaxLevel(TechId.CheeseShield));
+            Assert.AreEqual(0, TechLogic.MaxLevel(TechId.CatHide)); // 고양이 신규는 계획 2b — 아직 행이 없다
         }
 
         [Test]
@@ -55,7 +62,7 @@ namespace CTC.Tests
         [Test]
         public void NextRow_AtMax_IsEmpty()
         {
-            Assert.IsFalse(TechLogic.NextRow(Owned((TechId.Gun, 2)), TechId.Gun).IsValid);
+            Assert.IsFalse(TechLogic.NextRow(Owned((TechId.Gun, 3)), TechId.Gun).IsValid);
         }
 
         [Test]
@@ -88,7 +95,7 @@ namespace CTC.Tests
         public void CanBuy_AtMaxLevel_Denied()
         {
             Assert.AreEqual(TechDeny.MaxLevel,
-                TechLogic.CanBuy(Owned((TechId.Gun, 2)), TechId.Gun, RoleId.Mouse, 9999, 5));
+                TechLogic.CanBuy(Owned((TechId.Gun, 3)), TechId.Gun, RoleId.Mouse, 9999, 5));
         }
 
         [Test]
@@ -127,7 +134,12 @@ namespace CTC.Tests
         public void Candidates_ExcludesOwned_KeepsOrder()
         {
             IReadOnlyList<TechId> c = TechLogic.Candidates(RoleId.Mouse, Owned((TechId.Gun, 1), (TechId.Dash, 1)));
-            CollectionAssert.AreEqual(new[] { TechId.Pepper, TechId.Fortress, TechId.Warehouse }, c);
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    TechId.Pepper, TechId.Fortress, TechId.Warehouse,
+                    TechId.CheeseShield, TechId.BigPouch, TechId.HiddenWarehouse, TechId.Sticky, TechId.FastFeet,
+                }, c);
         }
 
         [Test]
@@ -209,9 +221,9 @@ namespace CTC.Tests
         [Test]
         public void CanBuy_NoneWhenMaxLevelZero_IsUnknownNotMaxLevel()
         {
-            // 표에 없는 테크(계획 2 전 CheeseShield)는 "만렙"이 아니라 "모름"이어야 UI 문구가 거짓이 안 된다
+            // 표에 없는 테크(계획 2b 전 CatHide)는 "만렙"이 아니라 "모름"이어야 UI 문구가 거짓이 안 된다
             Assert.AreEqual(TechDeny.Unknown,
-                TechLogic.CanBuy(Owned(), TechId.CheeseShield, RoleId.Mouse, 9999, 5));
+                TechLogic.CanBuy(Owned(), TechId.CatHide, RoleId.Cat, 9999, 5));
         }
 
         [Test]

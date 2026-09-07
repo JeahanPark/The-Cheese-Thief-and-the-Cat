@@ -81,6 +81,8 @@ namespace CTC.Runtime.Info
         public float ShopSpotMinGap;
         public float ShopBuySoundMeters;
         public int WarehousePlaceCost;
+        public int CheeseShieldRate;
+        public float StickySeconds;
     }
 
     public partial class InfoManager

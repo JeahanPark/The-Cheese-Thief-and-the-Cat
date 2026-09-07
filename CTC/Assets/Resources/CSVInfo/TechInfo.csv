@@ -1,13 +1,37 @@
-TechId.TechId,Role.RoleId,Axis.TechAxis,Level.int,Cost.int,Label.string,Hint.string
-Gun,Mouse,Attack,1,150,새총,한 방 5→12 · 더 멀리
-Gun,Mouse,Attack,2,600,기관총,5배 연사 — 고양이 사냥
-Pepper,Mouse,Attack,1,120,후추 탄,총알에 매운맛 — 지속피해
-Fortress,Mouse,Defense,1,100,요새,즉석 벙커 — 설치마다 80
-Warehouse,Mouse,Resource,1,50,창고,설치권 — 설치마다 100 · 자동 치즈 생산
-Dash,Mouse,Utility,1,100,대시,Space 순간 가속
-CatClaw,Cat,Attack,1,100,발톱,덮치기 +10
-CatClaw,Cat,Attack,2,140,발톱,덮치기 +20
-CatClaw,Cat,Attack,3,180,발톱,덮치기 +30
-CatStomp,Cat,Utility,1,80,발 구르기,이속 +0.2
-CatStomp,Cat,Utility,2,120,발 구르기,이속 +0.4
-CatStomp,Cat,Utility,3,160,발 구르기,이속 +0.6
+TechId.TechId,Role.RoleId,Axis.TechAxis,Level.int,Cost.int,Label.string,Hint.string,P1.float,P2.float,P3.float
+Gun,Mouse,Attack,1,150,새총,한 방 5→12 · 더 멀리,1,0,0
+Gun,Mouse,Attack,2,600,기관총,5배 연사 — 고양이 사냥,2,0,0
+Pepper,Mouse,Attack,1,120,후추 탄,총알에 매운맛 — 지속피해,3,4,0
+Fortress,Mouse,Defense,1,100,요새,즉석 벙커 — 설치마다 80,480,0,0
+Warehouse,Mouse,Resource,1,50,창고,설치권 — 설치마다 100 · 자동 치즈 생산,1,1,0
+Dash,Mouse,Utility,1,100,대시,Space 순간 가속,6,0,0
+CatClaw,Cat,Attack,1,100,발톱,덮치기 +10,0,0,0
+CatClaw,Cat,Attack,2,140,발톱,덮치기 +20,0,0,0
+CatClaw,Cat,Attack,3,180,발톱,덮치기 +30,0,0,0
+CatStomp,Cat,Utility,1,80,발 구르기,이속 +0.2,0,0,0
+CatStomp,Cat,Utility,2,120,발 구르기,이속 +0.4,0,0,0
+CatStomp,Cat,Utility,3,160,발 구르기,이속 +0.6,0,0,0
+Gun,Mouse,Attack,3,450,긴 총열,사거리 14m · 피해 ×1.3,3,0,0
+Pepper,Mouse,Attack,2,180,매운 맛,도트 4중첩,4,4,0
+Pepper,Mouse,Attack,3,240,오래 감,도트 6초,4,6,0
+Fortress,Mouse,Defense,2,260,두꺼운 벽,요새 HP 900,900,0,0
+Fortress,Mouse,Defense,3,400,가시 벽,요새 HP 1200 · 치면 25 반사,1200,25,0
+CheeseShield,Mouse,Defense,1,100,치즈 방패,피해 30%를 치즈로 낸다,0.3,0,0
+CheeseShield,Mouse,Defense,2,160,치즈 방패,피해 45%를 치즈로,0.45,0,0
+CheeseShield,Mouse,Defense,3,220,치즈 방패,피해 60%를 치즈로,0.6,0,0
+Warehouse,Mouse,Resource,2,240,둘째 창고,창고 상한 2,2,1,0
+Warehouse,Mouse,Resource,3,320,바쁜 창고,창고 수입 ×2,2,2,0
+BigPouch,Mouse,Resource,1,120,큰 주머니,채굴 ×1.3,1.3,0,0
+BigPouch,Mouse,Resource,2,200,큰 주머니,채굴 ×1.6,1.6,0,0
+BigPouch,Mouse,Resource,3,280,큰 주머니,채굴 ×1.9,1.9,0,0
+HiddenWarehouse,Mouse,Resource,1,200,숨은 창고,창고 소리 24→16m,16,150,0
+HiddenWarehouse,Mouse,Resource,2,320,숨은 창고,소리 8m · HP 300,8,300,0
+HiddenWarehouse,Mouse,Resource,3,450,숨은 창고,무음 · HP 450 · 부서지면 절반 환급,0,450,0.5
+Sticky,Mouse,Escape,1,220,끈끈이,반경 2.5m 10초 고양이 −40% · 쿨 30,2.5,0.4,30
+Sticky,Mouse,Escape,2,300,끈끈이,−60% · 반경 3.5m,3.5,0.6,30
+Sticky,Mouse,Escape,3,400,끈끈이,−75% · 쿨 12,3.5,0.75,12
+Dash,Mouse,Utility,2,140,대시,쿨 4.5초,4.5,0,0
+Dash,Mouse,Utility,3,180,대시,쿨 3.5초,3.5,0,0
+FastFeet,Mouse,Utility,1,160,빠른 발,이속 +0.3,0.3,0,0
+FastFeet,Mouse,Utility,2,260,빠른 발,이속 +0.7,0.7,0,0
+FastFeet,Mouse,Utility,3,360,빠른 발,이속 +1.2,1.2,0,0

@@ -10,10 +10,27 @@ namespace CTC.Tests
     public class TechInfoTests
     {
         [Test]
-        public void TechInfo_LoadsTwelveRows()
+        public void TechInfo_LoadsThirtySixRows()
         {
-            // 계획 1: 기존 8항목 = 쥐 6행(총 2레벨) + 고양이 6행(스택 2종 × 3레벨)
-            Assert.AreEqual(12, InfoManager.Instance.Tech.Count);
+            // 계획 2a: 계획 1의 12행 + 쥐 테크 24행(상위 레벨 9 + 신규 5종 15)
+            Assert.AreEqual(36, InfoManager.Instance.Tech.Count);
+        }
+
+        [Test]
+        public void TechInfo_Params_ReadableByLevel()
+        {
+            Assert.AreEqual(4f, TechLogic.ParamOf(TechId.Pepper, 2, 1), 1e-4f);   // 중첩
+            Assert.AreEqual(6f, TechLogic.ParamOf(TechId.Pepper, 3, 2), 1e-4f);   // 초
+            Assert.AreEqual(1200f, TechLogic.ParamOf(TechId.Fortress, 3, 1), 1e-4f);
+            Assert.AreEqual(25f, TechLogic.ParamOf(TechId.Fortress, 3, 2), 1e-4f);
+            Assert.AreEqual(0f, TechLogic.ParamOf(TechId.Fortress, 0, 1), 1e-4f);  // 미보유 = 0
+            Assert.AreEqual(0f, TechLogic.ParamOf(TechId.CheeseShield, 9, 1), 1e-4f); // 없는 레벨 = 0
+        }
+
+        [Test]
+        public void TechInfo_MouseCatalog_IsTen()
+        {
+            Assert.AreEqual(10, TechLogic.Catalog(RoleId.Mouse).Count);
         }
 
         [Test]
@@ -109,6 +126,11 @@ namespace CTC.Tests
                     Assert.AreEqual(i + 1, rows[i].Level,
                         $"{entry.Key}: 레벨이 1..N 연속이 아니다 ({string.Join(",", rows.ConvertAll(_r => _r.Level))})");
                 }
+
+                // 총만 값이 내려간다(기획서 §4) — 기관총(Lv2 600)이 값의 봉우리고
+                // 긴 총열(Lv3 450)은 그 위에 얹는 사거리·피해라 일부러 더 싸다.
+                // 예외는 여기 한 곳에만 적는다 — 다른 테크가 내려가면 이 테스트가 잡는다.
+                if (entry.Key == TechId.Gun) continue;
 
                 for (int i = 1; i < rows.Count; i++)
                 {

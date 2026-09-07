@@ -39,6 +39,11 @@ namespace CTC.Runtime.Economy
         public readonly int Cost;
         public readonly string Label;
         public readonly string Hint;
+        // 레벨별 효과 파라미터 — 의미는 테크마다 다르다(TechInfo.csv 주석·기획서 §4).
+        // 컬럼 폭발을 막으려고 세 칸에 몰아 넣었다. 안 쓰는 칸은 0.
+        public readonly float P1;
+        public readonly float P2;
+        public readonly float P3;
 
         public bool IsValid => Id != TechId.None;
 
@@ -46,6 +51,7 @@ namespace CTC.Runtime.Economy
         {
             Id = _r.TechId; Role = _r.Role; Axis = _r.Axis; Level = _r.Level;
             Cost = _r.Cost; Label = _r.Label; Hint = _r.Hint;
+            P1 = _r.P1; P2 = _r.P2; P3 = _r.P3;
         }
     }
 
@@ -114,6 +120,21 @@ namespace CTC.Runtime.Economy
                 if (r.TechId == _id && r.Level == _level) return new TechRow(r);
             }
             return default;
+        }
+
+        /// <summary>레벨별 효과 파라미터(1~3). 미보유(0)·없는 레벨은 0 — 효과 훅이 "없음"으로 읽게.</summary>
+        public static float ParamOf(TechId _id, int _level, int _index)
+        {
+            if (_level <= 0) return 0f;
+            TechRow row = RowOf(_id, _level);
+            if (!row.IsValid) return 0f;
+            switch (_index)
+            {
+                case 1: return row.P1;
+                case 2: return row.P2;
+                case 3: return row.P3;
+                default: return 0f;
+            }
         }
 
         /// <summary>다음에 살 행 — 미보유면 Lv1, 만렙이면 무효.</summary>
