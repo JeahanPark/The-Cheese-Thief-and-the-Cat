@@ -81,6 +81,9 @@ namespace CTC.Runtime.Info
         public int WarehousePlaceCost;
         public int CheeseShieldRate;
         public float StickySeconds;
+        public int MinimapTexturePx;
+        public int MinimapSizePx;
+        public float MinimapDiscoverMeters;
     }
 
     public partial class InfoManager
