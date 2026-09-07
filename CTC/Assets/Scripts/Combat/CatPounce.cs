@@ -24,6 +24,10 @@ namespace CTC.Runtime.Combat
 
         private double m_LastUseTime = -999.0;
 
+        // 테크 레벨을 읽을 곳(배고픔·광분). 같은 오브젝트라 한 번만 찾는다 — 덮치기 한 번에
+        // 부채꼴 안 대상 수만큼 GetComponent를 돌 이유가 없다.
+        private Economy.TechSlots m_TechSlots;
+
         public int DamageStacks => m_DamageStacks.Value;
 
         /// <summary>강화 중첩 스트림 — 전직 창이 "다 올렸나"를 폴링 없이 안다(규칙 3).</summary>
@@ -35,6 +39,11 @@ namespace CTC.Runtime.Combat
         {
             if (!IsServer || !ShopLogic.CanAddStack(m_DamageStacks.Value)) return;
             m_DamageStacks.Value++;
+        }
+
+        private void Awake()
+        {
+            m_TechSlots = GetComponent<Economy.TechSlots>();
         }
 
         private void Update()
@@ -65,6 +74,11 @@ namespace CTC.Runtime.Combat
             // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
             Health self = GetComponent<Health>();
             float fireMultiplier = FireMultiplier();
+            // 배고픔(테크 v3 계획 2b) — 적립 배율. 미보유면 0이 와서 WithHunger가 그대로 돌려준다.
+            float hunger = m_TechSlots != null
+                ? Economy.TechLogic.ParamOf(Economy.TechId.CatHunger,
+                    m_TechSlots.LevelOf(Economy.TechId.CatHunger), 1)
+                : 0f;
 
             foreach (Health target in FindObjectsByType<Health>(FindObjectsSortMode.None))
             {
@@ -113,7 +127,8 @@ namespace CTC.Runtime.Combat
                 {
                     if (isPlayerTarget)
                     {
-                        myWallet.AddCheese(FunLogic.AccruedFun(dealt, target.IsDead, false));
+                        myWallet.AddCheese(
+                            FunLogic.WithHunger(FunLogic.AccruedFun(dealt, target.IsDead, false), hunger));
                     }
                     else
                     {
@@ -124,7 +139,8 @@ namespace CTC.Runtime.Combat
                         int baseHp = target.MaxHp;
                         if (target.GetComponent<FortressShield>() != null) baseHp = ShopLogic.FORTRESS_HP;
                         else if (target.GetComponent<WarehouseProduction>() != null) baseHp = ShopLogic.WAREHOUSE_MAX_HP;
-                        myWallet.AddCheese(FunLogic.StructureFun(dealt, target.MaxHp, baseHp));
+                        myWallet.AddCheese(
+                            FunLogic.WithHunger(FunLogic.StructureFun(dealt, target.MaxHp, baseHp), hunger));
                     }
                 }
             }

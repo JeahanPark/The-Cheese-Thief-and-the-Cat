@@ -100,6 +100,10 @@ namespace CTC.Editor
                     // 조건(강화 만렙)은 CatClass가 보고, 쓰는 것은 CatSkill이 맡는다.
                     root.AddComponent<CatClass>();
                     root.AddComponent<CatSkill>();
+
+                    // 두꺼운 가죽(테크 v3 계획 2b) — 살 때 Health의 최대치를 올린다.
+                    // 배고픔·예민한 귀는 컴포넌트가 없다(읽는 쪽이 TechSlots를 본다).
+                    root.AddComponent<CatHide>();
                 }
                 else
                 {

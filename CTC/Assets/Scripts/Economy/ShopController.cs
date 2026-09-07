@@ -238,6 +238,12 @@ namespace CTC.Runtime.Economy
                     return GetComponent<Player.PlayerMovement>() != null;       // 이속 가산을 더할 몸
                 case TechId.CatClaw: return GetComponent<CatPounce>() != null;
                 case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
+                case TechId.CatHide:
+                    return GetComponent<Player.CatHide>() != null;              // 최대 HP를 올릴 컴포넌트
+                case TechId.CatHunger:
+                    return true;                                                // 순수 패시브 — 값은 덮칠 때 CatPounce가 읽는다
+                case TechId.CatEar:
+                    return true;                                                // 듣는 쪽 배율이라 몸에 적용할 것이 없다
                 default:
                     // CSV 행이 코드보다 먼저 들어온 경우(계획 2 테크). 조용히 돈만 받지 않는다.
                     Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");
@@ -296,6 +302,18 @@ namespace CTC.Runtime.Economy
                     Player.PlayerMovement move = GetComponent<Player.PlayerMovement>();
                     if (move == null) return false;
                     move.ServerAddSpeedStack();
+                    return true;
+                case TechId.CatHide:
+                    Player.CatHide hide = GetComponent<Player.CatHide>();
+                    if (hide == null) return false;
+                    hide.ServerApplyLevel(_level);                              // 이미 스폰된 몸의 최대 HP를 올린다
+                    return true;
+                case TechId.CatHunger:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, 덮치는 CatPounce가 적립할 때 읽는다.
+                    return true;
+                case TechId.CatEar:
+                    // 예민한 귀는 듣는 쪽 배율이라 몸에 적용할 것이 없다 —
+                    // ListenerRangeBinder가 TechSlots를 보고 세운다.
                     return true;
                 default:
                     Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");

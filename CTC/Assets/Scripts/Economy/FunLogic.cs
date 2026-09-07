@@ -48,5 +48,16 @@ namespace CTC.Runtime.Economy
                 : 1f;
             return UnityEngine.Mathf.RoundToInt(dealt * scale) / STRUCTURE_DAMAGE_DIVISOR;
         }
+
+        /// <summary>
+        /// 배고픔(고양이 자원 테크) — 적립 장난기에 배율을 곱한다. 테크를 안 샀으면 배율이 0으로
+        /// 들어오므로(<c>TechLogic.ParamOf</c>의 미보유 규약) 그대로 돌려준다 — 0배가 아니다.
+        /// 나눗셈이 끝난 뒤에 곱하므로 잔돈은 이미 버려져 있다(적립 규칙은 <see cref="AccruedFun"/>이 혼자 갖는다).
+        /// </summary>
+        public static int WithHunger(int _fun, float _multiplier)
+        {
+            if (_multiplier <= 0f) return _fun;
+            return UnityEngine.Mathf.RoundToInt(_fun * _multiplier);
+        }
     }
 }

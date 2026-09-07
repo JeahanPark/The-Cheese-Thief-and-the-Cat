@@ -90,5 +90,26 @@ namespace CTC.Tests.EditMode
             int hp = ShopLogic.WAREHOUSE_MAX_HP;
             Assert.AreEqual(FunLogic.AccruedFun(hp, false, true), FunLogic.StructureFun(hp, hp, hp));
         }
+
+        [Test]
+        public void WithHunger_NotOwned_IsUnchanged() // 미보유는 배율 0으로 들어온다 — 0배가 아니다
+        {
+            Assert.AreEqual(30, FunLogic.WithHunger(30, 0f));
+        }
+
+        [Test]
+        public void WithHunger_Lv3_MultipliesAndRounds()
+        {
+            // 값은 CSV(TechInfo P1)가 원본이라 여기 박지 않는다 — 규칙(곱하고 반올림)만 못 박는다.
+            float mul = TechLogic.ParamOf(TechId.CatHunger, 3, 1);
+            Assert.Greater(mul, 1f, "배고픔 Lv3 배율이 1보다 커야 이 테스트가 뜻을 가진다");
+            Assert.AreEqual(Mathf.RoundToInt(35 * mul), FunLogic.WithHunger(35, mul));
+        }
+
+        [Test]
+        public void WithHunger_ZeroFun_StaysZero() // 안 벌었으면 배율을 곱해도 0이다
+        {
+            Assert.AreEqual(0, FunLogic.WithHunger(0, 1.6f));
+        }
     }
 }
