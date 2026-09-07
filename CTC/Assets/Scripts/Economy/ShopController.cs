@@ -199,6 +199,7 @@ namespace CTC.Runtime.Economy
                 case TechId.Gun: return GetComponent<MousePopgun>() != null;
                 case TechId.Pepper: return GetComponent<PepperRounds>() != null;
                 case TechId.Dash: return GetComponent<Player.MouseDash>() != null;
+                case TechId.CheeseShield: return GetComponent<CheeseShield>() != null;
                 case TechId.Fortress:
                 case TechId.Warehouse:
                     return true;                                                // 설치권만 — 실제 설치는 Use
@@ -234,6 +235,9 @@ namespace CTC.Runtime.Economy
                     if (dash == null) return false;
                     dash.ServerSetOwned();
                     return true;
+                case TechId.CheeseShield:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고 CheeseShield가 피격 때 읽는다.
+                    return GetComponent<CheeseShield>() != null;
                 case TechId.Fortress:
                 case TechId.Warehouse:
                     return true;                                                // 설치권만 — 실제 설치는 Use

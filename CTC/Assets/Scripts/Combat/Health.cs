@@ -5,6 +5,12 @@ using UnityEngine;
 
 namespace CTC.Runtime.Combat
 {
+    /// <summary>피해를 받기 전에 일부를 다른 자원으로 대신 내는 것(치즈 방패). 서버에서만 불린다.</summary>
+    public interface IDamageAbsorber
+    {
+        int ServerAbsorb(int _damage);   // 돌려주는 값 = HP로 갈 피해
+    }
+
     /// <summary>HP. 서버만 기록, 전원 읽기(HUD). 사망 이벤트는 서버에서만 발화.</summary>
     public class Health : NetworkBehaviour
     {
@@ -41,10 +47,17 @@ namespace CTC.Runtime.Combat
             HpChanged?.Invoke(_previous, _current);
         }
 
-        /// <summary>서버 전용. 실제 깎인 HP(과잉타격 제외)를 반환 — 장난기 적립용(스펙 v3.2).</summary>
+        /// <summary>
+        /// 서버 전용. 실제 깎인 HP(과잉타격 제외)를 반환 — 장난기 적립용(스펙 v3.2).
+        /// 흡수(치즈 방패)는 **HP를 쓰기 전에** 끼어들어 피해를 줄이므로, 돌려주는 값은
+        /// 치즈로 막고 남은 "정말 깎인 HP"다 — 고양이는 치즈가 막아 준 몫으로는 장난기를 못 번다(의도).
+        /// </summary>
         public int TakeDamage(int _damage)
         {
             if (!IsServer || IsDead) return 0;
+
+            IDamageAbsorber absorber = GetComponent<IDamageAbsorber>();
+            if (absorber != null) _damage = absorber.ServerAbsorb(_damage);
 
             int before = m_Hp.Value;
             m_Hp.Value = CombatLogic.ApplyDamage(before, _damage);
