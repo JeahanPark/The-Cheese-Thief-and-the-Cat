@@ -17,6 +17,11 @@ namespace CTC.Runtime.Core
     ///
     /// 게임 종료는 더 이상 ESC가 아니다 — 옵션 창의 '게임 종료' 버튼으로 옮겼다.
     /// ESC 한 번에 판이 날아가던 게 2026-08-01 이전 동작이다.
+    ///
+    /// **Enter도 여기가 단독으로 읽는다**(2026-09-07 — 테크 v3에서 Enter가 확정 구매를 겸하면서).
+    /// 채팅 전송 → 확정 구매 → 채팅 열기 순(<see cref="EnterRouteLogic"/>).
+    /// 상점 안에서 채팅을 열려면 후보가 없거나 칸이 찼을 때, 또는 밖으로 나가서 누른다 —
+    /// 상점에 서 있는 동안 Enter는 "산다"가 우선이다.
     /// </summary>
     public class EscapeRouter : MonoBehaviour
     {
@@ -36,8 +41,34 @@ namespace CTC.Runtime.Core
         private void Update()
         {
             Keyboard kb = Keyboard.current;
-            if (kb == null || !kb.escapeKey.wasPressedThisFrame) return;
+            if (kb == null) return;
 
+            if (kb.escapeKey.wasPressedThisFrame) { HandleEscape(); return; }
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) HandleEnter();
+        }
+
+        // Enter 한 번 = 한 가지 일. 판정은 EnterRouteLogic이 하고 여기선 실행만 한다.
+        private void HandleEnter()
+        {
+            bool chatOpen = m_Chat != null && m_Chat.IsOpen;
+            bool canConfirm = m_Hotbar != null && m_Hotbar.CanConfirmBuy;
+
+            switch (EnterRouteLogic.Route(chatOpen, canConfirm))
+            {
+                case EnterRoute.SubmitChat:
+                    m_Chat.Submit();
+                    break;
+                case EnterRoute.ConfirmBuy:
+                    m_Hotbar.TryConfirmBuy();
+                    break;
+                default:
+                    if (m_Chat != null) m_Chat.Open();
+                    break;
+            }
+        }
+
+        private void HandleEscape()
+        {
             if (m_Hotbar != null && m_Hotbar.IsPlacing)
             {
                 m_Hotbar.CancelPlacementFromEscape();

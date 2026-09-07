@@ -15,6 +15,7 @@ namespace CTC.Runtime.Economy
     /// **상점 안**(쥐: ShopSpot 반경 / 고양이: 항상): 빈 칸 숫자키 = 후보 넘김, Enter = 확정 구매 / 있는 칸 = 다음 레벨.
     /// **밖**: 있는 칸 숫자키 = 쓴다(요새 즉발·창고 조준·대시). 패시브는 누를 것 없음.
     /// 커서는 끝까지 잠겨 있다 — 3인칭에서 커서가 곧 시야다.
+    /// Enter는 여기서 읽지 않는다 — `EscapeRouter`가 단독으로 읽고 <see cref="TryConfirmBuy"/>를 부른다(2026-09-07).
     /// View다 — 판정은 ShopController.CanBuyNow/CanUse와 TechLogic이 하고 여기선 보여 주기만 한다.
     /// </summary>
     public class ShopHotbar : MonoBehaviour
@@ -24,6 +25,9 @@ namespace CTC.Runtime.Economy
         private const float TOAST_LONG_SECONDS = 3f;
         private const float INTRO_TOAST_SECONDS = 4f;
         private const float GHOST_MIN_DISTANCE = 1.5f;
+
+        // 숫자키는 1~9까지만 있다 — 칸이 더 늘면 키가 아니라 다른 조작이 필요하다
+        private const int MAX_HOTKEYS = 9;
 
         // 고스트가 뻗는 최대 거리 — 서버 검증(ShopController.MAX_PLACE_DISTANCE)보다 짧아야 한다.
         private static float GHOST_MAX_DISTANCE => Info.InfoManager.Instance.Balance.PlaceGhostMaxMeters;
@@ -76,7 +80,15 @@ namespace CTC.Runtime.Economy
         {
             m_Root.SetActive(false);
             m_Toast.gameObject.SetActive(false);
-            m_CandidateIndex = new int[m_Slots.Length];
+
+            // 칸 수의 주인은 CSV고 씬은 구울 때 그걸 따라간다 — 어긋나면 조용히 칸이 사라지므로 알린다.
+            int slots = m_Slots != null ? m_Slots.Length : 0;
+            if (slots != SLOT_CAP)
+            {
+                Core.GameDebug.LogWarning(
+                    $"[ShopHotbar] 슬롯 {slots}칸 ≠ TechSlotCap {SLOT_CAP} — Setup Networking Scene 재실행");
+            }
+            m_CandidateIndex = new int[Mathf.Max(slots, SLOT_CAP)];
         }
 
         private void Start()
@@ -121,10 +133,16 @@ namespace CTC.Runtime.Economy
             m_Shop = shop;
             m_TechSlots = slots;
             m_Role = tag.Role;
-            for (int i = 0; i < m_CandidateIndex.Length; i++) m_CandidateIndex[i] = 0;
+            ResetCandidates();
             m_WalletSub.Disposable = wallet.Cheese.Subscribe(c => { m_Cheese = c; m_SlotsDirty = true; });
-            m_SlotsSub.Disposable = slots.Changed.Subscribe(_ => m_SlotsDirty = true);
+            // 하나 사면 후보 목록이 줄고 빈 칸도 한 칸 밀린다 — 옛 인덱스를 들고 있으면 엉뚱한 게 뜬다
+            m_SlotsSub.Disposable = slots.Changed.Subscribe(_ => { ResetCandidates(); m_SlotsDirty = true; });
             ApplyActive();
+        }
+
+        private void ResetCandidates()
+        {
+            for (int i = 0; i < m_CandidateIndex.Length; i++) m_CandidateIndex[i] = 0;
         }
 
         // 표시 여부는 시작 신호 × 로컬 상점 — 어느 쪽이 바뀌어도 여기로 온다
@@ -140,7 +158,9 @@ namespace CTC.Runtime.Economy
             {
                 m_IntroShown = true;
                 string attack = m_Role == RoleId.Cat ? "덮치기" : "발사";
-                string shop = m_Role == RoleId.Cat ? "숫자키 구매" : "상점에서 숫자키 구매";
+                string shop = m_Role == RoleId.Cat
+                    ? "숫자키로 고르고 Enter로 산다"
+                    : "상점에서 숫자키로 고르고 Enter로 산다";
                 Say($"WASD 이동 · 마우스 시점 · 좌클릭 {attack} · LShift 살금살금 · {shop}", INTRO_TOAST_SECONDS);
             }
         }
@@ -247,25 +267,17 @@ namespace CTC.Runtime.Economy
             Keyboard kb = Keyboard.current;
             if (kb == null || Core.UiFocus.BlocksGameplay) return;
 
+            // Enter(확정 구매)는 여기서 안 읽는다 — `EscapeRouter`가 단독으로 읽고 TryConfirmBuy를 부른다.
             int cap = SLOT_CAP;
             int pressed = -1;
-            for (int slot = 0; slot < cap && slot < m_Slots.Length; slot++)
+            for (int slot = 0; slot < cap && slot < m_Slots.Length && slot < MAX_HOTKEYS; slot++)
             {
                 if (kb[SlotKey(slot)].wasPressedThisFrame) { pressed = slot; break; }
             }
-            bool enter = m_InShop && kb.enterKey.wasPressedThisFrame;
-            if (pressed < 0 && !enter) return;   // 키가 없으면 목록을 만들지 않는다(프레임당 할당 0)
+            if (pressed < 0) return;   // 키가 없으면 목록을 만들지 않는다(프레임당 할당 0)
 
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
             IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
-
-            // Enter = 첫 빈 칸의 후보를 확정 구매 (상점 안에서만)
-            if (enter)
-            {
-                if (owned.Count < cap && owned.Count < m_CandidateIndex.Length && candidates.Count > 0)
-                    TryBuy(candidates[m_CandidateIndex[owned.Count] % candidates.Count]);
-                return;
-            }
 
             if (pressed < owned.Count)
             {
@@ -277,10 +289,37 @@ namespace CTC.Runtime.Economy
                 m_CandidateIndex[pressed] = (m_CandidateIndex[pressed] + 1) % candidates.Count;   // 후보 넘김
                 m_SlotsDirty = true;
             }
-            else if (!m_InShop)
+            else if (m_InShop)
+            {
+                // 빈 칸이 여럿 보여도 살 수 있는 건 맨 왼쪽 하나다 — 나머지는 아직 자리만 있는 칸
+                Say(candidates.Count > 0 ? "빈 칸은 왼쪽부터 채운다" : "살 게 없다");
+            }
+            else
             {
                 Say("상점에서만 살 수 있다");
             }
+        }
+
+        /// <summary>지금 Enter가 확정 구매로 갈 수 있는가 — `EscapeRouter`가 Enter를 나눌 때 본다.</summary>
+        public bool CanConfirmBuy
+        {
+            get
+            {
+                if (!m_GameStarted || m_Shop == null || m_TechSlots == null || !m_InShop) return false;
+                int owned = m_TechSlots.Count;
+                return owned < SLOT_CAP && owned < m_CandidateIndex.Length
+                       && TechLogic.Candidates(m_Role, m_TechSlots.Owned).Count > 0;
+            }
+        }
+
+        /// <summary>첫 빈 칸에 지금 걸린 후보를 확정 구매. 못 사는 상황이면 아무 일도 없이 false.</summary>
+        public bool TryConfirmBuy()
+        {
+            if (!CanConfirmBuy) return false;
+            IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
+            IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
+            TryBuy(candidates[m_CandidateIndex[owned.Count] % candidates.Count]);
+            return true;
         }
 
         private void TryBuy(TechId _id)
@@ -299,11 +338,11 @@ namespace CTC.Runtime.Economy
 
         private void TryUse(TechId _id)
         {
-            if (!TechLogic.IsActive(_id)) { Say("패시브 — 늘 켜져 있다"); return; }
-            if (!m_Shop.CanUse(_id))
+            // 왜 막혔는지는 ShopController가 안다 — View가 TechId로 추측하면 거짓말을 한다
+            UseDeny deny = m_Shop.CanUse(_id);
+            if (deny != UseDeny.None)
             {
-                Say(_id == TechId.Fortress ? "요새 안에서는 못 세운다 — 밖으로" :
-                    _id == TechId.Warehouse ? "창고는 하나까지" : "지금은 못 쓴다");
+                Say(TechLogic.UseDenyText(deny, m_Role, ShopController.UseCostOf(_id) - m_Cheese));
                 return;
             }
             if (_id == TechId.Warehouse) { BeginPlacement(_id, "창고"); return; }
@@ -319,7 +358,10 @@ namespace CTC.Runtime.Economy
                 case 2: return Key.Digit3;
                 case 3: return Key.Digit4;
                 case 4: return Key.Digit5;
-                default: return Key.Digit6;
+                case 5: return Key.Digit6;
+                case 6: return Key.Digit7;
+                case 7: return Key.Digit8;
+                default: return Key.Digit9;
             }
         }
 

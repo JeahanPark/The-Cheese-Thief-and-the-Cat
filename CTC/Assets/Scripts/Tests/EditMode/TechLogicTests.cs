@@ -185,5 +185,33 @@ namespace CTC.Tests
             Assert.AreEqual(TechDeny.Unknown,
                 TechLogic.CanBuy(Owned(), TechId.CheeseShield, RoleId.Mouse, 9999, 5));
         }
+
+        [Test]
+        public void UseDenyText_NotEnough_NamesCurrencyAndShortfall()
+        {
+            // "왜 못 쓰나"를 판정한 쪽이 말한다 — View가 TechId로 추측하면 거짓말이 된다
+            Assert.AreEqual("치즈 부족 · 40 모자람",
+                TechLogic.UseDenyText(UseDeny.NotEnough, RoleId.Mouse, 40));
+            Assert.AreEqual("장난기 부족 · 5 모자람",
+                TechLogic.UseDenyText(UseDeny.NotEnough, RoleId.Cat, 5));
+        }
+
+        [Test]
+        public void UseDenyText_SituationalReasonsAreDistinct()
+        {
+            Assert.AreEqual("요새 안에서는 못 세운다 — 밖으로",
+                TechLogic.UseDenyText(UseDeny.InsideFortress, RoleId.Mouse, 0));
+            Assert.AreEqual("창고는 하나까지",
+                TechLogic.UseDenyText(UseDeny.LimitReached, RoleId.Mouse, 0));
+            Assert.AreEqual("패시브 — 늘 켜져 있다",
+                TechLogic.UseDenyText(UseDeny.NotActive, RoleId.Mouse, 0));
+        }
+
+        [Test]
+        public void UseDenyText_UnknownFallsBackWithoutLying()
+        {
+            Assert.AreEqual("아직 없다", TechLogic.UseDenyText(UseDeny.NotOwned, RoleId.Mouse, 0));
+            Assert.AreEqual("지금은 못 쓴다", TechLogic.UseDenyText(UseDeny.Unavailable, RoleId.Mouse, 0));
+        }
     }
 }

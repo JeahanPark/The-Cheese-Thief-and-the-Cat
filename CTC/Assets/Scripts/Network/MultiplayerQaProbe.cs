@@ -202,7 +202,7 @@ namespace CTC.Runtime.Networking
 
             var slots = shop.GetComponent<TechSlots>();
             if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
-            if (shop.CanUse(TechId.Fortress)) shop.Use(TechId.Fortress);
+            if (shop.CanUse(TechId.Fortress) == UseDeny.None) shop.Use(TechId.Fortress);
         }
 
         private static ShopController LocalShop()

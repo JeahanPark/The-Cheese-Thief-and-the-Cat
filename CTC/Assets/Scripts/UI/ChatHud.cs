@@ -5,7 +5,6 @@ using R3;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace CTC.Runtime.UI
 {
@@ -99,17 +98,9 @@ namespace CTC.Runtime.UI
 
         private void Update()
         {
-            // Update에 남은 건 키 입력뿐이다 — 표시는 전부 위 구독이 한다(규칙 3).
-            Keyboard kb = Keyboard.current;
-            if (kb == null) return;
-
-            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
-            {
-                // 열기와 전송이 같은 프레임에 겹치면 열자마자 빈 줄을 보낸다 — 한 상태 머신에서 처리한다
-                if (IsOpen) Submit();
-                else Open();
-            }
-
+            // Enter는 더 이상 여기서 안 읽는다(2026-09-07) — `EscapeRouter`가 단독으로 읽고
+            // Submit/Open을 부른다. 여기서도 읽으면 상점 확정 구매와 같은 프레임에 겹쳤다.
+            // 남은 건 유휴 후 로그 감추기뿐 — 표시는 전부 위 구독이 한다(규칙 3).
             if (!IsOpen && m_Root != null && m_Root.activeSelf && Time.time >= m_HideAt)
             {
                 m_Root.SetActive(false);
@@ -140,7 +131,8 @@ namespace CTC.Runtime.UI
             m_HideAt = Time.time + IDLE_HIDE_SECONDS;
         }
 
-        private void Submit()
+        /// <summary>채팅 전송 — Enter는 `EscapeRouter`가 단독으로 읽고 여기를 부른다.</summary>
+        public void Submit()
         {
             // **읽기 전에 조합을 확정시킨다.** 한글은 마지막 음절이 IME '조합 중' 상태로
             // 남아 있고, 그건 화면에만 그려질 뿐 InputField.text에는 아직 없다.

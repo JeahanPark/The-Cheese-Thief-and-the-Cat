@@ -49,7 +49,7 @@ namespace CTC.Runtime.Economy
         {
             if (_id == TechId.Dash)
             {
-                if (!CanUse(_id)) { Audio.SfxPlayer.PlayUi(Audio.SfxId.ShopDeny); return; }
+                if (CanUse(_id) != UseDeny.None) { Audio.SfxPlayer.PlayUi(Audio.SfxId.ShopDeny); return; }
                 Player.MouseDash dash = GetComponent<Player.MouseDash>();
                 if (dash != null) dash.DevDash();
                 return;
@@ -69,27 +69,48 @@ namespace CTC.Runtime.Economy
             return TechLogic.CanBuy(m_Slots.Owned, _id, m_Tag.Role, m_Wallet.CheeseValue, Balance.TechSlotCap);
         }
 
-        /// <summary>쓸 수 있는가 — 보유·상황(요새 겹침·창고 상한).</summary>
-        public bool CanUse(TechId _id)
+        /// <summary>
+        /// 쓸 수 있는가 — 보유·상황(요새 겹침·창고 상한·설치비). **이유까지** 돌려준다:
+        /// View가 TechId로 사유를 추측하면 치즈가 모자란 걸 "창고는 하나까지"라고 거짓말한다(2026-09-07).
+        /// </summary>
+        public UseDeny CanUse(TechId _id)
         {
-            if (m_Slots == null || m_Slots.LevelOf(_id) == 0 || !TechLogic.IsActive(_id)) return false;
+            if (m_Slots == null || m_Wallet == null) return UseDeny.Unavailable;
+            if (!TechLogic.IsActive(_id)) return UseDeny.NotActive;
+            if (m_Slots.LevelOf(_id) == 0) return UseDeny.NotOwned;
+
             switch (_id)
             {
                 case TechId.Fortress:
+                    if (m_FortressPrefab == null) return UseDeny.Unavailable;
                     // 서 있는 요새 안에서는 못 세운다 — 겹치기 금지(FortressShield.AnyContains 주석)
-                    return m_FortressPrefab != null && !FortressShield.AnyContains(transform.position)
-                           && m_Wallet != null && m_Wallet.CheeseValue >= Balance.FortressPlaceCost;
+                    if (FortressShield.AnyContains(transform.position)) return UseDeny.InsideFortress;
+                    if (m_Wallet.CheeseValue < Balance.FortressPlaceCost) return UseDeny.NotEnough;
+                    return UseDeny.None;
                 case TechId.Warehouse:
+                    if (m_WarehousePrefab == null) return UseDeny.Unavailable;
                     // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
+                    if (WarehouseProduction.CountOwnedBy(OwnerClientId) >= ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE)
+                        return UseDeny.LimitReached;
                     // 설치마다 치즈 — 재설치가 공짜면 째기 응징이 안 된다(2026-09-07).
-                    return m_WarehousePrefab != null
-                           && WarehouseProduction.CountOwnedBy(OwnerClientId) < ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE
-                           && m_Wallet != null && m_Wallet.CheeseValue >= Balance.WarehousePlaceCost;
+                    if (m_Wallet.CheeseValue < Balance.WarehousePlaceCost) return UseDeny.NotEnough;
+                    return UseDeny.None;
                 case TechId.Dash:
-                    return true;   // 쿨다운은 MouseDash가 본다
+                    return UseDeny.None;   // 쿨다운은 MouseDash가 본다
                 default:
-                    return false;
+                    return UseDeny.Unavailable;
+            }
+        }
+
+        /// <summary>쓸 때 드는 치즈(설치비) — "얼마 모자람"을 말하려면 View도 알아야 한다.</summary>
+        public static int UseCostOf(TechId _id)
+        {
+            switch (_id)
+            {
+                case TechId.Fortress: return Balance.FortressPlaceCost;
+                case TechId.Warehouse: return Balance.WarehousePlaceCost;
+                default: return 0;
             }
         }
 
@@ -130,7 +151,7 @@ namespace CTC.Runtime.Economy
         private void UseRpc(int _id)
         {
             var id = (TechId)_id;
-            if (!CanUse(id)) { ResultRpc(false); return; }
+            if (CanUse(id) != UseDeny.None) { ResultRpc(false); return; }
             switch (id)
             {
                 case TechId.Fortress:
@@ -151,7 +172,7 @@ namespace CTC.Runtime.Economy
         private void UseAtRpc(int _id, Vector3 _position)
         {
             var id = (TechId)_id;
-            if (id != TechId.Warehouse || !CanUse(id)) { ResultRpc(false); return; }
+            if (id != TechId.Warehouse || CanUse(id) != UseDeny.None) { ResultRpc(false); return; }
 
             Vector3 flat = _position - transform.position;
             flat.y = 0f;

@@ -42,7 +42,7 @@ namespace CTC.Runtime.Bots
         public void BuyFortressShield()
         {
             // 설치권이 있고 설치비가 있으면 즉발(서버가 거른다).
-            if (m_Shop != null && m_Shop.CanUse(TechId.Fortress)) m_Shop.Use(TechId.Fortress);
+            if (m_Shop != null && m_Shop.CanUse(TechId.Fortress) == UseDeny.None) m_Shop.Use(TechId.Fortress);
         }
 
         /// <summary>쥐 — 살 수 있으면 산다. 설치물은 제자리에 둔다.</summary>
@@ -51,7 +51,7 @@ namespace CTC.Runtime.Bots
             if (m_Shop == null || m_Wallet == null) return;
 
             // 창고 설치권을 샀으면 다음 틱에 제자리에 놓는다(서버가 레벨을 올린 뒤라야 CanUse가 참)
-            if (m_PendingWarehousePlace && m_Shop.CanUse(TechId.Warehouse))
+            if (m_PendingWarehousePlace && m_Shop.CanUse(TechId.Warehouse) == UseDeny.None)
             {
                 m_Shop.UseAt(TechId.Warehouse, m_Body.position);
                 m_PendingWarehousePlace = false;

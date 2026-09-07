@@ -52,6 +52,12 @@ namespace CTC.Runtime.Economy
     public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop }
 
     /// <summary>
+    /// "쓰기"가 막힌 이유 (2026-09-07). 전에는 <c>CanUse</c>가 bool이라 View가 TechId로 이유를 추측했다 —
+    /// 치즈가 모자란 건데 "창고는 하나까지"라고 거짓말을 했다. 이유는 판정한 쪽이 말한다.
+    /// </summary>
+    public enum UseDeny { None, NotOwned, NotActive, InsideFortress, NotEnough, LimitReached, Unavailable }
+
+    /// <summary>
     /// 테크 판정 순수 로직 (테크 v3, 2026-09-07). MonoBehaviour와 분리 — EditMode TDD.
     /// 규칙(기획서 §2): 칸 5 · 레벨은 순서대로 · 쥐는 상점 안에서만 · 되팔기 없음.
     /// </summary>
@@ -153,6 +159,20 @@ namespace CTC.Runtime.Economy
                 case TechDeny.NotInShop: return "상점에서만 살 수 있다";
                 case TechDeny.WrongRole: return "이 역할은 못 산다";
                 default: return "살 수 없다";
+            }
+        }
+
+        /// <summary>"쓰기" 거절 사유 → 토스트 문구. <paramref name="_short"/>는 설치비에서 모자란 양.</summary>
+        public static string UseDenyText(UseDeny _deny, RoleId _role, int _short)
+        {
+            switch (_deny)
+            {
+                case UseDeny.NotOwned: return "아직 없다";
+                case UseDeny.NotActive: return "패시브 — 늘 켜져 있다";
+                case UseDeny.InsideFortress: return "요새 안에서는 못 세운다 — 밖으로";
+                case UseDeny.NotEnough: return $"{ShopLogic.CurrencyNameOf(_role)} 부족 · {_short} 모자람";
+                case UseDeny.LimitReached: return "창고는 하나까지";
+                default: return "지금은 못 쓴다";
             }
         }
     }

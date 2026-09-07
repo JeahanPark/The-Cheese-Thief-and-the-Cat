@@ -71,7 +71,7 @@ namespace CTC.Runtime.Testing
             if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
 
             if (slots == null || slots.LevelOf(TechId.Fortress) == 0) shop.Buy(TechId.Fortress);
-            if (shop.CanUse(TechId.Fortress)) shop.Use(TechId.Fortress);
+            if (shop.CanUse(TechId.Fortress) == UseDeny.None) shop.Use(TechId.Fortress);
             GameDebug.Log("[TestManager] TestBuyFortress → 설치권 구매 + 즉발 설치 요청");
         }
 
@@ -430,7 +430,7 @@ namespace CTC.Runtime.Testing
             if (slots == null || slots.LevelOf(_techId) == 0) shop.Buy(_techId);
 
             var pos = new UnityEngine.Vector3(_x, local.transform.position.y, _z);
-            if (shop.CanUse(_techId)) shop.UseAt(_techId, pos);
+            if (shop.CanUse(_techId) == UseDeny.None) shop.UseAt(_techId, pos);
             GameDebug.Log($"[TestManager] PlaceLocal({_techId}) @ {pos} 요청");
         }
 

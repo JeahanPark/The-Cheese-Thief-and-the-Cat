@@ -127,6 +127,12 @@ namespace CTC.Editor
 
             // = BalanceInfo.TechSlotCap — 칸 수는 구조 제약이라 씬을 구울 때 고정
             int hotbarSlots = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            // 0칸으로 구우면 핫바가 통째로 사라지는데 씬은 멀쩡해 보인다 — 반쯤 구운 씬을 남기느니 여기서 끊는다
+            if (hotbarSlots < 1)
+            {
+                throw new System.InvalidOperationException(
+                    $"[SetupNetworkingScene] BalanceInfo.TechSlotCap={hotbarSlots} — 핫바를 만들 수 없다. BalanceInfo.csv 확인");
+            }
             float totalWidth = SLOT_WIDTH * hotbarSlots + SLOT_GAP * (hotbarSlots - 1);
             hotbarRt.sizeDelta = new Vector2(totalWidth, SLOT_HEIGHT);
 
