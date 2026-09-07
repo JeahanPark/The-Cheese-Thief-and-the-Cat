@@ -185,6 +185,82 @@ namespace CTC.Runtime.Testing
             push.ServerPush(to);
             return true;
         }
+
+        // ===== 효과 계측 (테크 v3 계획 2a · qa_v47) =====
+        // 여기 있는 것들은 전부 **읽기 전용**이다 — Model 값이 아니라 실제로 선 오브젝트·실제 HP를 센다.
+
+        /// <summary>지금 HP(-1 = 못 찾음). NetworkVariable이라 어느 인스턴스에서 물어도 같은 값이다.</summary>
+        public int TestGetHpOf(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            Combat.Health hp = p != null ? p.GetComponent<Combat.Health>() : null;
+            return hp != null ? hp.Hp : -1;
+        }
+
+        /// <summary>
+        /// 최대 HP(-1 = 못 찾음). <c>Health.MaxHp</c>는 **직렬화 필드라 복제되지 않는다** —
+        /// <c>ServerSetMaxHp</c>로 바뀐 값은 서버(호스트)에서만 보인다. QA는 호스트에서 묻는다.
+        /// </summary>
+        public int TestGetMaxHpOf(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            Combat.Health hp = p != null ? p.GetComponent<Combat.Health>() : null;
+            return hp != null ? hp.MaxHp : -1;
+        }
+
+        /// <summary>이 쥐가 세워 둔 창고 수 — 창고 Lv2(상한 2)가 실제로 늘었는지 본다.</summary>
+        public int TestGetWarehouseCountOf(long _clientId)
+        {
+            return WarehouseProduction.CountOwnedBy((ulong)_clientId);
+        }
+
+        /// <summary>씬에 깔린 끈끈이 장판 수 — 10초 뒤 0으로 돌아가야 한다.</summary>
+        public int TestGetStickyPatchCount()
+        {
+            return FindObjectsByType<StickyPatch>(FindObjectsSortMode.None).Length;
+        }
+
+        /// <summary>
+        /// 이 플레이어에게 가장 가까운 요새의 최대 HP(-1 = 요새 없음). 요새 레벨(TechInfo P1)이
+        /// 스폰 시 실제로 박혔는지 본다. <see cref="TestGetMaxHpOf"/>와 같은 이유로 **호스트에서** 묻는다.
+        /// </summary>
+        public int TestGetNearestFortressMaxHp(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            if (p == null) return -1;
+
+            Combat.Health best = null;
+            float bestSqr = float.MaxValue;
+            foreach (FortressShield fort in FindObjectsByType<FortressShield>(FindObjectsSortMode.None))
+            {
+                float d = (fort.transform.position - p.transform.position).sqrMagnitude;
+                if (d >= bestSqr) continue;
+                Combat.Health hp = fort.GetComponent<Combat.Health>();
+                if (hp == null) continue;
+                bestSqr = d;
+                best = hp;
+            }
+            return best != null ? best.MaxHp : -1;
+        }
+
+        /// <summary>
+        /// 지금 걸을 수 있는 이속(-1 = 못 찾음) — 빠른 발(가산)·강화 스택·끈끈이 배율이 다 섞인 값.
+        ///
+        /// **주의: <see cref="PlayerMovement"/>의 식을 손으로 베낀 것이다.** 그쪽이 아직 현재 속도를
+        /// 밖에 내주지 않아(공개 프로퍼티 없음) QA가 같은 계산을 다시 한다 — 식이 갈라지면 이 훅이
+        /// 조용히 거짓말을 하므로, `PlayerMovement`에 `CurrentSpeed`가 생기면 **이 본문을 그걸로 바꾼다**.
+        /// 잠행(LShift)·바람 전직 배율은 일부러 뺐다 — 순간 입력이라 QA가 재는 값이 아니다.
+        /// </summary>
+        public float TestGetMoveSpeedOf(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            PlayerMovement move = p != null ? p.GetComponent<PlayerMovement>() : null;
+            if (move == null) return -1f;
+
+            float speed = ShopLogic.MoveSpeed(move.BaseSpeed, move.SpeedStacks)
+                          + TechOwner.Param(p, TechId.FastFeet, 1);
+            return speed * move.ExternalSpeedMultiplier;
+        }
     }
 }
 #endif

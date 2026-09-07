@@ -26,6 +26,9 @@ namespace CTC.Runtime.Economy
         private const float INTRO_TOAST_SECONDS = 4f;
         private const float GHOST_MIN_DISTANCE = 1.5f;
 
+        // 쿨다운은 매 프레임 흐르지만 화면엔 초 단위만 보인다 — 이 간격으로만 다시 그린다.
+        private const float COOLDOWN_REDRAW_SECONDS = 0.25f;
+
         // 숫자키는 1~9까지만 있다 — 칸이 더 늘면 키가 아니라 다른 조작이 필요하다
         private const int MAX_HOTKEYS = 9;
 
@@ -60,10 +63,16 @@ namespace CTC.Runtime.Economy
 
         private ShopController m_Shop;                       // 로컬 플레이어의 상점 (null = 관전·매치 전)
         private TechSlots m_TechSlots;
+        // 액티브 쿨다운의 주인들 — 둘 다 **소유자 로컬 값**이라 내 몸에서만 뜻이 있다.
+        // 로컬 플레이어가 바뀔 때 한 번만 잡는다(View가 매 프레임 GetComponent를 돌지 않게).
+        private StickyUser m_Sticky;
+        private Player.MouseDash m_Dash;
         private RoleId m_Role;
         private int m_Cheese;
         private bool m_GameStarted;
         private bool m_SlotsDirty;
+        private bool m_CooldownTicking;   // 지금 화면에 흐르는 쿨다운이 있나 — 있을 때만 다시 그린다
+        private float m_NextCooldownRedraw;
         private bool m_IntroShown; // 기본 조작 토스트는 매치당 1회 — 매판 반복되면 소음이다
         private bool m_InShop;
 
@@ -124,6 +133,8 @@ namespace CTC.Runtime.Economy
             {
                 m_Shop = null;
                 m_TechSlots = null;
+                m_Sticky = null;
+                m_Dash = null;
                 m_WalletSub.Disposable = null;
                 m_SlotsSub.Disposable = null;
                 ApplyActive();
@@ -132,6 +143,8 @@ namespace CTC.Runtime.Economy
 
             m_Shop = shop;
             m_TechSlots = slots;
+            m_Sticky = _player.GetComponent<StickyUser>();
+            m_Dash = _player.GetComponent<Player.MouseDash>();
             m_Role = tag.Role;
             ResetCandidates();
             m_WalletSub.Disposable = wallet.Cheese.Subscribe(c => { m_Cheese = c; m_SlotsDirty = true; });
@@ -175,6 +188,13 @@ namespace CTC.Runtime.Economy
 
             // 구독 콜백이 아니라 여기서 그리는 이유: 구매 하나가 치즈·테크 목록 등 NetworkVariable 여러 개를
             // 같은 틱에 바꾸는데, 콜백 시점엔 시블링 변수가 아직 옛값일 수 있다. 여기서는 전부 새 값이다.
+            // 쿨다운이 흐르는 동안만 다시 그린다 — 매 프레임 RefreshSlots를 도는 건 낭비다.
+            if (m_CooldownTicking && Time.time >= m_NextCooldownRedraw)
+            {
+                m_NextCooldownRedraw = Time.time + COOLDOWN_REDRAW_SECONDS;
+                m_SlotsDirty = true;
+            }
+
             if (m_SlotsDirty) { m_SlotsDirty = false; RefreshSlots(); }
 
             if (m_PlacingId != TechId.None) UpdatePlacement();
@@ -190,6 +210,9 @@ namespace CTC.Runtime.Economy
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
             IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
             int cap = SLOT_CAP;
+
+            // DrawOwned가 다시 켠다 — 쿨이 끝나면 저절로 꺼져 다시 그리기가 멈춘다.
+            m_CooldownTicking = false;
 
             for (int slot = 0; slot < m_Slots.Length; slot++)
             {
@@ -222,11 +245,30 @@ namespace CTC.Runtime.Economy
             else
             {
                 bool usable = TechLogic.IsActive(_e.Id);
-                m_SlotCosts[_slot].text = usable ? "쓰기" : "";
-                c = usable ? COLOR_READY : COLOR_OWNED;
+                float cooldown = usable ? CooldownOf(_e.Id) : 0f;
+                if (cooldown > 0f) m_CooldownTicking = true;
+                // 남은 초는 올림 — 0.4초 남았는데 "0s"라 쓰면 이미 쓸 수 있다는 거짓말이 된다.
+                m_SlotCosts[_slot].text = !usable ? ""
+                    : cooldown > 0f ? $"{Mathf.CeilToInt(cooldown)}s" : "쓰기";
+                c = !usable ? COLOR_OWNED : cooldown > 0f ? COLOR_POOR : COLOR_READY;
             }
             m_SlotLabels[_slot].color = c;
             m_SlotCosts[_slot].color = c;
+        }
+
+        /// <summary>
+        /// 이 액티브가 지금 몇 초 남았나(0 = 지금 쓸 수 있다).
+        /// 판정이 아니라 **표시**다 — 못 쓰는 진짜 이유는 여전히 <see cref="ShopController.CanUse"/>가 안다.
+        /// 둘 다 소유자 로컬 값이라 남의 몸에서는 0으로 보인다(핫바는 내 화면에만 있으니 충분하다).
+        /// </summary>
+        private float CooldownOf(TechId _id)
+        {
+            switch (_id)
+            {
+                case TechId.Sticky: return m_Sticky != null ? m_Sticky.CooldownRemaining : 0f;
+                case TechId.Dash: return m_Dash != null ? m_Dash.CooldownRemaining : 0f;
+                default: return 0f;
+            }
         }
 
         private void DrawEmpty(int _slot, IReadOnlyList<TechId> _candidates)
