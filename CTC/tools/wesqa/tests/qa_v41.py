@@ -23,6 +23,17 @@ def check(name, ok, detail=""):
     return ok
 
 
+def warp_to_shop(host, player, client_id):
+    """가장 가까운 상점 자리로 옮긴다 — qa_v36과 같은 규약(테크 v3, 2026-09-07).
+
+    `TestWarpToNearestShop`은 `BodyPush.ServerPush` 경유라 **호스트 인스턴스**에서 불러야 하고,
+    그 안에서 다시 소유자 RPC를 타므로 클론의 몸은 왕복이 끝나야 실제로 움직인다 — 쉬었다 확인한다.
+    """
+    host.invoke("TestWarpToNearestShop", _clientId=client_id)
+    time.sleep(1.0)
+    return bool(player.invoke("TestIsInShop", _clientId=client_id))
+
+
 def main():
     p = [WesPoco(instance=i) for i in range(3)]
     cat, m1, m2 = p[0], p[1], p[2]
@@ -96,11 +107,29 @@ def main():
     time.sleep(0.5)
     # 자리는 치즈 지점 옆으로 잡는다 — 임의 좌표(0,0)는 벽 속일 수 있어 설치가 조용히 실패한다
     sx, sz = [float(v) for v in m1.invoke("TestGetBestCheeseSpotPos").split(",")]
-    # 설치는 **제 몸 근처에만** 된다(설치 사거리) — 먼저 그 자리로 가야 한다
+    # 테크 v3(2026-09-07): 창고 값이 둘로 갈렸다 — 설치권은 **상점 자리 안에서** 한 번,
+    # 설치비는 놓을 때마다. 치즈 지점에 선 채로 사면 서버가 NotInShop으로 거절한다.
+    # 숫자는 훅으로 읽는다(CSV가 원본).
+    wh_right_cost = cat.invoke("TestGetTechCost", _techId="Warehouse", _level=1)
+    wh_place_cost = cat.invoke("TestGetPlaceCost", _techId="Warehouse")
+    in_shop = warp_to_shop(cat, m1, m1_id)
+    check("창고 — 설치권을 사러 상점 자리에 들어갔다", in_shop, f"inShop={in_shop}")
+    m1.invoke("TestBuyTechLocal", _techId="Warehouse")
+    time.sleep(1.2)
+    right_lv = m1.invoke("TestGetTechLevel", _clientId=m1_id, _techId="Warehouse")
+    check(f"창고 — 상점에서 설치권 구매(비용 {wh_right_cost})", right_lv == 1, f"lv={right_lv}")
+
+    # 설치는 **제 몸 근처에만** 된다(설치 사거리) — 자리로 돌아가 놓는다. 설치비만 더 나간다
     m1.invoke("TestTeleportLocalPlayer", _x=sx, _z=sz)
     time.sleep(0.8)
+    place_before = m1.invoke("TestGetCheese")
     m1.invoke("TestPlaceWarehouseAt", _x=sx + 2.0, _z=sz)
-    time.sleep(1.2)
+    time.sleep(1.5)
+    place_spent = place_before - m1.invoke("TestGetCheese")
+    # **정확한 액수는 여기서 못 잰다** — 쥐가 치즈 지점 위에 서 있어 같은 창에 채굴 수입이 들어온다
+    # (실측 100 나가고 11 들어와 89로 읽혔다). 설치비 정확값은 qa_v46 ⑤가 깨끗한 자리에서 잰다.
+    check(f"창고 — 설치비가 따로 나갔다(정가 {wh_place_cost}, 채굴 수입만큼 상쇄)",
+          0 < place_spent <= wh_place_cost, f"{place_spent} 나감")
 
     struct_before = cat.invoke("TestGetLowestStructureHp")
     if struct_before > 0:
