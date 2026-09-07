@@ -33,9 +33,10 @@ namespace CTC.Tests
         [Test]
         public void Pick_TooFewRooms_ReturnsWhatFits()
         {
-            // 기본 맵(30×30, 방 6)에선 4곳이 안 들어갈 수 있다 — 조용히 줄인다, 예외 없음
+            // 기본 맵(30×30, 방 6)에선 4곳이 안 들어갈 수 있다 — 조용히 줄인다, 예외 없음.
+            // 2×2 격자(간격 10)는 대각선 최대 거리가 14.1이라 25 간격에는 딱 1곳만 들어간다.
             List<Vector2> picked = ShopSpotLogic.Pick(Grid(2, 10f), 4, 25f, 1);
-            Assert.LessOrEqual(picked.Count, 1);
+            Assert.AreEqual(1, picked.Count);
         }
 
         [Test]
@@ -48,6 +49,7 @@ namespace CTC.Tests
         [Test]
         public void Pick_EmptyOrZero_IsEmpty()
         {
+            Assert.IsEmpty(ShopSpotLogic.Pick(null, 4, 25f, 1));
             Assert.IsEmpty(ShopSpotLogic.Pick(new List<Vector2>(), 4, 25f, 1));
             Assert.IsEmpty(ShopSpotLogic.Pick(Grid(3, 30f), 0, 25f, 1));
         }

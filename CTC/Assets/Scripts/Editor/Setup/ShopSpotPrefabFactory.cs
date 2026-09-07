@@ -57,9 +57,10 @@ namespace CTC.Editor
         private static void AddDisc(GameObject _root, float _radius)
         {
             GameObject disc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            disc.name = "RadiusDisc";
+            disc.name = ShopSpot.DISC_NAME;
             disc.transform.SetParent(_root.transform, false);
-            // 실린더는 높이 2가 기본 — 절반을 곱해야 실제 반경·두께가 된다
+            // 실린더는 높이 2가 기본 — 절반을 곱해야 실제 반경·두께가 된다.
+            // 이건 에디터 미리보기용이다 — 실제 크기는 `ShopSpot`이 스폰할 때 지금 CSV 값으로 다시 맞춘다.
             disc.transform.localScale = new Vector3(_radius * 2f, DISC_HEIGHT * 0.5f, _radius * 2f);
             disc.transform.localPosition = new Vector3(0f, DISC_HEIGHT * 0.5f, 0f);
             Object.DestroyImmediate(disc.GetComponent<Collider>());
