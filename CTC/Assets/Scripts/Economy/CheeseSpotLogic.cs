@@ -154,6 +154,18 @@ namespace CTC.Runtime.Economy
             return _present[0];
         }
 
+        /// <summary>
+        /// 큰 주머니(테크 v3) — 이번 틱 채굴량에 배율. 0은 "테크 없음"이라 1배.
+        ///
+        /// **지점 매장량은 이 배율을 안 탄다**(호출부 CheeseSpot.Advance 참고).
+        /// "더 잘 캔다"가 아니라 "더 챙긴다" — 지갑에 들어가는 양만 늘어난다.
+        /// </summary>
+        public static int ScaleMined(int _mined, float _multiplier)
+        {
+            if (_multiplier <= 0f) return _mined;
+            return Mathf.RoundToInt(_mined * _multiplier);
+        }
+
         /// <summary>소수 누적 수입 → 정수 치즈 지급. 반환: 새 누적 잔여, out: 지급할 정수량.</summary>
         public static float Accumulate(float _accumulated, int _grade, float _deltaSeconds, out int _wholeCheese)
         {

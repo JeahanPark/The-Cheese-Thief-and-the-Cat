@@ -231,5 +231,14 @@ namespace CTC.Tests
             Assert.AreEqual(7, whole);
             Assert.AreEqual(0f, rem, 1e-4f);
         }
+
+        [Test]
+        public void MinedThisTick_AppliesMultiplier_KeepsReserveBound()
+        {
+            // 초당 5 · 0.5초 · ×1.9 → 4.75 → 정수 캐리 방식은 기존과 같아야 한다: 여기선 배율 후 정수화
+            Assert.AreEqual(4, CheeseSpotLogic.ScaleMined(2, 1.9f));      // 2 × 1.9 = 3.8 → 4
+            Assert.AreEqual(2, CheeseSpotLogic.ScaleMined(2, 0f));        // 미보유(0)는 1배
+            Assert.AreEqual(2, CheeseSpotLogic.ScaleMined(2, 1f));
+        }
     }
 }

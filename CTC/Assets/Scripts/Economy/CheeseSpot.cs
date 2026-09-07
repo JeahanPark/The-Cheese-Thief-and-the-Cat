@@ -114,10 +114,18 @@ namespace CTC.Runtime.Economy
             if (whole <= 0) return;
 
             int granted = CheeseSpotLogic.Extract(m_Remaining, whole);
-            m_Remaining -= granted;
+            m_Remaining -= granted;   // 매장량은 배율 전 값으로 깎는다 — 아래 주석 참고
             if (granted > 0 && m_Wallets.TryGetValue(m_Earner, out CheeseWallet wallet) && wallet != null)
             {
-                wallet.AddCheese(granted);
+                // 큰 주머니 — 지갑에 들어가는 양에만 배율을 건다.
+                // 매장량(m_Remaining)은 그대로 깎는 게 핵심이다: "더 잘 캔다"가 아니라 "더 챙긴다".
+                // 배율을 매장량에도 걸면 좋은 자리가 그만큼 빨리 말라 고갈 = 성장 기한 설계가 흔들린다.
+                //
+                // 열쇠(m_Earner)는 clientId가 아니라 **NetworkObjectId**라서 NetUtil.FindPlayerObject를
+                // 쓸 수 없다. 어차피 wallet이 선점자의 플레이어 루트에 붙어 있고(TechSlots와 같은 오브젝트)
+                // 배율 원본은 CSV(TechInfo P1 — 1.3/1.6/1.9)다.
+                float pouchMul = TechOwner.Param(wallet.gameObject, TechId.BigPouch, 1);
+                wallet.AddCheese(CheeseSpotLogic.ScaleMined(granted, pouchMul));
             }
         }
 
