@@ -85,14 +85,14 @@ namespace CTC.Runtime.Bots
         /// 도망치며 쏴 97초 만에 고양이 둘을 죽였다 — 실측) 안 쓸 총에 치즈를 태우면
         /// 그만큼 미끼를 못 사서 경제 측정이 왜곡된다.
         /// </summary>
-        public static Economy.ShopItemId NextPurchase(
+        public static Economy.TechId NextPurchase(
             int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
         {
-            int fortressCost = Economy.ShopLogic.Find(Economy.ShopItemId.Fortress).Cost;
+            int placeCost = Info.InfoManager.Instance.Balance.FortressPlaceCost;
+            int CostOf(Economy.TechId _id) => Economy.TechLogic.RowOf(_id, 1).Cost;
 
             // ① 대시 — 눈앞에서 쫓길 때 거리를 벌리는 유일한 수단
-            if (!_hasDash && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Dash).Cost)
-                return Economy.ShopItemId.Dash;
+            if (!_hasDash && _cheese >= CostOf(Economy.TechId.Dash)) return Economy.TechId.Dash;
 
             // ② 요새 — **창고보다 먼저다**(2026-08-18). 예전에는 창고(150) → 요새(80) 순이라
             //    첫 요새를 세우려면 250을 모아야 했고, 그때까지 쥐는 도망칠 벽이 없었다.
@@ -100,15 +100,15 @@ namespace CTC.Runtime.Bots
             //    **미리 세우는 게 맞다.** "쫓길 때만 사면 되지 않나" 싶어 빼 봤더니 승률이 17%→0%로
             //    떨어졌다(측정). 서 있는 요새는 `TryGetRefugeFortress`가 찾아 주는 **피난처**라,
             //    쫓기기 전에 세워 둬야 도망칠 곳이 생긴다. 쫓기는 순간의 발밑 설치는 그것대로 남아 있다.
-            if (!_hasFortress && _cheese >= fortressCost) return Economy.ShopItemId.Fortress;
+            //    테크 v3에선 Lv1(설치 "권한")만 사면 되고, 실제 설치는 매번 FortressPlaceCost를 낸다.
+            if (!_hasFortress && _cheese >= CostOf(Economy.TechId.Fortress)) return Economy.TechId.Fortress;
 
             // ③ 창고 — **비상 벽 값을 남기고 산다.** 전부 털어 창고를 세우면 그 직후 쫓길 때
             //    `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
-            if (!_hasWarehouse
-                && _cheese >= Economy.ShopLogic.Find(Economy.ShopItemId.Warehouse).Cost + fortressCost)
-                return Economy.ShopItemId.Warehouse;
+            if (!_hasWarehouse && _cheese >= CostOf(Economy.TechId.Warehouse) + placeCost)
+                return Economy.TechId.Warehouse;
 
-            return Economy.ShopItemId.None;
+            return Economy.TechId.None;
         }
 
         /// <summary>

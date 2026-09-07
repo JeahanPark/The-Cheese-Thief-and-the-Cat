@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CTC.Runtime.Bots;
+using CTC.Runtime.Economy;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -12,35 +13,31 @@ namespace CTC.Tests.EditMode
     public class MouseBotLogicTests
     {
         [Test]
-        public void NextPurchase_BuysSurvivalBeforeIncome()
+        public void NextPurchase_Dash_First()
         {
-            // **생존 → 수입** 순이다(2026-08-18에 뒤집었다): 대시(도주) → 요새(벽) → 창고(수입).
-            // 고양이가 요새 벽을 뚫을 수 있게 되고 잡히면 즉시 탈락이 된 뒤로, 창고를 먼저 사면
-            // 첫 벽을 세우기 전에 죽는다(측정: 창고 우선일 때 봇 쥐 승률 10%, 요새 우선 17%).
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Dash,
-                MouseBotLogic.NextPurchase(1000, false, false, false, false));
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Fortress,
-                MouseBotLogic.NextPurchase(1000, true, false, false, false));
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Warehouse,
-                MouseBotLogic.NextPurchase(1000, true, false, false, true));
+            Assert.AreEqual(TechId.Dash, MouseBotLogic.NextPurchase(100, false, false, false, false));
+        }
 
-            // **창고는 비상 벽 값을 남기고 산다** — 전부 털면 그 직후 쫓길 때 벽을 못 세운다.
-            int warehouse = CTC.Runtime.Economy.ShopLogic.Find(CTC.Runtime.Economy.ShopItemId.Warehouse).Cost;
-            int fortress = CTC.Runtime.Economy.ShopLogic.Find(CTC.Runtime.Economy.ShopItemId.Fortress).Cost;
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
-                MouseBotLogic.NextPurchase(warehouse, true, false, false, true), "딱 창고 값만 있으면 안 산다");
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.Warehouse,
-                MouseBotLogic.NextPurchase(warehouse + fortress, true, false, false, true));
+        [Test]
+        public void NextPurchase_Fortress_BeforeWarehouse()
+        {
+            Assert.AreEqual(TechId.Fortress, MouseBotLogic.NextPurchase(100, true, false, false, false));
+        }
 
-            // **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않는다 — 안 쓸 총에 치즈를
-            // 태우면 요새 살 돈이 줄어 경제 측정이 왜곡된다.
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
-                MouseBotLogic.NextPurchase(1000, true, false, true, true));
+        [Test]
+        public void NextPurchase_Warehouse_KeepsFortressPlaceCost()
+        {
+            // 창고 Lv1 값 + 요새 설치비(80)를 남겨야 창고 — 값은 CSV에서 읽는다
+            int need = TechLogic.RowOf(TechId.Warehouse, 1).Cost
+                       + CTC.Runtime.Info.InfoManager.Instance.Balance.FortressPlaceCost;
+            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(need - 1, true, false, false, true));
+            Assert.AreEqual(TechId.Warehouse, MouseBotLogic.NextPurchase(need, true, false, false, true));
+        }
 
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
-                MouseBotLogic.NextPurchase(0, false, false, false, false));
-            Assert.AreEqual(CTC.Runtime.Economy.ShopItemId.None,
-                MouseBotLogic.NextPurchase(9999, true, true, true, true));
+        [Test]
+        public void NextPurchase_AllBought_None()
+        {
+            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(9999, true, true, true, true));
         }
 
         [Test]

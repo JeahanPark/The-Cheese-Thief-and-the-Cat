@@ -13,6 +13,9 @@ namespace CTC.Runtime.Bots
     ///
     /// **자리 고르기는 흉내 내지 않는다** — 창고를 어디에 둘지는 사람의 판단이라
     /// 봇이 흉내 내면 그 순간 재는 대상이 밸런스가 아니라 봇의 실력이 된다. 제자리에 둔다.
+    ///
+    /// 계획 1: 봇은 상점까지 가지 않는다 — 서버가 봇만 상점 조건을 면제한다(ShopController.IsBotExempt).
+    /// 계측치엔 상점 이동 비용이 빠져 있다.
     /// </summary>
     public class BotShopper
     {
@@ -22,6 +25,7 @@ namespace CTC.Runtime.Bots
         private readonly CatClass m_Class;
 
         private bool m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress;
+        private bool m_PendingWarehousePlace;
 
         public BotShopper(Transform _body, ShopController _shop, CheeseWallet _wallet, CatClass _class)
         {
@@ -37,7 +41,8 @@ namespace CTC.Runtime.Bots
         /// </summary>
         public void BuyFortressShield()
         {
-            if (m_Shop != null) m_Shop.Buy(ShopItemId.Fortress);
+            // 설치권이 있고 설치비가 있으면 즉발(서버가 거른다).
+            if (m_Shop != null && m_Shop.CanUse(TechId.Fortress)) m_Shop.Use(TechId.Fortress);
         }
 
         /// <summary>쥐 — 살 수 있으면 산다. 설치물은 제자리에 둔다.</summary>
@@ -45,17 +50,23 @@ namespace CTC.Runtime.Bots
         {
             if (m_Shop == null || m_Wallet == null) return;
 
-            ShopItemId next = MouseBotLogic.NextPurchase(
+            // 창고 설치권을 샀으면 다음 틱에 제자리에 놓는다(서버가 레벨을 올린 뒤라야 CanUse가 참)
+            if (m_PendingWarehousePlace && m_Shop.CanUse(TechId.Warehouse))
+            {
+                m_Shop.UseAt(TechId.Warehouse, m_Body.position);
+                m_PendingWarehousePlace = false;
+            }
+
+            TechId next = MouseBotLogic.NextPurchase(
                 m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress);
-            if (next == ShopItemId.None) return;
+            if (next == TechId.None) return;
 
-            if (ShopLogic.IsPlaceable(next)) m_Shop.BuyAt(next, m_Body.position);
-            else m_Shop.Buy(next);
+            m_Shop.Buy(next);
 
-            if (next == ShopItemId.Dash) m_BoughtDash = true;
-            else if (next == ShopItemId.Slingshot) m_BoughtGun = true;
-            else if (next == ShopItemId.Warehouse) m_BoughtWarehouse = true;
-            else if (next == ShopItemId.Fortress) m_BoughtFortress = true;
+            if (next == TechId.Dash) m_BoughtDash = true;
+            else if (next == TechId.Gun) m_BoughtGun = true;
+            else if (next == TechId.Fortress) m_BoughtFortress = true;
+            else if (next == TechId.Warehouse) { m_BoughtWarehouse = true; m_PendingWarehousePlace = true; }
         }
 
         /// <summary>
@@ -72,17 +83,15 @@ namespace CTC.Runtime.Bots
                 return;
             }
 
-            if (m_Shop.CanApply(ShopItemId.CatAttack)
-                && m_Wallet.CheeseValue >= ShopLogic.Find(ShopItemId.CatAttack).Cost)
+            if (m_Shop.CanBuyNow(TechId.CatClaw) == TechDeny.None)
             {
-                m_Shop.Buy(ShopItemId.CatAttack);
+                m_Shop.Buy(TechId.CatClaw);
                 return;
             }
 
-            if (m_Shop.CanApply(ShopItemId.CatSpeed)
-                && m_Wallet.CheeseValue >= ShopLogic.Find(ShopItemId.CatSpeed).Cost)
+            if (m_Shop.CanBuyNow(TechId.CatStomp) == TechDeny.None)
             {
-                m_Shop.Buy(ShopItemId.CatSpeed);
+                m_Shop.Buy(TechId.CatStomp);
             }
         }
     }
