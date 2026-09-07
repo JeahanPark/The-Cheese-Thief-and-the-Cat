@@ -12,18 +12,25 @@ namespace CTC.Tests.EditMode
     /// </summary>
     public class MouseBotLogicTests
     {
+        // 인자가 여덟 개라 부르는 자리마다 위치를 세게 되면 테스트가 먼저 거짓말을 한다 —
+        // 이름 있는 인자로 감싸 두고, 각 테스트는 자기가 재는 것만 바꾼다.
+        private static TechId Next(
+            int cheese, bool dash = false, bool gun = false, bool warehouse = false,
+            bool fortress = false, bool shield = false, bool pouch = false, int owned = 0)
+            => MouseBotLogic.NextPurchase(cheese, dash, gun, warehouse, fortress, shield, pouch, owned);
+
         [Test]
         public void NextPurchase_Dash_First()
         {
             int cost = TechLogic.RowOf(TechId.Dash, 1).Cost;
-            Assert.AreEqual(TechId.Dash, MouseBotLogic.NextPurchase(cost, false, false, false, false));
+            Assert.AreEqual(TechId.Dash, Next(cost));
         }
 
         [Test]
         public void NextPurchase_Fortress_BeforeWarehouse()
         {
             // 넉넉히 줘서 대시·요새·창고 값 전부 감당할 수 있는 상태로 — 그래도 대시부터 있으면 요새다
-            Assert.AreEqual(TechId.Fortress, MouseBotLogic.NextPurchase(1000, true, false, false, false));
+            Assert.AreEqual(TechId.Fortress, Next(1000, dash: true));
         }
 
         [Test]
@@ -31,25 +38,71 @@ namespace CTC.Tests.EditMode
         {
             // 창고 Lv1 값 + **창고 설치비** + 요새 설치비를 모두 남겨야 창고다(Task 8 갱신, 2026-09-07) —
             // 테크 v3부터 창고도 요새처럼 Lv1(권한) 따로 · 설치마다 WarehousePlaceCost 따로 낸다.
+            // 방패·주머니는 이미 산 것으로 둔다 — 안 그러면 창고를 못 사는 돈으로 그쪽을 사서
+            // 이 테스트가 재려는 "창고 유보"가 아니라 다음 항목을 재게 된다.
             var balance = CTC.Runtime.Info.InfoManager.Instance.Balance;
             int need = TechLogic.RowOf(TechId.Warehouse, 1).Cost
                        + balance.WarehousePlaceCost
                        + balance.FortressPlaceCost;
-            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(need - 1, true, false, false, true));
-            Assert.AreEqual(TechId.Warehouse, MouseBotLogic.NextPurchase(need, true, false, false, true));
+            Assert.AreEqual(TechId.None,
+                Next(need - 1, dash: true, fortress: true, shield: true, pouch: true));
+            Assert.AreEqual(TechId.Warehouse,
+                Next(need, dash: true, fortress: true, shield: true, pouch: true));
         }
 
         [Test]
         public void NextPurchase_NeverBuysGun()
         {
             // 2026-08-14 결정 — 봇은 맞서 쏘지 않는다. 총이 없어도(hasGun:false), 돈이 넘쳐도 안 산다.
-            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(99999, true, false, true, true));
+            Assert.AreEqual(TechId.None,
+                Next(99999, dash: true, warehouse: true, fortress: true, shield: true, pouch: true));
         }
 
         [Test]
         public void NextPurchase_AllBought_None()
         {
-            Assert.AreEqual(TechId.None, MouseBotLogic.NextPurchase(9999, true, true, true, true));
+            Assert.AreEqual(TechId.None,
+                Next(9999, dash: true, gun: true, warehouse: true, fortress: true,
+                     shield: true, pouch: true));
+        }
+
+        // ---- 테크 v3 계획 2b — 치즈 방패 · 큰 주머니 · 칸 상한 ----
+
+        [Test]
+        public void NextPurchase_ShieldThenPouch_AfterTheStaples()
+        {
+            // 대시·요새·창고를 갖춘 뒤의 순서: 치즈 방패 → 큰 주머니. 둘 다 패시브라 봇이
+            // 흉내 낼 판단이 없다(액티브를 주면 재는 대상이 밸런스가 아니라 봇이 된다).
+            Assert.AreEqual(TechId.CheeseShield,
+                Next(9999, dash: true, warehouse: true, fortress: true, owned: 3));
+            Assert.AreEqual(TechId.BigPouch,
+                Next(9999, dash: true, warehouse: true, fortress: true, shield: true, owned: 4));
+        }
+
+        [Test]
+        public void NextPurchase_ShieldKeepsTheEmergencyWallMoney()
+        {
+            // 방패 값만 있고 요새 설치비가 안 남으면 안 산다 — 지갑을 털면 그 직후 쫓길 때
+            // 발밑에 벽을 못 세운다(창고와 같은 규칙).
+            var balance = CTC.Runtime.Info.InfoManager.Instance.Balance;
+            int need = TechLogic.RowOf(TechId.CheeseShield, 1).Cost + balance.FortressPlaceCost;
+            Assert.AreEqual(TechId.None,
+                Next(need - 1, dash: true, warehouse: true, fortress: true, owned: 3));
+            Assert.AreEqual(TechId.CheeseShield,
+                Next(need, dash: true, warehouse: true, fortress: true, owned: 3));
+        }
+
+        [Test]
+        public void NextPurchase_StopsAtTheSlotCap()
+        {
+            // 칸이 다 차면(TechSlotCap) 새 테크는 못 산다 — 봇은 레벨을 올리지 않고 새것만 사므로
+            // 돈이 아무리 많아도 여기서 멈춰야 한다. 안 막으면 매 틱 서버에 거절당한다.
+            int cap = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            Assert.AreEqual(TechId.None, Next(99999, owned: cap));
+            Assert.AreEqual(TechId.None, Next(99999, owned: cap + 1));
+
+            // 한 칸 남으면 그대로 산다
+            Assert.AreEqual(TechId.Dash, Next(99999, owned: cap - 1));
         }
 
         [Test]

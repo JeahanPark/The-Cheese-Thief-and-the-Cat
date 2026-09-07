@@ -257,6 +257,42 @@ namespace CTC.Runtime.Testing
 
             return move.CurrentSpeed;
         }
+
+        // ===== 고양이 테크 (테크 v3 계획 2b · qa_v48) =====
+
+        /// <summary>
+        /// 광분이 켜져 있는가(못 찾으면 false). <c>CatFrenzy.Active</c>는 <c>NetworkVariable</c>이라
+        /// **어느 인스턴스에서 물어도 같은 값**이다 — 호스트에서 클론 고양이를 물어도 참이다.
+        /// </summary>
+        public bool TestGetCatFrenzyActive(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            CatFrenzy frenzy = p != null ? p.GetComponent<CatFrenzy>() : null;
+            return frenzy != null && frenzy.Active;
+        }
+
+        /// <summary>
+        /// 광분의 남은 쿨다운 초(-1 = 못 찾음). 서버 시각 기준의 목표 시각만 복제되고 남은 초는
+        /// 각자 계산하므로(<see cref="Player.CatSkill"/>과 같은 규칙) 어느 인스턴스에서도 같다.
+        /// </summary>
+        public float TestGetCatFrenzyCooldown(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            CatFrenzy frenzy = p != null ? p.GetComponent<CatFrenzy>() : null;
+            return frenzy != null ? frenzy.CooldownRemaining : -1f;
+        }
+
+        /// <summary>
+        /// 예민한 귀 — **이 프로세스**의 가청 거리 배율(기본 1).
+        ///
+        /// 이 값은 복제되지 않는다: 소리는 각 클라가 제 프로세스에서 재생하므로 배율도
+        /// 듣는 쪽에만 있다(<see cref="Audio.ListenerRange"/>). 그래서 QA는 **고양이를 쥔
+        /// 인스턴스에서** 물어야 한다 — 호스트에서 클론 고양이의 배율을 물으면 늘 1이 나온다.
+        /// </summary>
+        public float TestGetListenerMultiplier()
+        {
+            return Audio.ListenerRange.Multiplier;
+        }
     }
 }
 #endif

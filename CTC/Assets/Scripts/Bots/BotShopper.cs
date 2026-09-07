@@ -24,7 +24,11 @@ namespace CTC.Runtime.Bots
         private readonly CheeseWallet m_Wallet;
         private readonly CatClass m_Class;
 
+        // 칸 상한(TechSlotCap) 판단에 쓴다 — 몇 칸 찼는지는 여기서 세지 않고 Model이 갖는다.
+        private readonly TechSlots m_Slots;
+
         private bool m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress;
+        private bool m_BoughtShield, m_BoughtPouch;
         private bool m_PendingWarehousePlace;
         private int m_WarehouseCountBeforePlace;
 
@@ -34,6 +38,7 @@ namespace CTC.Runtime.Bots
             m_Shop = _shop;
             m_Wallet = _wallet;
             m_Class = _class;
+            m_Slots = _shop != null ? _shop.GetComponent<TechSlots>() : null;
         }
 
         /// <summary>
@@ -75,7 +80,8 @@ namespace CTC.Runtime.Bots
             }
 
             TechId next = MouseBotLogic.NextPurchase(
-                m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress);
+                m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress,
+                m_BoughtShield, m_BoughtPouch, m_Slots != null ? m_Slots.Count : 0);
             if (next == TechId.None) return;
 
             // 창고는 봇끼리 OwnerClientId를 공유해 한도도 같이 쓴다 — 이미 다른 봇이 채웠으면
@@ -91,12 +97,18 @@ namespace CTC.Runtime.Bots
             if (next == TechId.Dash) m_BoughtDash = true;
             else if (next == TechId.Gun) m_BoughtGun = true;
             else if (next == TechId.Fortress) m_BoughtFortress = true;
+            else if (next == TechId.CheeseShield) m_BoughtShield = true;
+            else if (next == TechId.BigPouch) m_BoughtPouch = true;
             else if (next == TechId.Warehouse) { m_BoughtWarehouse = true; m_PendingWarehousePlace = true; }
         }
 
         /// <summary>
-        /// 고양이 — 공격·이속을 번갈아 올린다. 둘 다 만렙이면 전직.
-        /// **불**을 고르는 건 판단이 필요 없는 유일한 전직이라서다.
+        /// 고양이 — <see cref="CatBotLogic.PURCHASE_ORDER"/>를 위에서부터 훑어 살 수 있는 첫째를 산다.
+        /// 둘 다 만렙이면 전직. **불**을 고르는 건 판단이 필요 없는 유일한 전직이라서다.
+        ///
+        /// 순서(발톱 → 발 구르기 → 두꺼운 가죽 → 배고픔)와 "광분·예민한 귀는 안 산다"는
+        /// 이유는 전부 순수 표에 적혀 있다 — 여기는 밀어 넣기만 한다(쥐 쪽과 같은 분업).
+        /// 칸 상한은 <c>CanBuyNow</c>가 <c>SlotsFull</c>로 걸러 준다.
         /// </summary>
         public void BuyForCat()
         {
@@ -108,15 +120,13 @@ namespace CTC.Runtime.Bots
                 return;
             }
 
-            if (m_Shop.CanBuyNow(TechId.CatClaw) == TechDeny.None)
+            for (int i = 0; i < CatBotLogic.PURCHASE_ORDER.Count; i++)
             {
-                m_Shop.Buy(TechId.CatClaw);
-                return;
-            }
+                TechId id = CatBotLogic.PURCHASE_ORDER[i];
+                if (m_Shop.CanBuyNow(id) != TechDeny.None) continue;
 
-            if (m_Shop.CanBuyNow(TechId.CatStomp) == TechDeny.None)
-            {
-                m_Shop.Buy(TechId.CatStomp);
+                m_Shop.Buy(id);
+                return;
             }
         }
     }

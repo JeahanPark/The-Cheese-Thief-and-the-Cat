@@ -85,12 +85,23 @@ namespace CTC.Runtime.Bots
         /// **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않으므로(그랬더니 쥐 여덟이
         /// 도망치며 쏴 97초 만에 고양이 둘을 죽였다 — 실측) 안 쓸 총에 치즈를 태우면
         /// 그만큼 미끼를 못 사서 경제 측정이 왜곡된다.
+        ///
+        /// 그다음은 **치즈 방패 → 큰 주머니**(테크 v3 계획 2b, 2026-09-08). 둘 다 산 뒤에
+        /// 저절로 도는 패시브라 봇이 흉내 낼 판단이 없다 — 액티브(끈끈이)는 "언제 누르나"가
+        /// 곧 실력이라 봇에게 주면 재는 대상이 밸런스가 아니라 봇이 된다.
+        /// <paramref name="_ownedCount"/>는 지금 찬 칸 수(TechSlots.Count)다.
         /// </summary>
         public static Economy.TechId NextPurchase(
-            int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress)
+            int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress,
+            bool _hasShield, bool _hasPouch, int _ownedCount)
         {
             Info.BalanceInfo balance = Info.InfoManager.Instance.Balance;
             int CostOf(Economy.TechId _id) => Economy.TechLogic.RowOf(_id, 1).Cost;
+
+            // 칸이 다 찼으면 **새 테크**는 못 산다(TechSlotCap). 봇은 레벨을 올리지 않고 새것만
+            // 사므로 여기서 한 번 막으면 된다. 서버도 같은 판정을 하지만(TechLogic.CanBuy →
+            // SlotsFull) 봇이 모르면 매 틱 거절당하는 죽은 구매를 계속 시도한다.
+            if (_ownedCount >= balance.TechSlotCap) return Economy.TechId.None;
 
             // ① 대시 — 눈앞에서 쫓길 때 거리를 벌리는 유일한 수단
             if (!_hasDash && _cheese >= CostOf(Economy.TechId.Dash)) return Economy.TechId.Dash;
@@ -111,6 +122,18 @@ namespace CTC.Runtime.Bots
             if (!_hasWarehouse
                 && _cheese >= CostOf(Economy.TechId.Warehouse) + balance.WarehousePlaceCost + balance.FortressPlaceCost)
                 return Economy.TechId.Warehouse;
+
+            // ④ 치즈 방패 Lv1 — 맞아도 HP 대신 치즈로 낸다. 봇은 도망 판단만 하지 회피를 못 해서
+            //    결국 한 번은 맞는다. 그 한 방을 견디는 게 이 봇이 잴 수 있는 가장 정직한 방어다.
+            // ⑤ 큰 주머니 Lv1 — 채굴 배율. 봇은 서 있기만 하면 되니 흉내 낼 판단이 없다.
+            //
+            // 둘 다 **비상 벽 값(요새 설치비)은 남기고** 산다 — 창고와 같은 이유다. 지갑을 털면
+            // 그 직후 쫓길 때 `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
+            if (!_hasShield && _cheese >= CostOf(Economy.TechId.CheeseShield) + balance.FortressPlaceCost)
+                return Economy.TechId.CheeseShield;
+
+            if (!_hasPouch && _cheese >= CostOf(Economy.TechId.BigPouch) + balance.FortressPlaceCost)
+                return Economy.TechId.BigPouch;
 
             return Economy.TechId.None;
         }

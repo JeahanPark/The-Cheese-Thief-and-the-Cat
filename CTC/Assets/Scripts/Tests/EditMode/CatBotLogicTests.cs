@@ -1,4 +1,5 @@
 using CTC.Runtime.Bots;
+using CTC.Runtime.Economy;
 using NUnit.Framework;
 
 namespace CTC.Tests.EditMode
@@ -49,6 +50,52 @@ namespace CTC.Tests.EditMode
             // 가까울수록·최근일수록 크다 — 오래된 소리는 이미 떠난 자리다
             Assert.Greater(CatBotLogic.LeadScore(5f, 0f), CatBotLogic.LeadScore(20f, 0f));
             Assert.Greater(CatBotLogic.LeadScore(10f, 0f), CatBotLogic.LeadScore(10f, 3f));
+        }
+
+        // ---- 구매 순서(테크 v3 계획 2b) ----
+
+        private static int IndexOf(TechId _id)
+        {
+            for (int i = 0; i < CatBotLogic.PURCHASE_ORDER.Count; i++)
+                if (CatBotLogic.PURCHASE_ORDER[i] == _id) return i;
+            return -1;
+        }
+
+        [Test]
+        public void PurchaseOrder_ClawFirst_ThenHideThenHunger()
+        {
+            Assert.AreEqual(TechId.CatClaw, CatBotLogic.PURCHASE_ORDER[0], "잡는 속도가 이 봇이 재는 값이다");
+            Assert.Less(IndexOf(TechId.CatHide), IndexOf(TechId.CatHunger), "버티는 게 버는 것보다 먼저다");
+            Assert.Less(IndexOf(TechId.CatClaw), IndexOf(TechId.CatHide));
+        }
+
+        [Test]
+        public void PurchaseOrder_NeverBuysFrenzyOrEar()
+        {
+            // 광분은 "언제 누르나"가 곧 실력이고, 예민한 귀는 사람 귀가 있어야 값이 난다 —
+            // 봇에게 주면 재는 대상이 밸런스가 아니라 봇(또는 봇이 흉내 낸 가짜 청각)이 된다.
+            Assert.AreEqual(-1, IndexOf(TechId.CatFrenzy), "액티브는 봇이 판단할 수 없다");
+            Assert.AreEqual(-1, IndexOf(TechId.CatEar), "봇은 오디오를 듣지 않는다");
+        }
+
+        [Test]
+        public void PurchaseOrder_FitsInTheSlotCap()
+        {
+            // 표가 칸 상한을 넘으면 마지막 것들이 영영 안 팔린다 — 표 자체가 상한 안이어야 한다.
+            int cap = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            Assert.LessOrEqual(CatBotLogic.PURCHASE_ORDER.Count, cap,
+                "구매 표가 칸 상한(" + cap + ")을 넘는다");
+        }
+
+        [Test]
+        public void PurchaseOrder_IsAllCatTechs()
+        {
+            // 쥐 테크가 섞이면 서버가 WrongRole로 거절해 봇이 매 틱 헛구매를 시도한다.
+            foreach (TechId id in CatBotLogic.PURCHASE_ORDER)
+            {
+                Assert.AreEqual(CTC.Runtime.Lobby.RoleId.Cat, TechLogic.RowOf(id, 1).Role,
+                    id + "는 고양이 테크가 아니다");
+            }
         }
     }
 }
