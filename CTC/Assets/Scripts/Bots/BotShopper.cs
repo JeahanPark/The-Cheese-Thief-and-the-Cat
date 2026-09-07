@@ -78,10 +78,12 @@ namespace CTC.Runtime.Bots
                 m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress);
             if (next == TechId.None) return;
 
-            // 창고는 봇끼리 OwnerClientId를 공유해 한도(1)도 같이 쓴다 — 이미 다른 봇이 채웠으면
+            // 창고는 봇끼리 OwnerClientId를 공유해 한도도 같이 쓴다 — 이미 다른 봇이 채웠으면
             // 권한만 사도 영영 못 세운다. 죽은 구매라 치즈를 아낀다.
+            // 상한은 창고 테크 레벨을 탄다(Lv2부터 2개) — 서버 판정과 같은 식을 쓴다.
             if (next == TechId.Warehouse
-                && WarehouseProduction.CountOwnedBy(m_Shop.OwnerClientId) >= ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE)
+                && WarehouseProduction.CountOwnedBy(m_Shop.OwnerClientId)
+                    >= WarehouseLogic.LimitOf(TechOwner.LevelOf(m_Shop.gameObject, TechId.Warehouse)))
                 return;
 
             m_Shop.Buy(next);

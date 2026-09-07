@@ -89,9 +89,10 @@ namespace CTC.Runtime.Economy
                     return UseDeny.None;
                 case TechId.Warehouse:
                     if (m_WarehousePrefab == null) return UseDeny.Unavailable;
-                    // 1인 1창고 — 구석에 도배해 무한 수입을 만드는 것을 막는다.
+                    // 동시 설치 상한(창고 Lv1~2: 1개, Lv2부터 2개) — 구석에 도배해 무한 수입을 만드는 것을 막는다.
                     // 클라에서는 스폰 목록이 불완전할 수 있어 표시용 근사, 판정 권위는 서버.
-                    if (WarehouseProduction.CountOwnedBy(OwnerClientId) >= ShopLogic.WAREHOUSE_LIMIT_PER_MOUSE)
+                    if (WarehouseProduction.CountOwnedBy(OwnerClientId)
+                        >= WarehouseLogic.LimitOf(m_Slots.LevelOf(TechId.Warehouse)))
                         return UseDeny.LimitReached;
                     // 설치마다 치즈 — 재설치가 공짜면 째기 응징이 안 된다(2026-09-07).
                     if (m_Wallet.CheeseValue < Balance.WarehousePlaceCost) return UseDeny.NotEnough;
@@ -182,6 +183,18 @@ namespace CTC.Runtime.Economy
             if (!m_Wallet.TrySpend(Balance.WarehousePlaceCost)) { ResultRpc(false); return; }
 
             GameObject go = Instantiate(m_WarehousePrefab, _position, Quaternion.identity);
+
+            // 지어질 때의 테크 레벨을 **스폰 전에** 박는다 — HP는 OnNetworkSpawn이 최대치로 채우고,
+            // 수입·소리·환급은 이 창고가 평생 쓸 값이다(나중에 테크를 키워도 서 있는 창고는 그대로).
+            int warehouseLv = m_Slots != null ? m_Slots.LevelOf(TechId.Warehouse) : 0;
+            int hiddenLv = m_Slots != null ? m_Slots.LevelOf(TechId.HiddenWarehouse) : 0;
+
+            Health hp = go.GetComponent<Health>();
+            if (hp != null) hp.ServerSetMaxHp(WarehouseLogic.MaxHp(ShopLogic.WAREHOUSE_MAX_HP, hiddenLv));
+
+            var production = go.GetComponent<WarehouseProduction>();
+            if (production != null) production.ServerSetTech(warehouseLv, hiddenLv, Balance.WarehousePlaceCost);
+
             go.GetComponent<NetworkObject>().Spawn(true);
             BindWarehouseOwner(go);
             ResultRpc(true);
@@ -203,6 +216,8 @@ namespace CTC.Runtime.Economy
                 case TechId.Fortress:
                 case TechId.Warehouse:
                     return true;                                                // 설치권만 — 실제 설치는 Use
+                case TechId.HiddenWarehouse:
+                    return true;                                                // 순수 패시브 — 값은 창고를 세울 때 읽는다
                 case TechId.CatClaw: return GetComponent<CatPounce>() != null;
                 case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
                 default:
@@ -241,6 +256,9 @@ namespace CTC.Runtime.Economy
                 case TechId.Fortress:
                 case TechId.Warehouse:
                     return true;                                                // 설치권만 — 실제 설치는 Use
+                case TechId.HiddenWarehouse:
+                    // 반영할 게 없다 — 레벨은 TechSlots가 들고, 창고를 세우는 UseAtRpc가 그때 읽는다.
+                    return true;
                 case TechId.CatClaw:
                     CatPounce pounce = GetComponent<CatPounce>();
                     if (pounce == null) return false;

@@ -44,7 +44,8 @@ namespace CTC.Runtime.Economy
         // 지급은 2초마다 10개 — 수입을 올린 대가로 창고가 시끄러워 위치가 빨리 팔린다.
         public static int WAREHOUSE_INCOME_PER_SECOND => Balance.WarehouseIncomePerSecond;
         public static int WAREHOUSE_MAX_HP => Balance.WarehouseMaxHp;
-        public static int WAREHOUSE_LIMIT_PER_MOUSE => Balance.WarehouseLimitPerMouse;
+        // 동시 설치 상한은 여기 없다 — 창고 테크 레벨을 타므로 WarehouseLogic.LimitOf가 주인이다(테크 v3 계획 2a).
+        // BalanceInfo.WarehouseLimitPerMouse 컬럼은 읽는 곳이 없어졌지만, 표 재생성 없이 남겨 둔다.
         public static int WAREHOUSE_TICK_CHEESE => Balance.WarehouseTickCheese;
         public static float WAREHOUSE_SOUND_RANGE_METERS => Balance.WarehouseSoundRangeMeters;
 
