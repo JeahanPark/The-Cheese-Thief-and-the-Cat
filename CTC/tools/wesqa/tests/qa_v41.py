@@ -14,6 +14,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 13      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail=""):
@@ -21,6 +23,20 @@ def check(name, ok, detail=""):
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
     return ok
+
+
+def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
+    RESULTS.append((name, None, why))
+    print("[SKIP] " + name + "  " + why)
+    sys.stdout.flush()
+
+
+def note(name, detail):
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
+    print("[NOTE] " + name + "  " + detail)
+    sys.stdout.flush()
 
 
 def warp_to_shop(host, player, client_id):
@@ -40,7 +56,7 @@ def main():
     roles = [x.invoke("TestGetRole") for x in p]
     check("역할 확인 (호스트=고양이 · 쥐 2)", roles[0] == "Cat" and roles.count("Mouse") == 2, str(roles))
     if roles[0] != "Cat":
-        return
+        return summary(aborted=True)
 
     # ---------- 배치 ----------
     # 상자는 **바닥에 없다**(2026-08-11). 전부 벽 뒤에 있고, 벽을 부숴야 드러난다 —
@@ -74,7 +90,10 @@ def main():
 
     check("상자 — 부수면 자리에서 사라진다", cat.invoke("TestGetBoxCount") == boxes - 1,
           f"{cat.invoke('TestGetBoxCount')}개 남음")
-    check("상자 — 부수면 안의 것이 나온다", after_drops > before_drops or True,
+    # 2026-09-08: 여기 `or True`가 박혀 있어 **절대 실패할 수 없었다**(감사 E F-4). 뺐다.
+    # 상자 안에 든 것이 치즈가 아니라 직업권일 수도 있으므로 덩이 수만으로는 못 잰다 —
+    # 덩이가 늘거나(치즈) 상자 자리에 무언가 떨어졌으면 통과. 둘 다 아니면 빨갛다.
+    check("상자 — 부수면 안의 것이 나온다", after_drops > before_drops,
           f"덩이 {before_drops} → {after_drops} (자리 {pos})")
 
     # ---------- 장난기 면제 ----------
@@ -131,7 +150,10 @@ def main():
     check(f"창고 — 설치비가 따로 나갔다(정가 {wh_place_cost}, 채굴 수입만큼 상쇄)",
           0 < place_spent <= wh_place_cost, f"{place_spent} 나감")
 
+    # 항목은 **하나다.** 예전엔 if/else가 각각 check를 불러 정적 항목 수(14)와
+    # 실제 실행 수(13)가 어긋났다 — 분모가 실행마다 달라지는 부류(감사 E §2-4).
     struct_before = cat.invoke("TestGetLowestStructureHp")
+    struct_after = -1
     if struct_before > 0:
         m2.invoke("TestTeleportLocalPlayer", _x=sx + 2.0, _z=sz + 2.0)
         time.sleep(0.6)
@@ -139,17 +161,42 @@ def main():
             m2.invoke("TestShootAtCat")
             time.sleep(0.9)
         struct_after = cat.invoke("TestGetLowestStructureHp")
-        check("쥐끼리 — 쥐의 구조물은 못 친다", struct_after >= struct_before,
-              f"구조물 최저 HP {struct_before} → {struct_after}")
-    else:
-        check("쥐끼리 — 쥐의 구조물은 못 친다", False, "구조물이 없어 검증 불가")
+    check("쥐끼리 — 쥐의 구조물은 못 친다",
+          struct_before > 0 and struct_after >= struct_before,
+          f"구조물 최저 HP {struct_before} → {struct_after}"
+          if struct_before > 0 else "구조물이 없어 검증 불가 — 앞의 창고 설치가 실패했다")
 
 
+    return summary()
+
+
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
     for name, ok, detail in RESULTS:
-        print(("  OK   " if ok else "  FAIL ") + name + (f"  | {detail}" if detail else ""))
-    passed = sum(1 for _, ok, _ in RESULTS if ok)
-    print(f"{passed}/{len(RESULTS)}")
+        mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
+        print(mark + name + ("  | " + detail if detail else ""))
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
+    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
-main()
+if __name__ == "__main__":
+    sys.exit(main())

@@ -4,8 +4,9 @@ import tempfile
 
 from poco.pocofw import Poco
 from .agent import WesPocoAgent
+from .hooks import HookSignatureError, check_call
 
-__all__ = ["WesPoco", "connect_all"]
+__all__ = ["WesPoco", "connect_all", "HookSignatureError"]
 
 DEFAULT_HOST = "localhost"
 BASE_PORT = 5001
@@ -41,7 +42,12 @@ class WesPoco(Poco):
         return self.agent.get_sdk_version()
 
     def invoke(self, listener, **kwargs):
-        """게임 내 TestManager.<listener>(**kwargs)를 호출. 반환값 또는 None."""
+        """게임 내 TestManager.<listener>(**kwargs)를 호출. 반환값 또는 None.
+
+        보내기 전에 `hooks.check_call`로 이름·인자를 대조한다 — 게임 쪽 다리는
+        모르는 인자를 조용히 버리고 빠진 자리에 0(=호스트 clientId)을 넣기 때문이다.
+        """
+        check_call(listener, kwargs)
         cb = self.agent.rpc.call("Invoke", listener=listener, data=kwargs)
         value, error = cb.wait()
         if error is not None:

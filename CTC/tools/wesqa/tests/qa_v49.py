@@ -43,6 +43,8 @@ from wesqa import WesPoco
 ENEMY_CLEAR_METERS = 2.0
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 7      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail=""):
@@ -52,8 +54,16 @@ def check(name, ok, detail=""):
     return ok
 
 
+def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
+    RESULTS.append((name, None, why))
+    print("[SKIP] " + name + "  " + why)
+    sys.stdout.flush()
+
+
 def note(name, detail):
-    RESULTS.append((name, None, detail))
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
     print("[NOTE] " + name + "  " + detail)
     sys.stdout.flush()
 
@@ -92,9 +102,17 @@ def pos_of(host, client_id):
 
 
 def nearest_to(inst, xz):
-    """그 자리에 가장 가까운 **켜진 마커**까지의 거리(m). 마커가 없으면 무한대로 친다."""
+    """그 자리에 가장 가까운 **켜진 마커**까지의 거리(m). 못 잰 경우 `None`.
+
+    훅은 **미니맵이 통째로 없어도** -1을 준다 — 「마커가 하나도 없다」와 구분이 안 된다.
+    예전엔 그 -1을 `float("inf")`로 바꿔 「그 자리에 점이 없다」를 통과시켰다(감사 E F-5):
+    **미니맵이 안 떠도 ⑥이 초록이었다.** 이제 -1은 실패 신호로 그대로 올린다 —
+    「미니맵이 실제로 마커를 그리고 있다」는 호출부가 따로 확인한다.
+    """
     d = inst.invoke("TestGetMinimapNearestMarkerMeters", _x=xz[0], _z=xz[1])
-    return float("inf") if d is None or d < 0 else float(d)
+    if d is None or d < 0:
+        return None
+    return float(d)
 
 
 def teleport(inst, x, z, settle=1.2):
@@ -112,7 +130,7 @@ def main():
                      "roles=%s ids=%s" % (roles, ids))
     if not ok_setup:
         print("!! 전제가 안 맞는다 — `python setup_match.py 0 cat 3`으로 판을 다시 연다")
-        return 1
+        return summary(aborted=True)
 
     host = p[0]          # 호스트 = 고양이
     cat_id = ids[0]
@@ -242,23 +260,51 @@ def main():
         mouse_at = pos_of(host, m1)
         dists.append(("고양이 화면 ← 쥐 자리", mouse_at, nearest_to(host, mouse_at)))
 
-    clear = all(d >= ENEMY_CLEAR_METERS for _, _, d in dists)
+    # **먼저 미니맵이 살아 있는지 본다.** 마커가 0개면 「상대 자리에 점이 없다」는 공허하다 —
+    # 미니맵이 통째로 안 떠도 같은 결과가 나오기 때문이다(감사 E F-5).
+    drawing = cat_kinds[3] > 0 and mouse_kinds[3] > 0
+    measured = all(d is not None for _, _, d in dists)
+    clear = measured and all(d >= ENEMY_CLEAR_METERS for _, _, d in dists)
     check("⑥ 어느 쪽 화면에도 상대 마커가 0",
-          sums_ok and clear,
-          "종류합 고양이%s 쥐%s(전체와 일치=%s) · 상대 자리까지 최단거리 %s (기준 ≥%.1f m)"
-          % (cat_kinds[:3], mouse_kinds[:3], sums_ok,
-             ["%s %s %.1fm" % (n, tuple(round(v, 1) for v in at), d) for n, at, d in dists],
+          drawing and sums_ok and clear,
+          "미니맵이 마커를 그린다=%s(전체 고양이%s 쥐%s) · 종류합 고양이%s 쥐%s(전체와 일치=%s)"
+          " · 전부 측정됨=%s · 상대 자리까지 최단거리 %s (기준 ≥%.1f m)"
+          % (drawing, cat_kinds[3], mouse_kinds[3],
+             cat_kinds[:3], mouse_kinds[:3], sums_ok, measured,
+             ["%s %s %s" % (n, tuple(round(v, 1) for v in at),
+                            "못 잼(-1)" if d is None else "%.1fm" % d)
+              for n, at, d in dists],
              ENEMY_CLEAR_METERS))
 
+    return summary()
+
+
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
+    for name, ok, detail in RESULTS:
+        mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
+        print(mark + name + ("  | " + detail if detail else ""))
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
     passed = sum(1 for _, ok, _ in RESULTS if ok is True)
     failed = sum(1 for _, ok, _ in RESULTS if ok is False)
-    noted = sum(1 for _, ok, _ in RESULTS if ok is None)
-    for name, ok, detail in RESULTS:
-        mark = "  OK   " if ok is True else ("  NOTE " if ok is None else "  FAIL ")
-        print(mark + name + ("  | " + detail if detail else ""))
-    print("PASS %d · FAIL %d · NOTE %d" % (passed, failed, noted))
-    return 0 if failed == 0 else 1
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
 if __name__ == "__main__":

@@ -12,6 +12,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 15      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail=""):
@@ -19,6 +21,20 @@ def check(name, ok, detail=""):
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
     return ok
+
+
+def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
+    RESULTS.append((name, None, why))
+    print("[SKIP] " + name + "  " + why)
+    sys.stdout.flush()
+
+
+def note(name, detail):
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
+    print("[NOTE] " + name + "  " + detail)
+    sys.stdout.flush()
 
 
 def main():
@@ -29,7 +45,7 @@ def main():
     mice = [i for i in range(3) if i != cat]
     check("역할 확인 (호스트=고양이)", cat == 0 and len(mice) == 2, str(roles))
     if cat is None:
-        return summary()
+        return summary(aborted=True)
 
     host = p[0]
 
@@ -135,17 +151,39 @@ def main():
               host.invoke("TestGetCheese") == fun_before2
               and host.invoke("TestGetCheeseDropCount") == remaining,
               f"장난기 {fun_before2} → {host.invoke('TestGetCheese')} · 덩이 {remaining} → {host.invoke('TestGetCheeseDropCount')}")
+    else:
+        # 남은 덩이가 없으면 「고양이가 밟아도 안 먹는다」를 못 잰다 — 결과에 남긴다(감사 E §2-4).
+        skip("치즈 — 고양이는 밟아도 못 먹는다", "바닥에 남은 덩이가 0 — 앞의 쥐가 다 먹었다")
 
     return summary()
 
 
-def summary():
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
-    passed = sum(1 for _, ok, _ in RESULTS if ok)
     for name, ok, detail in RESULTS:
-        print(("  OK   " if ok else "  FAIL ") + name + ("  | " + detail if detail else ""))
-    print(f"{passed}/{len(RESULTS)}")
-    return 0 if passed == len(RESULTS) else 1
+        mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
+        print(mark + name + ("  | " + detail if detail else ""))
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
+    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
 if __name__ == "__main__":

@@ -28,6 +28,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 11      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail=""):
@@ -38,13 +40,14 @@ def check(name, ok, detail=""):
 
 
 def note(name, detail):
-    """설계 확인용 — 성공/실패를 매기지 않고 **관측값만** 남긴다(⑥)."""
-    RESULTS.append((name, None, detail))
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
     print("[NOTE] " + name + "  " + detail)
     sys.stdout.flush()
 
 
 def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
     RESULTS.append((name, None, why))
     print("[SKIP] " + name + "  " + why)
     sys.stdout.flush()
@@ -141,7 +144,7 @@ def main():
                      "roles=%s ids=%s" % (roles, ids))
     if not ok_setup:
         print("!! 전제가 안 맞는다 — `python setup_match.py 0 cat 3`으로 판을 다시 연다")
-        return 1
+        return summary(aborted=True)
 
     host = p[0]          # 호스트 = 고양이. 읽기·구매·사용을 전부 여기서 한다.
     c = ids[0]
@@ -211,8 +214,13 @@ def main():
     wall_hp = host.invoke("TestGetLowestStructureHp")
     print("    계측대: 쥐B 요새 Lv%s (상점 안=%s · 설치비 %s) MaxHp=%s 현재=%s"
           % (fort, in_shop, fort_place, wall_max, wall_hp))
-    if wall_max != 1200:
-        print("!! 계측대가 안 섰다 — ③⑥의 피해 배율을 잴 수 없다")
+    # 예전엔 print만 찍고 **그래도 ③⑥을 쟀다** — 계측대가 안 서면 그 배율은 의미가 없고
+    # 빨간 줄이 「광분이 고장났다」로 읽힌다(감사 E §2-3). 전제로 승격했다.
+    if not check("전제 — 피해 배율 계측대(쥐B 요새 Lv3, MaxHp 1200)가 섰다",
+                 wall_max == 1200,
+                 "MaxHp=%s 현재=%s 상점 안=%s 요새 Lv%s" % (wall_max, wall_hp, in_shop, fort)):
+        print("!! 계측대가 안 섰다 — ③⑥의 피해 배율을 잴 수 없어 여기서 멈춘다")
+        return summary(aborted=True)
 
     # ---------- ③ 광분 Lv3 — 켜짐 · 덮치기 ×2.5 · 10초 뒤 꺼짐 · 쿨 20 ----------
     frenzy = buy_to(host, host, c, "CatFrenzy", 3)
@@ -308,15 +316,35 @@ def main():
          "재는 훅이 없다 — 지금 어떤 상태가 재생 중인지 읽는 훅"
          "(예: TestGetAnimationState(clientId))이 있어야 자동으로 잴 수 있다. 눈으로 볼 것")
 
+    return summary()
+
+
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
-    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
-    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
-    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
     for name, ok, detail in RESULTS:
         mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
         print(mark + name + ("  | " + detail if detail else ""))
-    print("PASS %d · FAIL %d · SKIP/NOTE %d" % (passed, failed, skipped))
-    return 0 if failed == 0 else 1
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
+    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
 if __name__ == "__main__":

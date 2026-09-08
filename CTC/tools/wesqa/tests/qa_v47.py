@@ -27,6 +27,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 15      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail=""):
@@ -36,7 +38,15 @@ def check(name, ok, detail=""):
     return ok
 
 
+def note(name, detail):
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
+    print("[NOTE] " + name + "  " + detail)
+    sys.stdout.flush()
+
+
 def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
     RESULTS.append((name, None, why))
     print("[SKIP] " + name + "  " + why)
     sys.stdout.flush()
@@ -123,7 +133,7 @@ def main():
                      "roles=%s ids=%s" % (roles, ids))
     if not ok_setup:
         print("!! 전제가 안 맞는다 — `python setup_match.py 0 mouse 3`으로 판을 다시 연다")
-        return 1
+        return summary(aborted=True)
 
     host = p[0]
     m = ids[0]
@@ -140,8 +150,12 @@ def main():
     host.invoke("TestClearSoldOut")
     time.sleep(0.5)
     left = host.invoke("TestGetSoldOutTechs")
-    if left:
-        print("!! 품절이 안 걷혔다: %s — 아래 구매가 그 테크에서 거절된다" % left)
+    # 예전엔 여기서 print만 하고 **그대로 진행**했다 — 품절이 안 걷히면 아래 구매가
+    # 그 테크에서 전부 거절돼 **거짓 FAIL 무더기**가 난다(감사 E §2-3). 전제로 승격했다.
+    if not check("전제 — 오늘의 품절을 걷었다", not left,
+                 "남은 품절 %s" % (left or "없음")):
+        print("!! 품절이 안 걷혔다 — 아래 구매가 그 테크에서 거절되므로 여기서 멈춘다")
+        return summary(aborted=True)
 
     # 지갑 채우기 — 두 쥐가 5레벨씩 사고 설치까지 하므로 넉넉히. **계측 전에 다 준다**(수입 계측 오염 방지).
     for _ in range(7):
@@ -309,15 +323,35 @@ def main():
           cat_hp0 - cat_hp1 >= 25,
           "고양이 HP %s→%s (-%s) · 구조물 최저 HP %s" % (cat_hp0, cat_hp1, cat_hp0 - cat_hp1, struct_hp0))
 
+    return summary()
+
+
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
-    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
-    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
-    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
     for name, ok, detail in RESULTS:
         mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
         print(mark + name + ("  | " + detail if detail else ""))
-    print("PASS %d · FAIL %d · SKIP %d" % (passed, failed, skipped))
-    return 0 if failed == 0 else 1
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
+    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
 if __name__ == "__main__":

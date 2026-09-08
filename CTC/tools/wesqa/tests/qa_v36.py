@@ -11,6 +11,8 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
+EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
+EXPECTED = 24      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
 
 
 def balance_int(column):
@@ -28,6 +30,20 @@ def check(name, ok, detail=""):
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
     return ok
+
+
+def skip(name, why):
+    """돌지 않은 항목을 **결과에 남긴다**. 조용한 건너뛰기는 통과가 아니다."""
+    RESULTS.append((name, None, why))
+    print("[SKIP] " + name + "  " + why)
+    sys.stdout.flush()
+
+
+def note(name, detail):
+    """분모에 안 들어가는 참고 기록 — 판정을 바꾸지 않는다."""
+    EXTRA.append((name, detail))
+    print("[NOTE] " + name + "  " + detail)
+    sys.stdout.flush()
 
 
 def face_and_pounce(cat, tx, tz, cx, cz):
@@ -186,6 +202,16 @@ def main():
         time.sleep(1.0)
         check("요새 — 요새 안에서는 겹쳐 못 세운다", m2.invoke("TestGetCheese") == stack_before,
               "치즈 %s -> %s" % (stack_before, m2.invoke("TestGetCheese")))
+    else:
+        # 요새가 안 섰으면 아래 6항목은 **못 돈다.** 조용히 건너뛰면 "N/N 통과"의 분모가
+        # 실행마다 달라져 출력만 봐서는 구분이 안 된다(감사 E §2-4) — 결과에 남긴다.
+        why = "요새가 안 서서 못 쟀다 (TestGetFortressPos가 빈 문자열)"
+        skip("요새 — 세운 쥐 위치 중심에 선다(쥐는 안에)", why)
+        skip("요새 — 안에 있던 고양이는 밖으로 밀린다", why)
+        skip("요새 — 고양이는 못 들어간다", why)
+        skip("요새 — 설치마다 설치비가 나간다(재설치 값)", why)
+        skip("요새 — 첫 요새 총액 = 설치권 + 설치비", why)
+        skip("요새 — 요새 안에서는 겹쳐 못 세운다", why)
 
     # ---------- 5. 설치 편의: 제 발밑에 창고 ----------
     # 요새와 같은 구조 — 설치권은 상점에서, 설치비는 놓을 때마다.
@@ -253,6 +279,11 @@ def main():
         on_cat = cat.invoke("TestGetCheerMarkerCount")
         check("따봉 — 관전자가 살아 있는 쥐에게 보낸다", on_mouse >= 1, "마커 %s개" % on_mouse)
         check("따봉 — 고양이에겐 안 보임", on_cat == 0, "마커 %s개" % on_cat)
+    else:
+        # 쥐가 안 잡혔으면 관전자가 없어 따봉을 못 잰다 — 결과에 남긴다(감사 E §2-4).
+        why = "쥐가 안 잡혀 관전자가 없다 — 앞의 덮치기가 실패했다"
+        skip("따봉 — 관전자가 살아 있는 쥐에게 보낸다", why)
+        skip("따봉 — 고양이에겐 안 보임", why)
 
     # ---------- 9. 카메라 거리 상수(충돌 제거) ----------
     # **정착 뒤에 잰다.** 0.9초에 재던 예전 판은 감쇠가 끝나기 전이라 카메라가 캐릭터를
@@ -269,12 +300,35 @@ def main():
     check("카메라 — 벽 근처에서도 거리 일정", spread < 0.35,
           "편차 %.2f (%s)" % (spread, ", ".join("%.2f" % d for d in dists)))
 
+    return summary()
+
+
+def summary(aborted=False):
+    """선언 항목 수와 실제 실행 수를 대조해 채점한다.
+
+    **안 돈 항목은 통과가 아니다.** 조건부로 건너뛴 항목이 결과에 안 남으면
+    "16/16 통과"가 실은 24항목 중 8개를 안 돈 것일 수 있다(감사 E §2-4).
+    실패 · 미실행 · 중단은 전부 종료 코드 1이다 — CI가 읽을 수 있어야 한다.
+    """
     print("\n===== 요약 =====")
-    passed = sum(1 for _, ok, _ in RESULTS if ok)
     for name, ok, detail in RESULTS:
-        print(("  OK   " if ok else "  FAIL ") + name + ("  | " + detail if detail else ""))
-    print("%d/%d" % (passed, len(RESULTS)))
-    return 0 if passed == len(RESULTS) else 1
+        mark = "  OK   " if ok is True else ("  SKIP " if ok is None else "  FAIL ")
+        print(mark + name + ("  | " + detail if detail else ""))
+    for name, detail in EXTRA:
+        print("  NOTE " + name + ("  | " + detail if detail else ""))
+    passed = sum(1 for _, ok, _ in RESULTS if ok is True)
+    failed = sum(1 for _, ok, _ in RESULTS if ok is False)
+    skipped = sum(1 for _, ok, _ in RESULTS if ok is None)
+    unrun = EXPECTED - len(RESULTS)
+    print("PASS %d · FAIL %d · SKIP %d · 미실행 %d / 선언 %d · NOTE %d"
+          % (passed, failed, skipped, unrun, EXPECTED, len(EXTRA)))
+    if unrun > 0:
+        print("!! 선언 %d · 실행 %d — 안 돈 항목은 통과가 아니다" % (EXPECTED, len(RESULTS)))
+    if unrun < 0:
+        print("!! 실행 %d > 선언 %d — EXPECTED를 고쳐라" % (len(RESULTS), EXPECTED))
+    if aborted:
+        print("!! 중단·열화된 실행이다 — 통과로 읽지 마라")
+    return 0 if (failed == 0 and unrun == 0 and not aborted) else 1
 
 
 if __name__ == "__main__":
