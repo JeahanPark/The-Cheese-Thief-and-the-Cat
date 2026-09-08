@@ -107,8 +107,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Modify `Assets/Scripts/Map/ShopSpotLogic.cs`, `Assets/Scripts/Map/ShopSpotSpawner.cs`, `Assets/Resources/CSVInfo/BalanceInfo.csv`, `Assets/Scripts/Editor/WarehouseLayoutBuilder.cs`, `Assets/Scripts/Tests/EditMode/ShopSpotLogicTests.cs`
 
-- [ ] **Step 1: CSV 2키** — `ShopSpotCountSmall.int` 2 · `ShopSpotLargeHalfExtent.float` 40 → 메뉴 `Tools/CTC/Convert CSV → Info`.
-- [ ] **Step 2: `ShopSpotLogic.CountFor` (순수)**
+- [x] **Step 1: CSV 2키** — `ShopSpotCountSmall.int` 2 · `ShopSpotLargeHalfExtent.float` 40 → 메뉴 `Tools/CTC/Convert CSV → Info`.
+- [x] **Step 2: `ShopSpotLogic.CountFor` (순수)**
 ```csharp
         /// <summary>
         /// 이 맵에 상점 몇 곳을 세울까 (기획서 §6 — 대형 4 · 기본·확장 2).
@@ -118,7 +118,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
         public static int CountFor(float _halfExtent, int _largeCount, int _smallCount, float _largeHalfExtent)
 ```
   테스트: 반경 60 → 4 · 21 → 2 · 15 → 2 · 경계값 40 → 4 · 음수·0은 최소 1.
-- [ ] **Step 3: `Pick`에 간격 완화 재시도** — 지금의 선택 루프를 그대로 두고 **바깥에 재시도**를 씌운다. 섞은 순서(`order`)는 **한 번만** 만들고 시도마다 재사용한다 — 안 그러면 같은 시드에서 결과가 달라진다.
+- [x] **Step 3: `Pick`에 간격 완화 재시도** — 지금의 선택 루프를 그대로 두고 **바깥에 재시도**를 씌운다. 섞은 순서(`order`)는 **한 번만** 만들고 시도마다 재사용한다 — 안 그러면 같은 시드에서 결과가 달라진다.
 ```csharp
         /// <summary>간격을 몇 번까지 반으로 줄여 볼까 — 25 → 12.5 → 6.25 → 3.125.</summary>
         public const int GAP_RELAX_STEPS = 3;
@@ -127,17 +127,17 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - 개수를 채웠으면 즉시 반환. 끝까지 못 채우면 **가장 많이 채운 결과**를 쓴다.
   - `Pick`이 몇 번째 시도에서 멈췄는지 `GameDebug.Log`로 남긴다 — 대형 맵에서 이게 찍히면 방 배치가 나빠진 것이다.
   - 테스트: 넉넉한 맵은 완화 없이 목표 개수 · 좁은 맵은 완화 후 목표 개수 · 완화해도 못 채우면 최대치 · 바닥 밑으로는 안 내려간다 · **같은 시드는 같은 결과**(완화가 걸린 경우에도).
-- [ ] **Step 4: `Resolve`가 손 배치 자리도 뽑는다** — 지금은 `_placed`를 통째로 돌려준다. 후보가 목표보다 많으면 **시드로 골라야** 판마다 달라진다.
+- [x] **Step 4: `Resolve`가 손 배치 자리도 뽑는다** — 지금은 `_placed`를 통째로 돌려준다. 후보가 목표보다 많으면 **시드로 골라야** 판마다 달라진다.
 ```csharp
         /// 손 배치 맵도 후보가 목표보다 많으면 시드로 고른다 — 자리는 레벨디자이너 것이고,
         /// **오늘 어느 넷이 서는지**만 판이 정한다(기획서 §7-1).
 ```
   간격 규칙은 손 배치에도 그대로 적용한다(레벨디자이너가 붙여 찍었어도 넷이 뭉치지 않게). 후보 ≤ 목표면 지금처럼 전부 쓴다.
   테스트: 후보 8·목표 4 → 4개, 시드가 다르면 조합이 다르다 · 후보 4·목표 4 → 그대로 4개 · 후보 2·목표 4 → 2개.
-- [ ] **Step 5: 창고 맵 상점 후보 4 → 8** — `WarehouseLayoutBuilder`의 `SHOPS` 배열에 4곳을 더한다. 지금 넷은 네 모서리 안쪽(`±36~40`)이니 **존 사이 통로 쪽**으로 네 곳을 더해 "오늘은 가운데 상점이 섰다"가 나오게 한다. 새 자리도 `ShopSpotLogic.RoomHoldsShop` 취지대로 **원반(반경 3 m)이 들어가는 빈 바닥**이어야 한다.
+- [x] **Step 5: 창고 맵 상점 후보 4 → 8** — `WarehouseLayoutBuilder`의 `SHOPS` 배열에 4곳을 더한다. 지금 넷은 네 모서리 안쪽(`±36~40`)이니 **존 사이 통로 쪽**으로 네 곳을 더해 "오늘은 가운데 상점이 섰다"가 나오게 한다. 새 자리도 `ShopSpotLogic.RoomHoldsShop` 취지대로 **원반(반경 3 m)이 들어가는 빈 바닥**이어야 한다.
   - **`ctc-8b` 세션이 같은 파일·같은 레이아웃 에셋을 만지고 있다.** 이 Step에 들어가기 전에 `git log --oneline -5 -- Assets/Scripts/Editor/WarehouseLayoutBuilder.cs`로 그쪽 커밋이 있는지 보고, 있으면 **rebase 후에** 손댄다. 충돌하면 좌표만 옮겨 붙인다(배열 한 줄이다).
   - 메뉴로 창고 레이아웃 재생성 → `Layout_Warehouse01.asset`의 `m_Shops` 8개 확인. **자리 확인은 `TestGetShopSpotPos`**로 하고 눈대중하지 않는다.
-- [ ] **Step 6: `ShopSpotSpawner`가 새 인자를 먹인다**
+- [x] **Step 6: `ShopSpotSpawner`가 새 인자를 먹인다**
 ```csharp
             int count = ShopSpotLogic.CountFor(_layout.HalfExtent, b.ShopSpotCount,
                 b.ShopSpotCountSmall, b.ShopSpotLargeHalfExtent);
@@ -146,7 +146,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
                 : _layout.Seed;   // 시드가 없으면(실험실 등) 맵 시드 — 판마다 같지만 서기는 한다
 ```
   로그를 `상점 N곳 (목표 M · 간격 G)`로 늘린다.
-- [ ] **Step 7: EditMode PASS → Commit**
+- [x] **Step 7: EditMode PASS → Commit**
 ```bash
 git add Assets/Resources/CSVInfo/BalanceInfo.csv Assets/Scripts/Info/Generator/ConvertInfo/BalanceInfo.cs Assets/Scripts/Map/ShopSpotLogic.cs Assets/Scripts/Map/ShopSpotSpawner.cs Assets/Scripts/Editor/WarehouseLayoutBuilder.cs Assets/Prefabs/Maps/Layout_Warehouse01.asset Assets/Scripts/Tests/EditMode/ShopSpotLogicTests.cs
 git commit -m "feat(shop): 상점 자리가 판마다 바뀐다 — 맵 크기로 개수, 못 채우면 간격 완화, 창고 후보 8곳
