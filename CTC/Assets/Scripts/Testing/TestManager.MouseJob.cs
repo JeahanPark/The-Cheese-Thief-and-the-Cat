@@ -89,6 +89,62 @@ namespace CTC.Runtime.Testing
             return match.Result.ToString();
         }
 
+        /// <summary>
+        /// QA: 3판 시리즈 상태 — "round|catWins|mouseWins|active". 컴포넌트가 없으면 "Missing".
+        ///
+        /// 시리즈는 **판 사이 전이가 전부**인데(봇 재투입·단계 초기화·시작 조건) 그걸 읽는 훅이
+        /// 하나도 없었다 — 2·3판에 봇이 안 서는 것을 아무도 못 봤다(2026-09-09 감사 P0-4).
+        /// 복제되는 NetworkVariable이라 어느 인스턴스에서 물어도 같다.
+        /// </summary>
+        public string TestGetSeries()
+        {
+            var series = FindFirstObjectByType<MatchSeries>();
+            if (series == null)
+            {
+                GameDebug.LogWarning("[TestManager] MatchSeries 없음 — 시리즈를 못 읽는다");
+                return MISSING;
+            }
+            return $"{series.Round}|{series.CatWins}|{series.MouseWins}|{series.Active}";
+        }
+
+        /// <summary>QA: 지금 열려 있는 씬 이름 — 시리즈가 대기실로 되돌아갔는지 본다.</summary>
+        public string TestGetActiveSceneName()
+            => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+        /// <summary>
+        /// 서버 전용 — 단계를 2단계(깡패)로 **직접** 세운다. <c>true</c>면 섰다.
+        ///
+        /// 왜 필요한가: 「2단계로 끝난 판 뒤 단계가 남는가」(2026-09-09 감사 P0-5)를 재려면
+        /// **판이 2단계에서 끝난 상태**를 만들어야 하는데, 정상 경로는 깡패 쥐(사람)와
+        /// 고양이 사망이 둘 다 필요하다. 봇만 도는 판에서는 봇에 clientId가 없어
+        /// <see cref="TestSetMouseJob"/>으로 깡패를 만들 수 없다.
+        /// 여기서 만드는 것은 **전제**뿐이고, 재는 것(다음 판이 Hunt로 돌아오는가)은 그대로다.
+        /// </summary>
+        public bool TestForceGangPhase()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var phase = FindFirstObjectByType<PhaseDirector>();
+            if (nm == null || !nm.IsServer || phase == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestForceGangPhase — 서버가 아니거나 PhaseDirector가 없다");
+                return false;
+            }
+
+            // TestBurnPhaseClock과 같은 이유로 리플렉션이다 — 이름이 사라지면 **크게 운다**.
+            var field = typeof(PhaseDirector).GetField(
+                "m_Phase", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var variable = field != null
+                ? field.GetValue(phase) as Unity.Netcode.NetworkVariable<MatchPhase>
+                : null;
+            if (variable == null)
+            {
+                GameDebug.LogError("[TestManager] PhaseDirector.m_Phase 이름·타입이 바뀌었다 — TestForceGangPhase 무동작");
+                return false;
+            }
+            variable.Value = MatchPhase.Gang;
+            return true;
+        }
+
         /// <summary>서버 전용 — 2단계 시계를 거의 다 태운다(시간 초과 판정을 재는 데 쓴다).</summary>
         public void TestBurnPhaseClock()
         {

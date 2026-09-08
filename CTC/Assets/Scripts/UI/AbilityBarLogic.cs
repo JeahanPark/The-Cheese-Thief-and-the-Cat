@@ -23,9 +23,13 @@ namespace CTC.Runtime.UI
 
     /// <summary>
     /// 능력 바 규칙(2026-08-17) — 순수 함수. 좌하단 글자 칩(ControlsHud)을 대체한다.
-    /// 슬롯은 역할별(쥐: Space 대시·F 임명 / 고양이: Q 스킬). 기본 공격·살금은 슬롯이 없다.
+    /// 슬롯은 역할별(쥐: Space 대시·F 임명 / 고양이: Q 스킬·Space 광분). 기본 공격·살금은 슬롯이 없다.
     /// **해금 안 된 것은 아예 안 보인다**(2026-08-17 사용자 결정) — 대시는 사야, F는 깡패가 돼야,
     /// Q는 전직해야 칸이 생긴다. 쓸 수 없는 걸 화면에 두면 자리만 먹는다.
+    ///
+    /// **Space가 두 역할에 있지만 겹치지 않는다** — 쥐는 대시, 고양이는 광분이고 한 사람은 한 역할이다.
+    /// 고양이 쪽 Space는 2026-09-09에 붙였다: 고양이는 상점을 안 다녀 핫바가 늘 구매 모드라
+    /// 숫자키가 안 남고, 그래서 산 광분을 켤 길이 아예 없었다(감사 P0-1).
     /// </summary>
     public static class AbilityBarLogic
     {
@@ -33,7 +37,11 @@ namespace CTC.Runtime.UI
         public const string KEY_APPOINT = "F";
         public const string KEY_SKILL = "Q";
 
-        public static AbilitySlot[] Build(RoleId _role, MouseJobId _job, bool _dashOwned, CatClassId _class)
+        /// <summary>고양이 액티브 전용 키 — <c>ShopHotbar</c>도 이 글자를 읽는다(단일 출처).</summary>
+        public const string KEY_FRENZY = "Space";
+
+        public static AbilitySlot[] Build(RoleId _role, MouseJobId _job, bool _dashOwned, CatClassId _class,
+            bool _frenzyOwned = false)
         {
             var list = new System.Collections.Generic.List<AbilitySlot>(2);
             switch (_role)
@@ -45,6 +53,7 @@ namespace CTC.Runtime.UI
                 case RoleId.Cat:
                     if (_class != CatClassId.None)
                         list.Add(new AbilitySlot(KEY_SKILL, CatClassLogic.ClassWordOf(_class), SkillHintOf(_class)));
+                    if (_frenzyOwned) list.Add(new AbilitySlot(KEY_FRENZY, "광분", "한동안 덮치기가 더 아프다"));
                     break;
             }
             return list.ToArray();

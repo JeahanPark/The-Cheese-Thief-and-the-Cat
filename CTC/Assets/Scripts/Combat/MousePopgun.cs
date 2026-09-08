@@ -102,7 +102,9 @@ namespace CTC.Runtime.Combat
             FireRpc(dir.normalized);
         }
 
-        [Rpc(SendTo.Server)]
+        // 형제 무기(CatPounce.PounceRpc)와 같은 규칙 — **남의 몸으로 대신 쏘지 못한다**.
+        // 봇은 서버가 곧 소유자라 그대로 통과한다(2026-09-09 감사 P0-8).
+        [Rpc(SendTo.Server, RequireOwnership = true)]
         private void FireRpc(Vector3 _direction)
         {
             WeaponStats stats = ShopLogic.WeaponStatsForTier(m_Tier.Value);
@@ -191,10 +193,33 @@ namespace CTC.Runtime.Combat
             line.SetPosition(1, _end);
             line.startWidth = 0.05f;
             line.endWidth = 0.02f;
-            line.material = new Material(Shader.Find("Sprites/Default"));
+            // **공용 머티리얼 한 장**을 돌려 쓴다. 예전엔 총알마다 `new Material(...)`을 만들어
+            // 넘겼는데, 내가 만들어 넣은 머티리얼은 렌더러가 회수해 주지 않아 `Destroy(go, 0.12f)`
+            // 뒤에도 그대로 샜다(2026-09-09 감사 B). 색은 LineRenderer의 start/endColor라
+            // 머티리얼을 공유해도 총알마다 따로 칠해진다.
+            Material tracer = TracerMaterial();
+            if (tracer != null) line.sharedMaterial = tracer;
             line.startColor = Color.yellow;
             line.endColor = new Color(1f, 0.9f, 0.2f, 0.2f);
             Destroy(go, 0.12f);
+        }
+
+        // 궤적선 공용 머티리얼 — 셰이더를 못 찾으면 **만들지 않는다**(CLAUDE.md 함정 #6:
+        // `new Material(null)`은 예외도 경고도 없이 마젠타를 굽는다). 선이 안 보이는 편이 낫다.
+        private static Material s_TracerMaterial;
+
+        private static Material TracerMaterial()
+        {
+            if (s_TracerMaterial != null) return s_TracerMaterial;
+
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+            {
+                GameDebug.LogWarning("[MousePopgun] Sprites/Default 셰이더를 못 찾았다 — 궤적선을 그리지 않는다");
+                return null;
+            }
+            s_TracerMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+            return s_TracerMaterial;
         }
 
         // 용사쥐 배율. 직업 컴포넌트가 없으면 1이라 직업을 모르는 씬에서도 그대로 돈다.

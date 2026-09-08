@@ -187,6 +187,16 @@ namespace CTC.Runtime.Economy
         /// <summary>기획 규칙 3·5 — 쥐만 상점에 가야 한다.</summary>
         public static bool NeedsShopSpot(RoleId _role) => _role == RoleId.Mouse;
 
+        /// <summary>
+        /// 이 역할·테크는 **액티브 전용 키로만** 쓸 수 있는가.
+        ///
+        /// 「밖에서 숫자키 = 쓴다」는 <b>밖이 있는 역할</b>에서만 성립한다. 상점 면제 역할(고양이)은
+        /// <see cref="NeedsShopSpot"/>이 false라 핫바가 영원히 구매 모드고, 숫자키는 전부
+        /// 「산다/키운다」로 간다 — 그래서 산 광분을 켤 길이 아예 없었다(2026-09-09 감사 P0-1).
+        /// 그 역할의 액티브만 전용 키(Space)를 갖는다.
+        /// </summary>
+        public static bool NeedsActiveKey(RoleId _role, TechId _id) => !NeedsShopSpot(_role) && IsActive(_id);
+
         /// <summary>거절 사유 → 토스트 문구. 재화 이름은 역할별, 칸 수는 CanBuy에 준 값과 같아야 한다(단일 출처).</summary>
         public static string DenyText(TechDeny _deny, RoleId _role, int _short, int _slotCap)
         {

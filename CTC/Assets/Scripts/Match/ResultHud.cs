@@ -22,6 +22,9 @@ namespace CTC.Runtime.Match
         [SerializeField] private TMP_Text m_Text;
         [SerializeField] private Button m_RestartButton;
 
+        // 시리즈 여부를 보려고 잡는다 — MatchManager와 같은 GO에 동승한다(배선 추가 없음).
+        private MatchSeries m_Series;
+
         private void Awake()
         {
             // 버튼 연결은 R3 (CTC 규칙 2·4) — 재시작은 연타가 잦아 ThrottleFirst로 한 번만 통과시킨다
@@ -42,6 +45,7 @@ namespace CTC.Runtime.Match
         // 개편 3b(2026-07-31): Update 폴링 → 결과 스트림 구독. 결과는 판당 한 번만 바뀐다.
         private void Start()
         {
+            if (m_Match != null) m_Series = m_Match.GetComponent<MatchSeries>();
             m_Match.ResultChanged.Subscribe(OnResultChanged).AddTo(this);
         }
 
@@ -62,8 +66,12 @@ namespace CTC.Runtime.Match
 
             m_Text.text = LabelOf(_result);
 
+            // **시리즈 중에는 재시작 버튼을 숨긴다.** 다음 판은 `MatchSeries`가 알아서 여는데
+            // 버튼까지 있으면 사람이 눌러 판이 두 번 초기화된다(2026-09-09 감사 A).
+            // 시리즈가 곧 한 경기라 사람이 누를 자리가 없다는 것이 그 클래스의 전제다.
             NetworkManager nm = NetworkManager.Singleton;
-            m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost);
+            bool seriesRunning = m_Series != null && m_Series.Active;
+            m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost && !seriesRunning);
         }
 
         /// <summary>

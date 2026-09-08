@@ -63,6 +63,16 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 고양이 쿨다운 강제 소모 차단 — 리뷰 I2
         private void PounceRpc()
         {
+            // 자기 컴포넌트는 루프 밖에서 한 번만 찾는다 — 부채꼴 안 대상마다 GetComponent를
+            // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
+            Health self = GetComponent<Health>();
+
+            // **죽은 고양이는 못 덮친다.** 예전엔 입구가 쿨다운만 봤다 — 고양이는 죽어도
+            // despawn되지 않으므로(PlayerDeath), 총·반사에 쓰러진 뒤에도 좌클릭·DevPounce가
+            // 그대로 서버에 닿아 피해와 장난기를 계속 벌었다(2026-09-09 감사 P0-7).
+            // 아래 루프 안의 self.IsDead는 「때리는 도중에 반사로 죽었을 때」만 막는다.
+            if (self != null && self.IsDead) return;
+
             double now = NetworkManager.ServerTime.Time;
             if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, m_CooldownSeconds)) return;
             m_LastUseTime = now;
@@ -70,9 +80,6 @@ namespace CTC.Runtime.Combat
             AttackAnimRpc();
 
             CheeseWallet myWallet = GetComponent<CheeseWallet>();
-            // 자기 컴포넌트는 루프 밖에서 한 번만 찾는다 — 부채꼴 안 대상마다 GetComponent를
-            // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
-            Health self = GetComponent<Health>();
             // 광분과 불은 **곱하지 않는다** — 큰 쪽만 쓴다(CatClassLogic.PounceMultiplier에 이유가 있다).
             float pounceMultiplier = Player.CatClassLogic.PounceMultiplier(FrenzyMultiplier(), FireMultiplier());
             // 배고픔(테크 v3 계획 2b) — 적립 배율. 미보유면 0이 와서 WithHunger가 그대로 돌려준다.

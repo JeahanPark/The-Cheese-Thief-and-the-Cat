@@ -170,6 +170,103 @@ namespace CTC.Runtime.Testing
             if (System.Enum.TryParse(_techId, out TechId id)) shop.Buy(id);
         }
 
+        // ===== 사람 손 경로 (2026-09-09 감사 G-1·G-2·C-01) =====
+        //
+        // **여기 있는 것만이 「사람이 누르는 길」이다.** 아래 TestUseTech류는 ShopController를 직접
+        // 부르므로 핫바의 상점 모드 분기를 통째로 건너뛴다 — 그래서 「고양이는 산 광분을 켤 수
+        // 없다」가 qa_v48을 초록으로 통과했다. 입력 계약을 재는 스위트는 이쪽을 쓴다.
+
+        /// <summary>
+        /// QA: 핫바 숫자키 한 번(0-based) — <see cref="ShopHotbar.PressSlot"/>이 곧 사람이 타는 분기다.
+        /// 이 프로세스의 **로컬 플레이어**에만 듣는다(핫바는 내 화면에만 있다).
+        /// false = 핫바를 못 찾았다(씬 배선 사고) — 「눌렀는데 아무 일도 없었다」와 구분된다.
+        /// </summary>
+        public bool TestPressSlotKey(int _slot)
+        {
+            ShopHotbar bar = FindFirstObjectByType<ShopHotbar>();
+            if (bar == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestPressSlotKey — 씬에 ShopHotbar가 없다");
+                return false;
+            }
+            bar.PressSlot(_slot);
+            return true;
+        }
+
+        /// <summary>
+        /// QA: 액티브 전용 키(Space) 한 번 — 상점 면제 역할(고양이)의 맨 왼쪽 액티브 칸을 쓴다.
+        /// <c>true</c>는 「쓸 칸이 있어서 실제로 시도했다」이고, 켜졌는지는
+        /// <see cref="TestGetCatFrenzyState"/>로 따로 본다(거절 사유는 토스트로 간다).
+        /// </summary>
+        public bool TestPressActiveKey()
+        {
+            ShopHotbar bar = FindFirstObjectByType<ShopHotbar>();
+            if (bar == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestPressActiveKey — 씬에 ShopHotbar가 없다");
+                return false;
+            }
+            return bar.PressActiveKey();
+        }
+
+        /// <summary>
+        /// QA: 핫바 모드 줄이 화면에 그린 글자("상점 · 숫자키 = …    보유 n/5").
+        /// 모드가 뒤집혔는지·전용 키 안내가 뜨는지를 **Model이 아니라 글자로** 잰다.
+        /// </summary>
+        public string TestGetHotbarModeText()
+            => HudText(FindFirstObjectByType<ShopHotbar>(), "m_ModeLabel");
+
+        /// <summary>
+        /// QA: 핫바 칸들이 실제로 그린 글자 — "라벨#값#힌트"를 '|'로 잇는다(꺼진 칸은 건너뛴다).
+        /// 쿨다운이 **화면에 보이는지**를 재는 유일한 길이다.
+        /// </summary>
+        public string TestGetHotbarSlots()
+        {
+            ShopHotbar bar = FindFirstObjectByType<ShopHotbar>();
+            if (bar == null) return "";
+
+            string[] fields = { "m_SlotLabels", "m_SlotCosts", "m_SlotHints" };
+            var arrays = new TMPro.TMP_Text[fields.Length][];
+            for (int f = 0; f < fields.Length; f++)
+            {
+                System.Reflection.FieldInfo info = typeof(ShopHotbar).GetField(
+                    fields[f], System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                arrays[f] = info != null ? info.GetValue(bar) as TMPro.TMP_Text[] : null;
+            }
+            if (arrays[0] == null) return "";
+
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < arrays[0].Length; i++)
+            {
+                TMPro.TMP_Text label = arrays[0][i];
+                if (label == null || !label.gameObject.activeInHierarchy) continue;
+                if (sb.Length > 0) sb.Append('|');
+                sb.Append(label.text).Append('#')
+                  .Append(TextAt(arrays[1], i)).Append('#')
+                  .Append(TextAt(arrays[2], i));
+            }
+            return sb.ToString();
+        }
+
+        private static string TextAt(TMPro.TMP_Text[] _array, int _index)
+        {
+            if (_array == null || _index >= _array.Length || _array[_index] == null) return "";
+            return _array[_index].text;
+        }
+
+        /// <summary>
+        /// QA: 「지금 이 테크를 쓸 수 있나」의 **사유**(UseDeny 이름). 못 찾으면 "Missing".
+        /// 판정은 <see cref="ShopController.CanUse"/> 단독이므로 여기서 규칙을 베끼지 않는다 —
+        /// 2026-09-07에 「치즈 부족을 창고 상한이라 거짓말한」 자리가 정확히 여기다.
+        /// </summary>
+        public string TestGetUseDeny(long _clientId, string _techId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            ShopController shop = p != null ? p.GetComponent<ShopController>() : null;
+            if (shop == null || !System.Enum.TryParse(_techId, out TechId id)) return MISSING;
+            return shop.CanUse(id).ToString();
+        }
+
         /// <summary>QA: 즉발 액티브 사용(요새·대시). 구매와 같은 소유자 RPC 제약.</summary>
         public void TestUseTech(long _clientId, string _techId)
         {

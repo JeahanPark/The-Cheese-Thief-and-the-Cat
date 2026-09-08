@@ -51,6 +51,41 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual("", AbilityBarLogic.SkillHintOf(CatClassId.None));
         }
 
+        /// <summary>
+        /// 광분(2026-09-09 감사 P0-1) — 고양이는 상점을 안 다녀 핫바가 늘 구매 모드다.
+        /// 그래서 숫자키가 안 남고 액티브 전용 키(Space)가 필요하다. 사기 전엔 칸이 없다.
+        /// </summary>
+        [Test]
+        public void Cat_FrenzySlotOnlyWhenOwned_UsesSpace()
+        {
+            Assert.AreEqual(0, AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.None).Length);
+
+            var owned = AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.None, true);
+            Assert.AreEqual(1, owned.Length);
+            Assert.AreEqual(AbilityBarLogic.KEY_FRENZY, owned[0].Key);
+            Assert.AreEqual("Space", owned[0].Key);
+            Assert.AreEqual("광분", owned[0].Name);
+            Assert.IsNotEmpty(owned[0].Hint);
+        }
+
+        /// <summary>전직 스킬(Q)과 광분(Space)은 같이 뜬다 — 씬의 능력 칸 2개에 정확히 맞는다.</summary>
+        [Test]
+        public void Cat_SkillAndFrenzy_TwoSlots_SkillFirst()
+        {
+            var both = AbilityBarLogic.Build(RoleId.Cat, MouseJobId.None, false, CatClassId.Fire, true);
+            Assert.AreEqual(2, both.Length);
+            Assert.AreEqual(AbilityBarLogic.KEY_SKILL, both[0].Key);
+            Assert.AreEqual(AbilityBarLogic.KEY_FRENZY, both[1].Key);
+        }
+
+        /// <summary>쥐에게는 광분 칸이 안 생긴다 — Space는 쥐 쪽에서 대시가 쓴다(역할이 갈려 겹치지 않는다).</summary>
+        [Test]
+        public void Mouse_NeverGetsFrenzySlot()
+        {
+            var slots = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, false, CatClassId.None, true);
+            Assert.AreEqual(0, slots.Length);
+        }
+
         [Test]
         public void Spectator_HasNoSlots()
         {

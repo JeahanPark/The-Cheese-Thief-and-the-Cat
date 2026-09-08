@@ -288,5 +288,45 @@ namespace CTC.Tests
             Assert.AreEqual("아직 없다", TechLogic.UseDenyText(UseDeny.NotOwned, RoleId.Mouse, 0));
             Assert.AreEqual("지금은 못 쓴다", TechLogic.UseDenyText(UseDeny.Unavailable, RoleId.Mouse, 0));
         }
+
+        // ===== 액티브 전용 키 (2026-09-09 감사 P0-1) =====
+
+        /// <summary>
+        /// 쥐는 「밖」이 있어 숫자키로 쓴다 — 전용 키가 필요 없다.
+        /// 고양이는 상점 면제라 핫바가 늘 구매 모드고, 그 역할의 액티브만 전용 키를 쓴다.
+        /// </summary>
+        [Test]
+        public void NeedsActiveKey_OnlyForShopExemptRoleActives()
+        {
+            Assert.IsTrue(TechLogic.NeedsActiveKey(RoleId.Cat, TechId.CatFrenzy));
+
+            Assert.IsFalse(TechLogic.NeedsActiveKey(RoleId.Mouse, TechId.Fortress));
+            Assert.IsFalse(TechLogic.NeedsActiveKey(RoleId.Mouse, TechId.Dash));
+            Assert.IsFalse(TechLogic.NeedsActiveKey(RoleId.Mouse, TechId.Sticky));
+
+            // 패시브는 누를 것이 없다 — 역할과 무관하다.
+            Assert.IsFalse(TechLogic.NeedsActiveKey(RoleId.Cat, TechId.CatClaw));
+            Assert.IsFalse(TechLogic.NeedsActiveKey(RoleId.Cat, TechId.CatEar));
+        }
+
+        /// <summary>
+        /// **고양이 액티브는 지금 하나뿐이다.** 전용 키가 Space 한 개라 「맨 왼쪽 액티브 칸」으로
+        /// 고르는 규칙(<c>ShopHotbar.PressActiveKey</c>)이 성립한다.
+        /// 둘째가 생기면 이 테스트가 깨진다 — 그때 키를 나눌 방법을 먼저 정해야 한다.
+        /// </summary>
+        [Test]
+        public void ShopExemptRole_HasExactlyOneActive_SoOneKeyIsEnough()
+        {
+            var actives = new List<TechId>();
+            foreach (TechId id in System.Enum.GetValues(typeof(TechId)))
+            {
+                if (id == TechId.None || !TechLogic.IsActive(id)) continue;
+                TechRow row = TechLogic.RowOf(id, 1);
+                if (!row.IsValid || TechLogic.NeedsShopSpot(row.Role)) continue;
+                actives.Add(id);
+            }
+
+            CollectionAssert.AreEqual(new[] { TechId.CatFrenzy }, actives);
+        }
     }
 }

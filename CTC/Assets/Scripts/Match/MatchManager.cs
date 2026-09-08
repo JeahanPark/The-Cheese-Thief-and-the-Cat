@@ -141,7 +141,16 @@ namespace CTC.Runtime.Match
             m_Armed = false;
             m_Result.Value = (int)MatchResult.None;
             m_RemainingSeconds.Value = -1f;
-            m_Lobby.ResetToLobby();
+
+            // **단계도 되돌린다.** 안 되돌리면 2단계(깡패)로 끝난 판 뒤에 Phase가 Gang으로 남아,
+            // 다음 판이 서자마자 `EvaluateGangPhase`가 「깡패 0 · 나머지 0」을 보고 즉시 끝낸다
+            // (2026-09-09 감사 P0-5 — ServerReset은 그때까지 호출자가 0인 죽은 코드였다).
+            if (m_Phase != null) m_Phase.ServerReset();
+
+            // 같은 클래스 Update(:52)는 널을 보는데 여기만 안 봤다 — 씬 배선이 빠지면 재시작에서 터졌다.
+            if (m_Lobby != null) m_Lobby.ResetToLobby();
+            else Debug.LogWarning("[MatchManager] LobbyController가 안 붙어 있다 — 로비 복귀를 건너뛴다");
+
             Debug.Log($"[MatchManager] 재시작 — 로비 복귀 (동적 오브젝트 {toDespawn.Count}개 정리)");
         }
 

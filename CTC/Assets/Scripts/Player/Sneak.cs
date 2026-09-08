@@ -52,7 +52,15 @@ namespace CTC.Runtime.Player
         {
             if (!LocalControl.Mine(this) || !IsSpawned) return;
 
-            if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
+            // 채팅 타이핑·옵션 창 중에는 조작하지 않는다 — 다만 **켜진 채로 굳지 않게 끄고 나간다.**
+            // 예전엔 그냥 return이라, LShift를 누른 채 채팅을 열면 잠행이 창을 닫을 때까지
+            // 영원히 켜져 있었다(2026-09-09 감사 B). 다른 입력들은 값을 0으로 두고 계속 돈다.
+            if (Core.UiFocus.BlocksGameplay)
+            {
+                if (!m_DevForced && m_Sneaking.Value) m_Sneaking.Value = false;
+                return;
+            }
+
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
 

@@ -107,11 +107,15 @@ namespace CTC.Runtime.Lobby
             if (m_MapDirector != null) m_MapDirector.SelectMap(_index);
         }
 
-        /// <summary>호스트 UI에서 호출. 서버에서만 동작.</summary>
-        public void RequestStartGame()
+        /// <summary>
+        /// 호스트 UI에서 호출. 서버에서만 동작. <c>true</c>면 판이 실제로 열렸다.
+        /// **반환값이 있는 이유**: 3판 시리즈가 사람이 빠져 시작 조건이 깨진 것을 알아야
+        /// 대기실로 되돌아간다 — 예전엔 조용히 아무 일도 안 해서 빈 씬에 갇혔다(감사 P0-6).
+        /// </summary>
+        public bool RequestStartGame()
         {
-            if (!IsServer || m_Session == null) return;
-            if (!m_Session.ServerBeginGame()) return;
+            if (!IsServer || m_Session == null) return false;
+            if (!m_Session.ServerBeginGame()) return false;
 
             // 판 시드를 **스포너보다 먼저** 굴린다 — 상점 자리·품절·직업권이 전부 이 값을 읽는다.
             // 순서가 뒤집히면 그 판만 옛 시드로 서고 아무 에러도 안 난다(테크 v3 계획 3).
@@ -122,15 +126,16 @@ namespace CTC.Runtime.Lobby
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
             if (m_ShopSpawner != null) m_ShopSpawner.ServerSpawnAll(ActiveLayout);   // 상점 자리(테크 v3)
+            return true;
         }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        /// <summary>QA 전용 — 인원 조건을 건너뛰고 판을 연다(봇만 도는 측정 판).
+        /// <summary>QA 전용 — 인원 조건을 건너뛰고 판을 연다(봇만 도는 측정 판). <c>true</c>면 열렸다.
         /// 개발 빌드까지 열어 둔 이유: 봇전 버튼(<see cref="DevStartBotMatch"/>)이 이걸 탄다.</summary>
-        public void DevForceStartGame()
+        public bool DevForceStartGame()
         {
-            if (!IsServer || m_Session == null) return;
-            if (!m_Session.ServerForceBeginGame()) return;
+            if (!IsServer || m_Session == null) return false;
+            if (!m_Session.ServerForceBeginGame()) return false;
 
             // 여기도 똑같이 — 빠뜨리면 **봇 계측 판만 시드가 0**이 되어 무작위가 통째로 죽는다.
             if (m_Random != null) m_Random.ServerRoll();
@@ -139,6 +144,7 @@ namespace CTC.Runtime.Lobby
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
             if (m_BoxSpawner != null) m_BoxSpawner.ServerSpawnAll(ActiveLayout);
             if (m_ShopSpawner != null) m_ShopSpawner.ServerSpawnAll(ActiveLayout);   // 상점 자리(테크 v3)
+            return true;
         }
 
         /// <summary>

@@ -29,6 +29,7 @@ namespace CTC.Runtime.UI
         private readonly SerialDisposable m_JobSub = new SerialDisposable();
         private readonly SerialDisposable m_DashSub = new SerialDisposable();
         private readonly SerialDisposable m_ClassSub = new SerialDisposable();
+        private readonly SerialDisposable m_TechSub = new SerialDisposable();
         private readonly SerialDisposable m_Tick = new SerialDisposable();
 
         private bool m_GameStarted;
@@ -38,6 +39,8 @@ namespace CTC.Runtime.UI
         private CatClassId m_Class;
         private MouseDash m_Dash;
         private CatSkill m_Skill;
+        private CatFrenzy m_Frenzy;
+        private bool m_FrenzyOwned;
         private AbilitySlot[] m_Built = System.Array.Empty<AbilitySlot>();
 
         public AbilitySlot[] Built => m_Built;
@@ -52,6 +55,7 @@ namespace CTC.Runtime.UI
             m_JobSub.AddTo(this);
             m_DashSub.AddTo(this);
             m_ClassSub.AddTo(this);
+            m_TechSub.AddTo(this);
             m_Tick.AddTo(this);
             m_Lobby.GameStartedChanged.Subscribe(s => { m_GameStarted = s; Rebuild(); }).AddTo(this);
             LocalPlayerBinder.LocalPlayer.Subscribe(OnLocalPlayerChanged).AddTo(this);
@@ -75,6 +79,21 @@ namespace CTC.Runtime.UI
             m_Class = CatClassId.None;
             m_ClassSub.Disposable = catClass != null ? catClass.ClassChanged.Subscribe(c => { m_Class = c; Rebuild(); }) : null;
 
+            // 광분(Space)은 **사면 칸이 생긴다** — 대시와 같은 규칙이다. 보유의 주인은 테크 칸이라
+            // 컴포넌트 유무가 아니라 레벨을 본다(TechSlots가 단일 출처).
+            m_Frenzy = _player != null ? _player.GetComponent<CatFrenzy>() : null;
+            var slots = _player != null ? _player.GetComponent<TechSlots>() : null;
+            m_FrenzyOwned = false;
+            m_TechSub.Disposable = slots != null
+                ? slots.Changed.Subscribe(_ =>
+                {
+                    bool owned = slots.LevelOf(TechId.CatFrenzy) > 0;
+                    if (owned == m_FrenzyOwned) return;
+                    m_FrenzyOwned = owned;
+                    Rebuild();
+                })
+                : null;
+
             Rebuild();
         }
 
@@ -89,7 +108,7 @@ namespace CTC.Runtime.UI
                 return;
             }
 
-            m_Built = AbilityBarLogic.Build(m_Role, m_Job, m_DashOwned, m_Class);
+            m_Built = AbilityBarLogic.Build(m_Role, m_Job, m_DashOwned, m_Class, m_FrenzyOwned);
             if (m_Built.Length == 0)   // 해금된 게 없으면 바 자체를 안 그린다
             {
                 m_Root.SetActive(false);
@@ -129,6 +148,7 @@ namespace CTC.Runtime.UI
             for (int i = 0; i < m_Built.Length; i++) alive |= m_Slots[i].IsAnimating;
             if (m_Dash != null && m_DashOwned) alive |= m_Dash.CooldownRemaining > 0f || m_Dash.ActiveRemaining > 0f;
             if (m_Skill != null && m_Class != CatClassId.None) alive |= m_Skill.CooldownRemaining > 0f || m_Skill.ActiveRemaining > 0f;
+            if (m_Frenzy != null && m_FrenzyOwned) alive |= m_Frenzy.CooldownRemaining > 0f || m_Frenzy.ActiveRemaining > 0f;
             return alive;
         }
 
@@ -147,6 +167,13 @@ namespace CTC.Runtime.UI
                 {
                     cd = m_Skill.CooldownRemaining; cdTotal = m_Skill.CooldownTotal;
                     act = m_Skill.ActiveRemaining; actTotal = m_Skill.ActiveTotal;
+                }
+                // 광분도 글자가 "Space"라 첫 분기와 이름이 같다 — 갈라 주는 건 **컴포넌트 유무**다.
+                // 한 사람은 한 역할이라 대시와 광분이 같이 있을 수 없다.
+                else if (slot.Key == AbilityBarLogic.KEY_FRENZY && m_Frenzy != null)
+                {
+                    cd = m_Frenzy.CooldownRemaining; cdTotal = m_Frenzy.CooldownTotal;
+                    act = m_Frenzy.ActiveRemaining; actTotal = m_Frenzy.ActiveTotal;
                 }
                 m_Slots[i].Apply(slot, cd, cdTotal, act, actTotal, _dt);
             }

@@ -36,8 +36,15 @@ namespace CTC.Runtime.Economy
         // 쿨다운은 매 프레임 흐르지만 화면엔 초 단위만 보인다 — 이 간격으로만 다시 그린다.
         private const float COOLDOWN_REDRAW_SECONDS = 0.25f;
 
+        // 액티브를 쓴 뒤 **쿨다운이 도착할 때까지** 다시 그리기를 켜 두는 시간(초).
+        // 쿨다운의 주인은 서버이고 클론에서는 왕복이 있어, 쓴 직후 한 번만 그리면 아직 0을 본다.
+        private const float USE_REDRAW_GRACE_SECONDS = 1.5f;
+
         // 숫자키는 1~9까지만 있다 — 칸이 더 늘면 키가 아니라 다른 조작이 필요하다
         private const int MAX_HOTKEYS = 9;
+
+        // 액티브 전용 키의 글자 — 단일 출처는 능력 바다(같은 키를 두 화면이 다르게 부르면 안 된다).
+        private const string ACTIVE_KEY_LABEL = UI.AbilityBarLogic.KEY_FRENZY;
 
         // 고스트가 뻗는 최대 거리 — 서버 검증(ShopController.MAX_PLACE_DISTANCE)보다 짧아야 한다.
         private static float GHOST_MAX_DISTANCE => Info.InfoManager.Instance.Balance.PlaceGhostMaxMeters;
@@ -75,12 +82,14 @@ namespace CTC.Runtime.Economy
         // 로컬 플레이어가 바뀔 때 한 번만 잡는다(View가 매 프레임 GetComponent를 돌지 않게).
         private StickyUser m_Sticky;
         private Player.MouseDash m_Dash;
+        private Player.CatFrenzy m_Frenzy;
         private RoleId m_Role;
         private int m_Cheese;
         private bool m_GameStarted;
         private bool m_SlotsDirty;
         private bool m_CooldownTicking;   // 지금 화면에 흐르는 쿨다운이 있나 — 있을 때만 다시 그린다
         private float m_NextCooldownRedraw;
+        private float m_CooldownWatchUntil;   // 방금 액티브를 썼다 — 쿨다운이 복제돼 올 때까지 지켜본다
         private bool m_IntroShown; // 기본 조작 토스트는 매치당 1회 — 매판 반복되면 소음이다
         private bool m_InShop;
 
@@ -156,6 +165,7 @@ namespace CTC.Runtime.Economy
                 m_TechSlots = null;
                 m_Sticky = null;
                 m_Dash = null;
+                m_Frenzy = null;
                 m_WalletSub.Disposable = null;
                 m_SlotsSub.Disposable = null;
                 m_SoldOutSub.Disposable = null;
@@ -168,6 +178,7 @@ namespace CTC.Runtime.Economy
             m_TechSlots = slots;
             m_Sticky = _player.GetComponent<StickyUser>();
             m_Dash = _player.GetComponent<Player.MouseDash>();
+            m_Frenzy = _player.GetComponent<Player.CatFrenzy>();
             m_Role = tag.Role;
             ResetCandidates();
             m_WalletSub.Disposable = wallet.Cheese.Subscribe(c => { m_Cheese = c; m_SlotsDirty = true; });
@@ -294,7 +305,11 @@ namespace CTC.Runtime.Economy
             // 구독 콜백이 아니라 여기서 그리는 이유: 구매 하나가 치즈·테크 목록 등 NetworkVariable 여러 개를
             // 같은 틱에 바꾸는데, 콜백 시점엔 시블링 변수가 아직 옛값일 수 있다. 여기서는 전부 새 값이다.
             // 쿨다운이 흐르는 동안만 다시 그린다 — 매 프레임 RefreshSlots를 도는 건 낭비다.
-            if (m_CooldownTicking && Time.time >= m_NextCooldownRedraw)
+            // 쓴 직후의 유예(m_CooldownWatchUntil)가 없으면 **첫 쿨다운을 영영 못 본다**:
+            // 다시 그리기는 "지금 쿨이 흐른다"를 본 뒤에야 켜지는데, 그걸 볼 기회 자체가
+            // 없어서 광분·끈끈이·대시의 남은 초가 칸에 안 찍혔다(2026-09-09 qa_v51 ⑥-a 실측).
+            if ((m_CooldownTicking || Time.time < m_CooldownWatchUntil)
+                && Time.time >= m_NextCooldownRedraw)
             {
                 m_NextCooldownRedraw = Time.time + COOLDOWN_REDRAW_SECONDS;
                 m_SlotsDirty = true;
@@ -330,7 +345,28 @@ namespace CTC.Runtime.Economy
             }
 
             string mode = m_InShop ? "상점 · 숫자키 = 산다 / 키운다 · Enter = 확정" : "숫자키 = 쓴다";
+            if (FirstActiveKeySlot(owned) >= 0) mode += $" · {ACTIVE_KEY_LABEL} = 쓴다";
             if (m_ModeLabel != null) m_ModeLabel.text = $"{mode}    보유 {owned.Count}/{cap}";
+        }
+
+        /// <summary>
+        /// 이 테크를 <b>액티브 전용 키</b>로 쓰는가 — 상점 면제 역할(고양이)의 액티브만 해당한다.
+        ///
+        /// 기획 §10이 액티브 전용 키(E·R)를 자른 이유는 「상점에서 키우니 <b>밖의</b> 숫자키가 비었다」인데,
+        /// 고양이에게는 그 「밖」이 없다: <see cref="TechLogic.NeedsShopSpot"/>이 false라 핫바가 영원히
+        /// 구매 모드고, 그래서 산 광분을 켤 길이 아예 없었다(2026-09-09 감사 P0-1).
+        /// 그 역할에만 전용 키를 되살린다 — 쥐의 Space는 <c>MouseDash</c>가 읽으므로 역할이 갈려 겹치지 않는다.
+        /// </summary>
+        private bool UsesActiveKey(TechId _id) => TechLogic.NeedsActiveKey(m_Role, _id);
+
+        /// <summary>액티브 전용 키가 쓸 맨 왼쪽 칸(-1 = 없음).</summary>
+        private int FirstActiveKeySlot(IReadOnlyList<TechEntry> _owned)
+        {
+            for (int i = 0; i < _owned.Count; i++)
+            {
+                if (UsesActiveKey(_owned[i].Id)) return i;
+            }
+            return -1;
         }
 
         private void DrawOwned(int _slot, TechEntry _e, IReadOnlyList<TechEntry> _owned)
@@ -346,6 +382,17 @@ namespace CTC.Runtime.Economy
                 bool affordable = next.IsValid && m_Cheese >= next.Cost;
                 m_SlotCosts[_slot].text = next.IsValid ? next.Cost.ToString() : "MAX";
                 c = !next.IsValid ? COLOR_OWNED : affordable ? COLOR_READY : COLOR_POOR;
+
+                // 구매 모드에서도 **쿨다운이 보여야 한다** — 이 칸은 숫자키로 키우고 Space로 쓴다.
+                // 값(치즈)은 숫자 칸이 갖고, 「지금 쓸 수 있나」는 반줄 힌트가 말한다.
+                if (UsesActiveKey(_e.Id))
+                {
+                    float active = CooldownOf(_e.Id);
+                    if (active > 0f) m_CooldownTicking = true;
+                    SetHint(_slot, active > 0f
+                        ? $"{ACTIVE_KEY_LABEL} 쿨 {Mathf.CeilToInt(active)}s"
+                        : $"{ACTIVE_KEY_LABEL}로 쓴다 — {cur.Hint}");
+                }
             }
             else
             {
@@ -372,6 +419,9 @@ namespace CTC.Runtime.Economy
             {
                 case TechId.Sticky: return m_Sticky != null ? m_Sticky.CooldownRemaining : 0f;
                 case TechId.Dash: return m_Dash != null ? m_Dash.CooldownRemaining : 0f;
+                // 광분은 상점 면제 역할(고양이)의 액티브라 이 칸이 늘 「산다」 모드로 그려진다 —
+                // 여기 없으면 쿨다운이 화면 어디에도 안 나온다(2026-09-09 감사 G-1).
+                case TechId.CatFrenzy: return m_Frenzy != null ? m_Frenzy.CooldownRemaining : 0f;
                 default: return 0f;
             }
         }
@@ -414,26 +464,41 @@ namespace CTC.Runtime.Economy
             Keyboard kb = Keyboard.current;
             if (kb == null || Core.UiFocus.BlocksGameplay) return;
 
+            // 액티브 전용 키(상점 면제 역할). 쓸 게 없으면 false를 주고 숫자키 검사로 흘러간다.
+            if (kb.spaceKey.wasPressedThisFrame && PressActiveKey()) return;
+
             // Enter(확정 구매)는 여기서 안 읽는다 — `EscapeRouter`가 단독으로 읽고 TryConfirmBuy를 부른다.
             int cap = SLOT_CAP;
-            int pressed = -1;
             for (int slot = 0; slot < cap && slot < m_Slots.Length && slot < MAX_HOTKEYS; slot++)
             {
-                if (kb[SlotKey(slot)].wasPressedThisFrame) { pressed = slot; break; }
+                if (!kb[SlotKey(slot)].wasPressedThisFrame) continue;   // 키가 없으면 할당 0
+                PressSlot(slot);
+                return;
             }
-            if (pressed < 0) return;   // 키가 없으면 목록을 만들지 않는다(프레임당 할당 0)
+        }
+
+        /// <summary>
+        /// 숫자키 한 번 — **사람이 누르는 그 길**. 키를 읽는 곳과 분기를 나눈 이유는 QA다:
+        /// wesqa가 <c>ShopController.Use</c>를 직접 부르면 이 분기를 통째로 건너뛰어,
+        /// 「고양이는 산 광분을 켤 수 없다」를 통과시킨다(2026-09-09 감사 G-1·C-01).
+        /// <c>TestPressSlotKey</c>는 반드시 여기로 들어온다.
+        /// </summary>
+        public void PressSlot(int _slot)
+        {
+            if (!m_GameStarted || m_Shop == null || m_TechSlots == null) return;
+            if (_slot < 0 || _slot >= SLOT_CAP || _slot >= m_CandidateIndex.Length) return;
 
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
             IReadOnlyList<TechId> candidates = CandidatesNow(owned);
 
-            if (pressed < owned.Count)
+            if (_slot < owned.Count)
             {
-                if (m_InShop) TryBuy(owned[pressed].Id);       // 키운다
-                else TryUse(owned[pressed].Id);                // 쓴다
+                if (m_InShop) TryBuy(owned[_slot].Id);       // 키운다
+                else TryUse(owned[_slot].Id);                // 쓴다
             }
-            else if (m_InShop && pressed == owned.Count && candidates.Count > 0)
+            else if (m_InShop && _slot == owned.Count && candidates.Count > 0)
             {
-                m_CandidateIndex[pressed] = (m_CandidateIndex[pressed] + 1) % candidates.Count;   // 후보 넘김
+                m_CandidateIndex[_slot] = (m_CandidateIndex[_slot] + 1) % candidates.Count;   // 후보 넘김
                 m_SlotsDirty = true;
             }
             else if (m_InShop)
@@ -445,6 +510,23 @@ namespace CTC.Runtime.Economy
             {
                 Say("상점에서만 살 수 있다");
             }
+        }
+
+        /// <summary>
+        /// 액티브 전용 키 한 번 — 상점 면제 역할의 **맨 왼쪽 액티브 칸**을 쓴다.
+        /// 지금 그 역할의 액티브는 광분 하나뿐이라 「맨 왼쪽」이 곧 그것이다.
+        /// 쓸 칸이 없으면 <c>false</c> — 그 역할이 아니거나 아직 안 샀다는 뜻이다.
+        /// </summary>
+        public bool PressActiveKey()
+        {
+            if (!m_GameStarted || m_Shop == null || m_TechSlots == null) return false;
+
+            IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
+            int slot = FirstActiveKeySlot(owned);
+            if (slot < 0) return false;
+
+            TryUse(owned[slot].Id);
+            return true;
         }
 
         /// <summary>지금 Enter가 확정 구매로 갈 수 있는가 — `EscapeRouter`가 Enter를 나눌 때 본다.</summary>
@@ -479,8 +561,10 @@ namespace CTC.Runtime.Economy
                 return;
             }
             m_Shop.Buy(_id);
-            // 구매 토스트가 곧 사용법이다 — 힌트를 그대로 읽어 준다
-            Say($"{next.Label} Lv{next.Level} — {next.Hint}", TOAST_LONG_SECONDS);
+            // 구매 토스트가 곧 사용법이다 — 힌트를 그대로 읽어 준다.
+            // 액티브 전용 키를 쓰는 테크는 **어느 키인지도 여기서 알린다**(새 화면 0, 기획 §9).
+            string howTo = UsesActiveKey(_id) ? $" · {ACTIVE_KEY_LABEL}로 쓴다" : "";
+            Say($"{next.Label} Lv{next.Level} — {next.Hint}{howTo}", TOAST_LONG_SECONDS);
         }
 
         private void TryUse(TechId _id)
@@ -494,6 +578,11 @@ namespace CTC.Runtime.Economy
             }
             if (_id == TechId.Warehouse) { BeginPlacement(_id, "창고"); return; }
             m_Shop.Use(_id);
+
+            // 쿨다운은 서버가 새기고 복제돼 온다 — 도착할 때까지 다시 그리기를 켜 둔다.
+            m_CooldownWatchUntil = Time.time + USE_REDRAW_GRACE_SECONDS;
+            m_NextCooldownRedraw = 0f;
+            m_SlotsDirty = true;
         }
 
         private static Key SlotKey(int _slot)
