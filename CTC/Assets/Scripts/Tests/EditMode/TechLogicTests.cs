@@ -143,11 +143,12 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void Frenzy_TimesFire_CannotOneShotLv3Fortress()
+        public void Frenzy_WithFire_CannotOneShotLv3Fortress()
         {
-            // 광분(테크)과 불(전직)은 서로를 모른다 — 둘 다 켜면 곱연산이 된다(기획서에 없는 조합).
-            // 못 박을 것은 "요새 Lv3을 한 방에 부수지는 못한다"이다. 이 선이 무너지면
-            // 쥐가 돈을 다 쓴 방벽이 고양이 클릭 한 번에 사라져 방어 축이 통째로 죽는다.
+            // 광분(테크)과 불(전직)은 이제 **곱하지 않는다** — 큰 쪽만 쓴다(계획 3 Task 5).
+            // 전직 문턱이 300으로 내려와 둘을 같이 켜는 일이 흔해졌고, 곱이면 ×5.0이라
+            // 쥐가 돈을 다 쓴 방벽이 고양이 클릭 한 번에 사라진다.
+            // 못 박을 것은 둘이다: ① 합성이 max다 ② 그래서 요새 Lv3을 한 방에 못 부순다.
             int maxPounce = ShopLogic.PounceDamage(
                 CTC.Runtime.Info.InfoManager.Instance.PlayerOf(RoleId.Cat).PounceDamage,
                 ShopLogic.MAX_UPGRADE_STACKS);
@@ -155,7 +156,11 @@ namespace CTC.Tests
             float fire = CTC.Runtime.Player.CatClassLogic.FireDamageMultiplier;
             Assert.Greater(frenzy, 1f, "광분 만렙 배율이 1보다 커야 이 테스트가 뜻을 가진다");
 
-            int burst = UnityEngine.Mathf.RoundToInt(maxPounce * fire * frenzy);
+            float combined = CTC.Runtime.Player.CatClassLogic.PounceMultiplier(frenzy, fire);
+            Assert.AreEqual(UnityEngine.Mathf.Max(frenzy, fire), combined, 1e-4f,
+                "광분·불을 곱하면 흡수(기획서 §5)가 아니다");
+
+            int burst = UnityEngine.Mathf.RoundToInt(maxPounce * combined);
             int fortressLv3 = UnityEngine.Mathf.RoundToInt(
                 TechLogic.ParamOf(TechId.Fortress, TechLogic.MaxLevel(TechId.Fortress), 1));
 
@@ -218,32 +223,25 @@ namespace CTC.Tests
             Assert.AreEqual(100, TechLogic.RowOf(TechId.Fortress, 1).Cost);
         }
 
-        /// <summary>테크 하나를 1레벨부터 만렙까지 다 올리는 데 드는 총액.</summary>
-        private static int TotalCost(TechId _id)
-        {
-            int sum = 0;
-            for (int lv = 1; lv <= TechLogic.MaxLevel(_id); lv++) sum += TechLogic.RowOf(_id, lv).Cost;
-            return sum;
-        }
-
         [Test]
         public void CatAdvancement_ReachableWithinOneMatch()
         {
             // 고양이 수입은 덮치기 하나뿐이다 — 쥐(100HP)를 잡으면 100/나눗값 + 킬 보너스.
-            // 전직(강화 두 줄 만렙)이 그 수입으로 판 안에 안 닿으면 4종 전직이 통째로
-            // 죽은 콘텐츠가 된다(2026-08-10 실측: 비용 1750 = 16킬, 720초·120×120에선 불가능).
+            // 전직이 그 수입으로 판 안에 안 닿으면 4종 전직이 통째로 죽은 콘텐츠가 된다
+            // (2026-08-10 실측: 비용 1750 = 16킬, 720초·120×120에선 불가능).
             //
-            // 이 판정이 없으면 강화 가격이나 킬 보너스를 만질 때마다 조용히 다시 막힌다.
-            // 테크 v3에서는 "만렙 = 레벨을 1..N 다 사는 값"이라 표에서 합산한다(현재 780).
-            // 계획 3에서 전직 조건이 300으로 바뀌면 이 판정을 다시 본다.
+            // 계획 3 Task 5부터 문턱은 **누적 획득 장난기 하나**다(전에는 강화 두 줄 만렙 = 실효 780).
+            // 무엇을 사든 상관없으므로 재는 것도 테크 가격이 아니라 CSV 문턱 그 자체다.
+            // 이 판정이 없으면 문턱이나 킬 보너스를 만질 때마다 조용히 다시 막히거나 너무 헐거워진다.
             int perCatch = 100 / FunLogic.PLAYER_DAMAGE_DIVISOR + FunLogic.KILL_BONUS;
-            int advanceCost = TotalCost(TechId.CatClaw) + TotalCost(TechId.CatStomp);
+            int threshold = CTC.Runtime.Player.CatClassLogic.MischiefThreshold;
 
-            Assert.LessOrEqual(advanceCost, perCatch * 10,
-                $"전직 {advanceCost} — 열 번 잡아도 못 열면 없는 기능이다");
-            // 반대로 너무 싸면 초반에 열려 남은 판이 일방적이 된다
-            Assert.Greater(advanceCost, perCatch * 5,
-                $"전직 {advanceCost} — 다섯 번 만에 열리면 후반 카드가 아니다");
+            Assert.LessOrEqual(threshold, perCatch * 10,
+                $"전직 문턱 {threshold} — 열 번 잡아도 못 열면 없는 기능이다");
+            // 반대로 너무 싸면 초반에 열려 남은 판이 일방적이 된다. 벽·구조물 수입까지 있으니
+            // "두 번 잡으면 전직"은 너무 이르다 — 지금 값 300은 잡기 ~3번이다.
+            Assert.Greater(threshold, perCatch * 2,
+                $"전직 문턱 {threshold} — 두 번 만에 열리면 후반 카드가 아니다");
         }
 
         [Test]

@@ -42,7 +42,31 @@ namespace CTC.Runtime.Testing
             return $"{d}/{s}";
         }
 
-        /// <summary>서버 전용 — 공격 강화만 만렙으로. "하나만 올리면 안 열린다"를 재는 데 쓴다.</summary>
+        /// <summary>
+        /// QA: 누적 획득 장난기(전직 문턱이 보는 값)와 문턱을 "번값/문턱"으로.
+        /// 잔액이 아니다 — 사도 안 줄어드는지 재는 데 쓴다.
+        /// </summary>
+        public string TestGetAdvanceMischief()
+        {
+            var wallet = LocalComponent<Economy.CheeseWallet>();
+            int earned = wallet != null ? wallet.EarnedValue : -1;
+            return $"{earned}/{CatClassLogic.MischiefThreshold}";
+        }
+
+        /// <summary>
+        /// 서버 전용 — 전직 문턱만큼 **벌게 한다**(아무것도 사지 않고 전직이 열리는지 재는 훅).
+        /// 이미 넘었으면 아무것도 안 한다. 지급은 <c>AddCheese</c>를 지나므로 잔액도 같이 오른다.
+        /// </summary>
+        public void TestGrantAdvanceMischief()
+        {
+            var wallet = LocalComponent<Economy.CheeseWallet>();
+            if (wallet == null) return;
+
+            int need = CatClassLogic.MischiefThreshold - wallet.EarnedValue;
+            if (need > 0) wallet.AddCheese(need);
+        }
+
+        /// <summary>서버 전용 — 공격 강화만 만렙으로(덮치기 피해 기준선용). **전직과는 무관하다**.</summary>
         public void TestMaxOneUpgrade()
         {
             var pounce = LocalComponent<CatPounce>();
@@ -51,7 +75,10 @@ namespace CTC.Runtime.Testing
             for (int i = 0; i < Economy.ShopLogic.MAX_UPGRADE_STACKS; i++) pounce.ServerAddDamageStack();
         }
 
-        /// <summary>서버 전용 — 강화를 둘 다 만렙으로.</summary>
+        /// <summary>
+        /// 서버 전용 — 강화를 둘 다 만렙으로. **이것만으로는 전직이 안 열린다**(2026-09-09):
+        /// 문턱은 누적 획득이라 <c>TestGrantAdvanceMischief</c>를 따로 불러야 한다.
+        /// </summary>
         public void TestMaxAllUpgrades()
         {
             TestMaxOneUpgrade();

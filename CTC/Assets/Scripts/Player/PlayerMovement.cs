@@ -46,7 +46,7 @@ namespace CTC.Runtime.Player
 
         public int SpeedStacks => m_SpeedStacks.Value;
 
-        /// <summary>강화 중첩 스트림 — 전직 창이 "다 올렸나"를 폴링 없이 안다(규칙 3).</summary>
+        /// <summary>강화 중첩 스트림 — HUD 배지가 폴링 없이 안다(규칙 3). 전직은 이제 안 본다.</summary>
         public R3.Observable<int> SpeedStacksChanged =>
             m_SpeedStacks.AsObservableWithCurrent();
 

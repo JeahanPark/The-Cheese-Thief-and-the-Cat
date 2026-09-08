@@ -30,7 +30,7 @@ namespace CTC.Runtime.Combat
 
         public int DamageStacks => m_DamageStacks.Value;
 
-        /// <summary>강화 중첩 스트림 — 전직 창이 "다 올렸나"를 폴링 없이 안다(규칙 3).</summary>
+        /// <summary>강화 중첩 스트림 — HUD 배지가 폴링 없이 안다(규칙 3). 전직은 이제 안 본다.</summary>
         public R3.Observable<int> DamageStacksChanged =>
             m_DamageStacks.AsObservableWithCurrent();
 
@@ -73,8 +73,8 @@ namespace CTC.Runtime.Combat
             // 자기 컴포넌트는 루프 밖에서 한 번만 찾는다 — 부채꼴 안 대상마다 GetComponent를
             // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
             Health self = GetComponent<Health>();
-            float fireMultiplier = FireMultiplier();
-            float frenzyMultiplier = FrenzyMultiplier();
+            // 광분과 불은 **곱하지 않는다** — 큰 쪽만 쓴다(CatClassLogic.PounceMultiplier에 이유가 있다).
+            float pounceMultiplier = Player.CatClassLogic.PounceMultiplier(FrenzyMultiplier(), FireMultiplier());
             // 배고픔(테크 v3 계획 2b) — 적립 배율. 미보유면 0이 와서 WithHunger가 그대로 돌려준다.
             float hunger = m_TechSlots != null
                 ? Economy.TechLogic.ParamOf(Economy.TechId.CatHunger,
@@ -106,10 +106,10 @@ namespace CTC.Runtime.Combat
                 bool exempt = target.GetComponent<BountyExempt>() != null;
 
                 int damage = ShopLogic.PounceDamage(m_Damage, m_DamageStacks.Value);
-                // 불(v3.9)·광분(테크 v3 계획 2b) — 켜져 있는 동안만 곱한다. 판정을 서버가 하므로 클라가 못 속인다.
-                // 둘은 서로를 모른다: 전직 불(×2)과 광분(×2.5)을 같이 켜면 ×5가 된다 — **기획서에 없는 조합**이다.
-                // 그래도 요새 Lv3(HP 1200)을 한 방에 부수지는 못한다(TechLogicTests가 그 선을 지킨다).
-                damage = Mathf.RoundToInt(damage * fireMultiplier * frenzyMultiplier);
+                // 불(v3.9)·광분(테크 v3 계획 2b) — 켜져 있는 동안만 1이 아니다. 판정을 서버가 하므로 클라가 못 속인다.
+                // 둘을 같이 켜도 **큰 쪽 하나만** 곱한다(계획 3 Task 5) — 곱하면 ×5가 되어
+                // 요새 Lv3까지 한 방에 닿는다. 그 선은 TechLogicTests가 지킨다.
+                damage = Mathf.RoundToInt(damage * pounceMultiplier);
                 int dealt = target.TakeDamage(damage);
 
                 // 가시 벽(요새 Lv3) — 벽을 친 고양이가 되맞는다. 실피해가 0이면(막혔거나 이미 죽음)

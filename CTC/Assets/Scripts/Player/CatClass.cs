@@ -1,5 +1,4 @@
 using CTC.Runtime.Core;
-using CTC.Runtime.Combat;
 using CTC.Runtime.Economy;
 using R3;
 using Unity.Netcode;
@@ -11,8 +10,8 @@ namespace CTC.Runtime.Player
     /// 고양이가 무엇으로 전직했는가 (v3.9). **상태만 갖는다** — 고르는 UI는 `UI/CatClassPopup`,
     /// 스킬을 쓰는 것은 `CatSkill`이다(기능 1개 = 컴포넌트 1개).
     ///
-    /// 전직은 상점 강화를 **둘 다 끝까지** 올려야 열린다. 하나만 올린 채로 열리면
-    /// "전직이 곧 최적 구매"가 되어 상점의 선택이 사라진다.
+    /// 전직은 **누적 획득 장난기**가 문턱(CSV `CatAdvanceMischief`)을 넘으면 열린다 —
+    /// 무엇을 샀는지는 묻지 않는다. 옛 조건("강화 둘 다 만렙")은 정해진 두 테크를 사라는 강제였다.
     ///
     /// 값은 전원이 읽는다 — 쥐도 상대가 무엇으로 전직했는지 알아야 대응할 수 있다.
     /// </summary>
@@ -25,17 +24,19 @@ namespace CTC.Runtime.Player
         /// <summary>전직 상태 스트림(MVC의 Model 노출) — 구독 즉시 현재 값이 흐른다.</summary>
         public Observable<CatClassId> ClassChanged => m_Class.AsObservableWithCurrent();
 
-        /// <summary>지금 전직할 수 있는가 — UI가 이걸 보고 창을 띄운다.</summary>
+        /// <summary>
+        /// 지금 전직할 수 있는가 — UI가 이걸 보고 창을 띄운다. 보는 것은 **지갑의 누적 획득** 하나다
+        /// (강화 스택을 더는 보지 않는다 — 2026-09-09 계획 3 Task 5).
+        /// </summary>
         public bool CanAdvance
         {
             get
             {
-                var pounce = GetComponent<CatPounce>();
-                var move = GetComponent<PlayerMovement>();
-                if (pounce == null || move == null) return false;
+                var wallet = GetComponent<CheeseWallet>();
+                if (wallet == null) return false;
 
                 return CatClassLogic.CanAdvance(
-                    pounce.DamageStacks, move.SpeedStacks, ShopLogic.MAX_UPGRADE_STACKS, m_Class.Value);
+                    wallet.EarnedValue, CatClassLogic.MischiefThreshold, m_Class.Value);
             }
         }
 

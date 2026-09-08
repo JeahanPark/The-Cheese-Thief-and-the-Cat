@@ -132,7 +132,8 @@ namespace CTC.Runtime.Economy
                 return;
             }
 
-            wallet.AddCheese(refund);
+            // 환급은 **번 게 아니라 되돌려 받은 것**이다 — 누적 획득(전직 문턱)에 안 섞는다.
+            wallet.RefundCheese(refund);
             Core.GameDebug.Log($"[Warehouse] {ownerId} 창고 파괴 환급 +{refund} (숨은 창고 Lv{hiddenLevel})");
         }
 

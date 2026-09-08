@@ -1,5 +1,5 @@
 using System;
-using CTC.Runtime.Combat;
+using CTC.Runtime.Economy;
 using CTC.Runtime.Core;
 using CTC.Runtime.Player;
 using R3;
@@ -11,12 +11,12 @@ using UnityEngine.UI;
 namespace CTC.Runtime.UI
 {
     /// <summary>
-    /// 전직 선택 창 (v3.9). 강화를 **둘 다 끝까지** 올린 고양이에게만 뜬다.
+    /// 전직 선택 창 (v3.9). **누적 획득 장난기**가 문턱을 넘은 고양이에게 뜬다(2026-09-09 계획 3 Task 5).
     ///
     /// MVC의 View + Controller다 — 상태는 `CatClass`가 갖고, 여기는 보여 주고 고른 값을
     /// 서버로 넘긴다. 서버가 조건을 다시 보므로 이 창을 속여도 전직되지 않는다.
     ///
-    /// **폴링하지 않는다**(규칙 3) — 강화 중첩 스트림 둘을 합쳐 구독하고,
+    /// **폴링하지 않는다**(규칙 3) — 지갑의 누적 스트림과 전직 상태를 합쳐 구독하고,
     /// 로컬 플레이어가 바뀌면 구독을 갈아 끼운다.
     /// </summary>
     public class CatClassPopup : MonoBehaviour
@@ -57,19 +57,17 @@ namespace CTC.Runtime.UI
             m_Binding.Disposable = null;
             m_Class = _player != null ? _player.GetComponent<CatClass>() : null;
 
-            var pounce = _player != null ? _player.GetComponent<CatPounce>() : null;
-            var move = _player != null ? _player.GetComponent<PlayerMovement>() : null;
-            if (m_Class == null || pounce == null || move == null)
+            var wallet = _player != null ? _player.GetComponent<CheeseWallet>() : null;
+            if (m_Class == null || wallet == null)
             {
                 Show(false);
                 return;
             }
 
-            // 강화 둘 + 전직 상태가 하나라도 바뀌면 다시 판단한다.
+            // 누적 획득 + 전직 상태가 하나라도 바뀌면 다시 판단한다.
             m_Binding.Disposable = Observable
                 .Merge(
-                    pounce.DamageStacksChanged.Select(_ => Unit.Default),
-                    move.SpeedStacksChanged.Select(_ => Unit.Default),
+                    wallet.Earned.Select(_ => Unit.Default),
                     m_Class.ClassChanged.Select(_ => Unit.Default))
                 .Subscribe(_ => Show(m_Class.CanAdvance));
         }

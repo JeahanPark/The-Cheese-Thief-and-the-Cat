@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""v3.9 고양이 전직 검증 (MPPM 3인).
+"""v3.9 고양이 전직 검증 (MPPM 3인). 문턱은 누적 획득 장난기다(2026-09-09 계획 3 Task 5).
 
 전제: 메인 에디터가 플레이모드, 클론 2개 접속, 매치 시작 완료.
 **호스트=고양이 · 클론 둘=쥐** — 전직하는 쪽이 서버여야 조건을 직접 세울 수 있다.
@@ -36,18 +36,18 @@ def main():
           f"강화 {cat.invoke('TestGetUpgradeStacks')}")
     check("전직 — 처음에는 직업이 없다", cat.invoke("TestGetCatClass") == "None")
 
-    # 강화 하나만 올려도 안 열려야 한다 — 열리면 '전직이 곧 최적 구매'가 된다
-    cat.invoke("TestGrantCheeseAll")
-    time.sleep(0.5)
-    cat.invoke("TestMaxOneUpgrade")
-    time.sleep(1.0)
-    check("전직 — 강화 하나만 올리면 안 열린다", not cat.invoke("TestGetCanAdvance"),
-          f"강화 {cat.invoke('TestGetUpgradeStacks')}")
-
+    # 문턱은 **누적 획득 장난기**다(계획 3 Task 5). 강화를 아무리 올려도 그것만으로는 안 열린다 —
+    # 옛 조건("강화 둘 다 만렙")은 정해진 두 테크를 사라는 강제였다.
     cat.invoke("TestMaxAllUpgrades")
     time.sleep(1.0)
-    check("전직 — 모든 강화를 올리면 열린다", cat.invoke("TestGetCanAdvance"),
-          f"강화 {cat.invoke('TestGetUpgradeStacks')}")
+    check("전직 — 강화를 다 올려도 그것만으론 안 열린다", not cat.invoke("TestGetCanAdvance"),
+          f"강화 {cat.invoke('TestGetUpgradeStacks')} · 누적 {cat.invoke('TestGetAdvanceMischief')}")
+
+    # **아무것도 사지 않고** 벌기만 해서 문턱을 넘긴다 — 강제가 사라졌다는 증거
+    cat.invoke("TestGrantAdvanceMischief")
+    time.sleep(1.0)
+    check("전직 — 누적 획득이 문턱에 닿으면 열린다", cat.invoke("TestGetCanAdvance"),
+          f"누적 {cat.invoke('TestGetAdvanceMischief')}")
 
     # ---------- 선택 ----------
     cat.invoke("TestChooseCatClass", _id="Fire")
@@ -56,7 +56,8 @@ def main():
           cat.invoke("TestGetCatClass"))
     check("전직 — 쥐 클라에도 보인다", m1.invoke("TestGetCatClassOf", _clientId=0) == "Fire",
           m1.invoke("TestGetCatClassOf", _clientId=0))
-    check("전직 — 두 번은 못 한다", not cat.invoke("TestGetCanAdvance"))
+    check("전직 — 두 번은 못 한다", not cat.invoke("TestGetCanAdvance"),
+          f"누적 {cat.invoke('TestGetAdvanceMischief')}")
     check("능력 바 — 전직하면 Q 칸이 전직명으로 생긴다", cat.invoke("TestGetAbilityBar") == "Q:불:Ready:0",
           cat.invoke("TestGetAbilityBar"))
 

@@ -274,9 +274,11 @@ def main():
           "칸 %s→%s→%s · 발 구르기 Lv=%s(값 %s, 지갑 %s→%s)"
           % (slots_4, slots_5, slots_6, stomp, stomp_cost, purse_before, purse_after))
 
-    # ---------- ⑥ 광분 + 전직 불 — 곱연산인가(설계 확인, 실패로 세지 않는다) ----------
-    # 기획서에 없는 조합이다(계획 2b Task 3 Step 4 주석). 값만 관측해 남긴다.
-    host.invoke("TestMaxAllUpgrades")          # 전직 조건(강화 만렙) — 덮치기 기본값도 함께 오른다
+    # ---------- ⑥ 광분 + 전직 불 — 곱이 아니라 max인가(계획 3 Task 5) ----------
+    # 곱이면 ×2.5 × ×2 = ×5.0, 흡수(기획서 §5)면 ×2.5다. 관측 배율로 재고 판정한다.
+    host.invoke("TestMaxAllUpgrades")          # 덮치기 기본값을 올린다(전직 조건과는 무관하다)
+    time.sleep(0.6)
+    host.invoke("TestGrantAdvanceMischief")    # 전직 문턱 = 누적 획득 장난기(2026-09-09)
     time.sleep(0.6)
     host.invoke("TestChooseCatClass", _id="Fire")
     time.sleep(1.0)
@@ -292,10 +294,14 @@ def main():
                bool(host.invoke("TestGetCatFrenzyActive", _clientId=c)))
     both_loss, s2, s3 = pounce_wall(host, host, m2, settle=1.2)
     both_ratio = (float(both_loss) / stack_loss) if stack_loss > 0 else 0.0
-    note("⑥ 광분 + 전직 불 동시 — 관측 배율",
-         "전직=%s 켜짐(불,광분)=%s · 벽 %s→%s(기준 -%s) %s→%s(둘 다 -%s) ×%.2f "
-         "(불 ×2 · 광분 ×2.5의 곱이면 ×5.0) 대기 쿨=%.1f"
-         % (cat_class, both_on, s0, s1, stack_loss, s2, s3, both_loss, both_ratio, cd_wait))
+    # 흡수라면 큰 쪽(광분 ×2.5)만 남는다. 곱(×5.0)이면 요새 Lv3이 한 방에 무너진다.
+    frenzy_only = 2.5
+    check("⑥ 광분 + 전직 불 — 곱(×5.0)이 아니라 큰 쪽(×2.5)만 곱한다",
+          cat_class == "Fire" and both_on == (True, True)
+          and abs(both_ratio - frenzy_only) < 0.35,
+          "전직=%s 켜짐(불,광분)=%s · 벽 %s→%s(기준 -%s) %s→%s(둘 다 -%s) ×%.2f "
+          "(흡수면 ×2.5 · 곱이면 ×5.0) 대기 쿨=%.1f"
+          % (cat_class, both_on, s0, s1, stack_loss, s2, s3, both_loss, both_ratio, cd_wait))
 
     # ---------- ⑦ 원샷 애니메이션 6종 ----------
     skip("⑦ 원샷 애니메이션(대시·끈끈이·요새·광분·구매·채굴)",

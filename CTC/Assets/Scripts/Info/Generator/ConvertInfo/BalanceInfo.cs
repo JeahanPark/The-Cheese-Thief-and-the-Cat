@@ -100,6 +100,7 @@ namespace CTC.Runtime.Info
         public float EarFollowSpeed;
         public float EyeFlatten;
         public float EyeInsetRatio;
+        public int CatAdvanceMischief;
     }
 
     public partial class InfoManager
