@@ -389,6 +389,57 @@ namespace CTC.Runtime.Testing
             await UniTask.Delay(TimeSpan.FromSeconds(_seconds), cancellationToken: _token);
             move.DevSetMoveInput(UnityEngine.Vector3.zero);
         }
+
+        // ===== 직업권 자리 (테크 v3 계획 3 Task 4) =====
+
+        /// <summary>
+        /// QA: 깡패권·용사권이 든 벽감/상자의 좌표 — "Gang:x,z|Hero:x,z" (못 찾으면 그 칸이 빈다).
+        ///
+        /// **서버 전용이다.** 벽 뒤 내용물은 복제하지 않는다(열기 전엔 아무도 몰라야 한다) —
+        /// 그래서 호스트에서만 답이 나온다. 판을 두 번 열어 이 문자열이 바뀌는지를 재는 훅이고,
+        /// 벽을 부숴 눈으로 확인하지 않기 위한 것이다.
+        /// </summary>
+        public string TestGetJobTicketPositions()
+        {
+            string gang = FindTicketPos(CTC.Runtime.Map.LootId.GangTicket);
+            string hero = FindTicketPos(CTC.Runtime.Map.LootId.HeroTicket);
+            return $"Gang:{gang}|Hero:{hero}";
+        }
+
+        private static string FindTicketPos(CTC.Runtime.Map.LootId _id)
+        {
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                if (!alcove.BoxContains(_id)) continue;
+                UnityEngine.Vector3 p = alcove.transform.position;
+                return $"{p.x:0.#},{p.z:0.#}";
+            }
+            foreach (var box in FindObjectsByType<CTC.Runtime.Map.LootBox>(FindObjectsSortMode.None))
+            {
+                if (!box.Contains(_id)) continue;
+                UnityEngine.Vector3 p = box.transform.position;
+                return $"{p.x:0.#},{p.z:0.#}";
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
+        /// QA: 맵에 깔린 상자·벽감이 품은 치즈 총합. **셔플이 총량을 안 건드렸는지**를 재는 값이라
+        /// 판마다 같아야 한다 — 이게 흔들리면 자리를 바꾼 게 아니라 내용을 만들거나 지운 것이다.
+        /// </summary>
+        public int TestGetMapLootCheese()
+        {
+            int sum = 0;
+            foreach (var alcove in FindObjectsByType<CTC.Runtime.Map.Alcove>(FindObjectsSortMode.None))
+            {
+                sum += alcove.BoxCheese;
+            }
+            foreach (var box in FindObjectsByType<CTC.Runtime.Map.LootBox>(FindObjectsSortMode.None))
+            {
+                sum += box.CheeseInside;
+            }
+            return sum;
+        }
     }
 }
 #endif

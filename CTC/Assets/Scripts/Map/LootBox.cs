@@ -39,6 +39,12 @@ namespace CTC.Runtime.Map
         /// <summary>QA용 — 지금 든 물건 수.</summary>
         public int ContentCount => m_Contents.Count;
 
+        /// <summary>서버 전용 — 이 상자가 품은 치즈(QA가 맵 총량이 안 변했는지 잴 때 쓴다).</summary>
+        public int CheeseInside => LootBoxLogic.CheeseIn(m_Contents);
+
+        /// <summary>서버 전용 — 이 상자에 그 물건이 들었나(QA가 직업권 자리를 셀 때 쓴다).</summary>
+        public bool Contains(LootId _id) => LootBoxLogic.Contains(m_Contents, _id);
+
         public override void OnNetworkSpawn()
         {
             if (!IsServer) return;

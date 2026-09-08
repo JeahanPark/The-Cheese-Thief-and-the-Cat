@@ -39,6 +39,12 @@ namespace CTC.Runtime.Map
         // 열고 나면 상자 자신이 들고 간다.
         private readonly List<LootEntry> m_BoxContents = new List<LootEntry>();
 
+        // 스폰 전에 받아 두는 페이로드. 스폰 전 NetworkVariable에 직접 쓰면 NGO가
+        // "doesn't know its NetworkBehaviour yet" 경고를 **판마다 벽감 수만큼** 뱉는다
+        // (계획 2a의 ThornWall·StickyPatch와 같은 처리, 2026-09-08).
+        private AlcovePayload m_PendingPayload;
+        private bool m_HasPendingPayload;
+
         private Health m_Health;
         private MapLayout m_Layout;
 
@@ -56,13 +62,21 @@ namespace CTC.Runtime.Map
         /// </summary>
         public void ServerSetPayload(AlcovePayload _payload)
         {
-            m_Payload.Value = _payload;
+            // 스폰 전이면 담아 두고 OnNetworkSpawn에서 흘린다(경고 회피).
+            m_PendingPayload = _payload;
+            m_HasPendingPayload = true;
+            if (IsSpawned && IsServer) m_Payload.Value = _payload;
 
+            // **최대 HP는 미루지 않는다.** Health.OnNetworkSpawn이 현재 HP를 최대치로 채우므로
+            // 그 뒤에 올리면 강아지 벽이 치즈 벽의 HP로 서 버린다(스폰 전 호출은 필드만 바꿔 경고가 없다).
             if (_payload != AlcovePayload.Dog) return;
 
             var health = GetComponent<Health>();
             if (health != null) health.ServerSetMaxHp(Info.InfoManager.Instance.Balance.DogAlcoveHp);
         }
+
+        /// <summary>서버 전용 — 벽 뒤 상자에 그 물건이 들었나(QA가 직업권 자리를 셀 때 쓴다).</summary>
+        public bool BoxContains(LootId _id) => LootBoxLogic.Contains(m_BoxContents, _id);
 
         /// <summary>서버 전용 — 벽 뒤 상자가 품을 것. 스폰 직전에 `AlcoveSpawner`가 넘긴다.</summary>
         public void ServerSetBoxContents(IReadOnlyList<LootEntry> _contents)
@@ -93,6 +107,13 @@ namespace CTC.Runtime.Map
             m_Payload.OnValueChanged += OnPayloadChanged;
 
             if (!IsServer) return;
+
+            // 스폰 전에 받아 둔 페이로드를 여기서 한 번에 올린다 — 이 시점 값이 초기 동기화에 실린다.
+            if (m_HasPendingPayload)
+            {
+                m_HasPendingPayload = false;
+                m_Payload.Value = m_PendingPayload;
+            }
 
             m_Health = GetComponent<Health>();
             m_Health.Died += OnDied;

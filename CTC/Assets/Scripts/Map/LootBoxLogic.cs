@@ -37,6 +37,18 @@ namespace CTC.Runtime.Map
             return sum;
         }
 
+        /// <summary>이 목록에 그 물건이 들었나 — 직업권이 어느 자리에 갔는지 세는 데 쓴다(계획 3 Task 4).</summary>
+        public static bool Contains(IReadOnlyList<LootEntry> _contents, LootId _id)
+        {
+            if (_contents == null) return false;
+
+            for (int i = 0; i < _contents.Count; i++)
+            {
+                if (_contents[i].Id == _id) return true;
+            }
+            return false;
+        }
+
         /// <summary>맵의 상자 전부가 품은 치즈 합계 — 지점 매장량에서 이만큼 뗀다.</summary>
         public static int TotalCheese(IReadOnlyList<BoxPlacement> _boxes)
         {

@@ -28,8 +28,14 @@ namespace CTC.Runtime.Map
             ServerDespawnAll();
             if (_layout == null || m_AlcovePrefab == null) return;
 
-            foreach (AlcovePlacement a in _layout.Alcoves)
+            IReadOnlyList<AlcovePlacement> placements = _layout.Alcoves;
+            // 벽 뒤 내용물만 판마다 섞는다 — 좌표·회전·페이로드(강아지 벽감)는 그대로다.
+            // 강아지가 든 벽이 판마다 옮겨 다니면 낑낑거리는 소리 단서가 거짓말이 된다(계획 3 Task 4).
+            int[] contentOrder = TicketPermutation(placements.Count);
+
+            for (int i = 0; i < placements.Count; i++)
             {
+                AlcovePlacement a = placements[i];
                 var pos = new Vector3(a.Pos.x, 0f, a.Pos.y);
                 GameObject go = Instantiate(m_AlcovePrefab, pos, Quaternion.Euler(0f, a.YawDeg, 0f));
 
@@ -39,8 +45,9 @@ namespace CTC.Runtime.Map
                 if (alcove != null)
                 {
                     alcove.ServerSetPayload(a.Payload);
-                    // 벽 뒤 상자가 품을 것 — 자리마다 다르다(직업권은 두 벽에만 있다)
-                    alcove.ServerSetBoxContents(a.BoxContents);
+                    // 벽 뒤 상자가 품을 것 — **통째로 교환**한다(직업권은 두 벽에만 있다).
+                    // 항목을 만들거나 지우지 않으므로 맵 총 치즈량이 정의상 안 변한다.
+                    alcove.ServerSetBoxContents(placements[contentOrder[i]].BoxContents);
                     alcove.ServerSetLayout(_layout);
                 }
 
@@ -48,6 +55,23 @@ namespace CTC.Runtime.Map
                 no.Spawn(true);
                 m_Spawned.Add(no);
             }
+        }
+
+        /// <summary>
+        /// 내용물을 섞을 순서(<c>i</c>번 자리 → <c>perm[i]</c>번 내용물). 매치 시드가 없으면(로비·봇 실험실)
+        /// **항등**이라 지금까지와 똑같이 선다.
+        /// </summary>
+        private static int[] TicketPermutation(int _count)
+        {
+            Match.MatchRandom random = Match.MatchRandom.Current;
+            if (random == null || random.Seed == 0)
+            {
+                var identity = new int[_count];
+                for (int i = 0; i < _count; i++) identity[i] = i;
+                return identity;
+            }
+            return TicketShuffleLogic.Permutation(
+                _count, Match.MatchRandom.SubSeed(random.Seed, Match.MatchRandom.SALT_TICKET));
         }
 
         /// <summary>서버 전용. 로비 복귀 시 판의 흔적을 지운다.</summary>
