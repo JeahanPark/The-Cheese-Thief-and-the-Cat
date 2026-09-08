@@ -364,7 +364,13 @@ namespace CTC.Runtime.Testing
             return string.Join(",", missing);
         }
 
-        /// <summary>QA: 창고가 생산을 몇 번 했는가 — 소리·이펙트가 발화한 횟수와 같다.</summary>
+        /// <summary>
+        /// QA: 창고가 **생산을 몇 번 했는가**(`WarehouseProduction.TickCount`).
+        ///
+        /// **소리·이펙트가 울린 횟수가 아니다**(2026-09-09 감사). 예전 주석은 둘이 같다고
+        /// 단언했지만 이 훅은 그걸 확인하지 않는다 — 소리 호출을 통째로 떼도 이 수는 그대로다.
+        /// 실제 재생 횟수는 `TestGetSfxPlayCount`(미구현 부채, `qa_v47` ⑦-b SKIP)가 답할 자리다.
+        /// </summary>
         public int TestGetWarehouseTicks()
         {
             int total = 0;

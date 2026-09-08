@@ -17,19 +17,24 @@ namespace CTC.Runtime.Testing
             return cls != null && cls.CanAdvance;
         }
 
-        /// <summary>QA: 로컬 플레이어의 전직 — "None"|"Fire"|"Wind"|"Light"|"Dark".</summary>
+        /// <summary>
+        /// QA: 로컬 플레이어의 전직 — "None"|"Fire"|"Wind"|"Light"|"Dark".
+        /// **컴포넌트를 못 찾으면 "Missing"**(2026-09-09 감사 T9) — `CatClassId.None`은
+        /// 「아직 전직 안 했다」는 정상값이라, 미배선을 같은 글자로 주면
+        /// 「처음에는 직업이 없다」가 빈 몸에서도 통과한다.
+        /// </summary>
         public string TestGetCatClass()
         {
             var cls = LocalComponent<CatClass>();
-            return cls != null ? cls.Value.ToString() : "None";
+            return cls != null ? cls.Value.ToString() : MISSING;
         }
 
-        /// <summary>QA: 지정 클라이언트의 전직(복제 확인용).</summary>
+        /// <summary>QA: 지정 클라이언트의 전직(복제 확인용). 못 찾으면 "Missing".</summary>
         public string TestGetCatClassOf(long _clientId)
         {
             var player = NetUtil.FindPlayerObject((ulong)_clientId);
             var cls = player != null ? player.GetComponent<CatClass>() : null;
-            return cls != null ? cls.Value.ToString() : "None";
+            return cls != null ? cls.Value.ToString() : MISSING;
         }
 
         /// <summary>QA: 강화 중첩 "damage/speed".</summary>
@@ -59,8 +64,10 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public void TestGrantAdvanceMischief()
         {
+            if (!RequireServer(nameof(TestGrantAdvanceMischief))) return;
+
             var wallet = LocalComponent<Economy.CheeseWallet>();
-            if (wallet == null) return;
+            if (wallet == null) { GameDebug.LogWarning("[TestManager] CheeseWallet 없음"); return; }
 
             int need = CatClassLogic.MischiefThreshold - wallet.EarnedValue;
             if (need > 0) wallet.AddCheese(need);
@@ -69,8 +76,10 @@ namespace CTC.Runtime.Testing
         /// <summary>서버 전용 — 공격 강화만 만렙으로(덮치기 피해 기준선용). **전직과는 무관하다**.</summary>
         public void TestMaxOneUpgrade()
         {
+            if (!RequireServer(nameof(TestMaxOneUpgrade))) return;
+
             var pounce = LocalComponent<CatPounce>();
-            if (pounce == null) return;
+            if (pounce == null) { GameDebug.LogWarning("[TestManager] CatPounce 없음"); return; }
 
             for (int i = 0; i < Economy.ShopLogic.MAX_UPGRADE_STACKS; i++) pounce.ServerAddDamageStack();
         }
@@ -81,10 +90,12 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public void TestMaxAllUpgrades()
         {
+            if (!RequireServer(nameof(TestMaxAllUpgrades))) return;
+
             TestMaxOneUpgrade();
 
             var move = LocalComponent<PlayerMovement>();
-            if (move == null) return;
+            if (move == null) { GameDebug.LogWarning("[TestManager] PlayerMovement 없음"); return; }
 
             for (int i = 0; i < Economy.ShopLogic.MAX_UPGRADE_STACKS; i++) move.ServerAddSpeedStack();
         }
@@ -108,7 +119,22 @@ namespace CTC.Runtime.Testing
         public bool TestGetCatSkillActive()
         {
             var skill = LocalComponent<CatSkill>();
-            return skill != null && skill.Active;
+            if (skill == null)
+            {
+                GameDebug.LogWarning("[TestManager] CatSkill 없음 — false는 「꺼짐」이 아니다");
+                return false;
+            }
+            return skill.Active;
+        }
+
+        /// <summary>
+        /// QA: 스킬 상태를 **세 값**으로 — "On"|"Off"|"Missing" (2026-09-09 감사 T9·E-06).
+        /// </summary>
+        public string TestGetCatSkillState()
+        {
+            var skill = LocalComponent<CatSkill>();
+            if (skill == null) return MISSING;
+            return skill.Active ? "On" : "Off";
         }
 
         /// <summary>QA: 지정 클라이언트의 스킬 활성(복제 확인용) — 쥐 화면 효과가 이걸 본다.</summary>

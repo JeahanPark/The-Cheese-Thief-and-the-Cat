@@ -118,6 +118,7 @@ namespace CTC.Runtime.Match
         private static void SpawnMarker(Transform _target)
         {
             var go = new GameObject("CheerMarker");
+            go.AddComponent<CheerMarker>();   // 계측이 이름이 아니라 이걸 센다(2026-09-09 감사)
             go.transform.SetParent(_target, false);
             go.transform.localPosition = new Vector3(0f, MARKER_HEIGHT, 0f);
 

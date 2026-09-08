@@ -195,10 +195,25 @@ namespace CTC.Runtime.Testing
             GameDebug.Log($"[TestManager] TestStartHost → {started}");
         }
 
+        /// <summary>
+        /// 「서버 전용」이라고 적힌 훅의 **실제** 가드(2026-09-09 감사 E-22).
+        ///
+        /// 주석에만 적어 두고 피호출부가 막게 두면, 클라에서 부른 훅이 **경고 한 줄 없이
+        /// 아무 일도 안 한다** — QA는 「했는데 효과가 없다」로 읽어 엉뚱한 곳을 판다.
+        /// </summary>
+        private static bool RequireServer(string _hook)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm != null && nm.IsServer) return true;
+
+            GameDebug.LogWarning($"[TestManager] {_hook} — 서버 전용인데 클라이언트에서 불렀다(무동작)");
+            return false;
+        }
+
         public void TestSelectRoleCat()
         {
             LobbyController lobby = FindLobby();
-            if (lobby == null) return;
+            if (lobby == null) { GameDebug.LogWarning("[TestManager] LobbyController 없음 — 역할을 못 고른다"); return; }
 
             lobby.DevSelectCat();
             GameDebug.Log("[TestManager] TestSelectRoleCat → LobbyController.DevSelectCat");
@@ -207,7 +222,7 @@ namespace CTC.Runtime.Testing
         public void TestSelectRoleMouse()
         {
             LobbyController lobby = FindLobby();
-            if (lobby == null) return;
+            if (lobby == null) { GameDebug.LogWarning("[TestManager] LobbyController 없음 — 역할을 못 고른다"); return; }
 
             lobby.DevSelectMouse();
             GameDebug.Log("[TestManager] TestSelectRoleMouse → LobbyController.DevSelectMouse");
@@ -216,7 +231,7 @@ namespace CTC.Runtime.Testing
         public void TestStartGame()
         {
             LobbyController lobby = FindLobby();
-            if (lobby == null) return;
+            if (lobby == null) { GameDebug.LogWarning("[TestManager] LobbyController 없음 — 판을 못 시작한다"); return; }
 
             lobby.DevStartGame();
             GameDebug.Log("[TestManager] TestStartGame → LobbyController.DevStartGame");
@@ -242,24 +257,43 @@ namespace CTC.Runtime.Testing
             gun.DevShootAtNearestCat();
         }
 
-        /// <summary>서버(호스트) 전용: 고양이 즉사 — 쥐 승리 판정 QA.</summary>
-        public void TestKillCat()
+        /// <summary>
+        /// 「못 찾았다·미배선」을 뜻하는 문자열 센티널(2026-09-09 감사 T9).
+        ///
+        /// 열거 이름을 돌려주는 훅은 **정상값과 겹치지 않는 값**으로 없음을 말해야 한다 —
+        /// `MouseJobId.None`·`MatchResult.None`은 「아직 없다」는 **정상**이라,
+        /// 미배선을 같은 글자로 돌려주면 빈 씬에서도 단언이 통과한다.
+        /// </summary>
+        public const string MISSING = "Missing";
+
+        /// <summary>
+        /// 서버(호스트) 전용: 고양이 **전원** 즉사 — 쥐 승리 판정 QA. 죽인 마릿수를 돌려준다.
+        ///
+        /// 예전에는 첫 마리에서 `return` 했다(2026-09-09 감사) — 이름은 복수인데 한 마리만
+        /// 죽여서, **고양이 2인 판에서 「쥐 승」이 영영 안 났다**. 그 경로가 계측에서 빠져 있었다.
+        /// </summary>
+        public int TestKillCat()
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             if (nm == null || !nm.IsServer)
             {
                 GameDebug.LogWarning("[TestManager] TestKillCat — 서버 아님");
-                return;
+                return -1;
             }
 
+            int killed = 0;
             foreach (var health in FindObjectsByType<Health>())
             {
                 var tag = health.GetComponent<RoleTag>();
                 if (tag == null || tag.Role != RoleId.Cat) continue;
+                if (health.IsDead) continue;
                 health.TakeDamage(999999);
-                GameDebug.Log("[TestManager] TestKillCat → 고양이 처치");
-                return;
+                killed++;
             }
+
+            if (killed == 0) GameDebug.LogWarning("[TestManager] TestKillCat — 살아 있는 고양이가 없다");
+            else GameDebug.Log($"[TestManager] TestKillCat → 고양이 {killed}마리 처치");
+            return killed;
         }
 
         /// <summary>서버(호스트) 전용: 매치 재시작 — 결과 화면 QA.</summary>

@@ -72,15 +72,16 @@ namespace CTC.Runtime.Testing
             cheer.DevCheer((ulong)_targetClientId);
         }
 
-        /// <summary>QA: 씬에 떠 있는 따봉 마커 수 — 고양이 화면에서는 0이어야 한다.</summary>
+        /// <summary>
+        /// QA: 씬에 떠 있는 따봉 마커 수 — 고양이 화면에서는 0이어야 한다.
+        ///
+        /// **전용 컴포넌트로 센다**(2026-09-09 감사). 예전에는 `gameObject.name == "CheerMarker"`
+        /// 문자열 매칭이라, 마커를 개명하면 영원히 0이 되어 「고양이 화면에는 0」이
+        /// **항상 통과**했다 — 같은 파일의 `HudText` 주석이 경고하는 바로 그 짓이었다.
+        /// </summary>
         public int TestGetCheerMarkerCount()
         {
-            int count = 0;
-            foreach (var tmp in FindObjectsByType<TMPro.TextMeshPro>(FindObjectsSortMode.None))
-            {
-                if (tmp.gameObject.name == "CheerMarker") count++;
-            }
-            return count;
+            return FindObjectsByType<CTC.Runtime.Match.CheerMarker>(FindObjectsSortMode.None).Length;
         }
 
         // ===== 채팅 (2026-08-01) =====
@@ -213,14 +214,23 @@ namespace CTC.Runtime.Testing
             return popup != null && popup.IsOpen;
         }
 
-        /// <summary>QA: 설정값 읽기 — "sensitivity" | "bgm" | "sfx".</summary>
+        /// <summary>
+        /// QA: 설정값 읽기 — "sensitivity" | "bgm" | "sfx". **모르는 키는 NaN + 경고**다.
+        ///
+        /// 예전에는 읽기·쓰기의 `default:`가 **둘 다 sfx**였다(2026-09-09 감사 T8).
+        /// 오타 키(`"volume"`·`"master"`)가 쓰기도 읽기도 sfx로 새어, 왕복 단언이
+        /// **자기 일관되게 통과**했다 — 어떤 단언으로도 못 잡는 거짓말이었다.
+        /// </summary>
         public float TestGetSetting(string _key)
         {
             switch (_key)
             {
                 case "sensitivity": return UserSettings.MouseSensitivity.Value;
                 case "bgm": return UserSettings.BgmVolume.Value;
-                default: return UserSettings.SfxVolume.Value;
+                case "sfx": return UserSettings.SfxVolume.Value;
+                default:
+                    GameDebug.LogWarning($"[TestManager] 모르는 설정 키 '{_key}' — sensitivity|bgm|sfx");
+                    return float.NaN;
             }
         }
 
@@ -246,14 +256,21 @@ namespace CTC.Runtime.Testing
         /// <summary>QA: 옵션 창의 "취소"·ESC — 저장된 값으로 미리듣기를 되돌린다.</summary>
         public void TestRevertSettings() => UserSettings.Revert();
 
-        /// <summary>QA: 설정값 쓰기 — 슬라이더를 드래그한 것과 같은 경로(Model에 직접).</summary>
+        /// <summary>
+        /// QA: 설정값 쓰기 — 슬라이더를 드래그한 것과 같은 경로(Model에 직접).
+        /// **모르는 키는 아무것도 안 쓰고 경고**한다(감사 T8) — 읽기와 짝이 맞아야
+        /// 오타 키의 왕복이 실패한다.
+        /// </summary>
         public void TestSetSetting(string _key, float _value)
         {
             switch (_key)
             {
                 case "sensitivity": UserSettings.MouseSensitivity.Value = _value; break;
                 case "bgm": UserSettings.BgmVolume.Value = _value; break;
-                default: UserSettings.SfxVolume.Value = _value; break;
+                case "sfx": UserSettings.SfxVolume.Value = _value; break;
+                default:
+                    GameDebug.LogWarning($"[TestManager] 모르는 설정 키 '{_key}' — 아무것도 안 썼다");
+                    break;
             }
         }
 

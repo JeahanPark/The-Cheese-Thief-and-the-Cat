@@ -60,6 +60,7 @@ namespace CTC.Runtime.Ai
         private int m_Index;
         private bool m_HasGoal;
         private bool m_GaveUp;
+        private bool m_PlanGaveUp;       // 이번 계획이 포기로 끝났나 — 계측 전용(ConsumeGaveUp과 별개)
         private bool m_StraightMode;
         private bool m_ForcePath;        // 직선으로 가다 막혔다 — 다음 계획은 직선 지름길을 건너뛴다
         private float m_NextPlanTime;
@@ -101,11 +102,34 @@ namespace CTC.Runtime.Ai
         /// <summary>경로 계산에 쓴 실시간 누적(ms). 배속에서도 뜻이 변하지 않게 실시간으로 잰다.</summary>
         public double PlanMillis { get; private set; }
 
-        /// <summary>마지막 경로의 우회율 = 경로 길이 / 도착점까지 직선. 1이면 곧장.</summary>
-        public float LastDetour { get; private set; } = 1f;
+        /// <summary>「잰 적 없다」 — 우회율이 만점(1)과 구분돼야 포기가 지표를 좋게 만들지 않는다.</summary>
+        public const float NO_DETOUR = NavStatsLogic.NO_DETOUR;
 
-        /// <summary>경로가 원본 목표에서 얼마나 못 미치고 끝났나(m).</summary>
+        /// <summary>
+        /// 마지막 경로의 우회율 = 경로 길이 / 도착점까지 직선. 1이면 곧장.
+        /// **길을 못 찾았거나 이미 그 자리면 <see cref="NO_DETOUR"/>다** — 예전에는 여기에
+        /// 1f(만점)를 적어 **포기가 우회율을 좋게 만들었다**(2026-09-09 감사 T6).
+        /// </summary>
+        public float LastDetour { get; private set; } = NO_DETOUR;
+
+        /// <summary>경로가 원본 목표에서 얼마나 못 미치고 끝났나(m). 포기면 목표까지 통째로.</summary>
         public float LastShortfall { get; private set; }
+
+        // ---- 누적 계측(2026-09-09 감사 T6) ----
+        // 판 통계는 **마지막 한 건이 아니라 누적**이라야 뜻이 있다. 마지막 건만 보면
+        // 포기 직후에 물어본 값이 그 봇의 판 전체를 대표해 버린다.
+
+        /// <summary>우회율을 실제로 잰 경로 수(포기·제자리 경로는 표본이 아니다).</summary>
+        public int DetourSamples { get; private set; }
+
+        /// <summary>잰 우회율의 합. 평균은 <see cref="DetourSamples"/>로 나눈다.</summary>
+        public float DetourSum { get; private set; }
+
+        /// <summary>목표 미달을 잰 계획 수(성공·포기 둘 다 표본이다).</summary>
+        public int ShortfallSamples { get; private set; }
+
+        /// <summary>목표 미달(m)의 합.</summary>
+        public float ShortfallSum { get; private set; }
 
         /// <summary>마지막 탐색이 열어 본 노드 수.</summary>
         public int LastNodes { get; private set; }
@@ -274,6 +298,7 @@ namespace CTC.Runtime.Ai
         private void Replan()
         {
             PlanCount++;
+            m_PlanGaveUp = false;
             long startTicks = System.Diagnostics.Stopwatch.GetTimestamp();
             ReplanCore();
             PlanMillis += (System.Diagnostics.Stopwatch.GetTimestamp() - startTicks)
@@ -368,27 +393,51 @@ namespace CTC.Runtime.Ai
         }
 
         // 마지막 경로가 직선 대비 얼마나 돌아가는가 — 길찾기 품질의 한 줄 요약.
+        //
+        // **포기는 만점이 아니다**(2026-09-09 감사 T6). 코너가 없다는 건 「곧장 갔다」가 아니라
+        // 「길이 없어서 아무 데도 안 갔다」다. 그걸 1.00으로 적으면 길찾기가 나빠질수록
+        // 지표가 좋아진다 — 그래서 우회율은 **표본에서 뺀다**. 대신 목표 미달(short)은
+        // 포기했을 때 **목표까지 통째로** 적는다. 포기가 어딘가에서는 반드시 나빠져야 한다.
         private void MeasureDetour()
         {
-            if (m_Self == null || m_Corners.Count == 0)
+            if (m_Self == null)
             {
-                LastDetour = 1f;
+                LastDetour = NO_DETOUR;
                 LastShortfall = 0f;
                 return;
             }
 
+            int corners = m_Corners.Count;
             Vector3 cursor = m_Self.position;
             float walked = 0f;
-            for (int i = 0; i < m_Corners.Count; i++)
+            for (int i = 0; i < corners; i++)
             {
                 walked += Flat(m_Corners[i] - cursor).magnitude;
                 cursor = m_Corners[i];
             }
 
-            Vector3 last = m_Corners[m_Corners.Count - 1];
-            float direct = Flat(last - m_Self.position).magnitude;
-            LastDetour = direct > 0.5f ? walked / direct : 1f;
-            LastShortfall = Flat(m_Goal - last).magnitude;
+            float direct = corners > 0
+                ? Flat(m_Corners[corners - 1] - m_Self.position).magnitude
+                : 0f;
+            float goalFromLast = corners > 0
+                ? Flat(m_Goal - m_Corners[corners - 1]).magnitude
+                : 0f;
+
+            // 「무엇을 표본으로 세는가」는 전부 순수 함수가 정한다 — EditMode가 그걸 잰다.
+            LastDetour = NavStatsLogic.Detour(corners, walked, direct);
+            if (NavStatsLogic.IsDetourSample(corners, direct))
+            {
+                DetourSamples++;
+                DetourSum += LastDetour;
+            }
+
+            LastShortfall = NavStatsLogic.Shortfall(
+                corners, m_PlanGaveUp, goalFromLast, Flat(m_Goal - m_Self.position).magnitude);
+            if (NavStatsLogic.IsShortfallSample(corners, m_PlanGaveUp))
+            {
+                ShortfallSamples++;
+                ShortfallSum += LastShortfall;
+            }
         }
 
         // 격자 밖이거나 길이 아예 없다 — 두뇌가 다른 목표를 잡아야 한다.
@@ -400,6 +449,7 @@ namespace CTC.Runtime.Ai
         {
             GiveUpCount++;
             m_GaveUp = true;
+            m_PlanGaveUp = true;
             m_HasGoal = false;
             m_StraightMode = false;
             m_Corners.Clear();

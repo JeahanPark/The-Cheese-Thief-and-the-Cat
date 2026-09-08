@@ -29,18 +29,23 @@ namespace CTC.Runtime.Testing
             if (manager != null) manager.Stop();
         }
 
-        /// <summary>QA: 지금 도는 봇 수.</summary>
+        /// <summary>
+        /// QA: 지금 도는 봇 수. **계측기 자체가 없으면 -1**(2026-09-09 감사 T9) —
+        /// 「봇이 0마리다」와 「TestBotManager가 씬에 없다」는 다른 사실이다.
+        /// </summary>
         public int TestGetBotCount()
         {
             var manager = TestBotManager.Instance;
-            return manager != null ? manager.Count : 0;
+            if (manager == null) { GameDebug.LogWarning("[TestManager] TestBotManager 없음"); return -1; }
+            return manager.Count;
         }
 
-        /// <summary>QA: 봇 쥐 수 — 치즈 총량이 여기 비례한다.</summary>
+        /// <summary>QA: 봇 쥐 수 — 치즈 총량이 여기 비례한다. 계측기가 없으면 -1.</summary>
         public int TestGetBotMouseCount()
         {
             var manager = TestBotManager.Instance;
-            return manager != null ? manager.MouseCount : 0;
+            if (manager == null) { GameDebug.LogWarning("[TestManager] TestBotManager 없음"); return -1; }
+            return manager.MouseCount;
         }
 
         /// <summary>QA: 고양이 봇이 쥐를 처음 본 시각(초). 못 봤으면 -1.</summary>
@@ -60,11 +65,15 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.FirstSightDistance() : -1f;
         }
 
-        /// <summary>QA: 쥐 봇들이 지금까지 번 치즈 합. 0이면 아무도 안 캔 것이다.</summary>
+        /// <summary>
+        /// QA: 쥐 봇들의 지갑 합 — **판을 떠난 쥐의 마지막 잔고를 포함한다**(감사 F-9).
+        /// 0이면 아무도 안 캔 것이고, **계측기가 없으면 -1**이다(둘은 다른 사실이다).
+        /// </summary>
         public int TestGetBotMouseCheese()
         {
             var manager = TestBotManager.Instance;
-            return manager != null ? manager.MouseCheese() : 0;
+            if (manager == null) { GameDebug.LogWarning("[TestManager] TestBotManager 없음"); return -1; }
+            return manager.MouseCheese();
         }
 
         /// <summary>

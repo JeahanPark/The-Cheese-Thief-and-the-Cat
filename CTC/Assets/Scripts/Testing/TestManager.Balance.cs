@@ -44,21 +44,57 @@ namespace CTC.Runtime.Testing
             return steps.CurrentRange;
         }
 
-        /// <summary>QA: 지금 쥐를 고른 사람 수 — 치즈 총량이 여기 비례한다.</summary>
+        /// <summary>
+        /// QA: 지금 쥐를 고른 **사람** 수. 로비를 못 찾으면 -1.
+        ///
+        /// **이 수는 치즈 총량의 분모가 아니다**(2026-09-09 감사 T7) — 총량은 봇을 포함한
+        /// 「실제로 선 몸」에 비례한다(<see cref="TestGetSpawnedMouseCount"/>). 이 훅은
+        /// 「계측 판에 사람이 섞였나」를 묻는 오염 검사 전용이다.
+        /// </summary>
         public int TestGetMouseCount()
         {
             var lobby = FindFirstObjectByType<LobbyController>();
-            return lobby != null ? lobby.MouseCount : 0;
+            if (lobby == null)
+            {
+                GameDebug.LogWarning("[TestManager] LobbyController 없음 — 사람 쥐 수를 못 센다");
+                return -1;
+            }
+            return lobby.MouseCount;
         }
 
-        /// <summary>QA: 이 판의 치즈 총량(쥐 1인당 몫 × 인원, 맵 권장 최소 인원 하한 적용).</summary>
+        /// <summary>
+        /// QA: 지금 씬에 **실제로 선 쥐의 몸** 수(봇 포함) — 치즈 총량의 분모다.
+        /// 게임이 쓰는 바로 그 함수를 부른다(<see cref="CheeseSpotDirector.CountSpawnedMice"/>).
+        /// </summary>
+        public int TestGetSpawnedMouseCount() => CheeseSpotDirector.CountSpawnedMice();
+
+        /// <summary>
+        /// QA: 게임이 **매장량을 깔 때 실제로 쓴** 쥐 수. 총량 산수의 분모는 이 수다.
+        /// 아직 안 깔았거나(로비) 서버가 아니면 지금 선 몸 수로 대신하고 경고를 남긴다.
+        /// </summary>
+        public int TestGetDesignedMouseCount()
+        {
+            var spots = FindFirstObjectByType<CheeseSpotDirector>();
+            if (spots != null && spots.DesignedMiceCount >= 0) return spots.DesignedMiceCount;
+
+            GameDebug.LogWarning("[TestManager] 매장량을 아직 안 깔았다 — 지금 선 몸 수로 답한다");
+            return TestGetSpawnedMouseCount();
+        }
+
+        /// <summary>
+        /// QA: 이 판의 치즈 총량(쥐 1인당 몫 × 인원, 맵 권장 최소 인원 하한 적용).
+        ///
+        /// 분모는 **로비 사람 수가 아니라 실제로 선 몸**이다(2026-09-09 감사 T7).
+        /// 예전에는 훅만 로비를 봐서, 봇이 8마리 낀 판에서 게임의 실제 총량과
+        /// **최대 8배** 어긋났다(사람만 있는 스위트라 아직 안 물렸을 뿐이다).
+        /// </summary>
         public int TestGetMapTotalCheese()
         {
             var director = FindFirstObjectByType<MapDirector>();
             MapLayout layout = director != null ? director.ActiveLayout : null;
             int floor = layout != null ? layout.RecommendedMiceMin : 1;
             return CheeseSpotLogic.MapTotal(
-                CheeseSpotLogic.EffectiveMiceCount(TestGetMouseCount(), floor));
+                CheeseSpotLogic.EffectiveMiceCount(TestGetDesignedMouseCount(), floor));
         }
 
         /// <summary>QA: 고양이 정원.</summary>
@@ -93,12 +129,18 @@ namespace CTC.Runtime.Testing
         {
             var director = FindFirstObjectByType<MapDirector>();
             MapLayout layout = director != null ? director.ActiveLayout : null;
-            if (layout == null) return 0;
+            if (layout == null)
+            {
+                GameDebug.LogWarning("[TestManager] MapLayout 없음 — 설계 매장량을 못 낸다");
+                return -1;
+            }
 
             int spots = TestGetCheeseSpotObjectCount();
             int reserved = AlcoveLogic.TotalCheese(layout.Alcoves)
                            + LootBoxLogic.TotalCheese(layout.Boxes);
-            int mice = CheeseSpotLogic.EffectiveMiceCount(TestGetMouseCount(), layout.RecommendedMiceMin);
+            // 분모는 게임과 같은 것을 쓴다(감사 T7·E-16).
+            int mice = CheeseSpotLogic.EffectiveMiceCount(
+                TestGetDesignedMouseCount(), layout.RecommendedMiceMin);
             return spots * CheeseSpotLogic.ReservePerSpot(spots, reserved, mice);
         }
 

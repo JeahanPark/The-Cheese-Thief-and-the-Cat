@@ -296,7 +296,27 @@ namespace CTC.Runtime.Testing
         {
             GameObject p = FindPlayerGo(_clientId);
             CatFrenzy frenzy = p != null ? p.GetComponent<CatFrenzy>() : null;
-            return frenzy != null && frenzy.Active;
+            if (frenzy == null)
+            {
+                // **bool은 「없음」을 말할 수 없다**(2026-09-09 감사 T9). 컴포넌트가 통째로
+                // 빠져도 false가 나가 「꺼져 있다」 단언이 헛통과한다 — 그래서 크게 운다.
+                // 세 값이 필요하면 <see cref="TestGetCatFrenzyState"/>를 쓴다.
+                GameDebug.LogWarning($"[TestManager] CatFrenzy 없음(client {_clientId}) — false는 「꺼짐」이 아니다");
+                return false;
+            }
+            return frenzy.Active;
+        }
+
+        /// <summary>
+        /// QA: 광분 상태를 **세 값**으로 — "On"|"Off"|"Missing".
+        /// bool 훅이 못 하는 「컴포넌트가 아예 없다」를 말한다(2026-09-09 감사 T9·E-06).
+        /// </summary>
+        public string TestGetCatFrenzyState(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            CatFrenzy frenzy = p != null ? p.GetComponent<CatFrenzy>() : null;
+            if (frenzy == null) return MISSING;
+            return frenzy.Active ? "On" : "Off";
         }
 
         /// <summary>

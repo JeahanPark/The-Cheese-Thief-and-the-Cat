@@ -401,8 +401,17 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public string TestGetJobTicketPositions()
         {
+            // **가드를 실제로 건다**(2026-09-09 감사) — 예전에는 주석뿐이라, 클라에서 부르면
+            // 늘 "Gang:|Hero:"가 나왔다. 두 판을 비교하는 검사가 그걸 「자리가 안 바뀐다」로
+            // 읽어, 셔플이 죽어 있어도 통과했다.
+            if (!RequireServer(nameof(TestGetJobTicketPositions))) return MISSING;
+
             string gang = FindTicketPos(CTC.Runtime.Map.LootId.GangTicket);
             string hero = FindTicketPos(CTC.Runtime.Map.LootId.HeroTicket);
+            if (gang == MISSING || hero == MISSING)
+            {
+                GameDebug.LogWarning($"[TestManager] 직업권을 못 찾았다 — Gang:{gang} Hero:{hero}");
+            }
             return $"Gang:{gang}|Hero:{hero}";
         }
 
@@ -420,7 +429,7 @@ namespace CTC.Runtime.Testing
                 UnityEngine.Vector3 p = box.transform.position;
                 return $"{p.x:0.#},{p.z:0.#}";
             }
-            return string.Empty;
+            return MISSING;   // 빈 문자열이면 「자리가 안 바뀐다」로 읽힌다(2026-09-09 감사)
         }
 
         /// <summary>

@@ -48,6 +48,13 @@ namespace CTC.Runtime.Economy
         private float m_Timer;
 
         public bool RevivedThisMatch => m_RevivedThisMatch;
+
+        /// <summary>
+        /// 매장량을 깔 때 **실제로 쓴 쥐 수**(봇 포함). 아직 안 깔았으면 -1.
+        /// 계측이 같은 식을 다시 계산하지 않고 **이 수를 그대로 읽게** 하려고 남긴다
+        /// (2026-09-09 감사 T7 — 훅과 게임의 분모가 갈라져 있었다).
+        /// </summary>
+        public int DesignedMiceCount { get; private set; } = -1;
         public IReadOnlyList<CheeseSpot> Spots => m_Spots;
 
         private void Awake()
@@ -154,6 +161,7 @@ namespace CTC.Runtime.Economy
             // **로비 목록이 아니라 실제로 선 몸을 센다**(2026-08-11). 로비는 사람만 알지만
             // 총량이 비례해야 하는 건 "이 판에서 캐는 입"이다 — 측정용 봇도 캔다.
             int mice = CountSpawnedMice();
+            DesignedMiceCount = mice;
             var layout = m_Lobby != null ? m_Lobby.ActiveLayout : null;
             int floor = layout != null ? layout.RecommendedMiceMin : 1;
             int reserve = CheeseSpotLogic.ReservePerSpot(
@@ -177,8 +185,13 @@ namespace CTC.Runtime.Economy
             ResetAll();
         }
 
-        // 씬에 실제로 선 쥐의 몸. 요새·창고·벽감은 RoleTag.Mouse지만 PlayerMovement가 없다.
-        private static int CountSpawnedMice()
+        /// <summary>
+        /// 씬에 실제로 선 쥐의 몸. 요새·창고·벽감은 RoleTag.Mouse지만 PlayerMovement가 없다.
+        ///
+        /// **치즈 총량의 분모는 이것 하나다**(2026-09-09 감사 T7). QA 훅이 로비 사람 수로
+        /// 따로 계산하다가 봇 판에서 최대 8배 어긋났다 — 그래서 훅도 이 함수를 부른다.
+        /// </summary>
+        public static int CountSpawnedMice()
         {
             int count = 0;
             foreach (Combat.RoleTag tag in FindObjectsByType<Combat.RoleTag>(FindObjectsSortMode.None))

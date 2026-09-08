@@ -49,6 +49,70 @@
 
 ---
 
+## 0-B. 1단계 조치 기록 — C# 훅의 정직성 (2026-09-09 실행)
+
+> 범위는 **계측 코드만**이다. 게임 로직(P0-1~9)과 `tools/wesqa/`의 파이썬은 손대지 않았다.
+> EditMode **650/650 통과**(기준선 629 + 신규 21). 컴파일 에러 0.
+
+### 고친 것
+
+| # | 무엇이 거짓이었나 | 어떻게 고쳤나 | 어디 |
+|---|---|---|---|
+| **T4 / F-3** | 「첫 발견」이 최솟값이 아니라 **살아 있는 고양이 목록의 첫 값** — 고양이가 죽을수록 늦어졌다 | `EarliestSight()`가 **퇴장분까지 접어 최솟값**을 낸다. 시각·거리를 **한 사건으로 묶어** 접는다(따로 접으면 없던 사건이 나온다) | `Bots/TestBotManager.cs` · `Bots/BotStatsLogic.cs`(신규 순수) |
+| **T6 / F-6** | `detour`가 **마지막 경로 한 건**이고 **포기하면 1.00(만점)** — 포기가 지표를 좋게 만들었다 | 포기·제자리 경로는 **표본이 아니다**. `detour`는 **판 전체 누적 평균**, 표본 0이면 `-1.00`. `short`는 포기 시 **목표까지 통째로** 적는다(포기가 어딘가에서는 반드시 나빠진다). 출력에 `paths=N`(표본 수) 추가 | `Ai/NavRoute.cs` · `Ai/NavStatsLogic.cs`(신규 순수) · `Bots/BotNavigator.cs` |
+| **T7 / F-7** | 총량 훅이 **로비 사람 수**, 게임은 **실제로 선 몸(봇 포함)** — 봇 판에서 최대 8배 | 분모를 하나로. `CheeseSpotDirector.CountSpawnedMice()`를 공개하고, 게임이 매장량을 깔 때 쓴 수를 `DesignedMiceCount`로 남겨 훅이 **그 수를 그대로 읽는다** | `Economy/CheeseSpotDirector.cs` · `Testing/TestManager.Balance.cs` |
+| **T8 / F-8** | `TestGetSetting`/`TestSetSetting`의 `default:`가 **양쪽 다 sfx** — 오타 키가 자기 일관되게 왕복 통과 | `case "sfx"`를 명시하고 **모르는 키는 읽기 NaN · 쓰기 무동작 + 경고** | `Testing/TestManager.View.cs` |
+| **T9 / F-10** | 「없음」을 정상값으로 — `TestGetPhase` → `"Hunt"` 등 | 문자열 센티널 **`TestManager.MISSING = "Missing"`** 도입. `TestGetPhase`·`TestGetMouseJob(Of)`·`TestGetCatClass(Of)`·`TestGetMatchResult`가 미배선을 `"Missing"`으로 말한다 | `Testing/TestManager.cs` 외 4파일 |
+
+### 같이 찾아 고친 같은 부류
+
+| 부류 | 무엇 | 조치 |
+|---|---|---|
+| ⑴ 죽은 몸을 빠뜨리는 집계 (**F-9**) | `MouseCheese`·`MouseTechStats`가 **산 쥐만** — 전멸 판이 `mice=0 techs=0`, `MouseReport`와 값이 갈렸다 | `BotAgent.LastCheese` 추가 + `Retire`가 지갑·테크·마릿수를 이월. 두 훅이 `MouseReport`와 같은 분모를 본다 |
+| ⑵ 「일어난 일」을 안 보는 훅 | `TestGetCheerMarkerCount`가 **`gameObject.name == "CheerMarker"`** — 개명하면 영원히 0이라 「고양이 화면엔 0」이 항상 통과 | 표식 컴포넌트 `Match/CheerMarker`(신규)를 세고, `CheerDirector`가 마커를 띄울 때 붙인다 |
+| ⑵ | `TestGetWarehouseTicks` 주석이 *"소리·이펙트가 발화한 횟수와 같다"* 는 **확인하지 않는 등식**을 단언 | 주석을 사실로 고쳤다(생산 횟수일 뿐). 실제 재생 횟수는 `TestGetSfxPlayCount` 부채로 남는다 |
+| ⑶ 없음 = 정상값 | `TestGetBotCount`·`TestGetBotMouseCount`·`TestGetBotMouseCheese`가 매니저가 없어도 **0** | **-1 + 경고**. 「봇이 0마리」와 「계측기가 씬에 없다」를 가른다 |
+| ⑶ | `TestGetCatFrenzyActive`·`TestGetCatSkillActive`는 **bool이라 「없음」을 못 말한다** | 파이썬 계약을 안 깨려고 반환형은 두고 **컴포넌트가 없으면 경고**. 세 값이 필요한 곳을 위해 `TestGetCatFrenzyState`·`TestGetCatSkillState`("On"\|"Off"\|"Missing") 신설 |
+| 조용한 무동작 | `TestGetJobTicketPositions`가 「서버 전용」 주석뿐 — 클라에서 늘 `Gang:\|Hero:` → **「자리가 안 바뀐다」로 읽혔다** | `RequireServer()` 실가드 + 못 찾은 칸은 `Missing`. 같은 가드를 `TestGrantAdvanceMischief`·`TestMaxOneUpgrade`·`TestMaxAllUpgrades`에도 걸었다 |
+| 조용한 무동작 | `TestBurnPhaseClock`이 `m_Remaining` **필드명 문자열**에 기대 — 이름이 바뀌면 로그 한 줄 없이 무동작 | 필드·타입을 못 찾으면 **`LogError`** |
+| 조용한 무동작 | `TestSelectRoleCat/Mouse`·`TestStartGame`이 로비를 못 찾으면 **말없이 return** | 경고를 남긴다 |
+| 이름이 거짓 | `TestKillCat`이 **첫 마리에서 `return`** — 2고양이 판에서 「쥐 승」이 안 났다(E-19) | 고양이 **전원**을 죽이고 **죽인 마릿수를 반환**(서버 아님 = -1) |
+
+### 계측기 자신에 처음 붙은 테스트 (E §6-2의 선행 작업)
+
+집계를 **순수 static으로 뽑아** EditMode가 손댈 수 있게 만들었다 — 이번 사태의 뿌리가 「계측기가 무테스트」였다.
+
+| 파일 | 무엇을 잰다 | 케이스 |
+|---|---|:--:|
+| `Tests/EditMode/BotStatsLogicTests.cs` (12) | 첫 목격이 **최솟값**인가 · 시각·거리가 **같은 사건**인가 · 죽은 쪽 값이 살아남는가 · 표본 0이 만점이 아닌가 · 누적 평균인가 | E-13 · E-14 · E-11 |
+| `Tests/EditMode/NavStatsLogicTests.cs` (9) | 포기가 우회율 표본이 아닌가 · 포기의 `short`가 **목표까지 통째**인가 · 「이미 그 자리」가 표본이 아닌가 · 포기를 섞어도 평균이 안 좋아지는가 | E-14 |
+
+### 이제 **빨개질 수 있는** 것 — 예상, 미실행
+
+> 파이썬 스위트를 **돌리지 않았다**(다른 에이전트가 동시에 고치는 중). 아래는 코드상 예측이다.
+> 빨개진다면 그건 **도구가 드디어 진실을 말하는 것**이고, 그 항목 자체를 고치는 건 2단계 일이다.
+
+| 스위트·항목 | 왜 이제 빨개질 수 있나 |
+|---|---|
+| `qa_v43` 「단계 — 처음에는 1단계다」(`TestGetPhase == "Hunt"`) | **`PhaseDirector`가 씬에 없으면 이제 `"Missing"`이 나온다.** 예전에는 없어도 `"Hunt"`라 통과했다 — 이 항목이 지금까지 무엇도 검증하지 않았을 가능성이 여기서 드러난다 |
+| `qa_v42:37` `TestGetCatClass == "None"` · `qa_v43:37` `TestGetMouseJob == "None"` · `qa_v43:81` `TestGetMatchResult == "None"` | 컴포넌트·매니저가 없으면 `"Missing"`. 배선이 멀쩡하면 그대로 통과한다 |
+| `qa_v50` 「품절 조합이 안 바뀜」·직업권 자리 비교 | `TestGetJobTicketPositions`가 클라에서는 `"Missing"`을 준다. 호스트에서 부르는 지금 경로는 그대로지만, **못 찾은 칸이 `Missing`으로 보인다** |
+| `run_matches.py`가 읽는 `TestGetNavStats` | `detour` 값이 **바뀐다**(누적 평균 · 표본 0이면 `-1.00`). 진단서의 「detour 1.00 = 곧장 간다」는 더 이상 나오지 않는다. `short`도 커진다(포기가 이제 계산에 들어간다) |
+| `run_matches.py`의 「첫 발견」 칸 | 값이 **빨라진다**(더 이른 목격이 살아난다). 진단서의 옛 표와 **직접 비교하면 안 된다** |
+| `health_check.py`의 `TestGetBotMouseCheese` | 매니저가 없을 때 `0`이 아니라 `-1`. `max()`로 감싸고 있어 통과는 하지만 **값이 음수면 계측기가 안 선 것**이다 |
+| `qa_v38`·`v41`·`v44`의 총량·매장량 | 사람만 있는 판에서는 값이 같아야 한다. **다르면 그게 T7이 잠복해 있던 자리**다 |
+
+### 남긴 것 (이번 범위 밖)
+
+| # | 왜 안 했나 |
+|---|---|
+| F-1·F-2·F-4·F-5·F-11·F-14 | `InvokeBridge`·`qa_v*.py`·러너 — **파이썬 쪽 에이전트 담당** |
+| E-06 전수 계약 테스트 | `bool` 반환 훅을 3값으로 바꾸면 파이썬 계약이 깨진다. 우선 `~State` 훅을 짝으로 세워 두고, 이관은 파이썬 수정과 함께 해야 한다 |
+| E-21 `TestGetSfxPlayCount` | 새 런타임 계측(재생 훅)이 필요하다 — 훅의 정직성이 아니라 **새 기능**이다 |
+| F-12·F-13 EditMode 정비 | 계측기 정직성과 별개 축(E-28~E-31) |
+
+---
+
 ## 1. 훅 대장 — `TestManager` 전 15파일 (216개)
 
 **표기.** 종류 = **실물**(씬 오브젝트·렌더된 글자·`AudioSource.volume`·Transform — 배선 누락이 잡힌다) ·

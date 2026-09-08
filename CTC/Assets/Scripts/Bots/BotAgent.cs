@@ -127,6 +127,12 @@ namespace CTC.Runtime.Bots
         /// <summary>마지막으로 읽은 누적 획득 치즈. 몸이 사라진 뒤에도 남는다.</summary>
         public int LastEarned { get; private set; }
 
+        /// <summary>
+        /// 마지막으로 읽은 **지갑 잔고**. 몸이 사라진 뒤에도 남는다(2026-09-09 감사 F-9).
+        /// 이게 없으면 전멸한 판의 지갑 합이 0이 되어 「아무도 안 캤다」로 읽힌다.
+        /// </summary>
+        public int LastCheese { get; private set; }
+
         /// <summary>마지막으로 읽은 테크 칸 수. 몸이 사라진 뒤에도 남는다.</summary>
         public int LastTechCount { get; private set; }
 
@@ -224,7 +230,11 @@ namespace CTC.Runtime.Bots
 
             // **죽는 순간엔 몸이 이미 없다**(탈락 = despawn). 마지막으로 읽은 값을 여기 남겨야
             // 사망 시점의 벌이·테크를 사후에 물을 수 있다.
-            if (m_Wallet != null) LastEarned = m_Wallet.EarnedValue;
+            if (m_Wallet != null)
+            {
+                LastEarned = m_Wallet.EarnedValue;
+                LastCheese = m_Wallet.CheeseValue;
+            }
             if (m_Slots != null) LastTechCount = m_Slots.Count;
 
             m_Timer -= _deltaSeconds;

@@ -59,9 +59,20 @@ namespace CTC.Runtime.Bots
 
         public double PlanMillis => m_Route != null ? m_Route.PlanMillis : 0.0;
 
-        public float LastDetour => m_Route != null ? m_Route.LastDetour : 1f;
+        /// <summary>마지막 우회율. **잰 적 없으면 <see cref="Ai.NavRoute.NO_DETOUR"/>**(만점 1이 아니다).</summary>
+        public float LastDetour => m_Route != null ? m_Route.LastDetour : Ai.NavRoute.NO_DETOUR;
 
         public float LastShortfall => m_Route != null ? m_Route.LastShortfall : 0f;
+
+        // 판 통계는 마지막 한 건이 아니라 누적으로 낸다(2026-09-09 감사 T6).
+
+        public int DetourSamples => m_Route != null ? m_Route.DetourSamples : 0;
+
+        public float DetourSum => m_Route != null ? m_Route.DetourSum : 0f;
+
+        public int ShortfallSamples => m_Route != null ? m_Route.ShortfallSamples : 0;
+
+        public float ShortfallSum => m_Route != null ? m_Route.ShortfallSum : 0f;
 
         /// <summary>이 길로 가려면 무언가를 부숴야 하나 — 두뇌가 "때려라"로 읽는다(2026-08-18).</summary>
         public bool NeedsBreaking => m_Route != null && m_Route.NeedsBreaking;

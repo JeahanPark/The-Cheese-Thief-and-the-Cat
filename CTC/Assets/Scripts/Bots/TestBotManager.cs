@@ -64,7 +64,20 @@ namespace CTC.Runtime.Bots
         // 「봇이 벽에 낀다 → 아니다」라는 진단서 결론이 쥐에 대해 아무 말도 안 하고 있었다.
         private int m_RetiredNavBots, m_RetiredPlans, m_RetiredGiveUps, m_RetiredStuck;
         private double m_RetiredPlanMillis;
-        private float m_RetiredDetour, m_RetiredShortfall, m_RetiredMoved;
+        private float m_RetiredMoved;
+
+        // 우회율·목표 미달은 **누적 합 + 표본 수**로 옮긴다(2026-09-09 감사 T6).
+        // 예전에는 봇마다 「마지막 경로 한 건」을 더해 봇 수로 나눴다 — 길을 포기한
+        // 직후에 물으면 그 봇의 판 전체가 1.00(만점)으로 기록됐다.
+        private int m_RetiredDetourSamples, m_RetiredShortfallSamples;
+        private float m_RetiredDetourSum, m_RetiredShortfallSum;
+
+        // 「첫 발견」은 최솟값이다(2026-09-09 감사 T4). 죽은 고양이의 더 이른 목격을
+        // 여기 남기지 않으면 **고양이가 죽을수록 첫 발견이 늦어진다**.
+        private BotStatsLogic.FirstSight m_RetiredFirstSight = BotStatsLogic.NoSight;
+
+        // 판을 떠난 쥐의 지갑·테크(감사 F-9) — 산 쥐만 세면 전멸한 판이 통째로 사라진다.
+        private int m_RetiredMice, m_RetiredCheese, m_RetiredTechSlots, m_RetiredBuyers;
         private readonly SoundLog m_Sound = new SoundLog();
 
         // 예약(쥐가 뭉치지 않게) · 명령판(고양이 지휘관) — 자세한 건 각 클래스 주석에 있다
@@ -112,7 +125,11 @@ namespace CTC.Runtime.Bots
             m_RetiredShots = m_RetiredCatDamage = m_CatDeaths = 0;
             m_RetiredNavBots = m_RetiredPlans = m_RetiredGiveUps = m_RetiredStuck = 0;
             m_RetiredPlanMillis = 0.0;
-            m_RetiredDetour = m_RetiredShortfall = m_RetiredMoved = 0f;
+            m_RetiredMoved = 0f;
+            m_RetiredDetourSum = m_RetiredShortfallSum = 0f;
+            m_RetiredDetourSamples = m_RetiredShortfallSamples = 0;
+            m_RetiredFirstSight = BotStatsLogic.NoSight;
+            m_RetiredMice = m_RetiredCheese = m_RetiredTechSlots = m_RetiredBuyers = 0;
 
             MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
             m_Commander = new BotCommander(m_Orders, layout != null ? layout.Seed : 0);
@@ -289,35 +306,47 @@ namespace CTC.Runtime.Bots
         /// QA — 고양이 봇이 상대를 처음 본 시각(초). 못 봤으면 -1.
         /// **소리 밸런스의 답이 이 숫자다** — 18m 발소리가 실제로 얼마나 도움이 되는가.
         /// </summary>
-        public float FirstSightSeconds()
-        {
-            foreach (BotAgent a in m_Agents)
-            {
-                if (a.Role == RoleId.Cat && a.FirstSightSeconds >= 0f) return a.FirstSightSeconds;
-            }
-            return -1f;
-        }
+        public float FirstSightSeconds() => EarliestSight().Seconds;
 
         /// <summary>QA — 처음 봤을 때의 거리(m). 맵의 최장 직선보다 멀면 시야 판정이 새는 것이다.</summary>
-        public float FirstSightDistance()
+        public float FirstSightDistance() => EarliestSight().Distance;
+
+        /// <summary>
+        /// **가장 이른 목격 한 건** — 살아 있는 고양이와 이미 죽은 고양이를 같이 본다.
+        ///
+        /// 예전에는 `m_Agents`를 돌다 처음 만난 고양이의 값에서 그냥 `return` 했다.
+        /// 죽은 고양이는 목록에서 빠지므로 **고양이가 죽을수록 「첫 발견」이 늦어졌다**
+        /// (2026-09-09 감사 T4). 승률 진단서의 「첫 발견」 칸이 그 값이라 무효다.
+        ///
+        /// 시각과 거리를 **같이** 접는 것도 중요하다 — 따로 접으면 「A의 시각 + B의 거리」라는
+        /// 실제로 없었던 사건이 나온다.
+        /// </summary>
+        private BotStatsLogic.FirstSight EarliestSight()
         {
+            BotStatsLogic.FirstSight best = m_RetiredFirstSight;
             foreach (BotAgent a in m_Agents)
             {
-                if (a.Role == RoleId.Cat && a.FirstSightDistance >= 0f) return a.FirstSightDistance;
+                if (a.Role != RoleId.Cat) continue;
+                best = BotStatsLogic.FoldFirstSight(best, a.FirstSightSeconds, a.FirstSightDistance);
             }
-            return -1f;
+            return best;
         }
 
-        /// <summary>QA — 쥐 봇들이 번 치즈 합. 0이면 아무도 안 캔 것이다.</summary>
+        /// <summary>
+        /// QA — 쥐 봇들의 지갑 합. 0이면 아무도 안 캔 것이다.
+        /// **판을 떠난 쥐의 마지막 잔고를 포함한다**(2026-09-09 감사 F-9) — 산 쥐만 세면
+        /// 전멸한 판이 0으로 나와 「아무도 안 캤다」와 구분이 안 된다.
+        /// </summary>
         public int MouseCheese()
         {
-            int sum = 0;
+            int sum = m_RetiredCheese;
             foreach (BotAgent a in m_Agents)
             {
-                if (a.Role != RoleId.Mouse || a.Body == null) continue;
+                if (a.Role != RoleId.Mouse) continue;
 
-                var wallet = a.Body.GetComponent<CheeseWallet>();
-                if (wallet != null) sum += wallet.CheeseValue;
+                // 몸이 아직 있으면 지갑을 직접 읽고, 없으면 마지막으로 읽은 값을 쓴다.
+                CheeseWallet wallet = a.Body != null ? a.Body.GetComponent<CheeseWallet>() : null;
+                sum += wallet != null ? wallet.CheeseValue : a.LastCheese;
             }
             return sum;
         }
@@ -327,18 +356,20 @@ namespace CTC.Runtime.Bots
         ///
         /// **상점 이동 비용의 실체가 이 숫자다.** 봇이 상점까지 걸어가게 되면 같은 시간에
         /// 캐는 양이 줄어 산 테크 수가 떨어진다 — 전/후를 같은 조건으로 재려고 둔다.
-        /// 탈락한 봇은 몸이 사라져 빠지므로 러너가 도는 동안 **최댓값**으로 모은다.
+        /// **판을 떠난 쥐도 센다**(2026-09-09 감사 F-9). 예전에는 `Body == null`을 건너뛰어
+        /// 전멸한 판이 `mice=0 techs=0`으로 나왔고, 같은 질문에 답하는
+        /// <see cref="MouseReport"/>(이월함)와 **값이 달랐다**.
         /// </summary>
         public string MouseTechStats()
         {
-            int mice = 0, techs = 0, buyers = 0;
+            int mice = m_RetiredMice, techs = m_RetiredTechSlots, buyers = m_RetiredBuyers;
             foreach (BotAgent a in m_Agents)
             {
-                if (a.Role != RoleId.Mouse || a.Body == null) continue;
+                if (a.Role != RoleId.Mouse) continue;
 
                 mice++;
-                TechSlots slots = a.Body.GetComponent<TechSlots>();
-                int owned = slots != null ? slots.Count : 0;
+                TechSlots slots = a.Body != null ? a.Body.GetComponent<TechSlots>() : null;
+                int owned = slots != null ? slots.Count : a.LastTechCount;
                 techs += owned;
                 if (owned > 0) buyers++;
             }
@@ -361,6 +392,10 @@ namespace CTC.Runtime.Bots
             // 대개 코앞의 고양이만 잡으므로 평균을 끌어내린다(진단서 §8-1의 6.4m가 그 값이다).
             if (_agent.Role == RoleId.Cat)
             {
+                // **죽은 고양이의 목격도 남긴다**(감사 T4) — 안 남기면 「첫 발견」이 최솟값이 아니다.
+                m_RetiredFirstSight = BotStatsLogic.FoldFirstSight(
+                    m_RetiredFirstSight, _agent.FirstSightSeconds, _agent.FirstSightDistance);
+
                 m_RetiredSights += _agent.SightSamples;
                 m_RetiredSightMeters += _agent.SightMetersSum;
                 m_RetiredFarSights += _agent.FarSightSamples;
@@ -377,8 +412,10 @@ namespace CTC.Runtime.Bots
                 m_RetiredGiveUps += retiredNav.GiveUpCount;
                 m_RetiredStuck += retiredNav.StuckCount;
                 m_RetiredPlanMillis += retiredNav.PlanMillis;
-                m_RetiredDetour += retiredNav.LastDetour;
-                m_RetiredShortfall += retiredNav.LastShortfall;
+                m_RetiredDetourSum += retiredNav.DetourSum;
+                m_RetiredDetourSamples += retiredNav.DetourSamples;
+                m_RetiredShortfallSum += retiredNav.ShortfallSum;
+                m_RetiredShortfallSamples += retiredNav.ShortfallSamples;
                 m_RetiredMoved += retiredNav.TravelledMeters;
             }
 
@@ -402,6 +439,14 @@ namespace CTC.Runtime.Bots
             if (!_agent.Alive) m_Deaths.Add($"{_agent.LivedSeconds:F0}:{_agent.Activity}>{_agent.CalmActivity}");
             m_RetiredEarned += _agent.LastEarned;
             m_RetiredTechs += _agent.LastTechCount;
+
+            // 지갑·테크 칸을 따로 또 이월한다(감사 F-9) — MouseCheese·MouseTechStats가
+            // MouseReport와 **같은 분모**를 보게 하려고. 두 훅이 갈리면 어느 쪽을 읽느냐로
+            // 결론이 뒤집힌다.
+            m_RetiredMice++;
+            m_RetiredCheese += _agent.LastCheese;
+            m_RetiredTechSlots += _agent.LastTechCount;
+            if (_agent.LastTechCount > 0) m_RetiredBuyers++;
 
             if (_agent.ShopSeekSeconds <= 0f) return;
 
@@ -515,7 +560,9 @@ namespace CTC.Runtime.Bots
         {
             int plans = m_RetiredPlans, giveups = m_RetiredGiveUps, stuck = m_RetiredStuck;
             double millis = m_RetiredPlanMillis;
-            float detour = m_RetiredDetour, moved = m_RetiredMoved, shortfall = m_RetiredShortfall;
+            float moved = m_RetiredMoved;
+            float detourSum = m_RetiredDetourSum, shortSum = m_RetiredShortfallSum;
+            int detourN = m_RetiredDetourSamples, shortN = m_RetiredShortfallSamples;
             int counted = m_RetiredNavBots;
 
             foreach (BotAgent a in m_Agents)
@@ -526,16 +573,22 @@ namespace CTC.Runtime.Bots
                 giveups += nav.GiveUpCount;
                 stuck += nav.StuckCount;
                 millis += nav.PlanMillis;
-                detour += nav.LastDetour;
-                shortfall += nav.LastShortfall;
+                detourSum += nav.DetourSum;
+                detourN += nav.DetourSamples;
+                shortSum += nav.ShortfallSum;
+                shortN += nav.ShortfallSamples;
                 moved += nav.TravelledMeters;
                 counted++;
             }
 
-            float avgDetour = counted > 0 ? detour / counted : 1f;
-            float avgShort = counted > 0 ? shortfall / counted : 0f;
+            // **판 전체 누적 평균**이다 — 마지막 한 건이 아니다(2026-09-09 감사 T6).
+            // 잰 적이 없으면 만점이 아니라 -1로 나온다. 「곧장 갔다」와
+            // 「한 번도 길을 못 찾았다」가 같은 숫자로 보이면 안 된다.
+            float avgDetour = BotStatsLogic.AverageDetour(detourSum, detourN);
+            float avgShort = BotStatsLogic.AverageShortfall(shortSum, shortN);
             return $"bots={counted} plans={plans} giveups={giveups} ms={millis:F1} " +
-                   $"detour={avgDetour:F2} short={avgShort:F1} stuck={stuck} moved={moved:F1}";
+                   $"detour={avgDetour:F2} short={avgShort:F1} paths={detourN} " +
+                   $"stuck={stuck} moved={moved:F1}";
         }
 
         /// <summary>QA·통계 — 한 줄 요약. 벽에 붙박인 봇을 여기서 잡는다.</summary>
