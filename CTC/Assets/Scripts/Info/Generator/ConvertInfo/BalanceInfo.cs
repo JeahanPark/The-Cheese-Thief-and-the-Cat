@@ -96,6 +96,8 @@ namespace CTC.Runtime.Info
         public float EarPerkDeg;
         public float EarHoldSeconds;
         public float EarFollowSpeed;
+        public float EyeFlatten;
+        public float EyeInsetRatio;
     }
 
     public partial class InfoManager

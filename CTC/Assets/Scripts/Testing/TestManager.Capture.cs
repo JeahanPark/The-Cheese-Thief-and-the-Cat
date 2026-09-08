@@ -129,6 +129,21 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public string TestCaptureFaceShot(string _path, int _size)
         {
+            return CaptureHeadShot(_path, _size, 0f, 0f);
+        }
+
+        /// <summary>
+        /// QA: 같은 거리·같은 화각으로 **머리 둘레를 돌며** 찍는다(2026-09-08).
+        /// 눈이 얼굴 밖으로 솟는지는 **옆에서만 보인다** — 정면 컷만으로는 실루엣을 증명할 수 없다.
+        /// `_yaw` 0=정면 · 90=옆 · `_pitch` 양수면 위에서 내려다본다.
+        /// </summary>
+        public string TestCaptureHeadShot(string _path, int _size, float _yaw, float _pitch)
+        {
+            return CaptureHeadShot(_path, _size, _yaw, _pitch);
+        }
+
+        private string CaptureHeadShot(string _path, int _size, float _yaw, float _pitch)
+        {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             if (local == null) return "no local player";
@@ -140,7 +155,9 @@ namespace CTC.Runtime.Testing
             Transform body = local.transform;
             Transform head = FindDeep(body, "head");
             Vector3 focus = head != null ? head.position : body.position + Vector3.up * 0.4f;
-            Vector3 pos = focus + body.forward * info.CamDistance + body.up * 0.25f;
+            Vector3 dir = Quaternion.AngleAxis(_yaw, body.up) * body.forward;
+            dir = Quaternion.AngleAxis(-_pitch, Vector3.Cross(body.up, dir)) * dir;
+            Vector3 pos = focus + dir * info.CamDistance + body.up * (Mathf.Abs(_pitch) > 0.01f ? 0f : 0.25f);
 
             // 창고 맵은 상자·통이 빽빽해 얼굴 앞 3 m가 자주 막힌다 — 그대로 찍으면 나무 상자만 남는다.
             // 막혔으면 벽 **앞까지만** 당긴다(최소 0.7 m). 게임 카메라의 벽 회피와 같은 취지다.

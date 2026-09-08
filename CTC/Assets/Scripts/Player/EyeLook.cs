@@ -62,6 +62,10 @@ namespace CTC.Runtime.Player
         private float m_LidRadius;
         private float m_PupilRatio;           // 흰자 반지름 대비 눈동자 구 반지름
         private float m_PupilDistance;        // 흰자 중심에서 눈동자 중심까지(흰자 단위)
+        private float m_Flatten;              // 눈 축 방향 눌림(1이면 완전한 구)
+        private float m_Inset;                // 눈 축 안쪽으로 미는 양(흰자 반지름 단위)
+        private Quaternion m_EyeRotR, m_EyeRotL;      // 로컬 +z = 눈 축
+        private Quaternion m_EyeRotInvR, m_EyeRotInvL;
         private float m_MaxAngleDeg;
         private float m_FollowSpeed;
         private float m_BlinkMin;
@@ -89,6 +93,12 @@ namespace CTC.Runtime.Player
             m_LidRadius = Mathf.Max(m_LidRadiusLocal, m_ScleraRadius * 1.2f);
             m_PupilRatio = Mathf.Clamp(balance.EyePupilRatio, 0.05f, 0.95f);
             m_PupilDistance = Mathf.Clamp01(balance.EyePupilOffsetRatio);
+            // 팩 눈은 **납작한 원판**이라 완전한 구를 얹으면 얼굴 실루엣 밖으로 공처럼 솟는다
+            // (2026-09-08 사용자 피드백). 옆에서 봐야 보이는 종류의 문제다.
+            // 눈 축으로만 눌러 돔으로 만들면 정면 실루엣(=덮어야 하는 크기)은 그대로라
+            // 팩 눈동자가 밑에서 비치지 않으면서 옆에서도 안 솟는다.
+            m_Flatten = Mathf.Clamp(balance.EyeFlatten, 0.1f, 1f);
+            m_Inset = Mathf.Clamp(balance.EyeInsetRatio, 0f, 0.6f);
             m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
 
             Build();
@@ -120,11 +130,19 @@ namespace CTC.Runtime.Player
             m_GazeR = m_RestR;
             m_GazeL = m_RestL;
 
-            Vector3 centerR = m_EyeCenterLocal;
+            m_EyeRotR = Quaternion.LookRotation(m_RestR);
+            m_EyeRotL = Quaternion.LookRotation(m_RestL);
+            m_EyeRotInvR = Quaternion.Inverse(m_EyeRotR);
+            m_EyeRotInvL = Quaternion.Inverse(m_EyeRotL);
+
+            // 눈 축 안쪽으로 밀어 더 파묻는다 — 덮는 넓이(가로)는 그대로다.
+            Vector3 centerR = m_EyeCenterLocal - m_RestR * (m_ScleraRadius * m_Inset);
             Vector3 centerL = EyeLookLogic.Mirror(centerR);
 
             m_EyeR = MakePart("EyeR", s_ScleraMesh, mat, sample, centerR, m_ScleraRadius, out m_EyeRendererR);
             m_EyeL = MakePart("EyeL", s_ScleraMesh, mat, sample, centerL, m_ScleraRadius, out m_EyeRendererL);
+            m_EyeR.localRotation = m_EyeRotR;
+            m_EyeL.localRotation = m_EyeRotL;
 
             m_PupilR = MakeChild("PupilR", s_PupilMesh, mat, sample, m_EyeR, out m_PupilRendererR);
             m_PupilL = MakeChild("PupilL", s_PupilMesh, mat, sample, m_EyeL, out m_PupilRendererL);
@@ -281,15 +299,20 @@ namespace CTC.Runtime.Player
                 ? EyeLookLogic.BlinkCover(m_BlinkElapsed, m_BlinkSeconds)
                 : 0f;
 
+            // 가로(x·y)는 그대로 두고 눈 축(z)만 눌러 돔으로 만든다 — 부모의 비균등 스케일이
+            // 눈동자까지 같이 눌러 주므로 눈동자도 표면을 따라 붙는다.
             float eye = m_ScleraRadius * (1f - BLINK_SHRINK * cover);
-            m_EyeR.localScale = new Vector3(eye, eye, eye);
-            m_EyeL.localScale = new Vector3(eye, eye, eye);
+            var eyeScale = new Vector3(eye, eye, eye * m_Flatten);
+            m_EyeR.localScale = eyeScale;
+            m_EyeL.localScale = eyeScale;
 
-            m_PupilR.localPosition = m_GazeR * m_PupilDistance;
-            m_PupilL.localPosition = m_GazeL * m_PupilDistance;
+            // 시선은 머리 로컬이고 흰자는 눈 축으로 돌려 놨다 — 눈 로컬로 옮겨야 자리가 맞는다.
+            m_PupilR.localPosition = (m_EyeRotInvR * m_GazeR) * m_PupilDistance;
+            m_PupilL.localPosition = (m_EyeRotInvL * m_GazeL) * m_PupilDistance;
 
+            // 눈꺼풀은 흰자보다 덜 눌려야 감았을 때 흰자가 안 비친다.
             float lid = m_LidRadius * cover;
-            var lidScale = new Vector3(lid, lid, lid * LID_FLATTEN);
+            var lidScale = new Vector3(lid, lid, lid * Mathf.Max(LID_FLATTEN, m_Flatten));
             m_LidR.localScale = lidScale;
             m_LidL.localScale = lidScale;
 
