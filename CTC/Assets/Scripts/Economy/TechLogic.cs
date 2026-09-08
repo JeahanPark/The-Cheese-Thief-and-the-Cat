@@ -55,7 +55,8 @@ namespace CTC.Runtime.Economy
         }
     }
 
-    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop }
+    // **뒤에만 추가한다** — 값이 직렬화되진 않지만 QA 문자열(wesqa)이 이름에 붙어 있다.
+    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop, SoldOut }
 
     /// <summary>
     /// "쓰기"가 막힌 이유 (2026-09-07). 전에는 <c>CanUse</c>가 bool이라 View가 TechId로 이유를 추측했다 —
@@ -153,14 +154,22 @@ namespace CTC.Runtime.Economy
         /// <summary>
         /// 구매·업그레이드 가능 판정. 상점 안 여부는 위치라 여기 없다 — 호출부가 <see cref="NeedsShopSpot"/>와
         /// <c>ShopSpot.AnyContains</c>로 따로 본다.
+        ///
+        /// <paramref name="_soldOut"/>은 **오늘의 품절**(계획 3 Task 3 · 기획서 §7-2). null이면 품절 없음이라
+        /// 기본값을 준다 — 로비·봇 실험실처럼 시드가 없는 자리와, 품절을 모르는 옛 테스트가 그대로 돈다.
         /// </summary>
-        public static TechDeny CanBuy(IReadOnlyList<TechEntry> _owned, TechId _id, RoleId _role, int _cheese, int _slotCap)
+        public static TechDeny CanBuy(IReadOnlyList<TechEntry> _owned, TechId _id, RoleId _role, int _cheese,
+            int _slotCap, IReadOnlyList<TechId> _soldOut = null)
         {
             // 역할 불일치는 행이 있을 때만 판단 가능하니 먼저 본다.
             // 표에 없는 테크(next 무효)면서 칸이 찼으면 SlotsFull이 불가피 — Unknown보다 앞세운다
             // (표에 없다는 이유로 Unknown을 앞세우면 칸이 찬 상태에서 미래 테크를 미리 안다는 오정보가 된다).
             TechRow next = NextRow(_owned, _id);
             if (next.IsValid && next.Role != _role) return TechDeny.WrongRole;
+            // 품절은 **칸이 없어서**가 아니라 **오늘은 없어서**다 — SlotsFull보다 먼저 말한다.
+            // 이미 가진 테크의 업그레이드는 막지 않는다: 품절은 판 시작에 정해지니 실제로는 Lv0만 걸리지만,
+            // 규칙으로 못 박아 둔다(나중에 판 중간 품절이 생겨도 산 것을 뺏지 않는다).
+            if (LevelOf(_owned, _id) == 0 && TechRandomLogic.IsSoldOut(_soldOut, _id)) return TechDeny.SoldOut;
             if (LevelOf(_owned, _id) == 0 && _owned.Count >= _slotCap) return TechDeny.SlotsFull;
             if (!next.IsValid) return MaxLevel(_id) == 0 ? TechDeny.Unknown : TechDeny.MaxLevel;
             if (_cheese < next.Cost) return TechDeny.NotEnough;
@@ -188,6 +197,7 @@ namespace CTC.Runtime.Economy
                 case TechDeny.NotEnough: return $"{ShopLogic.CurrencyNameOf(_role)} 부족 · {_short} 모자람";
                 case TechDeny.NotInShop: return "상점에서만 살 수 있다";
                 case TechDeny.WrongRole: return "이 역할은 못 산다";
+                case TechDeny.SoldOut: return "오늘은 품절";
                 default: return "살 수 없다";
             }
         }

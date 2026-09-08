@@ -16,8 +16,17 @@ namespace CTC.Tests.EditMode
         // 이름 있는 인자로 감싸 두고, 각 테스트는 자기가 재는 것만 바꾼다.
         private static TechId Next(
             int cheese, bool dash = false, bool gun = false, bool warehouse = false,
-            bool fortress = false, bool shield = false, bool pouch = false, int owned = 0)
-            => MouseBotLogic.NextPurchase(cheese, dash, gun, warehouse, fortress, shield, pouch, owned);
+            bool fortress = false, bool shield = false, bool pouch = false, int owned = 0,
+            IReadOnlyList<TechId> soldOut = null)
+            => MouseBotLogic.NextPurchase(cheese, dash, gun, warehouse, fortress, shield, pouch, owned, soldOut);
+
+        [Test]
+        public void NextPurchase_SkipsSoldOut()
+        {
+            // 오늘 품절인 줄을 모르면 봇이 매 틱 거절당하는 죽은 구매를 반복한다(계획 3 Task 3).
+            // 대시가 품절이면 그다음 줄(요새)로 내려간다 — 멈추지 않는다.
+            Assert.AreEqual(TechId.Fortress, Next(1000, soldOut: new[] { TechId.Dash }));
+        }
 
         [Test]
         public void NextPurchase_Dash_First()

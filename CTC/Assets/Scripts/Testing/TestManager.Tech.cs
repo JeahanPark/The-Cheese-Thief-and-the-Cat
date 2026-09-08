@@ -326,6 +326,26 @@ namespace CTC.Runtime.Testing
             }
             return Match.MatchRandom.SubSeed(random.Seed, salt);
         }
+
+        /// <summary>
+        /// QA: 오늘 못 사는 테크(쉼표로 이은 id 문자열, 없으면 빈 문자열).
+        ///
+        /// **로컬 플레이어의 ShopController가 답한다** — 서버가 뽑아 보낸 목록이 아니라
+        /// 이 프로세스가 시드로 다시 계산한 값이라, 호스트와 클론의 답이 다르면 그것 자체가 버그다.
+        /// </summary>
+        public string TestGetSoldOutTechs()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            NetworkObject local = nm != null && nm.SpawnManager != null
+                ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            ShopController shop = local != null ? local.GetComponent<ShopController>() : null;
+            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return string.Empty; }
+
+            var parts = new System.Collections.Generic.List<string>();
+            System.Collections.Generic.IReadOnlyList<TechId> list = shop.SoldOutToday;
+            for (int i = 0; i < list.Count; i++) parts.Add(list[i].ToString());
+            return string.Join(",", parts);
+        }
     }
 }
 #endif

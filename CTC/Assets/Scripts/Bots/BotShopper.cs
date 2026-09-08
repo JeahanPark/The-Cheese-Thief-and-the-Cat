@@ -79,9 +79,10 @@ namespace CTC.Runtime.Bots
                 }
             }
 
+            // 오늘 품절인 줄은 건너뛴다 — 모르면 매 틱 서버에 거절당하는 죽은 구매를 반복한다(계획 3 Task 3).
             TechId next = MouseBotLogic.NextPurchase(
                 m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress,
-                m_BoughtShield, m_BoughtPouch, m_Slots != null ? m_Slots.Count : 0);
+                m_BoughtShield, m_BoughtPouch, m_Slots != null ? m_Slots.Count : 0, m_Shop.SoldOutToday);
             if (next == TechId.None) return;
 
             // 창고는 봇끼리 OwnerClientId를 공유해 한도도 같이 쓴다 — 이미 다른 봇이 채웠으면

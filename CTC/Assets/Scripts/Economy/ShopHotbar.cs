@@ -1,7 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using CTC.Runtime.Combat;
 using CTC.Runtime.Core;
 using CTC.Runtime.Lobby;
+using Cysharp.Threading.Tasks;
 using R3;
 using TMPro;
 using Unity.Netcode;
@@ -64,6 +67,7 @@ namespace CTC.Runtime.Economy
 
         private readonly SerialDisposable m_WalletSub = new SerialDisposable();
         private readonly SerialDisposable m_SlotsSub = new SerialDisposable();
+        private readonly SerialDisposable m_SoldOutSub = new SerialDisposable();
 
         private ShopController m_Shop;                       // 로컬 플레이어의 상점 (null = 관전·매치 전)
         private TechSlots m_TechSlots;
@@ -79,6 +83,12 @@ namespace CTC.Runtime.Economy
         private float m_NextCooldownRedraw;
         private bool m_IntroShown; // 기본 조작 토스트는 매치당 1회 — 매판 반복되면 소음이다
         private bool m_InShop;
+
+        // 오늘의 품절(계획 3 Task 3) — 판정은 ShopController가 하고 View는 받아 쓰기만 한다(규칙 5).
+        private static readonly TechId[] NONE_SOLD_OUT = new TechId[0];
+        private IReadOnlyList<TechId> m_SoldOut = NONE_SOLD_OUT;
+        private bool m_SoldOutShown;   // 품절 토스트도 매치당 1회
+        private CancellationTokenSource m_SoldOutToastCts;
 
         // 빈 칸마다 "지금 보여 주는 후보" 인덱스 — 같은 숫자키를 반복하면 넘어간다
         private int[] m_CandidateIndex;
@@ -108,12 +118,14 @@ namespace CTC.Runtime.Economy
         {
             m_WalletSub.AddTo(this);
             m_SlotsSub.AddTo(this);
+            m_SoldOutSub.AddTo(this);
             m_Lobby.GameStartedChanged.Subscribe(OnGameStartedChanged).AddTo(this);
             LocalPlayerBinder.LocalPlayer.Subscribe(OnLocalPlayerChanged).AddTo(this);
         }
 
         private void OnDestroy()
         {
+            CancelSoldOutToast();
             CancelPlacement();
             if (m_GhostMaterial != null) Destroy(m_GhostMaterial);
         }
@@ -121,7 +133,12 @@ namespace CTC.Runtime.Economy
         private void OnGameStartedChanged(bool _started)
         {
             m_GameStarted = _started;
-            if (!_started) m_IntroShown = false;
+            if (!_started)
+            {
+                m_IntroShown = false;
+                m_SoldOutShown = false;   // 다음 판은 품절 목록이 다르다 — 다시 알린다
+                CancelSoldOutToast();
+            }
             ApplyActive();
         }
 
@@ -141,6 +158,8 @@ namespace CTC.Runtime.Economy
                 m_Dash = null;
                 m_WalletSub.Disposable = null;
                 m_SlotsSub.Disposable = null;
+                m_SoldOutSub.Disposable = null;
+                m_SoldOut = NONE_SOLD_OUT;
                 ApplyActive();
                 return;
             }
@@ -154,7 +173,86 @@ namespace CTC.Runtime.Economy
             m_WalletSub.Disposable = wallet.Cheese.Subscribe(c => { m_Cheese = c; m_SlotsDirty = true; });
             // 하나 사면 후보 목록이 줄고 빈 칸도 한 칸 밀린다 — 옛 인덱스를 들고 있으면 엉뚱한 게 뜬다
             m_SlotsSub.Disposable = slots.Changed.Subscribe(_ => { ResetCandidates(); m_SlotsDirty = true; });
+            // 품절이 정해지면 후보 목록이 줄어든다 — 옛 인덱스를 들고 있으면 엉뚱한 게 뜬다(구매와 같은 이유)
+            m_SoldOutSub.Disposable = shop.SoldOutChanged.Subscribe(list =>
+            {
+                m_SoldOut = list != null ? list : (IReadOnlyList<TechId>)NONE_SOLD_OUT;
+                ResetCandidates();
+                m_SlotsDirty = true;
+                TrySaySoldOut();
+            });
             ApplyActive();
+        }
+
+        /// <summary>
+        /// 빈 칸에 돌려 볼 후보 — **오늘 품절은 아예 뺀다**(기획서 §7-2).
+        /// 남겨 두고 누를 때 거절하면 못 사는 것을 보여 주고 5키를 헛돌리게 된다.
+        /// </summary>
+        private IReadOnlyList<TechId> CandidatesNow(IReadOnlyList<TechEntry> _owned)
+        {
+            IReadOnlyList<TechId> all = TechLogic.Candidates(m_Role, _owned);
+            if (m_SoldOut.Count == 0) return all;
+
+            var list = new List<TechId>(all.Count);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (!TechRandomLogic.IsSoldOut(m_SoldOut, all[i])) list.Add(all[i]);
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// 판 시작 품절 안내 — **새 화면 0**(기획서 §9)이라 기본 조작 토스트와 같은 자리를 쓴다.
+        /// 시작 신호와 시드가 **둘 다** 온 뒤 한 번만 띄운다: 시드는 판 시작 직후에 따로 오므로
+        /// 한쪽만 보고 띄우면 그 판은 아무도 품절을 모른 채 지나간다.
+        /// 고양이에게도 띄운다 — §7이 "전원 동일·공개"다.
+        /// </summary>
+        private void TrySaySoldOut()
+        {
+            if (m_SoldOutShown || !m_GameStarted || m_Shop == null || m_SoldOut.Count == 0) return;
+            m_SoldOutShown = true;
+
+            var names = new List<string>(m_SoldOut.Count);
+            for (int i = 0; i < m_SoldOut.Count; i++)
+            {
+                TechRow row = TechLogic.RowOf(m_SoldOut[i], 1);
+                names.Add(row.IsValid ? row.Label : m_SoldOut[i].ToString());
+            }
+
+            CancelSoldOutToast();
+            m_SoldOutToastCts = new CancellationTokenSource();
+            SaySoldOutLater($"오늘 품절: {string.Join(" · ", names)}", m_SoldOutToastCts.Token).Forget();
+        }
+
+        /// <summary>
+        /// 기본 조작 토스트가 끝난 뒤 이어서 띄운다. 코루틴 금지(CTC 규칙 1)라 UniTask다.
+        ///
+        /// **한 프레임을 먼저 흘린다.** 품절 목록은 로컬 플레이어를 잡는 그 순간 도착하는데,
+        /// 기본 조작 토스트는 같은 함수의 끝(`ApplyActive`)에서 **그 뒤에** 뜬다 —
+        /// 남은 시간을 지금 재면 0이 나와 띄우자마자 기본 조작 토스트에 덮인다(2026-09-08 실측).
+        /// </summary>
+        private async UniTaskVoid SaySoldOutLater(string _text, CancellationToken _token)
+        {
+            bool canceled = await UniTask.NextFrame(_token).SuppressCancellationThrow();
+            if (canceled || m_Toast == null) return;
+
+            float wait = Mathf.Max(0f, m_ToastUntil - Time.time);
+            if (wait > 0f)
+            {
+                canceled = await UniTask.Delay(TimeSpan.FromSeconds(wait), cancellationToken: _token)
+                    .SuppressCancellationThrow();
+                if (canceled || m_Toast == null) return;
+            }
+            Say(_text, TOAST_LONG_SECONDS);
+        }
+
+        private void CancelSoldOutToast()
+        {
+            // 순수 C# 객체라 ?.를 써도 된다(규칙 9 예외) — 그래도 흐름을 맞춰 명시적으로 쓴다.
+            if (m_SoldOutToastCts == null) return;
+            m_SoldOutToastCts.Cancel();
+            m_SoldOutToastCts.Dispose();
+            m_SoldOutToastCts = null;
         }
 
         private void ResetCandidates()
@@ -180,6 +278,9 @@ namespace CTC.Runtime.Economy
                     : "상점에서 숫자키로 고르고 Enter로 산다";
                 Say($"WASD 이동 · 마우스 시점 · 좌클릭 {attack} · LShift 살금살금 · {shop}", INTRO_TOAST_SECONDS);
             }
+
+            // 시드가 먼저 오고 시작 신호가 나중일 수도 있다 — 양쪽에서 같은 문을 두드린다.
+            if (inGame) TrySaySoldOut();
         }
 
         private void Update()
@@ -212,7 +313,7 @@ namespace CTC.Runtime.Economy
         private void RefreshSlots()
         {
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
-            IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
+            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
             int cap = SLOT_CAP;
 
             // DrawOwned가 다시 켠다 — 쿨이 끝나면 저절로 꺼져 다시 그리기가 멈춘다.
@@ -323,7 +424,7 @@ namespace CTC.Runtime.Economy
             if (pressed < 0) return;   // 키가 없으면 목록을 만들지 않는다(프레임당 할당 0)
 
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
-            IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
+            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
 
             if (pressed < owned.Count)
             {
@@ -354,7 +455,7 @@ namespace CTC.Runtime.Economy
                 if (!m_GameStarted || m_Shop == null || m_TechSlots == null || !m_InShop) return false;
                 int owned = m_TechSlots.Count;
                 return owned < SLOT_CAP && owned < m_CandidateIndex.Length
-                       && TechLogic.Candidates(m_Role, m_TechSlots.Owned).Count > 0;
+                       && CandidatesNow(m_TechSlots.Owned).Count > 0;
             }
         }
 
@@ -363,7 +464,7 @@ namespace CTC.Runtime.Economy
         {
             if (!CanConfirmBuy) return false;
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
-            IReadOnlyList<TechId> candidates = TechLogic.Candidates(m_Role, owned);
+            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
             TryBuy(candidates[m_CandidateIndex[owned.Count] % candidates.Count]);
             return true;
         }

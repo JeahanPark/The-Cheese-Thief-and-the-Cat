@@ -1,5 +1,7 @@
-﻿using CTC.Runtime.Combat;
+﻿using System.Collections.Generic;
+using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
+using R3;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -31,6 +33,13 @@ namespace CTC.Runtime.Economy
         private RoleTag m_Tag;
         private CheeseWallet m_Wallet;
         private Player.PlayerAnimationDriver m_AnimationDriver; // 쓸 때마다 찾지 않는다
+
+        // 오늘의 품절 캐시 — 시드 하나로 정해지므로 **시드가 바뀔 때만** 다시 뽑는다(규칙 3, 폴링 금지).
+        // 구독이 아니라 시드를 키로 쓴 메모다: `MatchRandom.Current`가 아직 없는 순간(로비)에 구독을
+        // 걸면 그 판은 영영 빈 목록이 된다 — 키 비교는 언제 물어도 맞는 답을 준다.
+        private static readonly TechId[] NONE_SOLD_OUT = new TechId[0];
+        private IReadOnlyList<TechId> m_SoldOut = NONE_SOLD_OUT;
+        private int m_SoldOutSeed;
 
         public override void OnNetworkSpawn()
         {
@@ -69,13 +78,59 @@ namespace CTC.Runtime.Economy
         /// <summary>조준 액티브 — 창고. 고스트 확정 위치를 서버가 재검증한다.</summary>
         public void UseAt(TechId _id, Vector3 _position) => UseAtRpc((int)_id, _position);
 
+        /// <summary>
+        /// 오늘 못 사는 테크 — 매치 시드에서 **다시 계산한다**(서버·클라 같은 답, 기획서 §7-2).
+        ///
+        /// 시드가 없으면(로비·봇 실험실) 빈 목록이라 지금까지와 똑같이 돈다.
+        /// 카탈로그는 역할과 무관하게 **쥐 것**이다: 품절은 쥐 테크만이고(§7), 고양이 테크와는
+        /// id가 겹치지 않아 고양이의 구매는 이 목록을 지나도 아무 영향이 없다.
+        /// 그 덕에 고양이도 같은 목록을 읽어 같은 토스트를 띄운다("전원 동일·공개").
+        /// </summary>
+        public IReadOnlyList<TechId> SoldOutToday
+        {
+            get
+            {
+                Match.MatchRandom random = Match.MatchRandom.Current;
+                int seed = random != null ? random.Seed : 0;
+                if (seed == 0)
+                {
+                    m_SoldOutSeed = 0;
+                    m_SoldOut = NONE_SOLD_OUT;
+                    return m_SoldOut;
+                }
+                if (seed != m_SoldOutSeed)
+                {
+                    m_SoldOutSeed = seed;
+                    m_SoldOut = TechRandomLogic.SoldOut(TechLogic.Catalog(RoleId.Mouse), Balance.SoldOutCount,
+                        Match.MatchRandom.SubSeed(seed, Match.MatchRandom.SALT_SOLD_OUT));
+                }
+                return m_SoldOut;
+            }
+        }
+
+        /// <summary>
+        /// 품절 목록이 정해졌다(구독 즉시 현재 값 1회). 핫바가 이걸 구독해 후보에서 빼고 토스트를 띄운다 —
+        /// 시드는 판 시작 직후에 오므로 View가 매 프레임 물어보게 두지 않는다(규칙 3).
+        /// </summary>
+        public Observable<IReadOnlyList<TechId>> SoldOutChanged
+        {
+            get
+            {
+                Match.MatchRandom random = Match.MatchRandom.Current;
+                if (random == null) return Observable.Return(SoldOutToday);
+                return random.SeedChanged.Select(_ => SoldOutToday);
+            }
+        }
+
         /// <summary>로컬 표시용 판정(권위는 서버). 상점 안 여부까지 본다.</summary>
         public TechDeny CanBuyNow(TechId _id)
         {
             if (m_Slots == null || m_Tag == null || m_Wallet == null) return TechDeny.Unknown;
             if (TechLogic.NeedsShopSpot(m_Tag.Role) && !IsBotExempt() && !Map.ShopSpot.AnyContains(transform.position))
                 return TechDeny.NotInShop;
-            return TechLogic.CanBuy(m_Slots.Owned, _id, m_Tag.Role, m_Wallet.CheeseValue, Balance.TechSlotCap);
+            // 서버 BuyRpc도 이 함수를 지난다 — 품절 판정의 권위는 그대로 서버에 있다.
+            return TechLogic.CanBuy(m_Slots.Owned, _id, m_Tag.Role, m_Wallet.CheeseValue, Balance.TechSlotCap,
+                SoldOutToday);
         }
 
         /// <summary>

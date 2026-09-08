@@ -90,13 +90,19 @@ namespace CTC.Runtime.Bots
         /// 저절로 도는 패시브라 봇이 흉내 낼 판단이 없다 — 액티브(끈끈이)는 "언제 누르나"가
         /// 곧 실력이라 봇에게 주면 재는 대상이 밸런스가 아니라 봇이 된다.
         /// <paramref name="_ownedCount"/>는 지금 찬 칸 수(TechSlots.Count)다.
+        ///
+        /// <paramref name="_soldOut"/>은 **오늘의 품절**(계획 3 Task 3). 안 넘기면 봇이 매 틱
+        /// 죽은 구매를 시도한다 — 칸 상한(TechSlotCap)을 여기서 보는 것과 똑같은 이유다.
+        /// null이면 품절 없음(봇 실험실·시드 없는 판).
         /// </summary>
         public static Economy.TechId NextPurchase(
             int _cheese, bool _hasDash, bool _hasGun, bool _hasWarehouse, bool _hasFortress,
-            bool _hasShield, bool _hasPouch, int _ownedCount)
+            bool _hasShield, bool _hasPouch, int _ownedCount,
+            IReadOnlyList<Economy.TechId> _soldOut = null)
         {
             Info.BalanceInfo balance = Info.InfoManager.Instance.Balance;
             int CostOf(Economy.TechId _id) => Economy.TechLogic.RowOf(_id, 1).Cost;
+            bool SoldOut(Economy.TechId _id) => Economy.TechRandomLogic.IsSoldOut(_soldOut, _id);
 
             // 칸이 다 찼으면 **새 테크**는 못 산다(TechSlotCap). 봇은 레벨을 올리지 않고 새것만
             // 사므로 여기서 한 번 막으면 된다. 서버도 같은 판정을 하지만(TechLogic.CanBuy →
@@ -104,7 +110,7 @@ namespace CTC.Runtime.Bots
             if (_ownedCount >= balance.TechSlotCap) return Economy.TechId.None;
 
             // ① 대시 — 눈앞에서 쫓길 때 거리를 벌리는 유일한 수단
-            if (!_hasDash && _cheese >= CostOf(Economy.TechId.Dash)) return Economy.TechId.Dash;
+            if (!_hasDash && !SoldOut(Economy.TechId.Dash) && _cheese >= CostOf(Economy.TechId.Dash)) return Economy.TechId.Dash;
 
             // ② 요새 — **창고보다 먼저다**(2026-08-18). 예전에는 창고(150) → 요새(80) 순이라
             //    첫 요새를 세우려면 250을 모아야 했고, 그때까지 쥐는 도망칠 벽이 없었다.
@@ -113,13 +119,13 @@ namespace CTC.Runtime.Bots
             //    떨어졌다(측정). 서 있는 요새는 `TryGetRefugeFortress`가 찾아 주는 **피난처**라,
             //    쫓기기 전에 세워 둬야 도망칠 곳이 생긴다. 쫓기는 순간의 발밑 설치는 그것대로 남아 있다.
             //    테크 v3에선 Lv1(설치 "권한")만 사면 되고, 실제 설치는 매번 FortressPlaceCost를 낸다.
-            if (!_hasFortress && _cheese >= CostOf(Economy.TechId.Fortress)) return Economy.TechId.Fortress;
+            if (!_hasFortress && !SoldOut(Economy.TechId.Fortress) && _cheese >= CostOf(Economy.TechId.Fortress)) return Economy.TechId.Fortress;
 
             // ③ 창고 — **비상 벽 값(요새 설치비)뿐 아니라 창고 자체 설치비도 남기고 산다**(Task 8 갱신,
             //    2026-09-07). 테크 v3부터 창고도 Lv1(권한) + 설치마다 WarehousePlaceCost를 따로 낸다 —
             //    Lv1만 사고 설치비가 없으면 전부 털어 창고를 세운 것과 같아 그 직후 쫓길 때
             //    `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
-            if (!_hasWarehouse
+            if (!_hasWarehouse && !SoldOut(Economy.TechId.Warehouse)
                 && _cheese >= CostOf(Economy.TechId.Warehouse) + balance.WarehousePlaceCost + balance.FortressPlaceCost)
                 return Economy.TechId.Warehouse;
 
@@ -129,10 +135,12 @@ namespace CTC.Runtime.Bots
             //
             // 둘 다 **비상 벽 값(요새 설치비)은 남기고** 산다 — 창고와 같은 이유다. 지갑을 털면
             // 그 직후 쫓길 때 `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
-            if (!_hasShield && _cheese >= CostOf(Economy.TechId.CheeseShield) + balance.FortressPlaceCost)
+            if (!_hasShield && !SoldOut(Economy.TechId.CheeseShield)
+                && _cheese >= CostOf(Economy.TechId.CheeseShield) + balance.FortressPlaceCost)
                 return Economy.TechId.CheeseShield;
 
-            if (!_hasPouch && _cheese >= CostOf(Economy.TechId.BigPouch) + balance.FortressPlaceCost)
+            if (!_hasPouch && !SoldOut(Economy.TechId.BigPouch)
+                && _cheese >= CostOf(Economy.TechId.BigPouch) + balance.FortressPlaceCost)
                 return Economy.TechId.BigPouch;
 
             return Economy.TechId.None;
