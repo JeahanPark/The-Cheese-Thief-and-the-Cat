@@ -61,6 +61,68 @@ namespace CTC.Runtime.Testing
         {
             return Info.InfoManager.Instance.Balance.ShopSpotRadius;
         }
+
+        /// <summary>
+        /// QA: 지금 선 상점마다 **원반 안에서 요새가 서는 자리 수**를 "3|9|8|..."로(중심+둘레 여덟 중).
+        ///
+        /// 자리 수를 세는 건 <see cref="ShopSpotLogic.FreeProbeCount"/> 하나다 — 자리를 고른
+        /// 규칙과 QA가 재는 규칙이 같아야 "훅은 통과라는데 게임에선 안 선다"가 안 생긴다.
+        /// **물리(<see cref="ShopController.PlacementFits"/>)가 아니라 격자**를 본다: 고르는 쪽이
+        /// 격자를 봤으므로 같은 눈으로 재야 한다. 물리 쪽 확인은 <see cref="TestDebugPlacementBlockers"/>가 한다.
+        /// </summary>
+        public string TestGetShopSpotFreeSpots()
+        {
+            System.Collections.Generic.IReadOnlyList<ShopSpot> all = ShopSpot.All;
+            float radius = Info.InfoManager.Instance.Balance.ShopSpotRadius;
+            float placeHalf = ShopController.HalfExtentsOf(TechId.Fortress).x;
+            Ai.NavGrid grid = Ai.NavGridService.Grid;
+
+            var check = new ShopSpotLogic.SpotCheck { PlaceHalfExtent = placeHalf };
+            if (grid != null)
+            {
+                check.IsFree = _p =>
+                {
+                    grid.ToCell(new Vector3(_p.x, 0f, _p.y), out int cx, out int cz);
+                    return grid.InBounds(cx, cz) && grid.ClearanceMeters(cx, cz) >= placeHalf;
+                };
+            }
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] == null) continue;   // 규칙 9
+                Vector3 p = all[i].transform.position;
+                if (sb.Length > 0) sb.Append('|');
+                sb.Append(ShopSpotLogic.FreeProbeCount(new Vector2(p.x, p.z), radius, check));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// QA: 상점 원반이 고양이 스폰을 삼켰는가 — 삼킨 상점 좌표를 "x,z|x,z"로, 없으면 빈 문자열.
+        /// 판정은 <see cref="ShopSpotLogic.SwallowsKeepAway"/> 하나를 자리 고르는 쪽과 같이 쓴다.
+        /// </summary>
+        public string TestGetShopSpotsOnCatSpawn()
+        {
+            System.Collections.Generic.IReadOnlyList<ShopSpot> all = ShopSpot.All;
+            float radius = Info.InfoManager.Instance.Balance.ShopSpotRadius;
+            var check = new ShopSpotLogic.SpotCheck
+            {
+                KeepAway = Lobby.PlayerSpawner.CatSpawnPoints(),
+                KeepAwayMargin = Info.InfoManager.Instance.PlayerOf(Lobby.RoleId.Cat).CcRadius,
+            };
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] == null) continue;
+                Vector3 p = all[i].transform.position;
+                if (!ShopSpotLogic.SwallowsKeepAway(new Vector2(p.x, p.z), radius, check)) continue;
+                if (sb.Length > 0) sb.Append('|');
+                sb.Append($"{p.x:F2},{p.z:F2}");
+            }
+            return sb.ToString();
+        }
     }
 }
 #endif

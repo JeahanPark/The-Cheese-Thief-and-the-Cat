@@ -39,8 +39,12 @@ namespace CTC.Runtime.Map
                 ? Match.MatchRandom.SubSeed(random.Seed, Match.MatchRandom.SALT_SHOP)
                 : _layout.Seed;
 
+            // 원반 안이 실제로 비었는지까지 본다(2026-09-08) — 크기만 보던 시절엔 엄폐물을 문 자리에
+            // 상점이 서서 요새·창고가 통째로 거절됐다. 고양이 스폰을 삼키는 자리도 여기서 빠진다.
+            ShopSpotLogic.SpotCheck check = BuildCheck();
+
             List<Vector2> picked = ShopSpotLogic.Resolve(_layout.HandPlaced, placed, _layout.Rooms,
-                count, b.ShopSpotMinGap, b.ShopSpotRadius, seed);
+                count, b.ShopSpotMinGap, b.ShopSpotRadius, seed, check);
 
             foreach (Vector2 p in picked)
             {
@@ -50,7 +54,51 @@ namespace CTC.Runtime.Map
                 m_Spawned.Add(no);
             }
             Core.GameDebug.Log($"[ShopSpotSpawner] 상점 {picked.Count}곳 (목표 {count} · 간격 {b.ShopSpotMinGap:0.#} · 시드 {seed})");
+            foreach (Vector2 p in picked)
+            {
+                Core.GameDebug.Log($"[ShopSpotSpawner]   ({p.x:0.##},{p.y:0.##}) 열린 자리 " +
+                    $"{ShopSpotLogic.FreeProbeCount(p, b.ShopSpotRadius, check)}/{ShopSpotLogic.DISC_PROBE_RING + 1}");
+            }
         }
+
+        /// <summary>
+        /// 원반 검사를 짓는다 — **차단물은 격자(<c>NavGridService.Grid</c>)에게 묻는다.**
+        ///
+        /// 격자를 고른 이유: 절차 맵과 손 배치 맵을 **한 벌로** 덮는 유일한 원본이다.
+        /// `MapPointAudit`은 `MapLayout.Props`만 알아 절차 맵이 세우는 방 벽·복도·엄폐물을 못 보고,
+        /// `ShopController.PlacementFits`는 물리 질의라 순수 로직으로 못 뽑아 EditMode가 못 덮는다.
+        /// 격자는 `MapBuilder`가 **실제로 세운 콜라이더**에서 구워지므로 둘의 장점만 남는다.
+        ///
+        /// 격자가 아직 없으면(맵 미빌드) 검사를 끄고 예전처럼 크기만 본다 — 상점이 0곳이 되는 것보다 낫다.
+        /// </summary>
+        private static ShopSpotLogic.SpotCheck BuildCheck()
+        {
+            // 설치물 크기의 주인은 ShopController다 — 여기서 숫자를 베끼면 요새를 키웠을 때 조용히 갈라진다.
+            float placeHalf = Economy.ShopController.HalfExtentsOf(Economy.TechId.Fortress).x;
+
+            var check = new ShopSpotLogic.SpotCheck
+            {
+                PlaceHalfExtent = placeHalf,
+                KeepAway = Lobby.PlayerSpawner.CatSpawnPoints(),
+                KeepAwayMargin = Info.InfoManager.Instance.PlayerOf(Lobby.RoleId.Cat).CcRadius
+                                 + CAT_SPAWN_MARGIN,
+            };
+
+            Ai.NavGrid grid = Ai.NavGridService.Grid;
+            if (grid == null) return check;
+
+            check.IsFree = _p =>
+            {
+                grid.ToCell(new Vector3(_p.x, 0f, _p.y), out int cx, out int cz);
+                if (!grid.InBounds(cx, cz)) return false;
+                // 막힌 셀은 ClearanceMeters가 0이라 따로 안 본다 — 요새 반치수가 들어가야 열린 자리다.
+                return grid.ClearanceMeters(cx, cz) >= placeHalf;
+            };
+            return check;
+        }
+
+        /// <summary>고양이 몸 반지름 위에 더 띄우는 여유(m) — 원반 가장자리에 걸치는 것도 막는다.</summary>
+        private const float CAT_SPAWN_MARGIN = 1f;
 
         /// <summary>서버 전용. 로비 복귀 시 걷는다.</summary>
         public void ServerDespawnAll()

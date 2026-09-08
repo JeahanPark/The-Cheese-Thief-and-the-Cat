@@ -53,6 +53,31 @@ namespace CTC.Runtime.Lobby
             return spawn;
         }
 
+        /// <summary>
+        /// 고양이가 서는 자리 전부(x, z) — 상점 자리가 여기를 피해야 한다(2026-09-08).
+        ///
+        /// **공식을 베끼지 않는다**: <see cref="SpawnPosition"/>을 그대로 태운다. 베껴 두면
+        /// 공식이 바뀌었을 때 상점만 옛 자리를 피하고 아무 에러도 안 난다(MapPointAudit와 같은 규칙).
+        /// 인원이 아니라 **정원**(<c>LobbySession.CAT_CAPACITY</c>)만큼 본다 — 상점 자리는 판이
+        /// 열리기 전에 정해지는데 그때 고양이가 몇일지는 규칙상 정원까지 열려 있다.
+        /// </summary>
+        public static List<Vector2> CatSpawnPoints(int _catCount = LobbySession.CAT_CAPACITY)
+        {
+            var points = new List<Vector2>();
+            if (_catCount <= 0) return points;
+
+            var roles = new List<RoleId>(_catCount);
+            for (int i = 0; i < _catCount; i++) roles.Add(RoleId.Cat);
+
+            var noForts = new List<(Vector3 pos, float yaw)>();
+            for (int i = 0; i < _catCount; i++)
+            {
+                Vector3 p = SpawnPosition(roles, i, noForts);
+                points.Add(new Vector2(p.x, p.z));
+            }
+            return points;
+        }
+
         /// <summary>활성 MapLayout의 요새자리를 (pos, yaw) 리스트로 — 미배선이면 빈 리스트.</summary>
         public static List<(Vector3 pos, float yaw)> FortressSpots(MapLayout _layout)
         {

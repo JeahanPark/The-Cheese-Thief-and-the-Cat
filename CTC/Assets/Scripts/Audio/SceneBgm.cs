@@ -23,9 +23,9 @@ namespace CTC.Runtime.Audio
                 var source = go.GetComponent<AudioSource>();
                 source.volume = 0.35f;   // 설계 볼륨 — AudioVolumeFollower가 이 비율을 지킨다
                 go.AddComponent<BgmDirector>();
-                go.AddComponent<AudioVolumeFollower>();   // 기본 Category는 Sfx라 아래에서 바꾼다
-                var follower = go.GetComponent<AudioVolumeFollower>();
-                follower.SetCategory(AudioVolumeFollower.Category.Bgm);
+                // 붙이면서 카테고리까지 준다 — 붙인 **뒤에** 고치면 AddComponent가 이미 Awake를
+                // 돌린 뒤라 예전엔 배경음이 효과음 슬라이더를 따라갔다(2026-09-08).
+                AudioVolumeFollower.Attach(go, AudioVolumeFollower.Category.Bgm);
             }
 
             BgmDirector.Instance.Play(m_Clip);
