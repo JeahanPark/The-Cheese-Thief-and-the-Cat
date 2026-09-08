@@ -24,7 +24,11 @@ namespace CTC.Runtime.Economy
         // HUD 개편(2026-08-15): 오류 토스트(1.4s)와 달리 **사용법을 가르치는** 토스트는 읽을 시간을 준다.
         private const float TOAST_LONG_SECONDS = 3f;
         private const float INTRO_TOAST_SECONDS = 4f;
-        private const float GHOST_MIN_DISTANCE = 1.5f;
+        /// <summary>벽에 맞았을 때 벽면에서 떼어 놓는 여유(m).</summary>
+        private const float GHOST_WALL_GAP = 0.5f;
+
+        /// <summary>겨눈 자리가 막혔을 때 발치까지 당겨 보는 횟수 — 좁은 방에서 첫 빈 자리를 찾는다.</summary>
+        private const int GHOST_RETREAT_STEPS = 6;
 
         // 쿨다운은 매 프레임 흐르지만 화면엔 초 단위만 보인다 — 이 간격으로만 다시 그린다.
         private const float COOLDOWN_REDRAW_SECONDS = 0.25f;
@@ -441,7 +445,7 @@ namespace CTC.Runtime.Economy
             // ESC는 EscapeRouter가 단독으로 읽고 CancelPlacementFromEscape()를 부른다(2026-08-01)
             if (mouse != null && mouse.rightButton.wasPressedThisFrame) { CancelPlacement(); Say("배치 취소"); return; }
 
-            Vector3 pos = GhostPosition(m_Shop.transform);
+            Vector3 pos = GhostPosition(m_Shop.transform, m_PlacingId);
             m_GhostValid = ShopController.PlacementFits(m_PlacingId, pos);
 
             Vector3 half = ShopController.HalfExtentsOf(m_PlacingId);
@@ -459,8 +463,16 @@ namespace CTC.Runtime.Economy
             Say("창고 설치 — 자리를 비워도 치즈가 쌓인다 · 소리로 위치가 팔린다", TOAST_LONG_SECONDS);
         }
 
-        // 카메라 전방 지면 지점 — 플레이어 기준 1.5~4m로 클램프
-        private static Vector3 GhostPosition(Transform _player)
+        /// <summary>
+        /// 카메라 전방 지면 지점 — 겨눈 자리가 막혔으면 **발치 쪽으로 당기며** 첫 빈 자리를 쓴다.
+        ///
+        /// 예전에는 벽에 맞아도 <c>Mathf.Max(1.5m, hit.distance - 0.5m)</c>로 최소 거리를 강제했다.
+        /// 그래서 벽이 2 m보다 가까우면 고스트가 **벽 너머로 밀려나** 어디를 겨눠도 빨간색이었다.
+        /// 기본 맵의 상점이 4×6 m 방 한가운데 앉는 바람에 사방이 그 상태였고,
+        /// 「상점에서 설치권을 사고 그 자리에 세운다」가 통째로 막혔다(2026-09-08).
+        /// 최소 거리는 없앴다 — 벽이 가까우면 고스트도 가까이 선다.
+        /// </summary>
+        private static Vector3 GhostPosition(Transform _player, TechId _id)
         {
             Camera cam = Camera.main;
             Vector3 dir = cam != null ? cam.transform.forward : _player.forward;
@@ -473,12 +485,20 @@ namespace CTC.Runtime.Economy
             if (Physics.Raycast(origin, dir, out RaycastHit hit, GHOST_MAX_DISTANCE,
                     ~(1 << 2), QueryTriggerInteraction.Ignore))
             {
-                distance = Mathf.Max(GHOST_MIN_DISTANCE, hit.distance - 0.5f);
+                // 벽 앞에서 멈춘다 — 최소 거리를 이유로 **벽을 넘지 않는다**
+                distance = hit.distance - GHOST_WALL_GAP;
             }
+            distance = Mathf.Clamp(distance, 0f, GHOST_MAX_DISTANCE);
 
-            Vector3 target = _player.position + dir * distance;
-            target.y = _player.position.y; // 지형 높이는 평면 맵이라 플레이어 발치 기준
-            return target;
+            Vector3 feet = _player.position;
+            for (int step = 0; step <= GHOST_RETREAT_STEPS; step++)
+            {
+                float d = distance * (1f - (float)step / GHOST_RETREAT_STEPS);
+                Vector3 at = feet + dir * d;
+                at.y = feet.y;   // 지형 높이는 평면 맵이라 플레이어 발치 기준
+                if (ShopController.PlacementFits(_id, at)) return at;
+            }
+            return feet;   // 발치까지 막혔다 — 고스트가 빨간색으로 그 사실을 보여 준다
         }
 
         /// <summary>ESC 처리 — `EscapeRouter`만 부른다(ESC를 두 곳에서 읽지 않으려고).</summary>

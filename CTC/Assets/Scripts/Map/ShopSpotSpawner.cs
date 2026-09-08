@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -22,15 +22,15 @@ namespace CTC.Runtime.Map
             ServerDespawnAll();
             if (_layout == null || m_SpotPrefab == null) return;
 
-            var centers = new List<Vector2>(_layout.Rooms.Count);
-            foreach (RoomRect room in _layout.Rooms) centers.Add(room.Center);
             var placed = new List<Vector2>(_layout.Shops.Count);
             foreach (ShopPlacement shop in _layout.Shops) placed.Add(shop.Pos);
 
-            // 손 배치 맵은 레벨디자이너 자리 그대로, 절차 맵은 방 중심 규칙 — ShopSpotLogic.Resolve
+            // 손 배치 맵은 레벨디자이너 자리 그대로, 절차 맵은 방 중심 규칙 — ShopSpotLogic.Resolve.
+            // 방 **중심만**이 아니라 방 사각형째로 넘긴다: 원반이 들어가는 방을 골라야
+            // 상점 안에서 설치가 막히지 않는다(2026-09-08).
             Info.BalanceInfo b = Info.InfoManager.Instance.Balance;
-            List<Vector2> picked = ShopSpotLogic.Resolve(_layout.HandPlaced, placed, centers,
-                b.ShopSpotCount, b.ShopSpotMinGap, _layout.Seed);
+            List<Vector2> picked = ShopSpotLogic.Resolve(_layout.HandPlaced, placed, _layout.Rooms,
+                b.ShopSpotCount, b.ShopSpotMinGap, b.ShopSpotRadius, _layout.Seed);
 
             foreach (Vector2 p in picked)
             {

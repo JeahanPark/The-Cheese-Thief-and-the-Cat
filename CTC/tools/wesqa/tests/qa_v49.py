@@ -25,7 +25,7 @@
 
 한 판에 한 번만 돌린다(창고를 세우고 쥐를 옮긴다). 다시 돌리려면 플레이모드를 껐다 켠다.
 """
-import sys, time, io
+import sys, time, io, math
 
 sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -181,19 +181,37 @@ def main():
     permit = poll(lambda: host.invoke("TestGetTechLevel", _clientId=m1, _techId="Warehouse"),
                   lambda v: v >= 1)
 
-    # 세우는 자리는 **상점 밖**이다. 상점 자리 안(반경 3 m)에서는 PlacementFits가 조용히
-    # 거절한다 — 2026-09-08 실측: 상점 중심 둘레 여덟 자리가 전부 막혔고, 같은 쥐가 빈 바닥에서는
-    # 한 번에 섰다. 미니맵 QA가 「그 자리가 비었나」를 재게 두면 안 되므로 자리를 옮겨서 센다.
-    placed, placed_at = warehouses0, None
-    for ox, oz in [(-5, -4), (5, 4), (-6, 3), (6, -3), (0, 6), (0, -6)]:
+    # 세우는 자리는 **상점 자리 안**이다 - 「상점에서 설치권을 사고 그 자리에 세운다」가
+    # 테크 v3의 동선이라, 여기서 막히면 기능이 없는 것과 같다.
+    #
+    # 2026-09-08에 실제로 한 번 막혔었다: 상점을 방 크기와 무관하게 방 중심에서 뽑는 바람에
+    # 기본 맵의 상점이 4x6 m 방(R2)에 앉았고, 반경 3 m 원반의 대부분이 벽 속이었다.
+    # 지금은 원반이 들어가는 방만 고른다(ShopSpotLogic.RoomHoldsShop). 그래서 이 항목은
+    # **그 회귀를 잡는 그물**이다 - 실패하면 TestDebugPlacementBlockers가 무엇이 막았는지
+    # 콜라이더 이름으로 뱉는다.
+    shx, shz = [float(v) for v in host.invoke("TestGetShopSpotPos", _index=0).split(",")]
+    ring = float(host.invoke("TestGetShopSpotRadius")) * 0.6
+
+    placed, placed_at, blockers = warehouses0, None, []
+    for k in range(9):
         if placed > warehouses0:
             break
-        teleport(m1i, sx + ox, sz + oz, settle=1.4)
-        m1i.invoke("TestPlaceWarehouseAt", _x=sx + ox, _z=sz + oz)
+        # 발치 -> 원반 안쪽 여덟 방향. 쥐는 이미 상점 한가운데 서 있어 걷지 않는다.
+        if k == 0:
+            px, pz = shx, shz
+        else:
+            ang = (k - 1) * math.pi / 4.0
+            px, pz = shx + math.cos(ang) * ring, shz + math.sin(ang) * ring
+        m1i.invoke("TestPlaceWarehouseAt", _x=px, _z=pz)
         placed = poll(lambda: host.invoke("TestGetWarehouseCountOf", _clientId=m1),
                       lambda v: v > warehouses0, limit=3.0)
         if placed > warehouses0:
-            placed_at = (sx + ox, sz + oz)
+            placed_at = (px, pz)
+        else:
+            blockers.append(host.invoke("TestDebugPlacementBlockers",
+                                        _x=px, _z=pz, _techId="Warehouse"))
+    if blockers:
+        note("5' 상점 안에서 거절된 자리", " ;; ".join(blockers[:3]))
 
     struct1 = poll(lambda: markers(m1i, "structure"), lambda v: v > struct0)
     cat_struct1 = markers(host, "structure")

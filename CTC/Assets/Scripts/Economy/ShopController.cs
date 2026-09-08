@@ -1,4 +1,4 @@
-using CTC.Runtime.Combat;
+﻿using CTC.Runtime.Combat;
 using CTC.Runtime.Lobby;
 using Unity.Netcode;
 using UnityEngine;
@@ -384,26 +384,45 @@ namespace CTC.Runtime.Economy
 
         // ===== 설치 공용 =====
 
-        private const int PLACE_OVERLAP_BUFFER = 16;
+        public const int PLACE_OVERLAP_BUFFER = 16;
         private static readonly Collider[] s_PlaceOverlap = new Collider[PLACE_OVERLAP_BUFFER];
 
+        // 바닥(Ignore Raycast 레이어 2)은 제외 — 벽·구조물만 방해물로 본다
+        private const int PLACE_MASK = ~(1 << 2);
+
         /// <summary>
-        /// 설치 지점이 비어 있는가 — 클라 고스트와 동일 규칙(서버 권위 검증).
-        /// 플레이어는 방해물로 치지 않는다: 제 몸이나 옆 쥐에 걸려 설치가 거절되는 게
-        /// "설치가 너무 힘들다"의 절반이었다(2026-07-28). 겹쳐 놓아도 CC가 서로 밀어낸다.
+        /// 설치 지점에 닿는 콜라이더를 모은다 — <see cref="PlacementFits"/>와 진단 훅
+        /// (<c>TestManager.TestDebugPlacementBlockers</c>)이 **같은 질의**를 보게 하는 원본이다.
+        /// 여기서 갈라지면 "훅은 비었다는데 설치는 거절된다"가 된다.
         /// </summary>
-        public static bool PlacementFits(TechId _id, Vector3 _position)
+        public static int PlacementOverlap(TechId _id, Vector3 _position, Collider[] _buffer)
         {
             Vector3 half = HalfExtentsOf(_id);
             Vector3 center = _position + Vector3.up * half.y;
-            // 바닥(Ignore Raycast 레이어 2)은 제외 — 벽·구조물만 방해물로 본다
-            int count = Physics.OverlapBoxNonAlloc(center, half * 0.95f, s_PlaceOverlap,
-                Quaternion.identity, ~(1 << 2), QueryTriggerInteraction.Ignore);
+            return Physics.OverlapBoxNonAlloc(center, half * 0.95f, _buffer,
+                Quaternion.identity, PLACE_MASK, QueryTriggerInteraction.Ignore);
+        }
 
+        /// <summary>
+        /// 이 콜라이더가 설치를 막는가. **플레이어의 몸은 막지 않는다** — 제 몸이나 옆 쥐에 걸려
+        /// 설치가 거절되는 게 "설치가 너무 힘들다"의 절반이었다(2026-07-28).
+        /// 겹쳐 놓아도 CC가 서로 밀어낸다.
+        /// </summary>
+        public static bool IsPlacementBlocker(Collider _collider)
+        {
+            if (_collider == null) return false;
+            return _collider.transform.root.GetComponent<CharacterController>() == null;
+        }
+
+        /// <summary>
+        /// 설치 지점이 비어 있는가 — 클라 고스트와 동일 규칙(서버 권위 검증).
+        /// </summary>
+        public static bool PlacementFits(TechId _id, Vector3 _position)
+        {
+            int count = PlacementOverlap(_id, _position, s_PlaceOverlap);
             for (int i = 0; i < count; i++)
             {
-                if (s_PlaceOverlap[i].transform.root.GetComponent<CharacterController>() != null) continue;
-                return false;
+                if (IsPlacementBlocker(s_PlaceOverlap[i])) return false;
             }
             return true;
         }
