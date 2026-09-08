@@ -1,4 +1,6 @@
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using CTC.Runtime.Player;
 using NUnit.Framework;
 using UnityEngine;
@@ -69,7 +71,52 @@ namespace CTC.Tests
             AssertStatesExist("AC_Cat.controller");
         }
 
+        // ===== 이름 → 상태 되돌리기 목록(2026-09-09 감사 B-04) =====
+        //
+        // `Animator`는 이름이 아니라 해시를 준다. `PlayerAnimationDriver.PlayingState`는
+        // `AnimationStateLogic.All`을 후보로 훑어 글자로 되돌린다 — 목록에서 빠진 상태는
+        // 실제로 돌고 있어도 "?해시"로 나와, QA가 「안 걸렸다」로 오독한다.
+        // 상수를 새로 넣고 목록에 안 넣는 것이 정확히 그 사고다.
+
+        [Test]
+        public void All_ContainsEveryDeclaredStateConstant()
+        {
+            var declared = new List<string>();
+            foreach (FieldInfo f in typeof(AnimationStateLogic).GetFields(
+                         BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+            {
+                if (!f.IsLiteral || f.FieldType != typeof(string)) continue;
+                declared.Add((string)f.GetRawConstantValue());
+            }
+
+            Assert.IsNotEmpty(declared, "상수를 하나도 못 찾았다 — 이 테스트가 항진명제가 됐다");
+            CollectionAssert.AreEquivalent(declared, AnimationStateLogic.All,
+                "선언한 상태 상수와 All 목록이 어긋났다 — 빠진 상태는 QA에서 '?해시'로 보인다");
+        }
+
+        [Test]
+        public void All_HasNoDuplicates()
+        {
+            var seen = new HashSet<string>();
+            foreach (string s in AnimationStateLogic.All)
+            {
+                Assert.IsTrue(seen.Add(s), $"All에 '{s}'가 두 번 있다");
+            }
+        }
+
+        [Test]
+        public void All_StatesExistInBothControllers()
+        {
+            AssertStatesExist("AC_Mouse.controller", AnimationStateLogic.All);
+            AssertStatesExist("AC_Cat.controller", AnimationStateLogic.All);
+        }
+
         private static void AssertStatesExist(string _controllerFile)
+        {
+            AssertStatesExist(_controllerFile, ONE_SHOT_STATES);
+        }
+
+        private static void AssertStatesExist(string _controllerFile, string[] _states)
         {
             string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _controllerFile);
             if (!File.Exists(path))
@@ -80,7 +127,7 @@ namespace CTC.Tests
 
             // 줄 단위로 정확히 견준다 — Shapekey 레이어의 Eyes_Spin 같은 이름에 섞여 들지 않게.
             string[] lines = File.ReadAllLines(path);
-            foreach (string state in ONE_SHOT_STATES)
+            foreach (string state in _states)
             {
                 bool found = false;
                 foreach (string line in lines)

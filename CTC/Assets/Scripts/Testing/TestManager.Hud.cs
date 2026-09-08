@@ -67,6 +67,25 @@ namespace CTC.Runtime.Testing
             return count;
         }
 
+        /// <summary>
+        /// QA: 결과 패널의 재시작 버튼이 **화면에 떠 있는가** (감사 qa_v52 ⑥ SKIP 해소).
+        /// -1 = 결과 패널 자체가 없다 · 0 = 안 뜬다 · 1 = 떠 있다.
+        ///
+        /// 시리즈(3판제) 중에는 안 떠야 한다 — `TestGetResultText`는 문구만 읽어서
+        /// 이 계약을 못 본다. 「없음」을 정상값으로 돌려주지 않으려고 -1을 따로 뒀다.
+        /// </summary>
+        public int TestGetResultRestartVisible()
+        {
+            var hud = FindFirstObjectByType<ResultHud>();
+            if (hud == null) return -1;
+
+            FieldInfo field = typeof(ResultHud).GetField(
+                "m_RestartButton", BindingFlags.NonPublic | BindingFlags.Instance);
+            var button = field?.GetValue(hud) as UnityEngine.UI.Button;
+            if (button == null) return -1;
+            return button.gameObject.activeInHierarchy ? 1 : 0;
+        }
+
         // 컴포넌트가 들고 있는 TMP 참조를 그대로 읽는다 — 이름으로 GameObject를 찾으면
         // 참조가 안 꽂혀 있어도 글자가 보여 "배선됐다"고 착각한다.
         private static string HudText(Component _hud, string _field)

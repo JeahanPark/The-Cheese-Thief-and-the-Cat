@@ -23,6 +23,18 @@ namespace CTC.Runtime.Player
         public const string Clicked = "Clicked"; // 구매 — 짧은 끄덕임
         public const string Eat = "Eat";         // 채굴 — 갉아먹기(반복)
 
+        /// <summary>
+        /// 이 게임이 이름으로 부르는 상태 전부. `Animator`가 주는 것은 이름이 아니라 해시라서,
+        /// 「지금 무엇이 도는가」를 글자로 되돌리려면 후보 목록이 있어야 한다
+        /// (<see cref="PlayerAnimationDriver.PlayingState"/>).
+        ///
+        /// 여기 없는 상태가 돌면 그 자리는 `?해시`로 나온다 — **없는 것을 있다고 읽지 않는다.**
+        /// </summary>
+        public static readonly string[] All =
+        {
+            Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
+        };
+
         public static string FromSpeed(float _speed, float _walkThreshold, float _runThreshold)
         {
             if (_speed >= _runThreshold) return Run;

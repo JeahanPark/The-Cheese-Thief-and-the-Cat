@@ -122,6 +122,9 @@ namespace CTC.Runtime.Audio
             // 예민한 귀는 **듣는 쪽**에서만 곱한다 — 위 Played에는 원본을 넘겼다(봇 청각·QA는 설계값을 봐야 한다).
             source.maxDistance = _maxDistance * ListenerRange.Multiplier;
             source.Play();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            SfxPlayLog.Record(_id);   // 클립이 실제로 걸린 뒤에만 센다 — Played 이벤트와 뜻이 다르다
+#endif
 
             Core.PoolManager.Instance.DespawnAfter(go, clip.length + 0.1f);
         }
@@ -144,6 +147,9 @@ namespace CTC.Runtime.Audio
             source.volume = _volume * Core.UserSettings.SfxVolume.Value;
             source.spatialBlend = 0f;
             source.Play();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            SfxPlayLog.Record(_id);
+#endif
 
             Core.PoolManager.Instance.DespawnAfter(go, clip.length + 0.1f);
         }
