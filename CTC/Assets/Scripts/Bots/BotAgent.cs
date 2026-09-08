@@ -209,8 +209,18 @@ namespace CTC.Runtime.Bots
             return m_Reservations != null ? m_Reservations.WeightAt(_point, Id) : 1f;
         }
 
+        /// <summary>
+        /// QA 전용 — 두뇌의 잠행 판단을 덮어쓴다. -1=평소(두뇌가 정한다) · 0=강제 해제 · 1=강제 잠행.
+        ///
+        /// 필요한 이유: 두뇌가 **매 틱** 잠행을 다시 정하므로(BotBrainTrees) 밖에서 한 번 켜 봐야
+        /// 다음 틱에 꺼진다. 「살금살금이면 귀가 안 선다」를 재려면 잠행이 유지 시간(1.5초)보다
+        /// 길게 붙어 있어야 한다(2026-09-08 실측: 안 잠그면 잠행 표본에 뛰던 순간이 섞인다).
+        /// </summary>
+        public static int DevSneakOverride = -1;
+
         public void SetSneak(bool _on)
         {
+            if (DevSneakOverride >= 0) _on = DevSneakOverride == 1;
             if (m_Sneak != null) m_Sneak.DevSetSneak(_on);
         }
 

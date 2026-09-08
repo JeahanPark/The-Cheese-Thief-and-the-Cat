@@ -34,6 +34,7 @@ GameObject:
   - component: {fileID: 2911770353754494756}
   - component: {fileID: 680282509390343821}
   - component: {fileID: 6813391279799131985}
+  - component: {fileID: -8113807162095430264}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Player
@@ -557,6 +558,20 @@ MonoBehaviour:
   m_EyeAxisLocal: {x: 0.5, y: 0.476, z: 0.724}
   m_ScleraRadiusLocal: 0.00045
   m_LidRadiusLocal: 0.00075
+--- !u!114 &-8113807162095430264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
+  m_EarRightBoneName: ear.R
+  m_EarLeftBoneName: ear.L
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0

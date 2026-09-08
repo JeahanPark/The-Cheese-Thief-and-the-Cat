@@ -118,6 +118,103 @@ namespace CTC.Runtime.Testing
             Vector3 g = eyes.DevGazeRight();
             return $"ok gaze={g.x:F3},{g.y:F3},{g.z:F3}";
         }
+
+        /// <summary>
+        /// QA: 얼굴 정면 한 장 — **인게임 3인칭 카메라와 같은 거리·같은 화각**으로 앞에서 찍는다.
+        ///
+        /// 게임 화면으로는 뒤통수만 나와 눈도 귀도 안 보인다. 그렇다고 근접 렌더로 찍으면
+        /// 「플레이 거리에서 보이나」를 증명하지 못한다 — 그래서 거리(PlayerInfo.CamDistance)와
+        /// 화각(PlayerInfo.Fov)은 게임 그대로 두고 **자리만 얼굴 앞으로** 옮긴다.
+        /// 머리를 화면 중앙에 두므로 가운데를 잘라 내면 그게 곧 게임뷰 크롭이다.
+        /// </summary>
+        public string TestCaptureFaceShot(string _path, int _size)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (local == null) return "no local player";
+
+            var tag = local.GetComponent<CTC.Runtime.Combat.RoleTag>();
+            CTC.Runtime.Lobby.RoleId role = tag != null ? tag.Role : CTC.Runtime.Lobby.RoleId.Mouse;
+            var info = CTC.Runtime.Info.InfoManager.Instance.PlayerOf(role);
+
+            Transform body = local.transform;
+            Transform head = FindDeep(body, "head");
+            Vector3 focus = head != null ? head.position : body.position + Vector3.up * 0.4f;
+            Vector3 pos = focus + body.forward * info.CamDistance + body.up * 0.25f;
+
+            // 창고 맵은 상자·통이 빽빽해 얼굴 앞 3 m가 자주 막힌다 — 그대로 찍으면 나무 상자만 남는다.
+            // 막혔으면 벽 **앞까지만** 당긴다(최소 0.7 m). 게임 카메라의 벽 회피와 같은 취지다.
+            Vector3 back = pos - focus;
+            float wanted = back.magnitude;
+            if (wanted > 0.01f &&
+                Physics.Raycast(focus, back / wanted, out RaycastHit hit, wanted,
+                                ~0, QueryTriggerInteraction.Ignore))
+            {
+                pos = focus + (back / wanted) * Mathf.Max(0.7f, hit.distance - 0.15f);
+            }
+
+            int size = _size > 0 ? _size : 1024;
+            var camGo = new GameObject("QaFaceCam");
+            var lightGo = new GameObject("QaFaceLight");
+            try
+            {
+                _path = _path.Trim().Trim('"').Replace('\\', '/');
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(focus - pos, Vector3.up));
+                cam.fieldOfView = info.Fov;
+                cam.nearClipPlane = 0.05f;
+
+                Light light = lightGo.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 1.6f;
+                lightGo.transform.rotation = Quaternion.LookRotation(focus - pos + Vector3.down * 0.5f);
+
+                var rt = new RenderTexture(size, size, 24, RenderTextureFormat.ARGB32);
+                cam.targetTexture = rt;
+                cam.Render();
+
+                RenderTexture prev = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                tex.ReadPixels(new Rect(0, 0, size, size), 0, 0);
+                tex.Apply();
+                RenderTexture.active = prev;
+
+                File.WriteAllBytes(_path, tex.EncodeToPNG());
+                cam.targetTexture = null;
+                Destroy(tex);
+                rt.Release();
+                Destroy(rt);
+            }
+            catch (System.Exception ex)
+            {
+                return "ERR path=[" + _path + "] " + ex.Message;
+            }
+            finally
+            {
+                Destroy(camGo);
+                Destroy(lightGo);
+            }
+
+            var ears = local.GetComponent<CTC.Runtime.Player.EarPerk>();
+            var eyes = local.GetComponent<CTC.Runtime.Player.EyeLook>();
+            Vector3 gaze = eyes != null ? eyes.DevGazeRight() : Vector3.zero;
+            return $"ok role={role} dist={info.CamDistance:F1} fov={info.Fov:F0} " +
+                   $"turn={(ears != null ? ears.DevTurnDegrees : 0f):F2} " +
+                   $"perk={(ears != null ? ears.DevPerk : 0f):F3} " +
+                   $"gaze={gaze.x:F3},{gaze.y:F3},{gaze.z:F3}";
+        }
+
+        private static Transform FindDeep(Transform _root, string _name)
+        {
+            if (_root.name == _name) return _root;
+            for (int i = 0; i < _root.childCount; i++)
+            {
+                Transform found = FindDeep(_root.GetChild(i), _name);
+                if (found != null) return found;
+            }
+            return null;
+        }
     }
 }
 #endif

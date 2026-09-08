@@ -357,6 +357,184 @@ namespace CTC.Runtime.Testing
             return $"body=({body}) modal={UiFocus.ModalOpen} typing={UiFocus.IsTyping} " +
                    $"blocks={UiFocus.BlocksGameplay} cursor={Cursor.lockState} popups={popups}";
         }
+
+        /// <summary>
+        /// QA: 로컬 몸의 귀 한 줄 — "turn=deg|perk=0..1|hearing=0/1|near=Cat@5.2m|range=20.0|stepping=1|sneak=0".
+        /// 연출이라 Model 값만 보면 배선 누락을 못 잡는다 — **실제 EarPerk가 적용 중인 각**과
+        /// **그 판단의 재료**(가장 가까운 반대편 · 그 몸의 발소리 반경)를 같이 준다.
+        /// 잠행 검증은 이 한 줄로 끝난다: 같은 near에서 sneak=1이면 range가 줄고 perk=0이어야 한다.
+        /// </summary>
+        public string TestGetEarState()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var ears = me != null ? me.GetComponent<CTC.Runtime.Player.EarPerk>() : null;
+            if (ears == null) return "none";
+
+            return $"turn={ears.DevTurnDegrees:F2}|perk={ears.DevPerk:F3}|" +
+                   $"hearing={(ears.DevHearing ? 1 : 0)}|kind={ears.DevHeardKind}|" +
+                   $"stepAudible={(ears.DevStepAudible ? 1 : 0)}|" +
+                   NearestEnemyLine(me.transform.position, ears.DevRole);
+        }
+
+        /// <summary>QA: 지정 역할의 몸 중 로컬에서 가장 가까운 것의 귀 — 봇(=사람 아닌 몸) 귀를 재는 쪽.</summary>
+        public string TestGetEarStateOfRole(string _role, bool _botOnly = false)
+        {
+            if (!System.Enum.TryParse(_role, true, out RoleId role)) return "none";
+
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            Vector3 from = me != null ? me.transform.position : Vector3.zero;
+
+            CTC.Runtime.Player.EarPerk best = NearestBody(role, from, _botOnly);
+            if (best == null) return "none";
+
+            return $"turn={best.DevTurnDegrees:F2}|perk={best.DevPerk:F3}|" +
+                   $"hearing={(best.DevHearing ? 1 : 0)}|kind={best.DevHeardKind}|" +
+                   $"stepAudible={(best.DevStepAudible ? 1 : 0)}|" +
+                   $"self={Vector3.Distance(best.transform.position, from):F2}m|" +
+                   NearestEnemyLine(best.transform.position, best.DevRole);
+        }
+
+        /// <summary>
+        /// QA: 서버가 조종하는 몸(봇)의 잠행을 켜고 끈다 — 역할 지정("Cat"|"Mouse"), 바뀐 마릿수를 준다.
+        /// 봇은 플레이어 오브젝트가 아니라 <see cref="TestSetSneak"/>로는 못 건드린다.
+        /// 「살금살금이면 귀가 안 선다」를 재려면 소리를 내는 쪽이 잠행해야 해서 필요하다.
+        /// </summary>
+        public int TestSetBotSneak(string _role, bool _on)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) { GameDebug.LogWarning("[TestManager] 서버가 아니다"); return 0; }
+            if (!System.Enum.TryParse(_role, true, out RoleId role)) return 0;
+
+            // 두뇌가 매 틱 잠행을 다시 정하므로 값만 써 놓으면 곧 덮인다 — 판단 자체를 잠근다.
+            CTC.Runtime.Bots.BotAgent.DevSneakOverride = _on ? 1 : 0;
+
+            int count = 0;
+            foreach (CTC.Runtime.Player.EarPerk body in CTC.Runtime.Player.EarPerk.DevAll)
+            {
+                if (body == null || body.DevRole != role) continue;
+                var netObj = body.GetComponent<Unity.Netcode.NetworkObject>();
+                if (netObj != null && netObj.IsPlayerObject) continue;   // 사람 몸은 제 클라가 정한다
+                var sneak = body.GetComponent<CTC.Runtime.Player.Sneak>();
+                if (sneak == null) continue;
+                sneak.DevSetSneak(_on);
+                count++;
+            }
+            GameDebug.Log($"[TestManager] 봇 잠행 {role} → {_on} ({count}마리)");
+            return count;
+        }
+
+        /// <summary>
+        /// QA: 로컬 몸을 지정 역할의 가장 가까운 몸에서 _meters m 떨어진 자리로 옮기고 마주 본다.
+        /// 「같은 거리에서 뛸 때와 살금살금일 때」를 재려면 거리를 손으로 잡아야 한다 —
+        /// 소리를 내는 쪽은 안 건드리고 **듣는 쪽만** 옮긴다. 실제 거리(m)를 돌려준다.
+        /// </summary>
+        public float TestTeleportAtRangeFrom(string _role, float _meters, float _yawOffset = 0f, bool _botOnly = false)
+        {
+            if (!System.Enum.TryParse(_role, true, out RoleId role)) return -1f;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var me = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (me == null) return -1f;
+
+            CTC.Runtime.Player.EarPerk target = NearestBody(role, me.transform.position, _botOnly);
+            if (target == null) return -1f;
+
+            Vector3 away = me.transform.position - target.transform.position;
+            away.y = 0f;
+            if (away.sqrMagnitude < 0.01f) away = target.transform.forward;
+            Vector3 pos = target.transform.position + away.normalized * _meters;
+            pos.y = target.transform.position.y;
+
+            var cc = me.GetComponent<UnityEngine.CharacterController>();
+            if (cc != null) cc.enabled = false;
+            me.transform.position = pos;
+            me.transform.LookAt(new Vector3(target.transform.position.x, pos.y, target.transform.position.z));
+            // 몸을 소리 쪽에서 _yawOffset도 돌려 세우면 **귀가 돌아간 그림**이 남는다
+            // (정면으로 마주 보면 귀 각이 0이라 "돌았다"를 못 보여 준다).
+            if (Mathf.Abs(_yawOffset) > 0.01f) me.transform.Rotate(0f, _yawOffset, 0f, Space.World);
+            if (cc != null) cc.enabled = true;
+
+            Vector3 delta = target.transform.position - pos;
+            delta.y = 0f;
+            return delta.magnitude;
+        }
+
+        /// <summary>
+        /// 가장 가까운 반대편 몸 한 줄 — "near=Cat@5.2m|range=20.0|stepping=1|sneak=0".
+        /// 봇 몸은 플레이어 오브젝트가 아니라 clientId로 못 찾는다 — 귀 명부(EarPerk.DevAll)로 훑는다.
+        /// </summary>
+        private static string NearestEnemyLine(Vector3 _from, RoleId _myRole)
+        {
+            RoleId enemy = _myRole == RoleId.Mouse ? RoleId.Cat
+                : _myRole == RoleId.Cat ? RoleId.Mouse : RoleId.None;
+            if (enemy == RoleId.None) return "near=none";
+
+            CTC.Runtime.Player.EarPerk best = NearestBody(enemy, _from);
+            if (best == null) return "near=none";
+
+            Vector3 flat = best.transform.position - _from;
+            flat.y = 0f;
+
+            var steps = best.GetComponentInChildren<CTC.Runtime.Audio.FootstepPlayer>();
+            var sneak = best.GetComponent<CTC.Runtime.Player.Sneak>();
+            return $"near={enemy}@{flat.magnitude:F2}m|range={(steps != null ? steps.CurrentRange : -1f):F1}|" +
+                   $"stepping={(steps != null && steps.IsStepping ? 1 : 0)}|" +
+                   $"sneak={(sneak != null && sneak.Sneaking ? 1 : 0)}";
+        }
+
+        /// <param name="_botOnly">
+        /// 사람·대기실 봇의 몸(플레이어 오브젝트)을 뺀다. 대기실이 채운 봇은 몸만 서고
+        /// **두뇌가 없어 한 발도 안 뗀다** — 「발소리가 들리면」을 재려면 실제로 걷는
+        /// TestBotManager 봇을 잡아야 한다(2026-09-08 실측: 이걸 안 걸러 60표본 전부 stepping=0).
+        /// </param>
+        private static CTC.Runtime.Player.EarPerk NearestBody(RoleId _role, Vector3 _from, bool _botOnly = false)
+        {
+            CTC.Runtime.Player.EarPerk best = null;
+            float bestDistance = float.PositiveInfinity;
+            foreach (CTC.Runtime.Player.EarPerk body in CTC.Runtime.Player.EarPerk.DevAll)
+            {
+                if (body == null || body.DevRole != _role) continue;
+                if (_botOnly)
+                {
+                    var netObj = body.GetComponent<Unity.Netcode.NetworkObject>();
+                    if (netObj == null || netObj.IsPlayerObject) continue;
+                }
+                Vector3 flat = body.transform.position - _from;
+                flat.y = 0f;
+                if (flat.magnitude >= bestDistance) continue;
+                bestDistance = flat.magnitude;
+                best = body;
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// QA: 3인칭 카메라를 지정 역할의 가장 가까운 몸 쪽으로 돌린다 — 눈동자는 카메라를 따라가므로
+        /// 이걸로 **눈이 소리 쪽을 보는 프레임**을 만든다. 몸은 안 돌린다(가만히 서면 몸은 안 돈다).
+        /// </summary>
+        public float TestAimCameraAtRole(string _role, float _pitch, bool _botOnly = false)
+        {
+            if (!System.Enum.TryParse(_role, true, out RoleId role)) return -999f;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var me = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (me == null) return -999f;
+
+            CTC.Runtime.Player.EarPerk target = NearestBody(role, me.transform.position, _botOnly);
+            if (target == null) return -999f;
+
+            Vector3 to = target.transform.position - me.transform.position;
+            float yaw = Mathf.Atan2(to.x, to.z) * Mathf.Rad2Deg;
+
+            var cam = FindFirstObjectByType<CTC.Runtime.Cameras.OrbitCameraController>();
+            if (cam == null) return -999f;
+            cam.DevSetAngles(yaw, _pitch);
+            return yaw;
+        }
     }
 }
 #endif

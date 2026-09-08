@@ -92,6 +92,10 @@ namespace CTC.Runtime.Info
         public float EyeScleraScale;
         public float EyePupilRatio;
         public float EyePupilOffsetRatio;
+        public float EarTurnMaxDeg;
+        public float EarPerkDeg;
+        public float EarHoldSeconds;
+        public float EarFollowSpeed;
     }
 
     public partial class InfoManager

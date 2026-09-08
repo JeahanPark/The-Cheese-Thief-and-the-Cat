@@ -38,6 +38,7 @@ GameObject:
   - component: {fileID: 316232477143233120}
   - component: {fileID: 6539816911504078304}
   - component: {fileID: -1993819827998674870}
+  - component: {fileID: -1286795333664132771}
   m_Layer: 9
   m_Name: PlayerMouse
   m_TagString: Player
@@ -607,6 +608,20 @@ MonoBehaviour:
   m_EyeAxisLocal: {x: 0.892, y: 0.396, z: 0.216}
   m_ScleraRadiusLocal: 0.00055
   m_LidRadiusLocal: 0.0009
+--- !u!114 &-1286795333664132771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
+  m_EarRightBoneName: ear.R
+  m_EarLeftBoneName: ear.L
 --- !u!1001 &3590425873836912933
 PrefabInstance:
   m_ObjectHideFlags: 0

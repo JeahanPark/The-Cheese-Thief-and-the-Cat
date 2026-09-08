@@ -132,6 +132,10 @@ namespace CTC.Editor
                 // 각도·속도·깜빡임만 BalanceInfo.csv에서 컴포넌트가 직접 읽는다.
                 EyeAnchorBaker.Apply(root.AddComponent<EyeLook>(), _role);
 
+                // 귀가 소리를 따라 선다(2026-09-08) — 팩 리그의 ear.L·ear.R을 덧돌린다.
+                // 굽는 값이 없다: 본 이름은 두 종이 같고, 각도·유지·속도는 BalanceInfo.csv에서 직접 읽는다.
+                root.AddComponent<EarPerk>();
+
                 // 발소리 — 3D 한 걸음씩(거리 감쇠). FootstepPlayer가 이동 거리 누적으로 박자를 낸다(2026-08-17).
                 // 한 걸음 클립 3종은 예전 루프(sfx_*_footstep.ogg)에서 잘라낸 것 — 보폭은 그 루프의 박자
                 // (쥐 3.4걸음/s · 고양이 2.5걸음/s)를 기준 이속에서 그대로 재현하는 값이다.
