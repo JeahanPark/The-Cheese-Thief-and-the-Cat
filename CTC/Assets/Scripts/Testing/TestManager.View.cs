@@ -279,6 +279,38 @@ namespace CTC.Runtime.Testing
             return tag != null ? tag.Role.ToString() : "None";
         }
 
+        /// <summary>
+        /// QA: 로컬 몸의 눈동자 — "gazeX,gazeY,gazeZ|pupilX,pupilY,pupilZ"(머리 로컬 시선 · 오른눈 월드 위치).
+        /// 눈은 연출이라 Model 값만 보면 배선 누락을 못 잡는다 — **실제 눈동자 트랜스폼**을 재서 준다.
+        /// </summary>
+        public string TestGetEyeGaze()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return "none";
+            Unity.Netcode.NetworkObject me = nm.SpawnManager.GetLocalPlayerObject();
+            if (me == null) return "none";
+            var eyes = me.GetComponent<CTC.Runtime.Player.EyeLook>();
+            if (eyes == null) return "none";
+
+            Vector3 g = eyes.DevGazeRight();
+            Vector3 p = eyes.DevPupilWorldRight();
+            Vector3 f = Camera.main != null ? Camera.main.transform.forward : Vector3.zero;
+            return $"gaze={g.x:F3},{g.y:F3},{g.z:F3}|pupil={p.x:F3},{p.y:F3},{p.z:F3}" +
+                   $"|camFwd={f.x:F3},{f.y:F3},{f.z:F3}|bodyFwd={me.transform.forward.x:F3},{me.transform.forward.z:F3}" +
+                   $"|aim={eyes.DevAimSource()}";
+        }
+
+        /// <summary>QA: 로컬 몸의 눈을 지금 감게 한다 — 깜빡임은 랜덤 주기라 기다리면 못 잡는다.</summary>
+        public void TestBlinkEyes()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var eyes = me != null ? me.GetComponent<CTC.Runtime.Player.EyeLook>() : null;
+            if (eyes == null) { GameDebug.LogWarning("[TestManager] EyeLook 없음"); return; }
+            eyes.DevBlinkNow();
+        }
+
         /// <summary>QA: 게임플레이 입력이 막혀 있는가(채팅 타이핑·옵션 창).</summary>
         public bool TestGetInputBlocked() => UiFocus.BlocksGameplay;
 

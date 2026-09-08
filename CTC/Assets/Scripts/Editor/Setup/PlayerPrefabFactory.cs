@@ -126,6 +126,12 @@ namespace CTC.Editor
                     root.AddComponent<CTC.Runtime.UI.JobBadge>();
                 }
 
+                // 눈동자가 보는 곳을 따라간다(2026-09-08) — 팩 모델에 눈 본이 없어 흰자·눈동자·눈꺼풀
+                // 구를 머리 본 아래에 얹는다. 자리·크기는 실제 메시를 재서 나온 **머리 본 로컬** 값이라
+                // CSV(밸런스)가 아니라 여기서 굽는다(Tools/CTC/Dev/Probe Eye Geometry가 원본).
+                // 각도·속도·깜빡임만 BalanceInfo.csv에서 컴포넌트가 직접 읽는다.
+                EyeAnchorBaker.Apply(root.AddComponent<EyeLook>(), _role);
+
                 // 발소리 — 3D 한 걸음씩(거리 감쇠). FootstepPlayer가 이동 거리 누적으로 박자를 낸다(2026-08-17).
                 // 한 걸음 클립 3종은 예전 루프(sfx_*_footstep.ogg)에서 잘라낸 것 — 보폭은 그 루프의 박자
                 // (쥐 3.4걸음/s · 고양이 2.5걸음/s)를 기준 이속에서 그대로 재현하는 값이다.

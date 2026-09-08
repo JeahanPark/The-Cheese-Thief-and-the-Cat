@@ -84,6 +84,11 @@ namespace CTC.Runtime.Info
         public int MinimapTexturePx;
         public int MinimapSizePx;
         public float MinimapDiscoverMeters;
+        public float EyeMaxAngleDeg;
+        public float EyeFollowSpeed;
+        public float EyeBlinkMinSeconds;
+        public float EyeBlinkMaxSeconds;
+        public float EyeBlinkSeconds;
     }
 
     public partial class InfoManager
