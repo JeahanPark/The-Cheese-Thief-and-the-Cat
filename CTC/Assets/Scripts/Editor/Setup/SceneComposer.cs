@@ -134,6 +134,9 @@ namespace CTC.Editor
             // 개편 3단계(2026-07-31): 상태·스폰·맵이 각각 별도 컴포넌트로 갈라져 한 오브젝트에 동승한다.
             // NetworkBehaviour를 여러 개 붙여도 RPC 발신자 식별은 각자 그대로 동작한다.
             lobbyGo.AddComponent<LobbySession>();                        // 상태(Model)
+            // 판 시드(Model, 테크 v3 계획 3) — 상점 자리·오늘의 품절·직업권이 전부 여기서 갈라진다.
+            // 상태끼리 모아 둔다. 새 오브젝트를 안 만드는 이유: 기획서 §9의 「새 프리팹 0」.
+            lobbyGo.AddComponent<CTC.Runtime.Match.MatchRandom>();
             var spawner = lobbyGo.AddComponent<PlayerSpawner>();         // 스폰(Worker)
             SetRef(spawner, "m_CatPrefab", _catPrefab);
             SetRef(spawner, "m_MousePrefab", _mousePrefab);

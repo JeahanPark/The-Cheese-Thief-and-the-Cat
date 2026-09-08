@@ -28,6 +28,7 @@ namespace CTC.Runtime.Lobby
         private Map.AlcoveSpawner m_AlcoveSpawner;
         private Map.LootBoxSpawner m_BoxSpawner;
         private Map.ShopSpotSpawner m_ShopSpawner;
+        private Match.MatchRandom m_Random;
 
         private void Awake()
         {
@@ -37,6 +38,7 @@ namespace CTC.Runtime.Lobby
             m_AlcoveSpawner = GetComponent<Map.AlcoveSpawner>();
             m_BoxSpawner = GetComponent<Map.LootBoxSpawner>();
             m_ShopSpawner = GetComponent<Map.ShopSpotSpawner>();
+            m_Random = GetComponent<Match.MatchRandom>();
         }
 
         // ---- 상태 조회 (View·QA가 읽는다) ----
@@ -111,6 +113,10 @@ namespace CTC.Runtime.Lobby
             if (!IsServer || m_Session == null) return;
             if (!m_Session.ServerBeginGame()) return;
 
+            // 판 시드를 **스포너보다 먼저** 굴린다 — 상점 자리·품절·직업권이 전부 이 값을 읽는다.
+            // 순서가 뒤집히면 그 판만 옛 시드로 서고 아무 에러도 안 난다(테크 v3 계획 3).
+            if (m_Random != null) m_Random.ServerRoll();
+
             if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
             // 벽감은 판이 시작할 때 맵이 깐다(요새·창고는 쥐가 산다)
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);
@@ -125,6 +131,9 @@ namespace CTC.Runtime.Lobby
         {
             if (!IsServer || m_Session == null) return;
             if (!m_Session.ServerForceBeginGame()) return;
+
+            // 여기도 똑같이 — 빠뜨리면 **봇 계측 판만 시드가 0**이 되어 무작위가 통째로 죽는다.
+            if (m_Random != null) m_Random.ServerRoll();
 
             if (m_Spawner != null) m_Spawner.ServerSpawnAll(m_Session, ActiveLayout);
             if (m_AlcoveSpawner != null) m_AlcoveSpawner.ServerSpawnAll(ActiveLayout);

@@ -78,22 +78,22 @@
 
 **Files:** Create `Assets/Scripts/Match/MatchRandom.cs`, `Assets/Scripts/Tests/EditMode/MatchRandomLogicTests.cs` · Modify `Assets/Scripts/Editor/Setup/SceneComposer.cs`, `Assets/Scripts/Lobby/LobbyController.cs`
 
-- [ ] **Step 1: `MatchRandom` (Model, NetworkBehaviour)**
+- [x] **Step 1: `MatchRandom` (Model, NetworkBehaviour)**
   - `NetworkVariable<int> m_Seed` · `int Seed => m_Seed.Value` · `Observable<int> SeedChanged => m_Seed.AsObservableWithCurrent()`
   - `static MatchRandom Current` — `OnNetworkSpawn`에 등록, `OnNetworkDespawn`에 해제(`ShopSpot.s_All`과 같은 명부 방식). **`?.` 금지**, 읽는 쪽은 `if (MatchRandom.Current != null)`.
   - `public void ServerRoll()` — 서버 전용. `m_Seed.Value = 0`이 나오지 않게 한다(0은 "아직 안 굴렸다"로 읽힌다).
   - `public static int SubSeed(int _seed, int _salt)` — **순수 static**. 용도(상점·품절·직업권)마다 다른 소금을 넣어 수열을 가른다. 곱셈 해시 한 줄이면 된다.
   - 용도 상수는 `enum`이 아니라 `const int SALT_SHOP = 1` 식으로 둔다 — 복제되는 값이 아니라 코드 안에서만 쓴다.
-- [ ] **Step 2: EditMode `MatchRandomLogicTests`** — 같은 시드·같은 소금이면 같은 값 · 소금이 다르면 다른 값 · 시드가 다르면 다른 값 · `SubSeed`는 0을 그대로 통과시키지 않는다(시드 0이 들어와도 쓸 수 있는 수).
-- [ ] **Step 3: 씬 배선** — `SceneComposer`의 `lobbyGo`에 `AddComponent<MatchRandom>()`. **`LobbySession` 바로 다음**(상태끼리 모아 둔다).
-- [ ] **Step 4: 판 시작에 굴린다** — `LobbyController.RequestStartGame`·`DevForceStartGame` 둘 다에서 `ServerBeginGame()` 성공 직후, **스포너 호출보다 먼저**:
+- [x] **Step 2: EditMode `MatchRandomLogicTests`** — 같은 시드·같은 소금이면 같은 값 · 소금이 다르면 다른 값 · 시드가 다르면 다른 값 · `SubSeed`는 0을 그대로 통과시키지 않는다(시드 0이 들어와도 쓸 수 있는 수).
+- [x] **Step 3: 씬 배선** — `SceneComposer`의 `lobbyGo`에 `AddComponent<MatchRandom>()`. **`LobbySession` 바로 다음**(상태끼리 모아 둔다).
+- [x] **Step 4: 판 시작에 굴린다** — `LobbyController.RequestStartGame`·`DevForceStartGame` 둘 다에서 `ServerBeginGame()` 성공 직후, **스포너 호출보다 먼저**:
 ```csharp
             MatchRandom random = GetComponent<Match.MatchRandom>();
             if (random != null) random.ServerRoll();   // 스포너가 이 시드를 읽는다 — 순서가 중요
 ```
   두 경로에 똑같이 넣는다. **`DevForceStartGame`을 빠뜨리면 봇 계측 판만 시드가 0**이 되어 무작위가 통째로 죽는다.
-- [ ] **Step 5: 메뉴 `Tools/CTC/Setup Networking Scene` 실행** → `Game.unity` 갱신 · 콘솔 에러 0. `u_editor_asset(refresh)`.
-- [ ] **Step 6: EditMode 전체 PASS 확인 → Commit**
+- [x] **Step 5: 메뉴 `Tools/CTC/Setup Networking Scene` 실행** → `Game.unity` 갱신 · 콘솔 에러 0. `u_editor_asset(refresh)`.
+- [x] **Step 6: EditMode 전체 PASS 확인 → Commit**
 ```bash
 git add Assets/Scripts/Match/MatchRandom.cs Assets/Scripts/Match/MatchRandom.cs.meta Assets/Scripts/Editor/Setup/SceneComposer.cs Assets/Scripts/Lobby/LobbyController.cs Assets/Scripts/Tests/EditMode/MatchRandomLogicTests.cs Assets/Scripts/Tests/EditMode/MatchRandomLogicTests.cs.meta Assets/Scenes/Game.unity
 git commit -m "feat(match): 매치 시드 MatchRandom — 무작위 셋의 단일 원본, SubSeed로 용도 분리

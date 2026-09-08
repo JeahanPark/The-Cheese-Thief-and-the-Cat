@@ -293,6 +293,39 @@ namespace CTC.Runtime.Testing
         {
             return Audio.ListenerRange.Multiplier;
         }
+
+        // ===== 매치 시드 (테크 v3 계획 3) =====
+
+        /// <summary>
+        /// 이 판의 시드(0 = 아직 안 굴렸다 — 로비·봇 실험실). **판을 두 번 열어 값이 바뀌는지**를 재는 훅이다.
+        ///
+        /// 복제되는 값이라 호스트·클론 어디서 물어도 같은 수가 나와야 한다 — 다르면 클라가
+        /// 상점 자리·품절을 서버와 다르게 계산하고 있다는 뜻이다.
+        /// </summary>
+        public int TestGetMatchSeed()
+        {
+            Match.MatchRandom random = Match.MatchRandom.Current;
+            return random != null ? random.Seed : 0;
+        }
+
+        /// <summary>QA: 용도별 하위 시드(shop · soldout · ticket) — 셋이 실제로 갈렸는지 본다.</summary>
+        public int TestGetMatchSubSeed(string _use)
+        {
+            Match.MatchRandom random = Match.MatchRandom.Current;
+            if (random == null) return 0;
+
+            int salt;
+            switch ((_use ?? string.Empty).ToLowerInvariant())
+            {
+                case "shop": salt = Match.MatchRandom.SALT_SHOP; break;
+                case "soldout": salt = Match.MatchRandom.SALT_SOLD_OUT; break;
+                case "ticket": salt = Match.MatchRandom.SALT_TICKET; break;
+                default:
+                    GameDebug.LogWarning($"[TestManager] 모르는 시드 용도: {_use}");
+                    return 0;
+            }
+            return Match.MatchRandom.SubSeed(random.Seed, salt);
+        }
     }
 }
 #endif
