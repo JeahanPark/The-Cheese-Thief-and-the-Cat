@@ -162,15 +162,20 @@ def main():
     # ---------- 실제로 들리는 볼륨 (2026-08-09) ----------
     # Model 값만 보던 기존 항목은 "설정은 바뀌는데 소리는 그대로"를 못 잡았다.
     # 루프 소스는 생성기가 볼륨을 구워 두므로 AudioVolumeFollower가 붙어 있어야만 따라온다.
+    #
+    # 재생기 이름은 **BgmDirector**다(2026-09-01). 그전에는 씬마다 "BgmPlayer" 오브젝트를
+    # 세웠는데, 화면이 바뀔 때마다 소리가 끊겨 씬을 넘어 사는 단독 재생기로 바꿨다
+    # (`Audio/SceneBgm`이 `nameof(BgmDirector)`로 만든다). 이름을 안 따라가서 이 두 항목이
+    # -1(오브젝트 없음)을 받고 있었고, v37이 실패해도 exit 0이라 아무도 몰랐다(감사 T1).
     def vol(name):
         return p[0].invoke("TestGetAudioVolume", _name=name)
 
     p[0].invoke("TestSetSetting", _key="bgm", _value=1.0)
     time.sleep(0.4)
-    bgm_hi, amb_hi = vol("BgmPlayer"), vol("AmbiencePlayer")
+    bgm_hi, amb_hi = vol("BgmDirector"), vol("AmbiencePlayer")
     p[0].invoke("TestSetSetting", _key="bgm", _value=0.0)
     time.sleep(0.4)
-    bgm_lo, amb_lo = vol("BgmPlayer"), vol("AmbiencePlayer")
+    bgm_lo, amb_lo = vol("BgmDirector"), vol("AmbiencePlayer")
 
     check("사운드 — 배경음 슬라이더가 BGM 볼륨을 실제로 바꾼다",
           bgm_hi > 0.001 and bgm_lo < 0.001, f"100%={bgm_hi} 0%={bgm_lo}")

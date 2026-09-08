@@ -199,8 +199,12 @@ def main():
     speed_after = host.invoke("TestGetMoveSpeedOf", _clientId=m2)
     cat_speed = host.invoke("TestGetMoveSpeedOf", _clientId=c)
     gain = speed_after - speed_before
-    check("⑨ 빠른 발 Lv3 이속 +1.2 · 대시 Lv3 · 그래도 고양이보다 느리다",
-          feet == 3 and dash == 3 and abs(gain - 1.2) < 0.05 and speed_after < cat_speed,
+    # +1.2 → +0.7 (`2f66cb5`): 고양이 이속을 8.6 → 7.4로 내리자 빠른 발 Lv3(6.6+1.2=7.8)이
+    # 고양이를 앞질렀다. 사다리를 0.2/0.45/0.7로 다시 깔아 Lv3가 7.3 < 7.4가 됐다.
+    # 값의 주인은 `TechInfo.csv`의 FastFeet P1이고, EditMode
+    # `MoveSpeed_FastFeetLv3_ApproachesCat`이 같은 관계를 이미 못 박고 있다.
+    check("⑨ 빠른 발 Lv3 이속 +0.7 · 대시 Lv3 · 그래도 고양이보다 느리다",
+          feet == 3 and dash == 3 and abs(gain - 0.7) < 0.05 and speed_after < cat_speed,
           "이속 %.2f→%.2f (+%.2f) 고양이 %.2f · FastFeet=%s Dash=%s"
           % (speed_before, speed_after, gain, cat_speed, feet, dash))
 

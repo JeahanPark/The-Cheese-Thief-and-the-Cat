@@ -13,7 +13,10 @@ from wesqa import WesPoco
 
 RESULTS = []
 EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
-EXPECTED = 15      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+EXPECTED = 14      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+                   # 「치즈 — 쥐가 닿으면 먹는다」(벽감 위치를 못 받은 경우)와
+                   # 「치즈 — 쥐가 닿으면 지갑이 는다」는 **둘 중 하나만** 돈다.
+                   # 호출부 수(15)가 아니라 한 판에 실제로 서는 항목 수를 적는다.
 
 
 def check(name, ok, detail=""):

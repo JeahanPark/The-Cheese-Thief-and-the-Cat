@@ -207,7 +207,15 @@ def main():
     # 지금은 원반이 들어가는 방만 고른다(ShopSpotLogic.RoomHoldsShop). 그래서 이 항목은
     # **그 회귀를 잡는 그물**이다 - 실패하면 TestDebugPlacementBlockers가 무엇이 막았는지
     # 콜라이더 이름으로 뱉는다.
-    shx, shz = [float(v) for v in host.invoke("TestGetShopSpotPos", _index=0).split(",")]
+    # **쥐가 실제로 서 있는 상점**을 쓴다 — 0번이 아니다.
+    # `TestWarpToNearestShop`은 가장 가까운 자리로 보내는데 그게 0번이라는 보장이 없다.
+    # 상점이 판마다 여러 곳에 서게 되면서(`6504633` 계획 3) 0번이 30 m 밖인 판이 생겼고,
+    # 그러면 설치 사거리(`PlaceMaxDistanceMeters`) 밖이라 **무엇을 놓든 거절**된다 —
+    # 「상점 안에서 못 세운다」로 잘못 읽힌다(2026-09-09 실측: 쥐 (11.5, 11.2) · 0번 (-10.5, -10.5)).
+    mx, mz = [float(v) for v in host.invoke("TestGetPlayerPos", _clientId=m1).split(",")]
+    spot_list = [tuple(float(v) for v in c.split(","))
+                 for c in (host.invoke("TestGetShopSpotPositions") or "").split("|") if "," in c]
+    shx, shz = min(spot_list, key=lambda c: (c[0] - mx) ** 2 + (c[1] - mz) ** 2)
     ring = float(host.invoke("TestGetShopSpotRadius")) * 0.6
 
     placed, placed_at, blockers = warehouses0, None, []

@@ -57,6 +57,52 @@ def warp_to_shop(host, client_id):
     return bool(host.invoke("TestIsInShop", _clientId=client_id))
 
 
+def move_out_of_shops(host, actor, client_id):
+    """`actor`의 몸을 **모든 상점 원반 밖**으로 옮긴다 → 실제로 밖에 섰는가(bool).
+
+    상점 자리는 판마다 시드로 정해진다(`ShopSpotLogic`, 계획 3). 그래서 고양이 스폰이
+    상점 원반 안에 들어앉는 판이 있다 — 실측: 기본 맵 상점 (0.0, 1.5) 반경 3 m,
+    고양이 스폰 (0.0, -0.25) → 1.75 m로 원반 안. 그 상태로 「상점 밖에서도 산다」를
+    재면 전제부터 거짓이라 항목이 아무것도 검증하지 않는다.
+
+    그래서 **전제를 가정하지 말고 세운다**: 맵 격자를 훑어 상점에서 가장 먼 칸으로
+    옮긴 뒤 `TestIsInShop`으로 확인한다. 옮기는 것은 소유자만 되므로 그 몸의
+    인스턴스(`actor`)에서 부르고, 읽기는 서버(`host`)에서 한다.
+    """
+    raw = host.invoke("TestGetShopSpotPositions") or ""
+    spots = []
+    for chunk in raw.split("|"):
+        if "," not in chunk:
+            continue
+        sx, sz = chunk.split(",")
+        spots.append((float(sx), float(sz)))
+    if not spots:
+        return not bool(host.invoke("TestIsInShop", _clientId=client_id))
+
+    shape = host.invoke("TestGetMapShape") or ""
+    half = 15.0
+    for part in shape.split(";"):
+        if part.startswith("half="):
+            half = float(part[5:])
+    edge = max(4.0, half - 3.0)
+
+    best, best_gap = None, -1.0
+    step = max(2.0, edge / 12.0)
+    y = -edge
+    while y <= edge:
+        x = -edge
+        while x <= edge:
+            gap = min(((x - sx) ** 2 + (y - sz) ** 2) ** 0.5 for sx, sz in spots)
+            if gap > best_gap:
+                best, best_gap = (x, y), gap
+            x += step
+        y += step
+
+    actor.invoke("TestTeleportLocalPlayer", _x=best[0], _z=best[1])
+    time.sleep(1.5)
+    return not bool(host.invoke("TestIsInShop", _clientId=client_id))
+
+
 def main():
     p = [WesPoco(instance=i) for i in range(3)]
     ids = [int(x.invoke("TestGetLocalClientId")) for x in p]
@@ -160,7 +206,9 @@ def main():
     # ---------- ⑥ 고양이는 상점 없이 산다 ----------
     # 상점 자리는 쥐 규칙(TechLogic.NeedsShopSpot)이다 — 고양이가 묶이면 사냥이 멈춘다.
     # 고양이는 클론이라 소유자 RPC 제약 때문에 **제 인스턴스**에서 산다.
-    cat_outside = not host.invoke("TestIsInShop", _clientId=c)
+    # 전제(상점 밖)를 **가정하지 말고 세운다** — 상점 자리는 판마다 바뀌어 고양이 스폰이
+    # 원반 안에 들어앉는 판이 있다.
+    cat_outside = move_out_of_shops(host, cat, c)
     cat.invoke("TestBuyTechLocal", _techId="CatClaw")
     time.sleep(1.2)
     claw = host.invoke("TestGetTechLevel", _clientId=c, _techId="CatClaw")

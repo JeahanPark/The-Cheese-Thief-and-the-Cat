@@ -18,7 +18,9 @@ LARGE_MAP_INDEX = 2          # MapLayoutPaths 순서: 기본 · 확장 · 대형
 CHEESE_PER_MOUSE = 1400      # BalanceInfo.csv
 RESULTS = []
 EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
-EXPECTED = 20      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+EXPECTED = 19      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+                   # 「매치 시작」(로비 진행 실패)은 성공 경로에서는 안 도는 중단 항목이라
+                   # 분모에 넣지 않는다. 호출부 수(20)가 아니라 한 판에 서는 항목 수다.
 
 
 def check(name, ok, detail=""):
@@ -108,7 +110,9 @@ def main():
     # ---------- 맵 규모 ----------
     shape = parse_shape(cat.invoke("TestGetMapShape"))
     check("맵 — 120×120이다", shape.get("half") == 60, f"half={shape.get('half')}")
-    check("맵 — 방 49개", shape.get("rooms") == 49, f"rooms={shape.get('rooms')}")
+    # 대형 맵은 **손 배치**(Layout_Warehouse01)로 바뀌었다 — 절차 생성 방이 없어 rooms=0이다.
+    # 예전 절차 맵의 49개를 그대로 두면 「방이 사라졌다」가 아니라 「맵이 바뀌었다」를 놓친다.
+    check("맵 — 손 배치 창고라 절차 방이 없다", shape.get("rooms") == 0, f"rooms={shape.get('rooms')}")
     check("맵 — 치즈 지점 14개(등급 2벌)", shape.get("cheese") == 14, f"cheese={shape.get('cheese')}")
     check("맵 — 요새 8개(쥐 최대 8)", shape.get("fort") == 8, f"fort={shape.get('fort')}")
 
@@ -150,27 +154,36 @@ def main():
     walk_range = walk_and_measure(mouse, cat, mouse_id, 1.0, 0.0)
     # 18 → 14 (2026-08-12): 뛰는 발소리가 고양이의 공짜 추적기였다 — 시야를 정직하게
     # 만들고 재니 들킨 쥐가 대시·미끼·시선 끊기로도 못 벗어났다(봇 실측 12판 전패).
-    # 14m면 미끼로 고양이가 몇 초 막히는 동안 청각 추적이 끊긴다.
-    check("발소리 — 뛰면 14m까지 간다", abs(walk_range - 14.0) < 0.6, f"{walk_range}")
+    # 14 → 22 (`5e308d3` 대형 120×120 준선형 상향): 맵이 4배 넓어져 14m는 다시 무음에
+    # 가까워졌다. 값의 주인은 `PlayerInfo.csv`(Mouse.FootstepRangeMeters)다.
+    check("발소리 — 뛰면 22m까지 간다(CSV Mouse.FootstepRangeMeters)",
+          abs(walk_range - 22.0) < 0.6, f"{walk_range}")
 
     mouse.invoke("TestSetSneak", _on=True)
     sneak_range = walk_and_measure(mouse, cat, mouse_id, -1.0, 0.0)
     # 여기가 이 판의 핵심이다 — -1(무음)이면 넓은 맵에서 고양이가 이길 길이 없다
     check("발소리 — 웅크려도 소리가 난다(무음 아님)", sneak_range > 0, f"{sneak_range}")
-    check("발소리 — 웅크리면 4m로 좁아진다", abs(sneak_range - 4.0) < 0.6, f"{sneak_range}")
+    # 4 → 6 (`5e308d3` 같은 상향). 값의 주인은 `PlayerInfo.csv`(Mouse.SneakFootstepRangeMeters)다.
+    check("발소리 — 웅크리면 6m로 좁아진다(CSV Mouse.SneakFootstepRangeMeters)",
+          abs(sneak_range - 6.0) < 0.6, f"{sneak_range}")
     mouse.invoke("TestSetSneak", _on=False)
     time.sleep(0.5)
 
     # ---------- 이속 ----------
     cat_speed = cat.invoke("TestGetMoveSpeed")
     mouse_speed = mouse.invoke("TestGetMoveSpeed")
-    check("이속 — 고양이 7.8", abs(cat_speed - 7.8) < 0.05, f"{cat_speed}")
-    check("이속 — 고양이가 쥐보다 1.3배 빠르다", cat_speed / mouse_speed > 1.25,
+    # 8.6 → 7.4 (`2f66cb5`): 쥐 승률 0%의 범인이 추격이었다. 1.30배에서 1.12배로 내리니
+    # 분당 처치 2.76 → 1.44, 쥐 승률 0% → 20%로 게이트 하단에 닿았다. 기획서는 아직 8.6이라
+    # 적혀 있지만 **지금 도는 값의 주인은 `PlayerInfo.csv`**이고, EditMode
+    # `MoveSpeed_FastFeetLv3_ApproachesCat`도 7.4를 전제로 서 있다.
+    check("이속 — 고양이 7.4 (CSV Cat.MoveSpeed)", abs(cat_speed - 7.4) < 0.05, f"{cat_speed}")
+    check("이속 — 고양이가 쥐보다 1.12배 빠르다(1.30배는 쥐 승률 0%였다)",
+          1.10 < cat_speed / mouse_speed < 1.15,
           f"{cat_speed} / {mouse_speed} = {cat_speed / mouse_speed:.2f}")
 
     # 고양이 발소리는 쥐보다 짧아야 한다 — '쥐가 항상 먼저 안다'를 뒤집은 부분
     cat_range = walk_and_measure(cat, mouse, cat_id, 1.0, 0.0)
-    check("발소리 — 고양이(12m)가 쥐(14m)보다 짧다", 0 < cat_range < walk_range,
+    check("발소리 — 고양이(20m)가 쥐(22m)보다 짧다", 0 < cat_range < walk_range,
           f"고양이 {cat_range} vs 쥐 {walk_range}")
 
     return summary()
