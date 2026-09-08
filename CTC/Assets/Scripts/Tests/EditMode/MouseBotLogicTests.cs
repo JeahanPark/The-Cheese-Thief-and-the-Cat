@@ -254,5 +254,44 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(1, MouseBotLogic.ChooseRefuge(
                 forts, Vector3.zero, new Vector3(-40f, 0f, 0f)));
         }
+
+        // ===== 상점으로 걸어간다 (계획 3 Task 6) =====
+
+        [Test]
+        public void WantsShopping_NothingToBuy_False()
+        {
+            // 살 것이 없으면 안 간다 — 빈손으로 가면 봇이 상점 주위를 맴돌고,
+            // 그러면 쟴 승률이 밸런스가 아니라 봇의 길찾기 실력이 된다.
+            Assert.IsFalse(MouseBotLogic.WantsShopping(TechId.None, 999, 0, 5f));
+        }
+
+        [Test]
+        public void WantsShopping_NotEnoughCheese_False()
+        {
+            // 돈이 모자라면 가서 기다리지 않는다 — 파밍이 먼저다.
+            Assert.IsFalse(MouseBotLogic.WantsShopping(TechId.Dash, 40, 50, 5f));
+        }
+
+        [Test]
+        public void WantsShopping_CloseAndAffordable_True()
+        {
+            Assert.IsTrue(MouseBotLogic.WantsShopping(TechId.Dash, 50, 50, 5f));
+        }
+
+        [Test]
+        public void WantsShopping_TooFar_False()
+        {
+            // 상한 밖의 상점을 향해 맵을 가로지르면 그 판을 통째로 걷기만 한다.
+            Assert.IsFalse(MouseBotLogic.WantsShopping(
+                TechId.Dash, 999, 50, MouseBotLogic.SHOP_TRAVEL_MAX + 0.1f));
+        }
+
+        [Test]
+        public void WantsShopping_Boundaries_AreInclusive()
+        {
+            // 경계값 — 딜 맞는 돈과 정확히 상한 거리는 간다.
+            Assert.IsTrue(MouseBotLogic.WantsShopping(
+                TechId.Dash, 50, 50, MouseBotLogic.SHOP_TRAVEL_MAX));
+        }
     }
 }

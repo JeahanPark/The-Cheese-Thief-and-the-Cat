@@ -67,6 +67,26 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.MouseCheese() : 0;
         }
 
+        /// <summary>
+        /// QA: 쥐 봇의 테크 현황 한 줄 — "mice=8 techs=12 buyers=6" (계획 3 Task 6).
+        /// **상점까지 걸어가는 비용**을 전/후로 비교할 때 쓴다 — 이동이 늘면 산 테크가 준다.
+        /// </summary>
+        public string TestGetBotTechStats()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.MouseTechStats() : "";
+        }
+
+        /// <summary>
+        /// QA: 상점 이동 한 줄 — "seekers=5 reached=4 unreached=1 seek=61.5 inside=18.0".
+        /// unreached가 0이 아니면 그 판의 숫자는 밸런스가 아니라 봇의 길찾기를 재고 있다.
+        /// </summary>
+        public string TestGetBotShopStats()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.ShopStats() : "";
+        }
+
         /// <summary>QA: 지금 나가 있는 지휘관 명령 수. 0이면 지휘관이 안 도는 것이다.</summary>
         public int TestGetBotOrderCount()
         {

@@ -126,7 +126,7 @@ namespace CTC.Runtime.Economy
         public TechDeny CanBuyNow(TechId _id)
         {
             if (m_Slots == null || m_Tag == null || m_Wallet == null) return TechDeny.Unknown;
-            if (TechLogic.NeedsShopSpot(m_Tag.Role) && !IsBotExempt() && !Map.ShopSpot.AnyContains(transform.position))
+            if (TechLogic.NeedsShopSpot(m_Tag.Role) && !Map.ShopSpot.AnyContains(transform.position))
                 return TechDeny.NotInShop;
             // 서버 BuyRpc도 이 함수를 지난다 — 품절 판정의 권위는 그대로 서버에 있다.
             return TechLogic.CanBuy(m_Slots.Owned, _id, m_Tag.Role, m_Wallet.CheeseValue, Balance.TechSlotCap,
@@ -191,17 +191,6 @@ namespace CTC.Runtime.Economy
                 case TechId.Warehouse: return Balance.WarehousePlaceCost;
                 default: return 0;
             }
-        }
-
-        // 계획 1 한정: 봇은 상점까지 가지 않는다(경로는 계획 3). 계측치에 "상점 이동 비용 제외"를 적는다.
-        // 봇의 몸만 `SpawnAsPlayerObject`를 안 거친다 — LocalControl이 사람과 봇을 가르는 것과 같은 표식.
-        private bool IsBotExempt()
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            return NetworkObject != null && !NetworkObject.IsPlayerObject;
-#else
-            return false;
-#endif
         }
 
         // ===== 서버 =====

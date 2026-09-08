@@ -34,6 +34,29 @@ namespace CTC.Runtime.Map
             return false;
         }
 
+        /// <summary>
+        /// 가장 가까운 상점 중심(없으면 false). 봇 목적지·QA 워프 공용 —
+        /// 명부를 쓰므로 탐색이 없다(규칙 3 — Update에서 오브젝트 탐색 금지).
+        /// 상점 자리는 판마다 바뀜다 — 부르는 쪽이 좌표를 캐시하면 지난 판으로 걷는다.
+        /// </summary>
+        public static bool Nearest(Vector3 _from, out Vector3 _center)
+        {
+            _center = Vector3.zero;
+            float bestSqr = float.MaxValue;
+            foreach (ShopSpot spot in s_All)
+            {
+                if (spot == null) continue;   // 규칙 9 — 파괴된 객체를 ?. 로 건너뛰지 않는다
+
+                Vector3 p = spot.transform.position;
+                float sqr = (p - _from).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+
+                bestSqr = sqr;
+                _center = p;
+            }
+            return bestSqr < float.MaxValue;
+        }
+
         public override void OnNetworkSpawn()
         {
             s_All.Add(this);

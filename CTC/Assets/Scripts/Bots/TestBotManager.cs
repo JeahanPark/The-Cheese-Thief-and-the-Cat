@@ -38,6 +38,12 @@ namespace CTC.Runtime.Bots
         private const float SPAWN_STEP_METERS = 1.2f;
 
         private readonly List<BotAgent> m_Agents = new List<BotAgent>();
+
+        // 탈락한 봇의 상점 계측을 여기 옥긴다. 안 옥기면 판이 끝난 뒤에 물을 때
+        // **언제나 0**이 나온다 — 죽은 봇은 m_Agents에서 빠지므로 그 봇이 겪은
+        // 도달 실패가 통째로 사라진다(2026-09-08 실측: 쥐가 전멸한 판은 seekers=0).
+        private int m_RetiredSeekers, m_RetiredReached;
+        private float m_RetiredSeek, m_RetiredInside;
         private readonly SoundLog m_Sound = new SoundLog();
 
         // 예약(쥐가 뭉치지 않게) · 명령판(고양이 지휘관) — 자세한 건 각 클래스 주석에 있다
@@ -75,6 +81,8 @@ namespace CTC.Runtime.Bots
             if (nm == null || !nm.IsServer) return;
 
             Stop();
+            m_RetiredSeekers = m_RetiredReached = 0;   // 새 판 — 지난 판의 계측을 이어 세지 않는다
+            m_RetiredSeek = m_RetiredInside = 0f;
 
             MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
             m_Commander = new BotCommander(m_Orders, layout != null ? layout.Seed : 0);
@@ -101,6 +109,7 @@ namespace CTC.Runtime.Bots
         {
             foreach (BotAgent agent in m_Agents)
             {
+                Retire(agent);
                 agent.Release();
                 if (agent.Body != null && agent.Body.IsSpawned) agent.Body.Despawn(true);
             }
@@ -130,6 +139,7 @@ namespace CTC.Runtime.Bots
             {
                 if (!m_Agents[i].Alive)
                 {
+                    Retire(m_Agents[i]);
                     m_Agents[i].Release();   // 셀 예약을 놓고 버린다 — 안 그러면 유령 비용이 남는다
                     m_Agents.RemoveAt(i);
                     continue;
@@ -279,6 +289,65 @@ namespace CTC.Runtime.Bots
                 if (wallet != null) sum += wallet.CheeseValue;
             }
             return sum;
+        }
+
+        /// <summary>
+        /// QA — 쥐 봇의 테크 현황 한 줄(계획 3 Task 6). "mice=8 techs=12 buyers=6"
+        ///
+        /// **상점 이동 비용의 실체가 이 숫자다.** 봇이 상점까지 걸어가게 되면 같은 시간에
+        /// 캐는 양이 줄어 산 테크 수가 떨어진다 — 전/후를 같은 조건으로 재려고 둔다.
+        /// 탈락한 봇은 몸이 사라져 빠지므로 러너가 도는 동안 **최댓값**으로 모은다.
+        /// </summary>
+        public string MouseTechStats()
+        {
+            int mice = 0, techs = 0, buyers = 0;
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role != RoleId.Mouse || a.Body == null) continue;
+
+                mice++;
+                TechSlots slots = a.Body.GetComponent<TechSlots>();
+                int owned = slots != null ? slots.Count : 0;
+                techs += owned;
+                if (owned > 0) buyers++;
+            }
+            return $"mice={mice} techs={techs} buyers={buyers}";
+        }
+
+        /// <summary>
+        /// QA — 상점 이동 한 줄(계획 3 Task 6).
+        /// "seekers=5 reached=4 unreached=1 seek=61.5 inside=18.0"
+        ///
+        /// **unreached가 제일 중요하다** — 상점으로 가려고 했는데 한 번도 원반에
+        /// 못 들어간 봇이다. 그 봇은 판 내내 걷기만 하고 구마 생기므로,
+        /// 0이 아니면 그 판의 계측치는 밸런스가 아니라 길찾기를 재고 있는 것이다.
+        /// </summary>
+        // 봇 하나가 판에서 빠질 때 그 봇의 상점 계측을 누적에 옥긴다.
+        private void Retire(BotAgent _agent)
+        {
+            if (_agent.Role != RoleId.Mouse || _agent.ShopSeekSeconds <= 0f) return;
+
+            m_RetiredSeekers++;
+            if (_agent.ShopReached) m_RetiredReached++;
+            m_RetiredSeek += _agent.ShopSeekSeconds;
+            m_RetiredInside += _agent.ShopInsideSeconds;
+        }
+
+        public string ShopStats()
+        {
+            int seekers = m_RetiredSeekers, reached = m_RetiredReached;
+            float seek = m_RetiredSeek, inside = m_RetiredInside;
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role != RoleId.Mouse || a.ShopSeekSeconds <= 0f) continue;
+
+                seekers++;
+                if (a.ShopReached) reached++;
+                seek += a.ShopSeekSeconds;
+                inside += a.ShopInsideSeconds;
+            }
+            return $"seekers={seekers} reached={reached} unreached={seekers - reached} " +
+                   $"seek={seek:F1} inside={inside:F1}";
         }
 
         /// <summary>QA — 지금 나가 있는 지휘관 명령 수.</summary>

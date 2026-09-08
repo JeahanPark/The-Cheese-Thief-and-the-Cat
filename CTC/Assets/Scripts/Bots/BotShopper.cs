@@ -14,8 +14,10 @@ namespace CTC.Runtime.Bots
     /// **자리 고르기는 흉내 내지 않는다** — 창고를 어디에 둘지는 사람의 판단이라
     /// 봇이 흉내 내면 그 순간 재는 대상이 밸런스가 아니라 봇의 실력이 된다. 제자리에 둔다.
     ///
-    /// 계획 1: 봇은 상점까지 가지 않는다 — 서버가 봇만 상점 조건을 면제한다(ShopController.IsBotExempt).
-    /// 계측치엔 상점 이동 비용이 빠져 있다.
+    /// 계획 3(2026-09-08): **봇도 상점까지 걸어간다.** 서버의 봇 면제(IsBotExempt)를 지웠으니
+    /// 여기서 민 구매는 상점 밖이면 거절된다 — 어디로 갈지는 행동 트리의 쇼핑 가지가 정하고
+    /// (<see cref="BotAgent.TryGetShop"/>), 여기는 "도착했으면 산다"만 맡는다.
+    /// 그래서 계측치에 **상점 이동 비용이 들어 있다**.
     /// </summary>
     public class BotShopper
     {
@@ -51,6 +53,22 @@ namespace CTC.Runtime.Bots
             if (m_Shop != null && m_Shop.CanUse(TechId.Fortress) == UseDeny.None) m_Shop.Use(TechId.Fortress);
         }
 
+        /// <summary>
+        /// 지금 사려는 것. 없으면 <c>None</c>.
+        ///
+        /// 행동 트리가 **상점에 갈지를 정하려면** 거기 도착하기 전에 살 것을 알아야 한다 —
+        /// 그래서 구매 순서 판단만 따로 뽑아 낸다. 오늘 품절인 줄은 여기서 이미 빠져 있다 —
+        /// 모르면 봇이 못 사는 테크 하나를 보고 상점까지 걷다가 빈손으로 돌아온다.
+        /// </summary>
+        public TechId NextWant()
+        {
+            if (m_Shop == null || m_Wallet == null) return TechId.None;
+
+            return MouseBotLogic.NextPurchase(
+                m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress,
+                m_BoughtShield, m_BoughtPouch, m_Slots != null ? m_Slots.Count : 0, m_Shop.SoldOutToday);
+        }
+
         /// <summary>쥐 — 살 수 있으면 산다. 설치물은 제자리에 둔다.</summary>
         public void BuyForMouse()
         {
@@ -79,10 +97,7 @@ namespace CTC.Runtime.Bots
                 }
             }
 
-            // 오늘 품절인 줄은 건너뛴다 — 모르면 매 틱 서버에 거절당하는 죽은 구매를 반복한다(계획 3 Task 3).
-            TechId next = MouseBotLogic.NextPurchase(
-                m_Wallet.CheeseValue, m_BoughtDash, m_BoughtGun, m_BoughtWarehouse, m_BoughtFortress,
-                m_BoughtShield, m_BoughtPouch, m_Slots != null ? m_Slots.Count : 0, m_Shop.SoldOutToday);
+            TechId next = NextWant();
             if (next == TechId.None) return;
 
             // 창고는 봇끼리 OwnerClientId를 공유해 한도도 같이 쓴다 — 이미 다른 봇이 채웠으면
@@ -92,6 +107,11 @@ namespace CTC.Runtime.Bots
                 && WarehouseProduction.CountOwnedBy(m_Shop.OwnerClientId)
                     >= WarehouseLogic.LimitOf(TechOwner.LevelOf(m_Shop.gameObject, TechId.Warehouse)))
                 return;
+
+            // 상점 밖이면(또는 어떤 이유로든) 거절될 구매는 아예 안 보낸다 — 봇 열에
+            // 봇 여덟이면 0.5초마다 거절 RPC가 쓰레기처럼 도는다. 품절·칸 상한을
+            // 미리 걸러 내는 것과 같은 이유다(죽은 구매를 안 한다).
+            if (m_Shop.CanBuyNow(next) != TechDeny.None) return;
 
             m_Shop.Buy(next);
 

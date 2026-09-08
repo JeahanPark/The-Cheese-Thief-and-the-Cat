@@ -147,6 +147,27 @@ namespace CTC.Runtime.Bots
         }
 
         /// <summary>
+        /// 상점까지 걸어갈 만한 최대 거리(m). 이보다 멀면 안 간다 —
+        /// 대형 맵(120×120)은 가로지르기만 해도 판의 절반이 가고, 그러면 쟴 것이
+        /// 밸런스가 아니라 봇의 길찾기가 된다. 상점은 대형 4곳·그 외 2곳이라
+        /// 이 거리면 보통 한 곳은 사정권 안에 들어온다.
+        /// </summary>
+        public const float SHOP_TRAVEL_MAX = 60f;
+
+        /// <summary>
+        /// 지금 상점에 갈 값어치가 있나. **살 것이 정해졌고 돈이 있을 때만** 간다 —
+        /// 빈손으로 가면 봇이 상점 주위를 맴돌아 잴 승률이 봇의 길찾기 실력이 된다.
+        ///
+        /// 기다리지도 않는다 — 돈이 모자람면 파밍이 먼저다. 사람도 같은 판단을 한다.
+        /// </summary>
+        public static bool WantsShopping(Economy.TechId _next, int _cheese, int _cost, float _distanceToShop)
+        {
+            if (_next == Economy.TechId.None) return false;
+            if (_cheese < _cost) return false;
+            return _distanceToShop <= SHOP_TRAVEL_MAX;
+        }
+
+        /// <summary>
         /// 어느 치즈 지점으로 갈까. **가까운 순이 아니라 '등급 ÷ 거리'가 큰 순**이다 —
         /// 가까운 것만 고르면 봇 여덟이 스폰 근처에 뭉쳐 맵이 안 쓰이고,
         /// 등급만 보면 전원이 한가운데로 몰려 같은 자리를 두고 싸운다.

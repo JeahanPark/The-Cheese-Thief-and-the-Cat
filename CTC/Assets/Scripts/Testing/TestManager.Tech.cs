@@ -1,4 +1,4 @@
-// TestManager의 일부 — 테크 v3 훅 (2026-09-07). wesqa가 리플렉션으로 Instance.<method>를 부르므로
+﻿// TestManager의 일부 — 테크 v3 훅 (2026-09-07). wesqa가 리플렉션으로 Instance.<method>를 부르므로
 // **타입을 쪼개지 않는다**(CLAUDE.md). 개발 빌드에도 실린다 — 배포 빌드에선 빠진다.
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Threading;
@@ -165,22 +165,14 @@ namespace CTC.Runtime.Testing
             GameObject p = FindPlayerGo(_clientId);
             if (p == null) return false;
 
-            ShopSpot best = null;
-            float bestSqr = float.MaxValue;
-            foreach (ShopSpot spot in FindObjectsByType<ShopSpot>(FindObjectsSortMode.None))
-            {
-                float d = (spot.transform.position - p.transform.position).sqrMagnitude;
-                if (d >= bestSqr) continue;
-                bestSqr = d;
-                best = spot;
-            }
-            if (best == null) return false;
+            // 같은 질의는 한 군데서 — 봇 목적지와 같은 명부를 본다(계획 3 Task 6).
+            if (!ShopSpot.Nearest(p.transform.position, out Vector3 center)) return false;
 
             BodyPush push = p.GetComponent<BodyPush>();
             if (push == null) return false;
 
             // 높이는 건드리지 않는다 — 상점 마커는 바닥에 붙어 있어 y를 따라가면 몸이 바닥에 박힌다.
-            Vector3 to = best.transform.position - p.transform.position;
+            Vector3 to = center - p.transform.position;
             to.y = 0f;
             push.ServerPush(to);
             return true;

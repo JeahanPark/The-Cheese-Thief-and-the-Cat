@@ -285,15 +285,15 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Modify `Assets/Scripts/Economy/ShopController.cs`, `Assets/Scripts/Map/ShopSpot.cs`, `Assets/Scripts/Bots/MouseBotLogic.cs`, `Assets/Scripts/Bots/BotAgent.cs`, `Assets/Scripts/Bots/BotBrainTrees.cs`, `Assets/Scripts/Bots/BotShopper.cs`, `Assets/Scripts/Tests/EditMode/MouseBotLogicTests.cs`
 
-- [ ] **Step 1: 계측 기준선을 먼저 뜬다** — 고치기 **전에** 봇 2v8을 돌려 지금 값을 적어 둔다(쥐 승률·평균 구매 수·평균 이동 거리). 판단 6번의 이유다. `Tools/CTC/Dev`의 봇전 경로 + `TestManager.BotMatch` 훅을 쓴다. **플레이모드를 쓰므로 이 Step은 단독 실행.**
-- [ ] **Step 2: `IsBotExempt` 제거** — `ShopController`에서 메서드와 두 호출부(`CanBuyNow`)를 지운다. `#if UNITY_EDITOR || DEVELOPMENT_BUILD` 블록째 사라진다. `BotShopper` 클래스 주석의 "계획 1: 봇은 상점까지 가지 않는다" 두 줄도 고친다.
-- [ ] **Step 3: `ShopSpot.Nearest`**
+- [x] **Step 1: 계측 기준선을 먼저 뜬다** — 고치기 **전에** 봇 2v8을 돌려 지금 값을 적어 둔다(쥐 승률·평균 구매 수·평균 이동 거리). 판단 6번의 이유다. `Tools/CTC/Dev`의 봇전 경로 + `TestManager.BotMatch` 훅을 쓴다. **플레이모드를 쓰므로 이 Step은 단독 실행.**
+- [x] **Step 2: `IsBotExempt` 제거** — `ShopController`에서 메서드와 두 호출부(`CanBuyNow`)를 지운다. `#if UNITY_EDITOR || DEVELOPMENT_BUILD` 블록째 사라진다. `BotShopper` 클래스 주석의 "계획 1: 봇은 상점까지 가지 않는다" 두 줄도 고친다.
+- [x] **Step 3: `ShopSpot.Nearest`**
 ```csharp
         /// <summary>가장 가까운 상점(없으면 false). 봇 목적지·QA 워프 공용 — 명부를 쓰므로 탐색이 없다.</summary>
         public static bool Nearest(Vector3 _from, out Vector3 _center)
 ```
   `TestManager.TestWarpToNearestShop`의 `FindObjectsByType` 루프도 이걸로 갈아 끼운다(같은 질의는 한 군데서).
-- [ ] **Step 4: 「살 게 있으면 상점으로」 순수 판단**
+- [x] **Step 4: 「살 게 있으면 상점으로」 순수 판단**
 ```csharp
         /// <summary>
         /// 지금 상점에 갈 값어치가 있나. **살 것이 정해졌고 돈이 있을 때만** 간다 —
@@ -304,7 +304,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - `_next == None`이면 false. 돈이 모자라면 false(가서 기다리지 않는다 — 파밍이 먼저다).
   - 거리 상한을 둔다: 너무 먼 상점을 향해 맵을 가로지르면 그 판을 통째로 걷기만 한다. 상한은 `MouseBotLogic`의 기존 상수 관례를 따라 `const float SHOP_TRAVEL_MAX`로 둔다.
   - 테스트: 살 것 없음 false · 돈 부족 false · 가깝고 살 수 있으면 true · 상한 밖 false · 경계값.
-- [ ] **Step 5: 행동 트리에 가지 하나** — `BotBrainTrees.BuildMouse`에서 **위협 가지 다음, 파밍 가지 앞**에 넣는다. 순서가 곧 우선순위다: 도망 > 쇼핑 > 파밍 > 배회. 파밍 뒤에 두면 치즈가 마르기 전엔 영영 안 산다.
+- [x] **Step 5: 행동 트리에 가지 하나** — `BotBrainTrees.BuildMouse`에서 **위협 가지 다음, 파밍 가지 앞**에 넣는다. 순서가 곧 우선순위다: 도망 > 쇼핑 > 파밍 > 배회. 파밍 뒤에 두면 치즈가 마르기 전엔 영영 안 산다.
 ```
                 new BtSequence(
                     new BtCondition(() => _self.TryGetShop(out _)),
@@ -316,9 +316,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 ```
   `BotAgent.TryGetShop(out Vector3)`는 `ShopSpot.Nearest` + `MouseBotLogic.WantsShopping` 조합이다. 도착 판정은 **`ShopSpotLogic.Contains`**(반경)로 한다 — `ARRIVE_DISTANCE`를 쓰면 반경 밖에 서서 영원히 구매에 실패한다.
   `Activity`에 `"Shop"`을 넣는다(실험실 오버레이 F1이 읽는다).
-- [ ] **Step 6: 봇 실험실로 눈으로 본다** — `Tools/CTC/Setup BotLab Scene` → 플레이 → F2 경로선으로 봇이 상점으로 꺾는지 본다. 길이 안 나오면 추측하지 말고 `TestTracePath`·`TestGetNavStats`(CLAUDE.md 길찾기 절). **플레이모드 — 단독 실행.**
-- [ ] **Step 7: 계측 재측정** — Step 1과 같은 조건으로 다시 돌려 **전/후 표**를 만든다. 밸런스 게이트(기획서 §11: 봇 쥐 승률 20~50%)를 벗어나면 **수치를 고치지 말고 표만 남긴다** — 이 계획은 무작위·이동을 넣는 것이고, 밸런스 조정은 그다음 판단이다.
-- [ ] **Step 8: EditMode PASS → Commit**
+- [x] **Step 6: 봇 실험실로 눈으로 본다** — `Tools/CTC/Setup BotLab Scene` → 플레이 → F2 경로선으로 봇이 상점으로 꺾는지 본다. 길이 안 나오면 추측하지 말고 `TestTracePath`·`TestGetNavStats`(CLAUDE.md 길찾기 절). **플레이모드 — 단독 실행.**
+- [x] **Step 7: 계측 재측정** — Step 1과 같은 조건으로 다시 돌려 **전/후 표**를 만든다. 밸런스 게이트(기획서 §11: 봇 쥐 승률 20~50%)를 벗어나면 **수치를 고치지 말고 표만 남긴다** — 이 계획은 무작위·이동을 넣는 것이고, 밸런스 조정은 그다음 판단이다.
+- [x] **Step 8: EditMode PASS → Commit**
 ```bash
 git add Assets/Scripts/Economy/ShopController.cs Assets/Scripts/Map/ShopSpot.cs Assets/Scripts/Bots/MouseBotLogic.cs Assets/Scripts/Bots/BotAgent.cs Assets/Scripts/Bots/BotBrainTrees.cs Assets/Scripts/Bots/BotShopper.cs Assets/Scripts/Testing/TestManager.Tech.cs Assets/Scripts/Tests/EditMode/MouseBotLogicTests.cs
 git commit -m "feat(bots): 봇도 상점까지 걸어간다 — IsBotExempt 제거, 행동 트리에 쇼핑 가지

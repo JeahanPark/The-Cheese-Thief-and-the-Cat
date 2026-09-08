@@ -182,6 +182,29 @@ namespace CTC.Runtime.Bots
                         _self.RecruitIfGang();
                     })),
 
+                // ── 쇼핑(계획 3 Task 6) ── **위협 다음, 파밍 앞**이다.
+                // 순서가 곳 우선순위다: 도망 > 쇼핑 > 파밍 > 배회. 파밍 뒤에 두면
+                // 치즈가 마를 때까지 영영 안 사서 상점이 있나 마나가 된다.
+                new BtSequence(
+                    new BtCondition(() => _self.TryGetShop(out _)),
+                    BtAction.Once(() =>
+                    {
+                        _self.TryGetShop(out Vector3 shop);
+                        _self.Activity = "Shop";
+                        _self.SetSneak(false);
+
+                        // 도착 판정은 **원반 안인가**다(ShopSpotLogic.Contains) — 거리로 재면
+                        // 반경 밖에 서서 영원히 구매에 실패한다. 사는 것 자체는 BuyForMouse가
+                        // 하고, 서버가 상점 안인지 다시 보므로 도착 전 호출은 그냥 거절된다.
+                        bool inside = _self.IsInsideShop();
+                        _self.MarkShopping(inside, BotAgent.DECIDE_INTERVAL);
+                        if (inside) _self.Nav.Stop();
+                        else _self.Nav.SetGoal(shop);
+
+                        _self.BuyForMouse();
+                        _self.RecruitIfGang();
+                    })),
+
                 new BtSequence(
                     new BtCondition(() => _self.TryGetSpot(out _)),
                     BtAction.Once(() =>

@@ -24,7 +24,8 @@ namespace CTC.Runtime.Bots
     /// </summary>
     public class BotAgent
     {
-        private const float DECIDE_INTERVAL = 0.5f;
+        /// <summary>판단 주기(초). 행동 트리가 한 틱에 쌓을 시간도 이 값이다.</summary>
+        public const float DECIDE_INTERVAL = 0.5f;
 
         /// <summary>도망칠 때 얼마나 멀리 잡을까 — 짧으면 고양이 사거리를 못 벗어난다.</summary>
         public const float FLEE_DISTANCE = 18f;
@@ -56,6 +57,7 @@ namespace CTC.Runtime.Bots
         private readonly BotNavigator m_Nav;
         private readonly BotSenses m_Senses;
         private readonly BotShopper m_Shopper;
+        private readonly CheeseWallet m_Wallet;
         private readonly Reservations m_Reservations;
         private readonly BotOrders m_Orders;
         private readonly BtNode m_Tree;
@@ -139,9 +141,10 @@ namespace CTC.Runtime.Bots
             // 오브젝트 id로 씨앗을 주므로 같은 판을 다시 돌리면 같은 결과가 나온다(재현성).
             m_Rng = new System.Random((int)(_object.NetworkObjectId * 7919 + 13));
 
+            m_Wallet = _object.GetComponent<CheeseWallet>();
             m_Shopper = new BotShopper(
                 _object.transform, _object.GetComponent<ShopController>(),
-                _object.GetComponent<CheeseWallet>(), _object.GetComponent<CatClass>());
+                m_Wallet, _object.GetComponent<CatClass>());
 
             m_Tree = _role == RoleId.Cat ? BotBrainTrees.BuildCat(this) : BotBrainTrees.BuildMouse(this);
         }
@@ -364,6 +367,54 @@ namespace CTC.Runtime.Bots
         }
 
         public void ForgetSpot() => m_SpotIndex = -1;
+
+        // ---- 상점(계획 3 Task 6) ----
+
+        /// <summary>상점을 목표로 잡았던 시간(초) · 그중 실제로 원반 안에 서 있었던 시간.</summary>
+        public float ShopSeekSeconds { get; private set; }
+        public float ShopInsideSeconds { get; private set; }
+
+        /// <summary>상점 원반에 한 번이라도 들어갔다. **가려고 했는데 false면 도달 실패다**.</summary>
+        public bool ShopReached { get; private set; }
+
+        /// <summary>
+        /// 지금 갈 상점. 없으면 false.
+        ///
+        /// 자리는 <see cref="Map.ShopSpot.Nearest"/>가 명부에서 준다 — 판마다 바뀌므로
+        /// 좌표를 캐시하지 않는다. 갈지 말지는 <see cref="MouseBotLogic.WantsShopping"/>가 정한다.
+        /// </summary>
+        public bool TryGetShop(out Vector3 _shop)
+        {
+            _shop = Vector3.zero;
+            if (m_Shopper == null) return false;
+
+            TechId next = m_Shopper.NextWant();
+            if (next == TechId.None) return false;
+            if (!Map.ShopSpot.Nearest(Position, out Vector3 center)) return false;
+
+            int cheese = m_Wallet != null ? m_Wallet.CheeseValue : 0;
+            int cost = TechLogic.RowOf(next, 1).Cost;
+            if (!MouseBotLogic.WantsShopping(next, cheese, cost, DistanceTo(center))) return false;
+
+            _shop = center;
+            return true;
+        }
+
+        /// <summary>
+        /// 지금 상점 원반 안인가 — 도착 판정은 반경이지 <c>ARRIVE_DISTANCE</c>가 아니다.
+        /// 거리로 재면 반경 밖에 서서 영원히 구매에 실패한다(서버 판정과 같은 식을 쓴다).
+        /// </summary>
+        public bool IsInsideShop() => Map.ShopSpot.AnyContains(Position);
+
+        /// <summary>상점으로 가는 중이다 — 계측용 시간 적립(도달 실패를 여기서 센다).</summary>
+        public void MarkShopping(bool _inside, float _seconds)
+        {
+            ShopSeekSeconds += _seconds;
+            if (!_inside) return;
+
+            ShopInsideSeconds += _seconds;
+            ShopReached = true;
+        }
 
         private readonly List<Vector3> m_Forts = new List<Vector3>();
 
