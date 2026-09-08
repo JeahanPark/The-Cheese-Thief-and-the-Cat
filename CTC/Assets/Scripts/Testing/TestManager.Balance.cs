@@ -13,6 +13,23 @@ namespace CTC.Runtime.Testing
     public partial class TestManager
     {
         /// <summary>
+        /// QA: **지금 이 판이 실제로 어떤 수치로 도는가** — `BalanceInfo`의 필드 하나를 이름으로 읽는다.
+        ///
+        /// CSV를 고쳤는데 계측이 안 변하면 「밸런스가 그 손잡이를 안 탄다」와
+        /// 「CSV가 아직 안 실렸다」를 구분해야 한다. 그 구분을 이 훅이 한다(2026-09-09).
+        /// 없는 이름이면 NaN.
+        /// </summary>
+        public float TestGetBalanceValue(string _key)
+        {
+            var balance = Info.InfoManager.Instance.Balance;
+            System.Reflection.FieldInfo field = balance.GetType().GetField(_key);
+            if (field == null) return float.NaN;
+
+            object value = field.GetValue(balance);
+            return value is float f ? f : (value is int i ? i : float.NaN);
+        }
+
+        /// <summary>
         /// QA: 지정 클라이언트의 발소리가 **지금 실제로 몇 m까지 닿는지**(AudioSource.maxDistance).
         /// 안 움직이면 -1. 잠행 판정을 "재생 중인가"로만 보면 반경 축소를 못 잡는다.
         /// </summary>

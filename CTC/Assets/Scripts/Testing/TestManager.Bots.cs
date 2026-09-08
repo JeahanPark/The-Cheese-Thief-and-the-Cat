@@ -87,6 +87,29 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.ShopStats() : "";
         }
 
+        /// <summary>
+        /// QA: **어디서 지는가** 한 줄 (2026-09-09, 쥐 승률 진단).
+        /// "elapsed=612 mice=8 alive=0 dead=8 earned=4210 techs=9 deaths=41:Farm,58:Shop,..."
+        ///
+        /// `deaths`의 뒷칸이 그때 하던 일이다 — `Farm`에 몰리면 밸런스,
+        /// `Shop`/`Travel`에 몰리면 이동 비용·봇 문제다.
+        /// </summary>
+        public string TestGetBotMouseReport()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.MouseReport() : "";
+        }
+
+        /// <summary>
+        /// QA: **봇이 얼마나 멀리서 보는가** — "sights=812 avg=21.4 max=97.3 far=118".
+        /// `far`는 35m를 넘겨 본 표본 수다. 크면 그 판은 밸런스가 아니라 봇의 눈을 재고 있다.
+        /// </summary>
+        public string TestGetBotSightStats()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.SightStats() : "";
+        }
+
         /// <summary>QA: 지금 나가 있는 지휘관 명령 수. 0이면 지휘관이 안 도는 것이다.</summary>
         public int TestGetBotOrderCount()
         {

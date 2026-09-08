@@ -58,6 +58,7 @@ namespace CTC.Runtime.Bots
         private readonly BotSenses m_Senses;
         private readonly BotShopper m_Shopper;
         private readonly CheeseWallet m_Wallet;
+        private readonly Economy.TechSlots m_Slots;
         private readonly Reservations m_Reservations;
         private readonly BotOrders m_Orders;
         private readonly BtNode m_Tree;
@@ -93,6 +94,36 @@ namespace CTC.Runtime.Bots
 
         /// <summary>QA·통계 — 벽에 붙박인 봇을 잡는다.</summary>
         public float TravelledMeters => m_Nav != null ? m_Nav.TravelledMeters : 0f;
+
+        /// <summary>이 봇이 살아 있던 시간(초). 죽으면 그 자리에서 멈춘다 — **사망 시점**이다.</summary>
+        public float LivedSeconds => m_Lived;
+
+        /// <summary>
+        /// 사람이라면 알아볼 만한 거리(m)의 상한. `health_check.py`의 `MAX_HONEST_SIGHT`와 같은 값이다 —
+        /// 레이아웃에서 잰 최장 열린 직선(27.5m)에 여유를 더한 것.
+        /// </summary>
+        public const float HONEST_SIGHT_METERS = 35f;
+
+        /// <summary>
+        /// 눈으로 상대를 잡은 표본 수. **틱 수가 아니다** — 트리의 조건과 잎이 한 틱에
+        /// <see cref="VisiblePrey"/>를 여러 번 부른다. 절대 개수가 아니라 평균·최대를 보는 값이다.
+        /// </summary>
+        public int SightSamples { get; private set; }
+
+        /// <summary>그 표본들의 거리 합(m) — 평균을 내려고 둔다.</summary>
+        public float SightMetersSum { get; private set; }
+
+        /// <summary>가장 멀리서 본 거리(m).</summary>
+        public float MaxSightDistance { get; private set; }
+
+        /// <summary><see cref="HONEST_SIGHT_METERS"/>를 넘긴 표본 수 — **정직성 검사**다.</summary>
+        public int FarSightSamples { get; private set; }
+
+        /// <summary>마지막으로 읽은 누적 획득 치즈. 몸이 사라진 뒤에도 남는다.</summary>
+        public int LastEarned { get; private set; }
+
+        /// <summary>마지막으로 읽은 테크 칸 수. 몸이 사라진 뒤에도 남는다.</summary>
+        public int LastTechCount { get; private set; }
 
         /// <summary>지금 무엇을 하는 중인가. 트리의 잎이 적어 넣는다(QA 표시용).</summary>
         public string Activity { get; set; } = "Idle";
@@ -142,6 +173,7 @@ namespace CTC.Runtime.Bots
             m_Rng = new System.Random((int)(_object.NetworkObjectId * 7919 + 13));
 
             m_Wallet = _object.GetComponent<CheeseWallet>();
+            m_Slots = _object.GetComponent<Economy.TechSlots>();
             m_Shopper = new BotShopper(
                 _object.transform, _object.GetComponent<ShopController>(),
                 m_Wallet, _object.GetComponent<CatClass>());
@@ -154,6 +186,11 @@ namespace CTC.Runtime.Bots
             if (!Alive) return;
             m_Lived += _deltaSeconds;
             m_Spots = _spots;
+
+            // **죽는 순간엔 몸이 이미 없다**(탈락 = despawn). 마지막으로 읽은 값을 여기 남겨야
+            // 사망 시점의 벌이·테크를 사후에 물을 수 있다.
+            if (m_Wallet != null) LastEarned = m_Wallet.EarnedValue;
+            if (m_Slots != null) LastTechCount = m_Slots.Count;
 
             m_Timer -= _deltaSeconds;
             if (m_Timer <= 0f)
@@ -184,11 +221,23 @@ namespace CTC.Runtime.Bots
         public Transform VisiblePrey()
         {
             Transform prey = m_Senses.NearestVisible();
-            if (prey != null && FirstSightSeconds < 0f)
+            if (prey == null) return null;
+
+            float distance = DistanceTo(prey.position);
+            if (FirstSightSeconds < 0f)
             {
                 FirstSightSeconds = m_Lived;
-                FirstSightDistance = DistanceTo(prey.position);
+                FirstSightDistance = distance;
             }
+
+            // **얼마나 멀리서 보는가**를 남긴다(2026-09-09). `BotSenses.CanSee`에는 거리 상한이
+            // 없다 — 시야각과 레이캐스트만 본다. 그래서 봇이 사람보다 멀리 보는지를 재야 한다.
+            // 2026-09-09 실측: 평균 6.4m · 35m 초과 1~5% — **눈은 정직했다.**
+            // 소리 손잡이를 돌려도 승률이 안 움직이면 다시 여기부터 확인한다.
+            SightSamples++;
+            SightMetersSum += distance;
+            if (distance > MaxSightDistance) MaxSightDistance = distance;
+            if (distance > HONEST_SIGHT_METERS) FarSightSamples++;
             return prey;
         }
 

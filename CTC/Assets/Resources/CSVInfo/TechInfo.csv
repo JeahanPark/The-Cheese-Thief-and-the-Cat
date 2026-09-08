@@ -32,9 +32,9 @@ Sticky,Mouse,Escape,2,300,끈끈이,−60% · 반경 3.5m,3.5,0.6,30
 Sticky,Mouse,Escape,3,400,끈끈이,−75% · 쿨 12,3.5,0.75,12
 Dash,Mouse,Utility,2,140,대시,쿨 4.5초,4.5,0,0
 Dash,Mouse,Utility,3,180,대시,쿨 3.5초,3.5,0,0
-FastFeet,Mouse,Utility,1,160,빠른 발,이속 +0.3,0.3,0,0
-FastFeet,Mouse,Utility,2,260,빠른 발,이속 +0.7,0.7,0,0
-FastFeet,Mouse,Utility,3,360,빠른 발,이속 +1.2,1.2,0,0
+FastFeet,Mouse,Utility,1,160,빠른 발,이속 +0.2,0.2,0,0
+FastFeet,Mouse,Utility,2,260,빠른 발,이속 +0.45,0.45,0,0
+FastFeet,Mouse,Utility,3,360,빠른 발,이속 +0.7 — 고양이 7.4에 근접,0.7,0,0
 CatHide,Cat,Defense,1,120,두꺼운 가죽,HP 1150,1150,0,0
 CatHide,Cat,Defense,2,200,두꺼운 가죽,HP 1300,1300,0,0
 CatHide,Cat,Defense,3,280,두꺼운 가죽,HP 1450,1450,0,0

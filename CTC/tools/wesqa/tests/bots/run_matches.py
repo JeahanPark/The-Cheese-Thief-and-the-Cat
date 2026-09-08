@@ -18,7 +18,9 @@ from wesqa import WesPoco
 
 OUT_DIR = r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\docs\balance"
 FIELDS = ["match", "result", "remaining", "mice_left", "cats_left",
-          "first_sight", "phase", "warning"]
+          "first_sight", "phase", "warning",
+          # 「어디서 지는가」 (2026-09-09 승률 진단) — 사망 시각·그때 하던 일까지 남긴다
+          "mouse_report", "tech", "shop", "nav", "sight"]
 
 
 def parse():
@@ -95,8 +97,22 @@ def run_one(host, args, index):
     if ",-1.0," in summary or summary.endswith(",-1.0"):
         warning = (warning + " 고양이가 한 번도 못 봄").strip()
 
+    # **사람 쥐는 판마다 확인해서 CSV에 적는다**(2026-09-09). 예전에는 시작 전에 한 번만
+    # 화면에 찍었는데, 출력이 파이프로 흐르면 그 줄이 묻혀 **오염된 표를 그대로 읽었다** —
+    # 가만히 선 쥐 하나가 마지막까지 살아 판을 몇 배로 늘린다(실측: 전멸 166s → 400s).
+    humans = host.invoke("TestGetMouseCount")
+    if humans and humans > 0:
+        warning = (warning + f" 사람쥐{humans}").strip()
+
+    # **봇을 걷어내기 전에** 읽는다 — Stop()이 남은 봇을 정리하면 활동 상태가 사라진다.
+    report = host.invoke("TestGetBotMouseReport")
+    tech = host.invoke("TestGetBotTechStats")
+    shop = host.invoke("TestGetBotShopStats")
+    nav = host.invoke("TestGetNavStats")
+    sight = host.invoke("TestGetBotSightStats")
+
     host.invoke("TestClearBots")
-    return summary.split(",") + [warning], diag
+    return summary.split(",") + [warning, report, tech, shop, nav, sight], diag
 
 
 def main():
@@ -132,10 +148,20 @@ def main():
             # 칸: result,remaining,mice,cats,first_sight,phase + warning (감옥 칸은 2026-08-17에 빠졌다)
             print(f"[{i:2d}/{args.matches}] {row[0]:8s} 남은{row[1]:>4s}s "
                   f"쥐{row[2]} 고양이{row[3]} 첫발견{row[4]}s {row[5]} {row[6]}")
+            print(f"          {row[7]}")
+            print(f"          {row[8]} | {row[9]} | 시야 {row[11]}")
             sys.stdout.flush()
 
     print(f"\n→ {path}")
     summarize(rows)
+
+
+def _field(line, key):
+    """"a=1 b=2" 한 줄에서 키 하나를 뽑는다. 없으면 빈 문자열."""
+    for token in (line or "").split(" "):
+        if token.startswith(key + "="):
+            return token[len(key) + 1:]
+    return ""
 
 
 def summarize(rows):
@@ -156,6 +182,42 @@ def summarize(rows):
         print(f"  첫 발견까지 평균 {sum(sights) / len(sights):.1f}초 "
               f"(최소 {min(sights):.0f} · 최대 {max(sights):.0f})")
     print(f"  고양이가 한 번도 못 본 판: {total - len(sights)} / {total}")
+
+    # ── 어디서 지는가 (2026-09-09) ──
+    deaths = []          # (초, 그때 하던 일)
+    earned, techs, mice_total = 0, 0, 0
+    for r in rows:
+        if len(r) < 8:
+            continue
+        for token in _field(r[7], "deaths").split(","):
+            if ":" in token:
+                t, act = token.split(":", 1)
+                deaths.append((float(t), act))
+        earned += int(_field(r[7], "earned") or 0)
+        techs += int(_field(r[7], "techs") or 0)
+        mice_total += int(_field(r[7], "mice") or 0)
+
+    if deaths:
+        times = sorted(t for t, _ in deaths)
+        print(f"\n  쥐 사망 {len(deaths)} / 총 {mice_total}  "
+              f"(중앙 {times[len(times)//2]:.0f}s · 첫 {times[0]:.0f}s · 끝 {times[-1]:.0f}s)")
+        # 2분 구간 히스토그램 — 초반에 우수수인지 후반에 몰리는지가 여기서 갈린다
+        bins = {}
+        for t, _ in deaths:
+            bins[int(t // 120)] = bins.get(int(t // 120), 0) + 1
+        for b in sorted(bins):
+            print(f"    {b*2:2d}~{b*2+2:2d}분  {'#' * bins[b]} {bins[b]}")
+        acts = {}
+        for _, a in deaths:
+            acts[a] = acts.get(a, 0) + 1
+        print("    죽을 때 하던 일: " +
+              " · ".join(f"{k} {v}" for k, v in sorted(acts.items(), key=lambda kv: -kv[1])))
+    print(f"  쥐가 번 치즈 합 {earned} · 산 테크 합 {techs}")
+
+    dirty = [r for r in rows if len(r) > 6 and "사람쥐" in r[6]]
+    if dirty:
+        print(f"\n  !! 사람 쥐가 낀 판 {len(dirty)} / {total} — 이 표는 쓰지 마라. "
+              f"플레이모드를 껐다 켜고 다시 돌린다")
 
 
 main()

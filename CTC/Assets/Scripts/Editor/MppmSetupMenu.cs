@@ -56,6 +56,17 @@ namespace CTC.Editor
             Report(sb.ToString());
         }
 
+        /// <summary>
+        /// 클론을 **전부 끈다** — 봇 승률 계측(`run_matches.py`)의 전제다 (2026-09-09).
+        ///
+        /// 클론은 조작하지 않아도 `MppmAutoConnect`가 쥐로 앉히고, 그 쥐가 스폰 자리에 서서
+        /// **판이 끝날 때까지 안 죽는다.** 봇 쥐 여덟이 전멸해도 판이 안 끝나 전멸시각이
+        /// 166초에서 400초로 부풀었다(2026-09-09 실측). 프로세스를 손으로 죽여도
+        /// **MPPM이 다시 띄우므로** 여기서 비활성으로 내려야 한다.
+        /// </summary>
+        [MenuItem("Tools/CTC/Dev/MPPM 1인 (클론 전부 끄기 — 봇 계측용)")]
+        public static void SetupSoloPlayer() => SetupPlayers(0);
+
         [MenuItem("Tools/CTC/Dev/MPPM 3인 세팅 (클론 2개 + wes 태그)")]
         public static void SetupThreePlayers() => SetupPlayers(2);
 

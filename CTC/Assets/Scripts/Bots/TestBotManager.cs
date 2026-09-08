@@ -44,6 +44,17 @@ namespace CTC.Runtime.Bots
         // 도달 실패가 통째로 사라진다(2026-09-08 실측: 쥐가 전멸한 판은 seekers=0).
         private int m_RetiredSeekers, m_RetiredReached;
         private float m_RetiredSeek, m_RetiredInside;
+
+        // 「어디서 지는가」를 재는 상자 (2026-09-09, 승률 진단).
+        // 사망은 **시각과 그때 하던 일**을 같이 적는다 — 「파밍하다 잡혔다」와
+        // 「상점 가다 잡혔다」는 원인이 다르다(전자는 밸런스, 후자는 봇·거리).
+        private readonly List<string> m_Deaths = new List<string>();
+        private int m_RetiredEarned, m_RetiredTechs;
+        private float m_Elapsed;
+
+        // 시야 정직성 — 소리 손잡이를 돌려도 계측이 안 움직일 때 여기부터 본다.
+        private int m_RetiredSights, m_RetiredFarSights;
+        private float m_RetiredSightMeters, m_RetiredMaxSight;
         private readonly SoundLog m_Sound = new SoundLog();
 
         // 예약(쥐가 뭉치지 않게) · 명령판(고양이 지휘관) — 자세한 건 각 클래스 주석에 있다
@@ -83,6 +94,11 @@ namespace CTC.Runtime.Bots
             Stop();
             m_RetiredSeekers = m_RetiredReached = 0;   // 새 판 — 지난 판의 계측을 이어 세지 않는다
             m_RetiredSeek = m_RetiredInside = 0f;
+            m_Deaths.Clear();
+            m_RetiredEarned = m_RetiredTechs = 0;
+            m_Elapsed = 0f;
+            m_RetiredSights = m_RetiredFarSights = 0;
+            m_RetiredSightMeters = m_RetiredMaxSight = 0f;
 
             MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
             m_Commander = new BotCommander(m_Orders, layout != null ? layout.Seed : 0);
@@ -131,6 +147,7 @@ namespace CTC.Runtime.Bots
             m_Sound.Forget(Time.time);
 
             float dt = Time.deltaTime;
+            m_Elapsed += dt;
 
             // 지휘관이 먼저 — 명령판을 갱신한 뒤에 봇들이 그걸 읽는다
             if (m_Commander != null) m_Commander.Tick(dt);
@@ -325,7 +342,20 @@ namespace CTC.Runtime.Bots
         // 봇 하나가 판에서 빠질 때 그 봇의 상점 계측을 누적에 옥긴다.
         private void Retire(BotAgent _agent)
         {
-            if (_agent.Role != RoleId.Mouse || _agent.ShopSeekSeconds <= 0f) return;
+            // 시야 계측은 역할을 안 가린다 — 고양이가 판 중에 죽어도 그 표본을 안 잃는다.
+            m_RetiredSights += _agent.SightSamples;
+            m_RetiredSightMeters += _agent.SightMetersSum;
+            m_RetiredFarSights += _agent.FarSightSamples;
+            if (_agent.MaxSightDistance > m_RetiredMaxSight) m_RetiredMaxSight = _agent.MaxSightDistance;
+
+            if (_agent.Role != RoleId.Mouse) return;
+
+            // **죽어서 빠진 것만** 사망으로 센다 — Stop()의 정리 호출은 살아 있는 봇이다.
+            if (!_agent.Alive) m_Deaths.Add($"{_agent.LivedSeconds:F0}:{_agent.Activity}");
+            m_RetiredEarned += _agent.LastEarned;
+            m_RetiredTechs += _agent.LastTechCount;
+
+            if (_agent.ShopSeekSeconds <= 0f) return;
 
             m_RetiredSeekers++;
             if (_agent.ShopReached) m_RetiredReached++;
@@ -348,6 +378,54 @@ namespace CTC.Runtime.Bots
             }
             return $"seekers={seekers} reached={reached} unreached={seekers - reached} " +
                    $"seek={seek:F1} inside={inside:F1}";
+        }
+
+        /// <summary>
+        /// QA — **어디서 지는가**를 한 줄로 (2026-09-09, 쥐 승률 진단).
+        ///
+        /// "elapsed=612 mice=8 alive=0 dead=8 earned=4210 techs=9 deaths=41:Farm,58:Shop,..."
+        ///
+        /// `deaths`는 **사망 시각(초) : 그때 하던 일**이다. 죽는 시점이 초반에 몰리면
+        /// 밸런스(고양이가 너무 빠르다)고, `Shop`·`Travel`에 몰리면 이동 비용·봇 문제다.
+        /// 죽은 봇은 몸이 사라지므로 값은 <see cref="BotAgent.LastEarned"/>(마지막으로 읽은 값)에서 온다.
+        /// </summary>
+        public string MouseReport()
+        {
+            int alive = 0, earned = m_RetiredEarned, techs = m_RetiredTechs;
+            foreach (BotAgent a in m_Agents)
+            {
+                if (a.Role != RoleId.Mouse) continue;
+
+                alive++;
+                earned += a.LastEarned;
+                techs += a.LastTechCount;
+            }
+
+            return $"elapsed={m_Elapsed:F0} mice={alive + m_Deaths.Count} alive={alive} " +
+                   $"dead={m_Deaths.Count} earned={earned} techs={techs} " +
+                   $"deaths={string.Join(",", m_Deaths)}";
+        }
+
+        /// <summary>
+        /// QA — **봇이 얼마나 멀리서 보는가** (2026-09-09). "sights=812 avg=21.4 max=97.3 far=118"
+        ///
+        /// <see cref="BotSenses.CanSee"/>에는 **거리 상한이 없다** — 시야각과 레이캐스트만 본다.
+        /// 그래서 열린 통로에서는 사람이 알아볼 수 없는 거리의 쥐도 봇에게는 보인다.
+        /// `far`(35m 초과 표본)가 크면 그 판은 **밸런스가 아니라 봇의 눈을 재고 있다**.
+        /// </summary>
+        public string SightStats()
+        {
+            int sights = m_RetiredSights, far = m_RetiredFarSights;
+            float meters = m_RetiredSightMeters, max = m_RetiredMaxSight;
+            foreach (BotAgent a in m_Agents)
+            {
+                sights += a.SightSamples;
+                far += a.FarSightSamples;
+                meters += a.SightMetersSum;
+                if (a.MaxSightDistance > max) max = a.MaxSightDistance;
+            }
+            float avg = sights > 0 ? meters / sights : 0f;
+            return $"sights={sights} avg={avg:F1} max={max:F1} far={far}";
         }
 
         /// <summary>QA — 지금 나가 있는 지휘관 명령 수.</summary>
