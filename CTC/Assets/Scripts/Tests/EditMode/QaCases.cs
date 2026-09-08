@@ -1,0 +1,725 @@
+using System.Collections.Generic;
+
+namespace CTC.Tests
+{
+    /// <summary>케이스가 도는 층. <see cref="QaLayer.Manual"/>만 사람이 돌린다.</summary>
+    public enum QaLayer
+    {
+        EditMode,   // Assets/Scripts/Tests/EditMode — 게임 없이 돈다
+        Wesqa,      // tools/wesqa/tests/qa_v*.py — 실플레이(MPPM)
+        Pytest,     // tools/wesqa/tests/test_*.py — 게임 없이 돈다(정적·모의 서버)
+        Manual      // 사람 눈이 실제로 필요하다
+    }
+
+    /// <summary>
+    /// 케이스의 현재 상태. **부착으로 판정된다** — <see cref="QaCaseRegistryTests"/>가 강제한다.
+    /// </summary>
+    public enum QaStatus
+    {
+        /// <summary>자동: 부착된 구현이 하나 이상 있다. 수동: 절차·기대가 적혀 있다.</summary>
+        Implemented,
+        /// <summary>부착된 구현이 없다. 선언만 있고 아직 아무도 안 잰다.</summary>
+        Missing,
+        /// <summary>폐기. 번호는 **비워 둔 채 재사용하지 않는다** — 이 행이 그 번호를 붙잡는다.</summary>
+        Retired
+    }
+
+    /// <summary>케이스 한 건. 순수 데이터라 유니티에 안 기댄다.</summary>
+    public sealed class QaCase
+    {
+        private QaCase(string _id, string _what, string _catches, QaLayer _layer,
+                       QaStatus _status, string _note, string _procedure, string _expected)
+        {
+            Id = _id;
+            What = _what;
+            Catches = _catches;
+            Layer = _layer;
+            Status = _status;
+            Note = _note;
+            Procedure = _procedure;
+            Expected = _expected;
+        }
+
+        /// <summary>영구 번호. `A-01` 꼴. 재사용·밀기 금지.</summary>
+        public string Id { get; }
+
+        /// <summary>무엇을 검증하나 — **동작으로** 쓴다(줄 번호·private 여부는 쓰지 않는다).</summary>
+        public string What { get; }
+
+        /// <summary>이 케이스가 잡는 회귀. 이게 안 써지면 그 케이스는 지워도 된다는 뜻이다.</summary>
+        public string Catches { get; }
+
+        public QaLayer Layer { get; }
+        public QaStatus Status { get; }
+
+        /// <summary>보충 — 왜 아직 미구현인가 · 폐기 사유 · 층을 옮긴 이유.</summary>
+        public string Note { get; }
+
+        /// <summary>수동 전용 — 재현 절차.</summary>
+        public string Procedure { get; }
+
+        /// <summary>수동 전용 — 무엇을 보면 통과인가.</summary>
+        public string Expected { get; }
+
+        public bool IsAuto => Layer != QaLayer.Manual;
+
+        /// <summary>도메인 글자(`A`~`E`·`M`).</summary>
+        public string Domain => Id.Substring(0, Id.IndexOf('-'));
+
+        /// <summary>도메인 안의 번호.</summary>
+        public int Number => int.Parse(Id.Substring(Id.IndexOf('-') + 1));
+
+        public static QaCase Of(string _id, string _what, string _catches,
+                                QaLayer _layer, QaStatus _status, string _note = "")
+        {
+            return new QaCase(_id, _what, _catches, _layer, _status, _note, "", "");
+        }
+
+        public static QaCase ManualOf(string _id, string _what, string _catches,
+                                      string _procedure, string _expected, string _note = "")
+        {
+            return new QaCase(_id, _what, _catches, QaLayer.Manual, QaStatus.Implemented,
+                              _note, _procedure, _expected);
+        }
+
+        public static QaCase RetiredOf(string _id, string _what, string _reason)
+        {
+            return new QaCase(_id, _what, "", QaLayer.Manual, QaStatus.Retired, _reason, "", "");
+        }
+    }
+
+    /// <summary>
+    /// **QA 테스트 케이스 대장 — 유일한 선언.** (전체 검수 3단계, 2026-09-09)
+    ///
+    /// 왜 코드가 대장인가: 이 프로젝트는 손으로 맞추는 문서가 썩는 걸 이미 겪었다
+    /// (CLAUDE.md 규칙 8이 그 흉터다). 그래서 케이스는 **코드에 선언**하고,
+    /// 구현에는 <c>[NUnit.Framework.Property("CaseId","E-11")]</c>(C#) · <c>check(..., case="E-18")</c>·
+    /// <c>@qa_case("E-04")</c>(파이썬)로 **ID를 박고**, 둘이 어긋나면
+    /// <see cref="QaCaseRegistryTests"/>가 **테스트로 깨진다.**
+    /// 사람이 읽는 표(`docs/design-vault/QA 케이스 대장.md`)는 여기서 **생성**된다.
+    ///
+    /// 규칙 (감사 E §6):
+    ///   · ID는 영구다 — 번호를 **재사용하지도, 밀지도 않는다.** 폐기하면 행을 남기고 번호를 비운다
+    ///   · 본문은 **동작**으로 쓴다. 줄 번호에 기대면 리팩터에 케이스가 썩는다
+    ///   · 각 케이스는 **잡는 회귀**를 한 줄로 갖는다
+    ///   · 상태는 **부착으로 판정된다.** 없는 것을 있다고 적으면 대장이 곧 거짓말이 된다
+    ///
+    /// 출처는 2026-09-09 전체 검수 다섯 도메인 보고서(`docs/superpowers/specs/2026-09-09-audit-*.md`)다.
+    /// </summary>
+    public static class QaCases
+    {
+        // ══════════════════════ A · 매치 · 로비 · 네트워크 (20) ══════════════════════
+        private static readonly QaCase[] DOMAIN_A =
+        {
+            QaCase.Of("A-01",
+                "2단계로 끝난 판 뒤 다음 판의 단계가 Hunt로 돌아오고 시작 직후 끝나지 않는다",
+                "단계 초기화가 빠져 2판째가 시작 즉시 종료된다(P0-5)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("A-02",
+                "시리즈 2판에 1판과 같은 수의 봇이 선다",
+                "판 넘김에서 봇 인자가 빠져 2판부터 봇이 사라진다(P0-4)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("A-03",
+                "시리즈 도중에는 결과 패널의 재시작 버튼이 안 뜬다",
+                "시리즈 중 이중 재시작으로 판이 꼬인다",
+                QaLayer.Wesqa, QaStatus.Missing,
+                "버튼의 켜짐을 읽는 훅이 없다(TestIsRestartButtonVisible) — qa_v52 ⑥이 SKIP으로 남아 있다"),
+            QaCase.Of("A-04",
+                "인원이 빠져 다음 판을 못 열면 로비든 결과든 조작 가능한 패널이 반드시 떠 있다",
+                "빈 씬에 갇혀 아무것도 못 누른다(P0-6)",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetVisiblePanels 신규 훅이 필요하다"),
+            QaCase.Of("A-05",
+                "판 도중 난입해 몸이 없는 clientId가 다음 판 고양이로 뽑히지 않는다",
+                "몸 없는 관전자가 고양이가 되어 판이 죽는다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestHasBody 신규 훅이 필요하다"),
+            QaCase.Of("A-06",
+                "장전되지 않은 판에서 타이머가 만료됐을 때의 처리가 순수 함수로 정해져 전수 검증된다",
+                "미장전 만료가 아무 일도 안 해 판이 영원히 안 끝난다",
+                QaLayer.EditMode, QaStatus.Missing, "무엇이 일어나야 하는지를 기획이 먼저 정해야 한다"),
+            QaCase.Of("A-07",
+                "3판 연속에서 매 라운드 끝에 단계·시드·봇 수·역할이 전부 유지된다",
+                "라운드 전이가 상태 하나를 조용히 잃는다",
+                QaLayer.Wesqa, QaStatus.Missing,
+                "qa_v52가 단계·봇 수까지만 본다 — 시드·역할 유지가 빠져 있다"),
+            QaCase.Of("A-08",
+                "결과·타이머·단계가 클라이언트 인스턴스에도 호스트와 같은 값으로 복제된다",
+                "호스트에서만 맞는 결과 화면",
+                QaLayer.Wesqa, QaStatus.Missing, "훅은 있다 — 읽는 인스턴스만 클론으로 바꾸면 된다"),
+            QaCase.Of("A-09",
+                "시리즈 점수판이 클론 화면에도 같은 글자로 뜬다",
+                "라운드·승수 복제 누락",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetSeriesLabel 신규 훅이 필요하다"),
+            QaCase.Of("A-10",
+                "2단계 승리가 시리즈 점수에서 어느 편인지 순수 함수로 전수 검증된다",
+                "깡패 승리가 점수판에 안 잡히거나 반대편에 붙는다",
+                QaLayer.EditMode, QaStatus.Missing, "SideOf(MatchResult)가 아직 없다"),
+            QaCase.Of("A-11",
+                "관전자는 몸이 안 생기고 생존 수에 안 세어지되 따봉은 받는다",
+                "관전자가 생존자로 세어져 판이 안 끝난다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestHasBody가 필요하다(A-05와 공유)"),
+            QaCase.Of("A-12",
+                "따봉이 3초 쿨다운을 지키고 고양이 화면에는 마커가 0이다",
+                "따봉 도배 · 적에게 위치가 새는 것",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("A-13",
+                "판 도중 접속이 끊기면 명부와 생존 수가 줄고 마지막 고양이가 끊기면 판이 끝난다",
+                "유령이 판을 붙잡아 끝나지 않는다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestDisconnectClient 또는 클론을 죽이는 절차가 필요하다"),
+            QaCase.Of("A-14",
+                "스폰 전에 굴린 매치 시드가 스폰 시점에 0이 아닌 값으로 흘러 나온다",
+                "시드가 0이라 무작위 셋이 매 판 같아진다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("A-15",
+                "조인 타임아웃이 지나면 기대 인원보다 적어도 있는 사람만으로 판이 열린다",
+                "한 명이 안 붙으면 영원히 시작하지 않는다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("A-16",
+                "대기실에서 사람이 드나들어도 두 몸이 같은 좌표에 서지 않는다",
+                "자리 배정이 겹쳐 몸이 포개진다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetRoomBodyPositions 신규 훅이 필요하다"),
+            QaCase.Of("A-17",
+                "기본 포트가 막히면 호스트가 다음 포트로 올라가고 그 번호가 공유 파일을 거쳐 클라에 닿는다",
+                "에디터가 포트를 안 놓아 방이 아예 안 열린다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("A-18",
+                "옵션 창이 열린 채 Enter를 눌러도 채팅이 안 열린다",
+                "모달 위로 게임플레이 입력이 샌다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("A-19",
+                "판마다 통계 파일이 정확히 하나 쓰이고 승자·시간만료 칸이 실제 결과와 같다",
+                "계측 기록이 조용히 실제와 어긋난다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetLastMatchStatsPath 신규 훅이 필요하다"),
+            QaCase.Of("A-20",
+                "3인이 전부 고양이를 눌러도 정확히 2명만 고양이가 되고 쥐가 0이면 시작이 막힌다",
+                "정원 경계가 새어 쥐 없는 판이 열린다",
+                QaLayer.Wesqa, QaStatus.Missing, "qa_v44가 2명까지만 본다 — 세 번째 거절이 미확인이다")
+        };
+
+        // ══════════════════════ B · 플레이어 · 전투 · 카메라 (18) ══════════════════════
+        private static readonly QaCase[] DOMAIN_B =
+        {
+            QaCase.Of("B-01",
+                "죽은 고양이의 덮치기는 피해도 장난기도 만들지 않는다",
+                "죽은 고양이가 계속 덮치고 현상금을 번다(P0-7)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-02",
+                "덮치기 피해 × 광분·불 배율과 쥐 최대 HP의 즉사 경계가 표로 못박힌다",
+                "CSV를 만지다 「몇 대에 죽는가」가 조용히 뒤집힌다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("B-03",
+                "치즈 방패 최고 레벨에 잔액이 충분한 쥐는 즉사 피해 한 방을 견딘다",
+                "방패의 생존 하한이 CSV 변경으로 무너진다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("B-04",
+                "원샷 애니메이션 여섯 종이 실행 직후 실제로 그 상태에 들어간다",
+                "원샷 연출이 안 나가거나 루프로 돈다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-05",
+                "남의 몸의 발사 RPC를 불러도 그 몸의 쿨다운이 안 닳는다",
+                "소유권 없는 원격 조작(P0-8)",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetWeaponCooldownOf 신규 훅이 필요하다"),
+            QaCase.Of("B-06",
+                "잠행하면 발소리가 안 들리고 귀가 안 서지만 일회성 소리는 잠행 중에도 들린다",
+                "잠행-청각 계약이 한쪽으로 무너진다",
+                QaLayer.Wesqa, QaStatus.Missing, "훅은 전부 있다 — 스위트만 없다"),
+            QaCase.Of("B-07",
+                "「예민한 귀」가 남의 귀 판정을 부풀리지 않는다",
+                "내가 산 청각 배율이 남의 몸 판정에 섞인다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("B-08",
+                "눈이 내 조준을 따라가고 남의 몸에서는 카메라를 안 따른다",
+                "남의 눈이 내 카메라를 본다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("B-09",
+                "두 플레이어 프리팹에 눈·귀 컴포넌트가 붙어 있고 눈 중심 상수가 베이커와 일치한다",
+                "씬·프리팹 재생성이 연출 배선을 조용히 지운다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("B-10",
+                "PlayerInfo 표의 값이 두 프리팹에 구워진 값과 같고 보폭이 이속에서 유도된다",
+                "CSV와 프리팹이 갈라져 손으로만 막게 된다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("B-11",
+                "반사 피해로 고양이가 죽는 순간 다른 요새와 쥐는 피해를 안 받는다",
+                "사망 경합이 여분 피해를 뿌린다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("B-12",
+                "끈끈이 두 장 중 하나가 만료되면 남은 배율이 유지되고 둘 다 끝나면 정확히 기본 이속으로 돌아온다",
+                "장판이 걷혀도 이속이 안 돌아온다",
+                QaLayer.Wesqa, QaStatus.Missing,
+                "배율 계산은 StickyLogic이 EditMode로 덮는다 — 실제 몸의 복구는 아직 아무도 안 잰다"),
+            QaCase.Of("B-13",
+                "대시 쿨다운이 서버에서 검증돼 연타해도 쿨 안에 두 번 안 나간다",
+                "클라이언트가 쿨다운을 우회한다",
+                QaLayer.Wesqa, QaStatus.Missing, "쿨다운을 서버 RPC로 옮기는 수정이 선행이다"),
+            QaCase.Of("B-14",
+                "벽 뒤로 카메라를 돌리면 차폐 페이드가 걸리고 벽에서 떨어지면 0으로 복구된다",
+                "페이드가 안 걸리거나 걷히지 않는다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("B-15",
+                "탈락한 쥐의 관전 대상이 고양이도 봇도 아닌 같은 편 사람이다",
+                "탈락자가 적 시점을 본다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetSpectateTarget 신규 훅이 필요하다"),
+            QaCase.Of("B-16",
+                "어둠 스킬 지속이 끝나면 후처리 강도가 0으로 돌아온다",
+                "static 잔류로 화면이 계속 어둡다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetDarkStrength 신규 훅이 필요하다"),
+            QaCase.Of("B-17",
+                "채팅 중에 잠행 키를 떼면 잠행이 고착되지 않는다",
+                "입력 게이트가 잠행 상태를 붙잡는다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("B-18",
+                "고양이·쥐 양쪽이 강아지를 죽일 수 있고 강아지에게는 장난기가 안 붙는다",
+                "제3세력이 현상금 펌프가 된다",
+                QaLayer.Wesqa, QaStatus.Missing)
+        };
+
+        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (30) ══════════════════════
+        private static readonly QaCase[] DOMAIN_C =
+        {
+            QaCase.Of("C-01",
+                "사람 손 키 경로로 고양이가 산 광분이 실제로 켜진다",
+                "핫바가 늘 구매 모드라 산 액티브를 켤 키가 하나도 없어진다(P0-1)",
+                QaLayer.Wesqa, QaStatus.Implemented,
+                "제안 당시엔 「슬롯 숫자키」였으나 P0-1 수정이 전용 키로 갈랐다 — 재는 것은 같다"),
+            QaCase.Of("C-02",
+                "쥐가 상점 밖에서 요새 슬롯 키를 누르면 요새가 서고 설치비가 빠진다",
+                "설치 경로가 사람 손 키에서 끊긴다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-03",
+                "쥐가 상점 안에서 요새 슬롯 키를 누르면 설치가 아니라 업그레이드가 일어난다",
+                "상점 안 분기의 뜻이 조용히 바뀐다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-04",
+                "사용 거절 사유 여섯 종이 각각 제 이름으로 나온다",
+                "거절 사유가 뭉뚱그려져 무엇이 막았는지 못 가린다",
+                QaLayer.Wesqa, QaStatus.Missing,
+                "TestGetUseDeny 신규 훅이 필요하다 — qa_v51은 Cooldown 하나만 본다"),
+            QaCase.Of("C-05",
+                "요새 안에 선 채 요새를 다시 설치하면 거절되고 치즈가 안 빠진다",
+                "거절인데 차감만 일어난다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-06",
+                "창고 개수 상한을 넘긴 설치는 거절되고 차감이 0이며 레벨을 올리면 성공한다",
+                "개수 상한이 새거나 레벨 상향이 헛돈다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-07",
+                "끈끈이 쿨다운 중 재사용은 거절되고 장판 개수가 안 변한다",
+                "쿨다운 우회",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-08",
+                "설치비에 1 모자란 잔액으로 쓰면 거절되고 차감이 0이며 아무것도 안 선다",
+                "경계에서 지갑이 마이너스가 되거나 공짜 설치가 난다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestSetCheese 신규 훅이 필요하다"),
+            QaCase.Of("C-09",
+                "구매 경계값 — 가격보다 1 적으면 거절·차감 0, 가격과 같으면 성공·잔액 0",
+                "경계 한 칸이 반대로 판정된다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestSetCheese 신규 훅이 필요하다"),
+            QaCase.Of("C-10",
+                "모든 테크가 적용 검사와 적용 실행의 **같은 집합**에 들어 있다",
+                "새 테크가 한쪽에만 등록돼 사고도 아무 일도 안 일어난다",
+                QaLayer.EditMode, QaStatus.Missing, "switch 집합을 노출하는 소규모 리팩터가 선행이다"),
+            QaCase.Of("C-11",
+                "모든 테크가 CSV에 레벨 1~3 행을 갖는다 — 개수 상수가 아니라 열거로 확인한다",
+                "카탈로그 개수만 맞고 행이 비어 있다",
+                QaLayer.EditMode, QaStatus.Missing,
+                "지금 TechInfo 테스트는 개수 상수(10·6)를 본다 — 열거 전수가 아니다"),
+            QaCase.Of("C-12",
+                "기획이 확정한 밸런스 수치가 CSV에 핀으로 박힌다",
+                "확정 수치가 아무도 모르게 흔들린다",
+                QaLayer.EditMode, QaStatus.Missing, "어느 값이 정답인지 사용자 결정이 먼저다"),
+            QaCase.Of("C-13",
+                "쥐가 낼 수 있는 최고 이속이 고양이 기본 이속보다 낮다",
+                "두 CSV가 따로 움직여 「발 싸움은 고양이」가 뒤집힌다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-14",
+                "장난기 스택 상한이 그 스택을 쓰는 테크의 최대 레벨 이상이다",
+                "살 수 있는 레벨을 실제로는 못 쌓는다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-15",
+                "쥐 테크 칸 상한을 넘긴 구매가 거절되고 차감이 0이다",
+                "칸 상한이 샌다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-16",
+                "그날 품절된 테크는 핫바 후보에 아예 안 뜬다",
+                "못 사는 것이 칸을 차지한다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetHotbarCandidates 신규 훅이 필요하다"),
+            QaCase.Of("C-17",
+                "품절 토스트가 기본 조작 토스트에 안 덮이고 판 시작 직후 화면에 남는다",
+                "그날 품절을 아무도 못 본다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetToastText 신규 훅이 필요하다"),
+            QaCase.Of("C-18",
+                "끈끈이 설치음이 정확히 한 번 난다",
+                "설치가 무음이라 상대에게도 나에게도 신호가 없다",
+                QaLayer.Wesqa, QaStatus.Missing, "전용 SfxId 신설과 재생 횟수 훅이 선행이다"),
+            QaCase.Of("C-19",
+                "숨은 창고 최고 레벨은 생산 틱이 돌아도 소리가 0회다",
+                "숨은 창고가 소리로 들통난다",
+                QaLayer.Wesqa, QaStatus.Implemented, "qa_v47 ⑦-b의 SKIP을 qa_v53이 푸었다"),
+            QaCase.Of("C-20",
+                "창고와 요새의 설치음이 서로 다르다",
+                "두 설치가 같은 소리로 겹쳐 구분이 안 된다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-21",
+                "광분 소리와 전직 스킬 소리가 서로 다르다",
+                "두 연출이 같은 소리를 나눠 써 정보가 사라진다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-22",
+                "봇 고양이가 쥐의 구매음을 먹잇감 소리로 듣는다",
+                "상점 소리가 봇 계측에서 통째로 0이 된다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-23",
+                "여섯 동작 각각이 실행 직후 제 원샷 모션 상태에 들어간다",
+                "모션이 안 걸린 채 수치만 바뀐다",
+                QaLayer.Wesqa, QaStatus.Implemented, "B-04와 같은 훅·같은 스위트가 덮는다"),
+            QaCase.Of("C-24",
+                "창고가 부서지면 설치비 절반이 환급되고 누적 장난기 값은 안 변한다",
+                "설치·파괴를 반복해 전직 문턱을 펌프질한다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("C-25",
+                "치즈 방패를 가졌어도 잔액이 0이면 피해가 전액 HP로 간다",
+                "빈 지갑이 무적 방패가 된다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestSetCheese 신규 훅이 필요하다"),
+            QaCase.Of("C-26",
+                "끈끈이 두 장을 겹쳐 깔고 하나만 만료되면 남은 배율이 유지된다",
+                "겹침이 풀릴 때 배율을 통째로 잃는다",
+                QaLayer.Wesqa, QaStatus.Missing, "위치 지정 설치 훅이 필요하다"),
+            QaCase.Of("C-27",
+                "판 도중 접속한 고양이가 이미 깔린 장판에 걸리는지가 사양대로다",
+                "늦게 붙은 사람에게만 장판이 투명해진다",
+                QaLayer.Wesqa, QaStatus.Missing, "사양을 먼저 정해야 한다"),
+            QaCase.Of("C-28",
+                "인트로의 데이터 검사가 CSV 표 네 종을 전부 본다",
+                "표 하나가 비어도 게임이 그냥 뜬다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-29",
+                "모든 CSV의 각 행 컬럼 수가 헤더와 같다",
+                "열이 한 칸 밀려 값이 통째로 어긋난다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("C-30",
+                "핫바 슬롯 배열 길이가 테크 칸 상한과 같다",
+                "씬 배선이 칸을 하나 잃는다",
+                QaLayer.Wesqa, QaStatus.Missing, "TestGetHotbarSlotCount 신규 훅이 필요하다")
+        };
+
+        // ══════════════════════ D · 맵 · 길찾기 · 봇 (23) ══════════════════════
+        private static readonly QaCase[] DOMAIN_D =
+        {
+            QaCase.Of("D-01",
+                "정식 맵의 모든 쥐 스폰점이 어떤 차단물 박스 안에도 없다",
+                "도면에 요새자리·선반·궤짝 벽을 더하다 스폰을 물건 속에 넣는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-02",
+                "모든 쥐 스폰점이 가장 가까운 차단물 면에서 쥐 몸이 들어갈 만큼 떨어져 있다",
+                "스폰이 「기술적으로 밖」이지만 몸이 벽에 닿아 못 움직인다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-03",
+                "벽감 내용물 셔플이 총 치즈량·직업권 두 장·빈 손 없음을 모두 보존한다",
+                "내용물을 안 꺼내는 자리가 섞임에 남아 물건을 삼킨다(P0-2)",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-04",
+                "굽기 메뉴가 지금 뱉는 값이 디스크의 레이아웃 에셋과 같다",
+                "도면 상수만 고치고 굽기를 안 돌린 채 커밋한다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("D-05",
+                "모든 치즈 지점의 파밍 반경 안에 차단물이 없다",
+                "치즈를 옮기다 원반이 선반·배럴을 문다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-06",
+                "모든 벽감의 정면 강아지 스폰 자리에 차단물이 없다",
+                "벽감을 벽에 붙이다 개가 나올 자리를 막는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-07",
+                "상점 후보가 원반뿐 아니라 설치 사거리 링까지 차단물에 안 물린다",
+                "「상점엔 들어가지는데 그 안에서 설치할 자리가 벽」이 재발한다",
+                QaLayer.EditMode, QaStatus.Missing, "통과 기준(링 전체 vs 절반)을 기획이 먼저 정해야 한다"),
+            QaCase.Of("D-08",
+                "손 배치 맵도 맵 종류와 무관한 게이트(요새-치즈 이격·치즈 등급 완비)를 지난다",
+                "정식 기본 맵만 생성 게이트를 안 지나는 구조가 굳는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("D-09",
+                "격자 굽기가 이름 규약 밖의 막는 콜라이더를 놓치지 않는다",
+                "물리는 막는데 길찾기는 뚫린 줄 안다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("D-10",
+                "폴리곤 굽기가 막는 물건을 걷는 면으로 넣지 않는다",
+                "아무도 못 올라가는 섬이 생기고 봇이 그리로 걷는다",
+                QaLayer.EditMode, QaStatus.Missing, "수집 함수의 테스트용 노출이 선행이다"),
+            QaCase.Of("D-11",
+                "봇의 요새 진입 경주 상수가 CSV의 실제 고양이/쥐 이속 비 이상이다",
+                "CSV 이속만 고치고 봇 상수를 안 따라 고쳐 봇이 이길 요새를 계속 거른다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("D-12",
+                "손 배치 맵의 걸을 수 있는 면이 한 덩어리다",
+                "선반 열·궤짝 벽을 더하다 한 존을 통째로 봉인한다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("D-13",
+                "쥐를 스폰 자리 수만큼 세워 판을 열면 각자 제 스폰 좌표에 선다",
+                "스폰이 지오메트리 안이라 물리가 몸을 밀어내거나 낀다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("D-14",
+                "스폰 직후 각 쥐 자리에서 맵 중앙까지 쥐 경로가 나온다",
+                "스폰이 갇힌 주머니에 놓여 그 쥐가 판 내내 못 움직인다",
+                QaLayer.Wesqa, QaStatus.Missing, "필요한 훅(TestTracePath)은 이미 있다"),
+            QaCase.Of("D-15",
+                "벽감을 전부 부수면 직업권 두 장과 설계된 치즈 총량이 실제로 떨어진다",
+                "셔플·페이로드 배선이 실제 판에서 물건을 삼킨다",
+                QaLayer.Wesqa, QaStatus.Missing, "임의 벽감을 부수는 훅이 없다(강아지 벽만 있다)"),
+            QaCase.Of("D-16",
+                "서로 다른 시드에서 직업권 두 장이 서로 붙어 서지 않고 자리도 바뀐다",
+                "셔플이 「가장 먼 두 벽에 나눈다」를 깨 한 사람이 둘 다 먹는다(P0-9)",
+                QaLayer.EditMode, QaStatus.Implemented,
+                "wesqa로 제안됐으나 자리 결정이 순수 함수로 나와 EditMode가 전수로 잰다"),
+            QaCase.Of("D-17",
+                "판 중에 생긴 구조물이 격자에 자국을 남기고 부서지면 그 자국이 정확히 걷힌다",
+                "요새·창고가 길찾기에 안 보이거나 유령 벽으로 남는다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("D-18",
+                "고양이 봇이 배회 상태에 들어가는 틱이 0이 아니다",
+                "지휘관이 명령을 절대 놓지 않아 배회 가지가 구조적으로 죽는다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("D-19",
+                "고양이 스킬음이 울린 뒤 쥐 봇이 위협으로 반응한다",
+                "큰 경고음이 봇 가청 목록에서 빠져 「소리로 대응한다」가 0이 된다",
+                QaLayer.Wesqa, QaStatus.Missing, "스킬을 강제로 발동하는 훅이 없다"),
+            QaCase.ManualOf("D-20",
+                "맵 네 존과 중앙 홀에 마젠타 면이 한 장도 없다",
+                "셰이더 로드가 널이라 조용히 마젠타가 구워지거나 꾸미기 배선이 끊긴다",
+                "① 로비에서 창고 맵을 골라 판을 시작한다 ② 봇 실험실 자유 카메라로 위에서 맵을 훑는다 " +
+                "③ 네 존(창고·하역장·식료품고·마당)과 중앙 홀을 각 1장씩 캡처한다",
+                "마젠타 면이 한 장에도 없다. 선반은 판벽 무늬, 궤짝 벽은 궤짝 무늬, 배럴은 배럴로 보인다",
+                "맵 에셋·머티리얼·꾸미기를 고칠 때마다 돈다"),
+            QaCase.ManualOf("D-21",
+                "빛웅덩이 일곱 자리의 바닥이 전부 밝다",
+                "바닥 타일 분할이 깨져 오브젝트당 추가 광원 한도에 걸리고 한 존이 통째로 캄캄해진다",
+                "① 창고 맵으로 판을 시작한다 ② 빛웅덩이 일곱 자리(중앙·마당·식료품고·하역장·계단실 등)를 차례로 방문한다",
+                "일곱 곳 모두 바닥이 밝다. 어느 존도 통째로 캄캄하지 않다",
+                "바닥 굽기·타일 크기·빛 자리를 고칠 때 돈다"),
+            QaCase.ManualOf("D-22",
+                "미니맵이 실제 지형과 같은 모양으로 읽힌다",
+                "손 배치 맵의 미니맵 그리기 갈림이 끊겨 테두리만 남는다",
+                "① 창고 맵으로 판을 시작한다 ② 미니맵을 열고 실제 맵과 대조한다",
+                "선반 열·궤짝 벽 배치가 실제 지형과 같은 모양으로 읽히고 존 구분이 눈에 잡힌다",
+                "미니맵·레이아웃 구조를 고칠 때 돈다"),
+            QaCase.ManualOf("D-23",
+                "쥐 여덟이 전부 바닥 위·물건 밖에 선다",
+                "스폰 좌표가 물건 속으로 들어가는 부류의 눈 확인(D-01·D-13의 대체)",
+                "① 쥐 8·고양이 2로 판을 연다 ② 스폰 직후 여덟 스폰 자리를 차례로 본다(관전 또는 봇 실험실 카메라)",
+                "여덟 쥐가 전부 바닥 위, 물건 밖에 서 있다. 상자 안에 낀 쥐도 공중에 뜬 쥐도 없다",
+                "도면(요새자리·차단물)을 고칠 때 돈다")
+        };
+
+        // ══════════════════════ E · 개발 · 테스트 도구 자체 (32) ══════════════════════
+        private static readonly QaCase[] DOMAIN_E =
+        {
+            QaCase.Of("E-01",
+                "훅이 안 쓰는 이름의 인자를 섞어 부르면 게임에 닿기 전에 막힌다",
+                "인자 이름 오타가 조용히 default(T)가 된다",
+                QaLayer.Pytest, QaStatus.Implemented,
+                "파이썬 관문에서 막는다 — C# 다리 자체는 아직 조용하다(E-06과 함께 걷을 부채)"),
+            QaCase.Of("E-02",
+                "기본값 없는 필수 인자를 빠뜨리면 막힌다 — clientId가 0(=호스트)으로 안 채워진다",
+                "2026-08-09 「엉뚱한 쥐를 가둔」 사고의 재발",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-03",
+                "이름이 안 맞는 인자가 개수만 같다고 순서로 꽂히지 않는다",
+                "오타 인자가 다른 인자 자리로 들어가 조용히 틀린 값이 된다",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-04",
+                "파이썬이 부르는 모든 훅 이름이 명부에 정확한 대소문자로 존재한다",
+                "훅 이름을 바꿨는데 파이썬이 안 따라와 런타임에만 터진다",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-05",
+                "각 스위트가 실패했을 때 0이 아닌 종료 코드로 끝난다",
+                "절반이 실패해도 통과처럼 보여 CI에 못 물린다",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-06",
+                "모든 훅의 「못 찾음」 값이 정상값과 겹치지 않고 모르는 인자에는 경고가 남는다",
+                "미배선이 정상값으로 읽힌다",
+                QaLayer.EditMode, QaStatus.Missing,
+                "bool 반환 훅을 3값으로 바꾸면 파이썬 계약이 깨진다 — 파이썬 수정과 함께 가야 한다"),
+            QaCase.Of("E-07",
+                "스위트에 절대 실패할 수 없는 단언이나 실패 센티널을 성공으로 바꾸는 자리가 없다",
+                "`or True` 같은 것이 새로 들어오고 fail-open이 번진다",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-08",
+                "스위트가 선언한 항목 수와 실제로 실행된 수가 같고 다르면 미실행이 찍힌다",
+                "「16/16 통과」가 실은 24항목 중 8개를 안 돈 것",
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("E-09",
+                "훅 호출이 기본 타임아웃을 갖고 초과하면 명확한 예외로 끝난다",
+                "게임이 멈추면 무인 실행이 영원히 대기한다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-10",
+                "훅이 던진 예외의 원래 메시지가 파이썬까지 온다",
+                "모든 훅 오류가 뜻 없는 한 줄로 뭉개진다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-11",
+                "봇을 퇴장시켜도 판 통계가 퇴장한 쪽 값을 포함한다",
+                "「살아남은 쪽만 잰 값」을 판 통계로 읽는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("E-12",
+                "같은 수량에 답하는 두 훅이 같은 값을 준다",
+                "두 훅이 갈라져 어느 쪽을 읽느냐로 결론이 뒤집힌다",
+                QaLayer.EditMode, QaStatus.Missing,
+                "두 훅이 같은 분모 함수를 쓰게는 만들었지만 「값이 같다」를 맞대는 테스트는 아직 없다"),
+            QaCase.Of("E-13",
+                "「첫 목격」이 목록 순서가 아니라 가장 이른 값이고 죽은 쪽 값도 살아남는다",
+                "첫 발견이 늦어질수록 좋아 보인다 — 승률 진단서의 그 칸",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("E-14",
+                "길을 포기한 경로가 우회율 만점이 되지 않고 우회율은 판 전체 누적 평균이다",
+                "포기가 지표를 좋게 만든다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("E-15",
+                "시야 통계에 쥐 표본이 안 섞이고 사인 라벨이 두 칸을 유지한다",
+                "이미 고친 봇 감사 A5·A6이 되돌아간다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-16",
+                "치즈 총량을 계산하는 분모가 하나다 — 훅과 게임이 같은 함수를 부른다",
+                "봇 판에서 훅이 사람 수로 재 최대 여덟 배 어긋난다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-17",
+                "모르는 설정 키로 쓰고 읽으면 실패한다",
+                "오타 키가 읽기·쓰기 양쪽으로 새어 자기 일관되게 통과한다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("E-18",
+                "미니맵이 없는 상태에서는 「적 마커 0」 항목이 실패한다",
+                "미니맵이 통째로 안 떠도 통과한다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("E-19",
+                "고양이를 전부 죽이면 결과가 쥐 승이다",
+                "고양이 하나만 죽이는 훅으로 「쥐 승」을 못 재는 것",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("E-20",
+                "따봉 마커를 오브젝트 이름이 아니라 전용 컴포넌트로 센다",
+                "마커를 개명하면 「고양이 화면엔 0」이 영원히 통과한다",
+                QaLayer.Wesqa, QaStatus.Missing),
+            QaCase.Of("E-21",
+                "소리가 실제로 재생된 횟수를 창고 생산 횟수와 따로 잰다",
+                "「생산 횟수 = 소리 횟수」라는 확인되지 않은 등식",
+                QaLayer.Wesqa, QaStatus.Implemented, "무음과 정지를 가르려고 생산 틱을 같이 센다"),
+            QaCase.Of("E-22",
+                "「서버 전용」 훅을 클라이언트에서 부르면 경고가 남는다",
+                "조용한 무동작이 「값이 안 바뀐다」로 읽힌다",
+                QaLayer.EditMode, QaStatus.Missing, "주석 규약 대신 속성으로 표시하는 것이 선행이다"),
+            QaCase.Of("E-23",
+                "리플렉션으로 잡는 비공개 필드 이름이 실재하지 않으면 실패한다",
+                "이름이 바뀌어도 로그 한 줄 없이 무동작이 된다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-24",
+                "사람 플레이어가 하나라도 붙어 있으면 계측 러너가 판을 안 돌리고 멈춘다",
+                "오염된 열 판을 다 돌린 뒤에야 「이 표는 쓰지 마라」를 읽는다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-25",
+                "러너가 판이 실제로 섰는지 확인한 뒤에만 봇을 세운다",
+                "안 선 판을 재고 결과를 표에 적는다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-26",
+                "러너가 건강검사를 먼저 돌리고 실패하면 멈춘다",
+                "굳은 봇·경로 소진 상태로 열 판을 잰다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-27",
+                "요약이 표본 경고와 집계 방식을 같이 찍는다",
+                "열 판짜리 승률 차이를 결론으로 인용한다",
+                QaLayer.Pytest, QaStatus.Missing),
+            QaCase.Of("E-28",
+                "고양이 봇 구매 순위에 광분·예민한 귀가 들어 있고 봇 판에 실제로 등장한다",
+                "고양이 액티브·청각 축이 계측에서 통째로 빠진다",
+                QaLayer.EditMode, QaStatus.Missing, "지금은 「영원히 안 산다」를 못박은 테스트가 남아 있다"),
+            QaCase.Of("E-29",
+                "어서트가 한 번도 실행되지 않는 테스트가 없다",
+                "이름만 그럴듯하고 아무것도 안 재는 테스트",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-30",
+                "에셋을 못 찾으면 건너뛰기가 아니라 실패한다",
+                "경로가 틀어져 테스트가 영영 초록이 된다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-31",
+                "결정성 테스트가 「다른 씨앗 → 다른 결과」도 같이 잰다",
+                "순수 함수를 두 번 불러 놓고 잰 척한다",
+                QaLayer.EditMode, QaStatus.Missing),
+            QaCase.Of("E-32",
+                "에셋·셰이더·씬을 만지는 테스트가 논리 테스트와 범주로 갈라져 있다",
+                "에셋이 움직였을 때 논리 회귀와 구분이 안 된다",
+                QaLayer.EditMode, QaStatus.Missing)
+        };
+
+        // ══════════════════════ M · 수동 (5) ══════════════════════
+        private static readonly QaCase[] DOMAIN_M =
+        {
+            QaCase.ManualOf("M-01",
+                "여섯 동작이 각각 한 번씩만 재생되고 연타해도 겹치지 않는다",
+                "원샷 애니가 안 나가거나 루프로 도는 것",
+                "① 개발용 빌드를 만든다 ② 호스트로 판을 시작한다 " +
+                "③ 고양이로 대시·끈끈이·요새·광분·구매·채굴을 각각 1회 쓰며 화면을 녹화한다",
+                "여섯 동작 각각에 대해 애니메이션이 한 번씩만 재생된다. 같은 동작을 연타해도 재생이 겹치지 않는다",
+                "재생 횟수 훅(E-21)이 들어오면 자동화하고 **이 케이스는 폐기한다**"),
+            QaCase.ManualOf("M-02",
+                "조합 중인 한글 마지막 음절이 잘리지 않고 전송된다",
+                "2026-08-09 한글 절삭 버그의 재발",
+                "① 채팅 입력창을 연다 ② 한글 IME로 「가나다」를 조합해 마지막 음절을 확정하지 않은 채 Enter를 누른다",
+                "마지막 음절이 잘리지 않고 그대로 전송된다",
+                "OS IME 상태라 자동화 불가 — 영구 수동"),
+            QaCase.ManualOf("M-03",
+                "배포 빌드에 QA 서버도 치트면도 없다",
+                "QA 서버·치트가 배포 빌드로 새는 것",
+                "① 배포용 빌드를 만든다 ② 산출물에서 QA 어셈블리 존재 여부를 본다 " +
+                "③ 실행 후 QA 포트 대역의 리스닝을 확인한다 ④ 바이너리에서 훅 진입점 문자열을 찾는다",
+                "② 없어야 한다 · ③ 아무것도 안 뜬다 · ④ 안 나온다",
+                "빌드 후 스크립트로 자동화 가능(우선순위 낮음)"),
+            QaCase.ManualOf("M-04",
+                "MPPM 3인 실플레이에서 두 종합 스위트가 미실행 0으로 끝난다",
+                "MonoBehaviour 재배치가 깨뜨린 배선 — EditMode가 못 덮는 층",
+                "① 스팀을 끈다 ② 메인 에디터 + 클론 2로 3인 판을 연다 " +
+                "③ 호스트=고양이 스위트와 호스트=쥐 스위트를 각각 돌린다",
+                "두 스위트 모두 항목 수가 선언값과 일치하고(미실행 0) 종료 코드가 0이다",
+                "「미실행 0」은 E-08이 자동 판정한다 — 3인 실플레이 자체는 영구 수동"),
+            QaCase.ManualOf("M-05",
+                "배속을 올려도 판 길이·사망·첫 발견 지표가 의미 있게 달라지지 않는다",
+                "배속이 물리·판정을 왜곡한 채 밸런스 결론을 내는 것",
+                "① 같은 조건으로 배속 1과 배속 6을 각 10판 돌린다 ② 판 길이·사망 중앙값·첫 발견을 비교한다",
+                "두 배속의 지표가 의미 있게 다르지 않다. 다르면 모든 배속 계측치에 그 편향을 적어 둔다",
+                "1회성 교정 실험 — 결과를 문서에 적고 폐기한다")
+        };
+
+        /// <summary>선언된 케이스 전량. 도메인 → 번호 순.</summary>
+        public static readonly IReadOnlyList<QaCase> ALL = Concat();
+
+        private static QaCase[] Concat()
+        {
+            var all = new List<QaCase>();
+            all.AddRange(DOMAIN_A);
+            all.AddRange(DOMAIN_B);
+            all.AddRange(DOMAIN_C);
+            all.AddRange(DOMAIN_D);
+            all.AddRange(DOMAIN_E);
+            all.AddRange(DOMAIN_M);
+            return all.ToArray();
+        }
+
+        /// <summary>도메인 글자 목록 — 대장 문서의 절 순서이자 번호 연속성 검사의 단위다.</summary>
+        public static readonly IReadOnlyList<string> DOMAINS = new[] { "A", "B", "C", "D", "E", "M" };
+
+        /// <summary>도메인 이름 — 대장 문서의 절 제목.</summary>
+        public static string TitleOf(string _domain)
+        {
+            switch (_domain)
+            {
+                case "A": return "매치 · 로비 · 네트워크";
+                case "B": return "플레이어 · 전투 · 카메라";
+                case "C": return "경제 · 테크 · UI · 데이터";
+                case "D": return "맵 · 길찾기 · 봇";
+                case "E": return "개발 · 테스트 도구 자체";
+                case "M": return "수동 — 절차가 곧 구현";
+                default: return _domain;
+            }
+        }
+
+        public static QaCase Find(string _id)
+        {
+            for (int i = 0; i < ALL.Count; i++)
+                if (ALL[i].Id == _id) return ALL[i];
+            return null;
+        }
+    }
+}

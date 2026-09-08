@@ -25,7 +25,11 @@ def balance_int(column):
     return int(float(rows[1][names.index(column)]))
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다. 붙이면 출력이 곧
+    # 「무엇이 언제 돌았나」가 되고, 선언과 어긋나면 대장 드리프트 테스트가 깨진다.
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()

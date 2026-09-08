@@ -39,7 +39,11 @@ EXTRA = []
 EXPECTED = 7      # ⓪ 전제 + ①~⑥
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다. 붙이면 출력이 곧
+    # 「무엇이 언제 돌았나」가 되고, 선언과 어긋나면 대장 드리프트 테스트가 깨진다.
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
@@ -135,12 +139,12 @@ def main():
     rnd2, bots2, phase2, took = wait_round(host, 2)
     check("② 2판이 열리고 **봇 수가 1판과 같다**  ← P0-4",
           rnd2 == 2 and bots2 == bots1,
-          "1판 결과=%s · 2판=%s · 봇 %s→%s · %.1f초" % (r1, rnd2, bots1, bots2, took))
+          "1판 결과=%s · 2판=%s · 봇 %s→%s · %.1f초" % (r1, rnd2, bots1, bots2, took), case="A-02")
 
     # ---------- ③ 2판의 단계가 Hunt다 ----------
     check("③ 2판 단계가 Hunt다(1판이 남긴 단계가 없다)",
           phase2 == "Hunt",
-          "단계=%s" % phase2)
+          "단계=%s" % phase2, case="A-01")
 
     # ---------- ④ 2판을 2단계로 끝낸 뒤 3판의 단계가 되돌아간다  ← P0-5 ----------
     # 정상 경로(깡패 쥐 + 고양이 사망)는 봇 판에서 못 만든다 — 봇에는 clientId가 없어
@@ -156,7 +160,7 @@ def main():
         rnd3, bots3, phase3, took3 = wait_round(host, 3)
         check("④ 2단계로 끝난 뒤 3판 단계가 Hunt로 되돌아간다  ← P0-5",
               rnd3 == 3 and phase3 == "Hunt",
-              "2판 결과=%s(2단계) · 3판=%s 단계=%s · %.1f초" % (r2, rnd3, phase3, took3))
+              "2판 결과=%s(2단계) · 3판=%s 단계=%s · %.1f초" % (r2, rnd3, phase3, took3), case="A-01")
         check("⑤ 3판에도 봇이 선다  ← P0-4",
               rnd3 == 3 and bots3 == bots1,
               "봇 1판 %s → 3판 %s" % (bots1, bots3))

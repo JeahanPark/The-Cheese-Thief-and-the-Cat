@@ -38,7 +38,11 @@ EXTRA = []
 EXPECTED = 9      # ⓪ 전제 + ②~⑧(⑥은 a·b 둘)
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다. 붙이면 출력이 곧
+    # 「무엇이 언제 돌았나」가 되고, 선언과 어긋나면 대장 드리프트 테스트가 깨진다.
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
@@ -209,7 +213,7 @@ def main():
     cd_now = host.invoke("TestGetCatFrenzyCooldown", _clientId=c)
     check("⑤ Space(사람 손) → 광분이 켜지고 쿨이 돈다  ← P0-1",
           used and state_on == "On" and cd_now > 0.5,
-          "PressActiveKey=%s · 광분=%s · 남은 쿨 %.1f초" % (used, state_on, cd_now))
+          "PressActiveKey=%s · 광분=%s · 남은 쿨 %.1f초" % (used, state_on, cd_now), case="C-01")
 
     # ---------- ⑥ 쿨다운이 화면에 보인다 ----------
     slots_text = host.invoke("TestGetHotbarSlots")
@@ -245,7 +249,7 @@ def main():
     check("⑧ 죽은 고양이의 덮치기 — 피해 0 · 장난기 0  ← P0-7",
           killed >= 1 and alive_loss > 0 and dead_loss == 0 and dead_fun == 0,
           "산 고양이 피해 %s(장난기 +%s, 시도 %s) → 죽은 뒤 피해 %s(장난기 +%s) · 처치 %s"
-          % (alive_loss, alive_fun, tries, dead_loss, dead_fun, killed))
+          % (alive_loss, alive_fun, tries, dead_loss, dead_fun, killed), case="B-01")
 
     note("판 상태", "결과=%s (⑧이 고양이를 죽여 판이 끝난다 — 다시 돌리려면 플레이를 껐다 켠다)"
          % host.invoke("TestGetMatchResult"))

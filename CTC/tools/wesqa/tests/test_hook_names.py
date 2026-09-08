@@ -15,6 +15,7 @@ import os
 import pytest
 
 from wesqa.hooks import HookSignatureError, check_call, load_hooks, registry_path
+from wesqa.qacase import qa_case
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HOOKS = load_hooks()
@@ -51,6 +52,7 @@ def test_registry_loads():
     assert "TestGetLocalClientId" in HOOKS
 
 
+@qa_case("E-04")
 def test_every_hook_call_matches_the_signature():
     """스위트가 부르는 모든 훅 이름·인자가 `TestManager` 명부와 정확히 맞는다."""
     assert HOOKS is not None
@@ -69,23 +71,27 @@ def test_every_hook_call_matches_the_signature():
 FAKE = {"TestKick": [("_clientId", False), ("_force", True)], "TestPing": []}
 
 
+@qa_case("E-01")
 def test_unknown_kwarg_raises():
     with pytest.raises(HookSignatureError):
         check_call("TestKick", {"_clientID": 3}, hooks=FAKE)   # 대소문자 오타
 
 
+@qa_case("E-02")
 def test_missing_required_arg_raises():
     """빠진 `_clientId`가 조용히 0(=호스트)이 되지 않는다 — 2026-08-09 사고."""
     with pytest.raises(HookSignatureError):
         check_call("TestKick", {}, hooks=FAKE)
 
 
+@qa_case("E-03")
 def test_wrong_names_same_count_raises():
     """개수만 같다고 순서로 꽂히던 폴백 경로를 파이썬이 먼저 막는다."""
     with pytest.raises(HookSignatureError):
         check_call("TestKick", {"_id": 3, "_f": True}, hooks=FAKE)
 
 
+@qa_case("E-04")
 def test_case_mismatch_on_hook_name_raises():
     """다리는 IgnoreCase라 통과하지만 명부와 어긋난 것이다."""
     with pytest.raises(HookSignatureError):

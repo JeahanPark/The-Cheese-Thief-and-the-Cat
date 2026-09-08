@@ -152,3 +152,6 @@ tools/__pycache__/
 
 # 파이썬 캐시 (어디에 있든)
 __pycache__/
+
+# QA 케이스 대장이 어긋났을 때 테스트가 옆에 뱉는 임시 전문 (커밋 대상 아님)
+docs/design-vault/QA 케이스 대장.generated.md

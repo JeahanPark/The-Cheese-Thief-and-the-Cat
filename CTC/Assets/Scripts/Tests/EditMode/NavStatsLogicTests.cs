@@ -13,12 +13,14 @@ namespace CTC.Tests.EditMode
     public class NavStatsLogicTests
     {
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void GiveUp_IsNotADetourSample()
         {
             Assert.IsFalse(NavStatsLogic.IsDetourSample(0, 12f));
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void GiveUp_DetourIsNotPerfectScore()
         {
             float detour = NavStatsLogic.Detour(0, 0f, 12f);
@@ -50,6 +52,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void GiveUp_ShortfallIsTheWholeDistance()
         {
             // 목표까지 33m인데 길을 못 찾았다 → 33m 미달이다. 0이 아니다.
@@ -72,6 +75,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void GiveUpsCannotImproveTheAverage()
         {
             // 실제 계획 셋(1.2·1.4·1.6)에 포기 열 번을 섞어도 평균이 안 변한다.

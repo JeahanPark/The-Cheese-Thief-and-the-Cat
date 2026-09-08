@@ -32,6 +32,10 @@ namespace CTC.Tests
 
         /// <summary>D-01 · D-02 · D-05 · D-06 — 굽기 게이트와 **같은 규칙**을 구운 에셋에 건다.</summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-01")]
+        [NUnit.Framework.Property("CaseId", "D-02")]
+        [NUnit.Framework.Property("CaseId", "D-05")]
+        [NUnit.Framework.Property("CaseId", "D-06")]
         public void Warehouse_EveryPlacedPointClearsBlockers()
         {
             List<MapPointAudit.Finding> findings = MapPointAudit.Audit(LoadWarehouse());
@@ -43,6 +47,7 @@ namespace CTC.Tests
         /// 「안에 박혔다」와 「스칠 만큼 가깝다」는 증상이 다르고, 실패 메시지가 어느 쪽인지 말해야 한다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-01")]
         public void Warehouse_NoMouseSpawnIsInsideABlocker()
         {
             MapLayout layout = LoadWarehouse();
@@ -59,6 +64,7 @@ namespace CTC.Tests
 
         /// <summary>D-02 — 스폰 자리에 쥐 몸이 여유 있게 들어간다. 몸 반지름은 CSV에서 읽어 하드코딩을 피한다.</summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-02")]
         public void Warehouse_EveryMouseSpawnFitsAMouseBody()
         {
             MapLayout layout = LoadWarehouse();
@@ -77,6 +83,7 @@ namespace CTC.Tests
 
         /// <summary>D-05 — 치즈 파밍 원반 안에 차단물이 없다(원반이 물리면 고양이가 지점에 몸을 못 붙인다).</summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-05")]
         public void Warehouse_EveryCheeseDiscIsFreeOfBlockers()
         {
             MapLayout layout = LoadWarehouse();
@@ -93,6 +100,7 @@ namespace CTC.Tests
 
         /// <summary>D-06 — 강아지가 벽감에서 나올 자리에 몸이 들어간다.</summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-06")]
         public void Warehouse_DogAlcoveHasRoomInFront()
         {
             MapLayout layout = LoadWarehouse();
@@ -115,6 +123,7 @@ namespace CTC.Tests
         /// `MapValidator`는 절차 경로에서만 불려서 정식 기본 맵만 게이트를 안 지났다(감사 §4).
         /// </summary>
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-08")]
         public void Warehouse_PassesMapWideGates()
         {
             MapLayout layout = LoadWarehouse();

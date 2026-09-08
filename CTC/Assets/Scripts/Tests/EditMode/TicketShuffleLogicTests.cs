@@ -200,6 +200,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-03")]
         public void ContentOrder_DogAlcoveIsNeverShuffled()
         {
             // M2(P0-2)의 뿌리 — 강아지 벽감은 상자가 없어 내용물이 빈 목록이다.
@@ -218,6 +219,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-03")]
         public void ContentOrder_NoBoxAlcoveEndsUpEmpty()
         {
             List<AlcovePlacement> src = SixAlcoves();
@@ -234,6 +236,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-03")]
         public void ContentOrder_KeepsTotalCheeseAndBothTickets()
         {
             List<AlcovePlacement> src = SixAlcoves();
@@ -249,6 +252,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-16")]
         public void ContentOrder_TicketsStayOnAFarthestPairOfWalls()
         {
             // M3(P0-9) — 굽기가 둘을 가장 먼 두 벽에 나눠 두는 이유는 "나란히 두면 한 사람이 둘 다 먹는다".
@@ -271,6 +275,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-16")]
         public void ContentOrder_DifferentSeeds_MoveTheTickets()
         {
             // 셔플이 존재하는 이유 — "어느 벽을 뚫을지"가 외운 답이 되면 안 된다.
@@ -304,6 +309,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "D-03")]
         public void ContentOrder_OnTheRealWarehouseLayout_KeepsEverything()
         {
             var layout = UnityEditor.AssetDatabase.LoadAssetAtPath<MapLayout>(WAREHOUSE);

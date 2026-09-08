@@ -17,6 +17,7 @@ import io
 import os
 
 import pytest
+from wesqa.qacase import qa_case
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SUITES = sorted(f for f in os.listdir(HERE)
@@ -43,6 +44,7 @@ def test_suites_exist():
 
 
 @pytest.mark.parametrize("name", SUITES)
+@qa_case("E-05")
 def test_exits_nonzero_on_failure(name):
     """모듈 최하단이 `sys.exit(main())`이고 `summary()`가 값을 돌려준다."""
     tree = _tree(name)
@@ -70,6 +72,7 @@ def test_exits_nonzero_on_failure(name):
 
 
 @pytest.mark.parametrize("name", SUITES)
+@qa_case("E-07")
 def test_no_tautological_assertion(name):
     """`or True` · `and False` 처럼 **절대 실패할 수 없는** 단언을 막는다."""
     tree = _tree(name)
@@ -87,6 +90,7 @@ def test_no_tautological_assertion(name):
 
 
 @pytest.mark.parametrize("name", SUITES)
+@qa_case("E-08")
 def test_declared_item_count_matches_sites(name):
     """`EXPECTED`가 정적 항목 수와 같다.
 
@@ -143,6 +147,7 @@ def test_declared_item_count_matches_sites(name):
 
 
 @pytest.mark.parametrize("name", SUITES)
+@qa_case("E-08")
 def test_no_silent_conditional_skip(name):
     """항목을 감싼 `if`에 else가 없으면 **조용히 사라지는 항목**이 생긴다."""
     tree = _tree(name)
@@ -174,6 +179,7 @@ def test_no_silent_conditional_skip(name):
 
 
 @pytest.mark.parametrize("name", SUITES)
+@qa_case("E-07")
 def test_no_fail_open_sentinel(name):
     """훅의 실패 센티널(-1)을 무한대로 바꿔 단언을 통과시키지 않는다.
 

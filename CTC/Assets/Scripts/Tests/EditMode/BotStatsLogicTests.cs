@@ -23,6 +23,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-13")]
         public void FirstSight_TakesTheEarliest_NotTheFirstInList()
         {
             // 고양이 A가 목록 앞이지만 30초, B가 10초 — 답은 10이어야 한다.
@@ -34,6 +35,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-13")]
         public void FirstSight_PairsSecondsWithItsOwnDistance()
         {
             // 시각과 거리를 따로 접으면 「A의 시각 + B의 거리」라는 없던 사건이 나온다.
@@ -45,6 +47,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-13")]
         public void FirstSight_SurvivesWhenTheEarlierCatIsGone()
         {
             // 죽은 고양이의 목격을 이월한 뒤, 살아남은 고양이(늦게 봄)를 접어도 값이 안 늦어진다.
@@ -77,6 +80,7 @@ namespace CTC.Tests.EditMode
         // ───────────────────── 우회율 (E-14) ─────────────────────
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void Detour_NoSample_IsNotPerfectScore()
         {
             // **여기가 T6의 핵심이다.** 표본이 없다는 건 「곧장 갔다」가 아니라
@@ -86,6 +90,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void Detour_IsCumulativeAverage_NotTheLastOne()
         {
             // 1.0 · 2.0 · 3.0 → 2.0. 마지막 한 건만 보면 3.0이 나온다.
@@ -93,6 +98,7 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-14")]
         public void Detour_OldWayLetGiveUpsFlatterTheScore()
         {
             // 잰 경로 둘(1.4·1.6)의 평균은 1.5다.
@@ -123,6 +129,7 @@ namespace CTC.Tests.EditMode
         // ───────────────────── 퇴장분 이월 (E-11·E-12) ─────────────────────
 
         [Test]
+        [NUnit.Framework.Property("CaseId", "E-11")]
         public void Total_CountsRetiredBodies()
         {
             // 전멸한 판(산 쥐 0 · 퇴장 8)이 「0마리였다」로 읽히면 그 판이 통째로 사라진다.

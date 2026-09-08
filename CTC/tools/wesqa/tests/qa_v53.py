@@ -157,7 +157,7 @@ def main():
     seen_buy = host.invoke("TestGetAnimObserved", _clientId=c) or ""
     check("① 구매 — 산 순간 Clicked가 실제로 돈다",
           frenzy_slot >= 0 and CLICKED in seen_buy.split(","),
-          "관측=[%s] (기대 %s 포함)" % (seen_buy, CLICKED))
+          "관측=[%s] (기대 %s 포함)" % (seen_buy, CLICKED), case="B-04 C-23")
 
     # 광분은 **Space(액티브 전용 키)**로 켠다 — 숫자키는 고양이에게 늘 「키운다」다(P0-1).
     host.invoke("TestResetAnimObserved", _clientId=c)
@@ -167,7 +167,7 @@ def main():
     active = bool(host.invoke("TestGetCatFrenzyActive", _clientId=c))
     check("② 광분 — Space로 켜지고 Spin이 실제로 돈다",
           used and active and SPIN in seen_spin.split(","),
-          "눌림=%s 켜짐=%s 관측=[%s] (기대 %s 포함)" % (used, active, seen_spin, SPIN))
+          "눌림=%s 켜짐=%s 관측=[%s] (기대 %s 포함)" % (used, active, seen_spin, SPIN), case="B-04 C-23")
 
     # ================= 클론 쥐 m1 — 대시 Roll · 요새 Jump · 끈끈이 Bounce =================
 
@@ -187,14 +187,14 @@ def main():
     pressed, seen = press_and_watch(host, m1i, m1, slots["Dash"])
     check("③ 대시 — 숫자키로 쓰면 Roll이 실제로 돈다",
           out_of_shop and pressed and ROLL in seen.split(","),
-          "상점밖=%s 눌림=%s 관측=[%s] (기대 %s 포함)" % (out_of_shop, pressed, seen, ROLL))
+          "상점밖=%s 눌림=%s 관측=[%s] (기대 %s 포함)" % (out_of_shop, pressed, seen, ROLL), case="B-04 C-23")
 
     time.sleep(2.0)
     pressed, seen = press_and_watch(host, m1i, m1, slots["Fortress"], settle=1.5)
     forts = host.invoke("TestGetFortressPos")
     check("④ 요새 — 숫자키로 세우면 Jump가 실제로 돈다",
           pressed and JUMP in seen.split(","),
-          "눌림=%s 관측=[%s] 요새=%s (기대 %s 포함)" % (pressed, seen, forts, JUMP))
+          "눌림=%s 관측=[%s] 요새=%s (기대 %s 포함)" % (pressed, seen, forts, JUMP), case="B-04 C-23")
 
     # 요새 안에 서 있으면 끈끈이가 InsideFortress로 거절된다 — 먼저 물러난다.
     m1i.invoke("TestTeleportLocalPlayer", _x=sx + 16.0, _z=sz + 16.0)
@@ -206,7 +206,7 @@ def main():
     check("⑤ 끈끈이 — 숫자키로 깔면 Bounce가 실제로 돈다",
           pressed and BOUNCE in seen.split(","),
           "눌림=%s 관측=[%s] 장판 %s->%s 사유=%s (기대 %s 포함)"
-          % (pressed, seen, patches_before, patches_after, deny, BOUNCE))
+          % (pressed, seen, patches_before, patches_after, deny, BOUNCE), case="B-04 C-23")
 
     # ================= 클론 쥐 m2 — 채굴 Eat =================
 
@@ -218,7 +218,7 @@ def main():
     earner = host.invoke("TestGetCheeseEarnerNear", _x=sx, _z=sz)
     check("⑥ 채굴 — 지점에 서 있으면 Eat이 실제로 돈다",
           EAT in seen_eat.split(","),
-          "선점자=%s 관측=[%s] (기대 %s 포함)" % (earner, seen_eat, EAT))
+          "선점자=%s 관측=[%s] (기대 %s 포함)" % (earner, seen_eat, EAT), case="B-04 C-23")
 
     # ================= 숨은 창고 Lv3 무음 (qa_v47 ⑦-b SKIP 해소) =================
     #
@@ -243,9 +243,9 @@ def main():
     check("⑦ 숨은 창고 Lv3 — 생산음이 실제로 0회  <- qa_v47 ⑦-b SKIP 해소",
           hidden == 3 and silent_count >= 1 and quiet_sfx == 0,
           "숨은창고=Lv%s 창고=%s개 WarehouseTick 재생=%s회 (기대 0) · 그 창의 소리=[%s]"
-          % (hidden, silent_count, quiet_sfx, quiet_dump))
+          % (hidden, silent_count, quiet_sfx, quiet_dump), case="C-19 E-21")
     check("⑨ 그 창고는 **돌고 있었다** — 무음과 정지를 구별한다",
-          ticked > 0, "그 6초에 생산 틱 %s회 (0이면 검사가 아무것도 안 봤다)" % ticked)
+          ticked > 0, "그 6초에 생산 틱 %s회 (0이면 검사가 아무것도 안 봤다)" % ticked, case="C-19")
 
     # ---------- 대조군: 평범한 창고는 소리가 난다 ----------
     warp_to_shop(host, m1)
@@ -258,7 +258,7 @@ def main():
     check("⑧ 대조 — 숨은 창고가 없는 창고는 생산음이 실제로 난다",
           loud_count >= 1 and loud_sfx > 0,
           "창고=%s개 WarehouseTick 재생=%s회 (기대 >0) · 그 창의 소리=[%s]"
-          % (loud_count, loud_sfx, loud_dump))
+          % (loud_count, loud_sfx, loud_dump), case="E-21")
 
     note("계측기 대조", "⑦(0회)과 ⑧(%s회)이 같은 훅·같은 창으로 재졌다 — "
                         "⑧이 0이면 ⑦의 초록은 계측기가 죽은 것이다" % loud_sfx)
