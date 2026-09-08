@@ -77,6 +77,8 @@ namespace CTC.Runtime.Info
         public int ShopSpotCount;
         public float ShopSpotRadius;
         public float ShopSpotMinGap;
+        public int ShopSpotCountSmall;
+        public float ShopSpotLargeHalfExtent;
         public float ShopBuySoundMeters;
         public int WarehousePlaceCost;
         public int CheeseShieldRate;

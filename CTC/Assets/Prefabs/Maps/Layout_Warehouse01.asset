@@ -608,4 +608,8 @@ MonoBehaviour:
   - Pos: {x: -36, y: -28}
   - Pos: {x: 40, y: -24}
   - Pos: {x: -40, y: 36}
-  - Pos: {x: 36, y: 32}
+  - Pos: {x: 32, y: 32}
+  - Pos: {x: 0, y: -6}
+  - Pos: {x: 0, y: 32}
+  - Pos: {x: -40, y: 4}
+  - Pos: {x: 40, y: 4}

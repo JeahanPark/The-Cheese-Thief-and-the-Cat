@@ -151,7 +151,9 @@ namespace CTC.Runtime.UI
             m_Changed.OnNext(m_Buffer);
         }
 
-        // 상점 4곳 — 안 움직이지만 스폰이 매치 시작에 일어나 목록이 늦게 찬다
+        // 상점 — 대형 맵 4곳·기본 맵 2곳이고 **자리는 판마다 다르다**(테크 v3 계획 3).
+        // 명부(`ShopSpot.All`)를 매번 다시 읽으므로 자리가 바뀌어도 마커가 저절로 따라온다.
+        // 안 움직이지만 스폰이 매치 시작에 일어나 목록이 늦게 찬다.
         private void CollectShops()
         {
             if (!MinimapLogic.ShowsShops(m_Role)) return;

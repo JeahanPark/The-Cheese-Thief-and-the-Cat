@@ -90,7 +90,24 @@ namespace CTC.Editor
             (new Vector2(-54, -54), 45f), (new Vector2(-57, 18), 90f),
         };
 
-        private static readonly Vector2[] SHOPS = { new(-36, -28), new(40, -24), new(-40, 36), new(36, 32) };
+        // 상점 **후보** 8곳 — 그날 서는 것은 이 중 넷이다(계획 3 Task 2, `ShopSpotLogic.PickPlaced`).
+        // 넷만 두면 아무리 섞어도 매 판 같은 자리라 「오늘 상점이 어디 섰나」가 성립하지 않는다.
+        // 앞 넷은 네 모서리 존(창고·하역장·식료품고·마당), 뒤 넷은 **존 사이 통로** —
+        // 중앙 홀·북쪽 계단길·서/동 연결로다. 전부 반경 3 m 원반이 들어가는 빈 바닥이고,
+        // 여덟 중 **어느 두 곳을 잡아도 25 m 이상** 떨어져 있다(간격 완화가 걸리지 않게).
+        private static readonly Vector2[] SHOPS =
+        {
+            // 마당 후보는 (36,32) → (32,32)로 4 m 옮겼다: 원반 절반이 궤짝 벽 y4(x 36~44) 속이라
+            // 상점에는 들어가지는데 그 안에서 설치할 자리가 벽이었다(아래 검산이 잡았다).
+            new(-36, -28), new(40, -24), new(-40, 36), new(32, 32),
+            new(0, -6), new(0, 32), new(-40, 4), new(40, 4),
+        };
+
+        /// <summary>상점 원반 반경(m) — `BalanceInfo.ShopSpotRadius`와 같은 값. 후보 검산에만 쓴다.</summary>
+        private const float SHOP_RADIUS = 3f;
+
+        /// <summary>후보끼리 지켜야 하는 거리(m) — `BalanceInfo.ShopSpotMinGap`과 같은 값.</summary>
+        private const float SHOP_MIN_GAP = 25f;
 
         private static readonly (Vector2 at, float yaw, bool dog)[] ALCOVES =
         {
@@ -105,6 +122,15 @@ namespace CTC.Editor
             (new Vector2(-40, -40), 5f, false), (new Vector2(38, -38), 12f, false), (new Vector2(0, 56), 9f, true),
             (new Vector2(0, -44), 6f, false),
         };
+
+        /// <summary>원반이 축 정렬 박스에 닿는가 — 박스 위 가장 가까운 점까지의 거리로 잰다.</summary>
+        private static bool DiscHitsBox(Vector2 _center, float _radius, Vector2 _boxPos, Vector2 _boxSize)
+        {
+            float hx = _boxSize.x * 0.5f, hz = _boxSize.y * 0.5f;
+            float cx = Mathf.Clamp(_center.x, _boxPos.x - hx, _boxPos.x + hx);
+            float cz = Mathf.Clamp(_center.y, _boxPos.y - hz, _boxPos.y + hz);
+            return (new Vector2(cx, cz) - _center).sqrMagnitude < _radius * _radius;
+        }
 
         [MenuItem("Tools/CTC/Build Warehouse Layout (창고 평면도 v2)")]
         public static void Build()
@@ -135,6 +161,28 @@ namespace CTC.Editor
                 Debug.LogError($"[Warehouse] 경계벽 겹침: {p.Name} @({p.Pos.x},{p.Pos.y}) size({p.Size.x}×{p.Size.y})");
             }
             if (bad > 0) { Debug.LogError($"[Warehouse] 위반 {bad}건 — 도면을 고쳐라"); return; }
+
+            // 상점 후보 검산 — 원반이 차단물에 물리거나 후보끼리 붙어 있으면 굽지 않는다.
+            // 눈대중으로 좌표를 옮기다 원반 절반이 선반 속에 들어가면 **에러가 안 난다**:
+            // 상점에는 들어가지는데 그 안에서 설치할 자리가 벽이 된다(2026-09-08 실측과 같은 증상).
+            int shopBad = 0;
+            for (int i = 0; i < SHOPS.Length; i++)
+            {
+                foreach (PropPlacement p in props)
+                {
+                    if (!DiscHitsBox(SHOPS[i], SHOP_RADIUS, p.Pos, p.Size)) continue;
+                    shopBad++;
+                    Debug.LogError($"[Warehouse] 상점 후보 {i} @({SHOPS[i].x},{SHOPS[i].y})가 차단물 {p.Name}에 물린다");
+                }
+                for (int j = i + 1; j < SHOPS.Length; j++)
+                {
+                    float d = Vector2.Distance(SHOPS[i], SHOPS[j]);
+                    if (d >= SHOP_MIN_GAP) continue;
+                    shopBad++;
+                    Debug.LogError($"[Warehouse] 상점 후보 {i}·{j}가 {d:0.#} m — 최소 간격 {SHOP_MIN_GAP} m 미만");
+                }
+            }
+            if (shopBad > 0) { Debug.LogError($"[Warehouse] 상점 후보 위반 {shopBad}건 — 좌표를 고쳐라"); return; }
 
             var cheese = new List<CheesePlacement>();
             foreach ((int grade, Vector2 at) in CHEESE) cheese.Add(new CheesePlacement { Pos = at, Grade = grade, Radius = CHEESE_RADIUS });

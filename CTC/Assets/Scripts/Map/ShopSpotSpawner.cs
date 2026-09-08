@@ -25,12 +25,22 @@ namespace CTC.Runtime.Map
             var placed = new List<Vector2>(_layout.Shops.Count);
             foreach (ShopPlacement shop in _layout.Shops) placed.Add(shop.Pos);
 
-            // 손 배치 맵은 레벨디자이너 자리 그대로, 절차 맵은 방 중심 규칙 — ShopSpotLogic.Resolve.
+            // 손 배치 맵은 레벨디자이너 후보 중에서, 절차 맵은 방 중심 규칙 — ShopSpotLogic.Resolve.
             // 방 **중심만**이 아니라 방 사각형째로 넘긴다: 원반이 들어가는 방을 골라야
             // 상점 안에서 설치가 막히지 않는다(2026-09-08).
             Info.BalanceInfo b = Info.InfoManager.Instance.Balance;
+            int count = ShopSpotLogic.CountFor(_layout.HalfExtent, b.ShopSpotCount,
+                b.ShopSpotCountSmall, b.ShopSpotLargeHalfExtent);
+
+            // 판마다 다른 자리를 만드는 것은 **매치 시드**다(계획 3). 시드가 없으면(로비·봇 실험실)
+            // 맵 시드로 후퇴한다 — 판마다 같지만 서기는 한다.
+            Match.MatchRandom random = Match.MatchRandom.Current;
+            int seed = random != null && random.Seed != 0
+                ? Match.MatchRandom.SubSeed(random.Seed, Match.MatchRandom.SALT_SHOP)
+                : _layout.Seed;
+
             List<Vector2> picked = ShopSpotLogic.Resolve(_layout.HandPlaced, placed, _layout.Rooms,
-                b.ShopSpotCount, b.ShopSpotMinGap, b.ShopSpotRadius, _layout.Seed);
+                count, b.ShopSpotMinGap, b.ShopSpotRadius, seed);
 
             foreach (Vector2 p in picked)
             {
@@ -39,7 +49,7 @@ namespace CTC.Runtime.Map
                 no.Spawn(true);
                 m_Spawned.Add(no);
             }
-            Core.GameDebug.Log($"[ShopSpotSpawner] 상점 {picked.Count}곳 (요청 {b.ShopSpotCount})");
+            Core.GameDebug.Log($"[ShopSpotSpawner] 상점 {picked.Count}곳 (목표 {count} · 간격 {b.ShopSpotMinGap:0.#} · 시드 {seed})");
         }
 
         /// <summary>서버 전용. 로비 복귀 시 걷는다.</summary>
