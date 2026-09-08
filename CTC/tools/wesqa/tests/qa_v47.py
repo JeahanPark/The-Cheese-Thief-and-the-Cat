@@ -15,6 +15,9 @@
 
 값은 전부 훅에서 읽는다(`TestGetTechCost`·`TestGetPlaceCost`) — 가격을 손으로 적지 않는다.
 한 판에 한 번만 돌린다(칸을 다 채우고 요새·창고·장판이 남는다). 다시 돌리려면 플레이모드를 껐다 켠다.
+
+오늘의 품절(계획 3)은 판마다 쥐 테크 둘을 막는다 — 이 스크립트는 **효과**를 재는 것이라
+`TestClearSoldOut`으로 주사위를 먼저 걷는다. 품절 자체의 검증은 `qa_v50`이 한다.
 """
 import sys, time, io
 
@@ -129,6 +132,16 @@ def main():
     m2_idx = [i for i in range(3) if i != 0 and i != cat_idx][0]
     m2i, m2 = p[m2_idx], ids[m2_idx]
     print("호스트 쥐=%s · 고양이=%s(inst %s) · 클론 쥐=%s(inst %s)" % (m, c, cat_idx, m2, m2_idx))
+
+    # 오늘의 품절이 판마다 쥐 테크 둘을 막는다(테크 v3 계획 3). 이 스크립트가 재는 것은
+    # **테크 효과**라 열 종류를 다 사야 하고, 그러면 한 판으로는 구조적으로 불가능해진다 —
+    # 2026-09-08 실측에서 그 판에 품절이던 숨은 창고·빠른 발에서만 빨간 줄이 떴다.
+    # 주사위를 치우고 효과만 잰다. **품절 자체는 qa_v50이 본다.**
+    host.invoke("TestClearSoldOut")
+    time.sleep(0.5)
+    left = host.invoke("TestGetSoldOutTechs")
+    if left:
+        print("!! 품절이 안 걷혔다: %s — 아래 구매가 그 테크에서 거절된다" % left)
 
     # 지갑 채우기 — 두 쥐가 5레벨씩 사고 설치까지 하므로 넉넉히. **계측 전에 다 준다**(수입 계측 오염 방지).
     for _ in range(7):

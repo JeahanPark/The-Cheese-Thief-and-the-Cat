@@ -112,6 +112,42 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: 지금 선 상점 자리 **전부**를 "x,z|x,z|..."로(없으면 빈 문자열).
+        ///
+        /// 기존 <see cref="TestGetShopSpotPos"/>는 번호 하나씩이고 <see cref="TestGetShopSpotCount"/>는
+        /// 개수뿐이라, 둘로는 **「판마다 자리가 바뀌었나」를 못 잰다** — 개수가 같으면 통과해 버린다.
+        /// 좌표를 통째로 받아 두 판을 집합으로 비교하라고 만든 훅이다(계획 3 Task 7 ②).
+        ///
+        /// 순서는 명부(<c>ShopSpot.All</c>) 순이지 정렬이 아니다 — 비교하는 쪽이 정렬한다.
+        /// </summary>
+        public string TestGetShopSpotPositions()
+        {
+            System.Collections.Generic.IReadOnlyList<ShopSpot> all = ShopSpot.All;
+            var parts = new System.Collections.Generic.List<string>(all.Count);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] == null) continue;
+                Vector3 p = all[i].transform.position;
+                parts.Add($"{p.x:F2},{p.z:F2}");
+            }
+            return string.Join("|", parts);
+        }
+
+        /// <summary>
+        /// QA: 그 클라이언트가 **판을 시작한 뒤 번 총액**(장난기 누적, -1 = 못 찾음).
+        ///
+        /// 전직 문턱이 잔액이 아니라 이 값이다(계획 3 Task 5). 기존
+        /// <c>TestGetAdvanceMischief</c>는 로컬 전용이라 호스트에서 남의 고양이를 못 본다 —
+        /// 여기서는 <see cref="FindPlayerGo"/>로 지목해 읽는다.
+        /// </summary>
+        public int TestGetEarnedOf(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            CheeseWallet w = p != null ? p.GetComponent<CheeseWallet>() : null;
+            return w != null ? w.EarnedValue : -1;
+        }
+
+        /// <summary>
         /// QA: 사람의 숫자키와 같은 입구 — 판정은 서버가 한다(상점 밖 쥐는 거절).
         ///
         /// **로컬 플레이어에만 듣는다.** Buy는 `RequireOwnership` 소유자 RPC라 남의 몸에서 부르면
@@ -298,6 +334,24 @@ namespace CTC.Runtime.Testing
         {
             Match.MatchRandom random = Match.MatchRandom.Current;
             return random != null ? random.Seed : 0;
+        }
+
+        /// <summary>
+        /// QA 전용(서버) — **오늘의 품절을 걷어낸다**. 매치 시드를 0으로 되돌려
+        /// <c>ShopController.SoldOutToday</c>가 빈 목록이 되게 한다.
+        ///
+        /// 왜 필요한가: 품절은 판마다 쥐 테크 둘을 막는데, 테크 **효과**를 재는 스위트(qa_v46·v47)는
+        /// 열 종류를 전부 사야 한다 — 한 판으로는 구조적으로 못 잰다(2026-09-08 실측: qa_v47이
+        /// 그 판에 품절이던 숨은 창고·빠른 발에서만 빨간 줄이 떴다). 주사위를 치워 효과만 재게 한다.
+        /// **품절 자체의 검증은 qa_v50**이 따로 한다 — 여기서 끄는 것이 그 검증을 덮지 않는다.
+        ///
+        /// 상점 자리·직업권은 판 시작에 이미 놓였고 시드를 다시 안 읽으므로 그대로 남는다.
+        /// </summary>
+        public void TestClearSoldOut()
+        {
+            Match.MatchRandom random = Match.MatchRandom.Current;
+            if (random == null) { GameDebug.LogWarning("[TestManager] MatchRandom 없음"); return; }
+            random.DevClearSeed();
         }
 
         /// <summary>QA: 용도별 하위 시드(shop · soldout · ticket) — 셋이 실제로 갈렸는지 본다.</summary>

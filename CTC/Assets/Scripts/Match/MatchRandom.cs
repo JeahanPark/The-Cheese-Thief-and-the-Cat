@@ -1,4 +1,4 @@
-using CTC.Runtime.Core;
+﻿using CTC.Runtime.Core;
 using R3;
 using Unity.Netcode;
 using UnityEngine;
@@ -83,6 +83,30 @@ namespace CTC.Runtime.Match
             if (!IsSpawned) { m_PendingSeed = seed; return; }
             m_Seed.Value = seed;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// QA 전용 — 시드를 **0(아직 안 굴렸다)** 으로 되돌린다. 서버에서만 듣는다.
+        ///
+        /// 왜 있나: 오늘의 품절이 판마다 쥐 테크 둘을 막는데, **테크 효과 스위트(qa_v47)는
+        /// 열 종류를 전부 사야 한다** — 한 판으로는 구조적으로 불가능해진다. 이 훅이 주사위만
+        /// 치워 「효과가 맞나」를 재게 한다. 품절 자체는 qa_v50이 따로 본다.
+        ///
+        /// 0은 새로 만든 상태가 아니라 **로비·봇 실험실이 늘 쓰는 상태**다(<see cref="Seed"/> 주석).
+        /// 판 도중에 불러도 안전한 이유: 상점 자리·직업권은 판 시작에 이미 놓였고 시드를 다시 안 읽는다.
+        /// 다시 읽는 것은 <c>ShopController.SoldOutToday</c>뿐이라 그것만 빈 목록이 된다.
+        /// <see cref="MatchManager.DevSetRemaining"/>과 같은 취급의 QA 손잡이다.
+        /// </summary>
+        public void DevClearSeed()
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            bool isServer = IsSpawned ? IsServer : (nm != null && nm.IsServer);
+            if (!isServer) return;
+
+            m_PendingSeed = 0;
+            if (IsSpawned) m_Seed.Value = 0;
+        }
+#endif
 
         /// <summary>
         /// 다음 판의 시드 — **0이 아니고 직전과도 다르다**(순수, EditMode가 덮는다).

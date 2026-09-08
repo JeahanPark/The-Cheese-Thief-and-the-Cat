@@ -8,6 +8,9 @@
 
 세팅: `python setup_match.py 0 mouse 3` (호스트=쥐, 클론 하나가 고양이)
 한 판에 한 번만 돌린다 — 칸을 5개까지 채우고 요새를 세우므로 잔여물이 남는다.
+
+오늘의 품절(계획 3)은 판마다 쥐 테크 둘을 막는다 — 이 스크립트는 **효과**를 재는 것이라
+`TestClearSoldOut`으로 주사위를 먼저 걷는다. 품절 자체의 검증은 `qa_v50`이 한다.
 다시 돌리려면 플레이모드를 껐다 켠다.
 """
 import sys, time, io
@@ -51,6 +54,16 @@ def main():
 
     host = p[0]                       # 호스트 = 쥐. 제 몸이라 소유자 RPC 훅이 다 듣는다
     m = ids[0]
+
+    # 오늘의 품절이 판마다 쥐 테크 둘을 막는다(테크 v3 계획 3). 이 스크립트가 재는 것은
+    # **테크 효과**라 열 종류를 다 사야 하고, 그러면 한 판으로는 구조적으로 불가능해진다 —
+    # 2026-09-08 실측에서 그 판에 품절이던 두 항목만 빨간 줄이 떴다. 주사위를 치우고 효과만 잰다.
+    # **품절 자체는 qa_v50이 본다** — 여기서 끄는 것이 그 검증을 덮지 않는다.
+    host.invoke("TestClearSoldOut")
+    time.sleep(0.5)
+    left = host.invoke("TestGetSoldOutTechs")
+    if left:
+        print("!! 품절이 안 걷혔다: %s — 아래 구매가 그 테크에서 거절된다" % left)
     cat_idx = roles.index("Cat")
     cat = p[cat_idx]
     c = ids[cat_idx]

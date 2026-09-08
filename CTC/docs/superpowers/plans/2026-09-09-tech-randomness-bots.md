@@ -160,8 +160,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Create `Assets/Scripts/Economy/TechRandomLogic.cs`, `Assets/Scripts/Tests/EditMode/TechRandomLogicTests.cs` · Modify `Assets/Scripts/Economy/TechLogic.cs`, `Assets/Scripts/Economy/ShopController.cs`, `Assets/Scripts/Economy/ShopHotbar.cs`, `Assets/Scripts/Bots/MouseBotLogic.cs`, `Assets/Resources/CSVInfo/BalanceInfo.csv`, `Assets/Scripts/Tests/EditMode/TechLogicTests.cs`
 
-- [ ] **Step 1: CSV `SoldOutCount.int` 2** → `Convert CSV → Info`.
-- [ ] **Step 2: `TechRandomLogic` (순수)**
+- [x] **Step 1: CSV `SoldOutCount.int` 2** → `Convert CSV → Info`.
+- [x] **Step 2: `TechRandomLogic` (순수)**
 ```csharp
         /// <summary>
         /// 품절에서 **빼는** 테크 — 요새·대시·창고(기획서 §7). 생존과 째기의 바닥이라
@@ -179,25 +179,25 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
   - 결과는 **카탈로그 순서**로 정렬해 돌려준다 — 토스트 문구가 시드에 따라 순서까지 바뀌면 읽는 쪽이 헷갈린다.
   - 고양이 카탈로그를 넣어도 동작해야 하지만 **부르지 않는다**(§7은 쥐 테크만). 고양이는 상점을 안 가므로 품절이 곧 "못 큰다"가 된다.
   - 테스트: 같은 시드 같은 답 · 다른 시드 다른 답(여러 시드 중 하나 이상은 달라야 한다) · 면제 3종은 절대 안 나온다 · 중복 없음 · 후보보다 많이 요청하면 후보 전부 · `_count` 0이면 빈 목록 · 카탈로그 순 정렬.
-- [ ] **Step 3: `TechDeny.SoldOut` + `CanBuy` 인자**
+- [x] **Step 3: `TechDeny.SoldOut` + `CanBuy` 인자**
   - `enum TechDeny`에 `SoldOut` 추가(**뒤에 추가만** — 값이 직렬화되진 않지만 QA 문자열이 붙어 있다).
   - `CanBuy(..., IReadOnlyList<TechId> _soldOut)` — `_soldOut`이 null이면 품절 없음. 판정 순서는 **`WrongRole` 다음, `SlotsFull` 앞**: 품절은 "칸이 없어서"가 아니라 "오늘은 없어서"다. 다만 **이미 가진 테크의 업그레이드는 막지 않는다** — 품절은 판 시작에 정해지고 그전엔 아무도 못 샀으므로 실제로는 Lv0만 걸리지만, 규칙으로 못 박아 둔다(`LevelOf(_owned, _id) == 0`일 때만 SoldOut).
   - `DenyText`에 `case TechDeny.SoldOut: return "오늘은 품절";`
   - 기존 `CanBuy` 호출부·테스트를 전부 갱신한다(`grep -rn "CanBuy(" Assets/Scripts`).
-- [ ] **Step 4: `ShopController`가 품절을 안다**
+- [x] **Step 4: `ShopController`가 품절을 안다**
 ```csharp
         /// <summary>오늘 못 사는 테크 — 매치 시드에서 다시 계산한다(서버·클라 같은 답).</summary>
         public IReadOnlyList<TechId> SoldOutToday
 ```
   `MatchRandom.Current`가 null이거나 `Seed == 0`이면 **빈 목록**(실험실·로비). 매 프레임 새로 뽑지 않게 시드가 바뀔 때만 다시 계산해 캐시한다(R3 `SeedChanged` 구독, 규칙 3).
   `CanBuyNow`가 이 목록을 `TechLogic.CanBuy`에 넘긴다 — **서버 `BuyRpc`도 같은 `CanBuyNow`를 지나므로 권위는 서버에 그대로 있다.**
-- [ ] **Step 5: `ShopHotbar` — 후보에서 빼고, 판 시작에 알린다**
+- [x] **Step 5: `ShopHotbar` — 후보에서 빼고, 판 시작에 알린다**
   - 빈 칸 후보 순환 목록에서 품절을 **제외**한다. 후보에 남겨 두고 누를 때 거절하면 5키를 헛돌리게 된다.
   - 판 시작 토스트: 기존 `INTRO_TOAST_SECONDS`(4초) 경로에 이어 `오늘 품절: 후추 탄 · 큰 주머니`를 띄운다. **새 UI 0** — 같은 `m_Toast`다. 이름은 `TechLogic.RowOf(id, 1).Label`.
   - 기획서 §7은 "전원 동일·공개"라 **고양이에게도 띄운다**. 고양이가 쥐의 선택지를 읽는 힌트가 되지만(§0-2의 정보 비대칭과 살짝 어긋난다) 숨은 주사위를 만들지 않는 쪽이 기획 기조다.
   - 시드가 늦게 도착해 토스트를 놓치지 않게, `GameStarted`와 `SeedChanged`가 **둘 다** 준비된 뒤 한 번만 띄운다(`m_IntroShown`과 같은 1회 플래그).
-- [ ] **Step 6: 봇도 품절을 안다** — `MouseBotLogic.NextPurchase`에 `IReadOnlyList<TechId> _soldOut`을 넘겨 품절이면 그 줄을 건너뛴다. 안 넘기면 봇이 매 틱 죽은 구매를 시도한다(창고 상한과 같은 이유, 그 함수 주석 참조). `BotShopper.BuyForMouse`가 `m_Shop.SoldOutToday`를 넘긴다.
-- [ ] **Step 7: EditMode PASS → Commit**
+- [x] **Step 6: 봇도 품절을 안다** — `MouseBotLogic.NextPurchase`에 `IReadOnlyList<TechId> _soldOut`을 넘겨 품절이면 그 줄을 건너뛴다. 안 넘기면 봇이 매 틱 죽은 구매를 시도한다(창고 상한과 같은 이유, 그 함수 주석 참조). `BotShopper.BuyForMouse`가 `m_Shop.SoldOutToday`를 넘긴다.
+- [x] **Step 7: EditMode PASS → Commit**
 ```bash
 git add Assets/Resources/CSVInfo/BalanceInfo.csv Assets/Scripts/Info/Generator/ConvertInfo/BalanceInfo.cs Assets/Scripts/Economy/TechRandomLogic.cs Assets/Scripts/Economy/TechRandomLogic.cs.meta Assets/Scripts/Economy/TechLogic.cs Assets/Scripts/Economy/ShopController.cs Assets/Scripts/Economy/ShopHotbar.cs Assets/Scripts/Bots/MouseBotLogic.cs Assets/Scripts/Tests/EditMode/TechRandomLogicTests.cs Assets/Scripts/Tests/EditMode/TechRandomLogicTests.cs.meta Assets/Scripts/Tests/EditMode/TechLogicTests.cs
 git commit -m "feat(tech): 오늘의 품절 — 쥐 테크 7 중 2, 요새·대시·창고 면제, 판 시작 토스트
@@ -211,8 +211,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Create `Assets/Scripts/Map/TicketShuffleLogic.cs`, `Assets/Scripts/Tests/EditMode/TicketShuffleLogicTests.cs` · Modify `Assets/Scripts/Map/LootBoxSpawner.cs`, `Assets/Scripts/Map/AlcoveSpawner.cs`
 
-- [ ] **Step 1: 지금 어디에 박혀 있는지 확인** — 직업권은 **에디터에서 자리에 굳어 있다**: `LootBoxFactory`가 상자 0번=깡패권·1번=용사권, `AlcoveFactory`가 가장 먼 두 벽감에 각각 하나씩. 창고 맵은 상자 0개·벽감 6개라 **벽감이 실제 경로**고, 절차 맵은 상자다. **둘 다 고친다.**
-- [ ] **Step 2: `TicketShuffleLogic` (순수)**
+- [x] **Step 1: 지금 어디에 박혀 있는지 확인** — 직업권은 **에디터에서 자리에 굳어 있다**: `LootBoxFactory`가 상자 0번=깡패권·1번=용사권, `AlcoveFactory`가 가장 먼 두 벽감에 각각 하나씩. 창고 맵은 상자 0개·벽감 6개라 **벽감이 실제 경로**고, 절차 맵은 상자다. **둘 다 고친다.**
+- [x] **Step 2: `TicketShuffleLogic` (순수)**
 ```csharp
         /// <summary>
         /// 내용물 자리를 판마다 섞는다 — **통째로 교환**한다. 항목을 새로 만들지 않는 이유:
@@ -222,10 +222,10 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
         public static int[] Permutation(int _count, int _seed)
 ```
   테스트: 같은 시드 같은 순열 · 다른 시드 다른 순열 · **순열이다**(0..n−1이 정확히 한 번씩) · 0·1개는 항등 · 음수는 빈 배열.
-- [ ] **Step 3: 스포너 두 곳에 적용** — `ServerSpawnAll`에서 자리 목록을 순회하기 **전에** 순열을 만들고, `i`번째 자리에 `perm[i]`번째 내용물을 넣는다. 좌표·회전·페이로드(강아지 벽감 여부)는 **안 섞는다** — 강아지가 든 벽감이 판마다 옮겨 다니면 소리 단서가 거짓말이 된다. 섞는 것은 `Contents`/`BoxContents`뿐이다.
+- [x] **Step 3: 스포너 두 곳에 적용** — `ServerSpawnAll`에서 자리 목록을 순회하기 **전에** 순열을 만들고, `i`번째 자리에 `perm[i]`번째 내용물을 넣는다. 좌표·회전·페이로드(강아지 벽감 여부)는 **안 섞는다** — 강아지가 든 벽감이 판마다 옮겨 다니면 소리 단서가 거짓말이 된다. 섞는 것은 `Contents`/`BoxContents`뿐이다.
   시드는 `MatchRandom.SubSeed(seed, SALT_TICKET)`, 없으면 순열을 만들지 않는다(지금 동작 그대로).
-- [ ] **Step 4: 셔플이 진짜 도는지 훅으로 확인** — `TestManager.Map.cs`에 `TestGetJobTicketPositions()`(깡패권·용사권이 든 벽감/상자의 좌표를 돌려준다)를 추가한다. 눈으로 벽을 부숴 확인하지 않는다.
-- [ ] **Step 5: EditMode PASS → Commit**
+- [x] **Step 4: 셔플이 진짜 도는지 훅으로 확인** — `TestManager.Map.cs`에 `TestGetJobTicketPositions()`(깡패권·용사권이 든 벽감/상자의 좌표를 돌려준다)를 추가한다. 눈으로 벽을 부숴 확인하지 않는다.
+- [x] **Step 5: EditMode PASS → Commit**
 ```bash
 git add Assets/Scripts/Map/TicketShuffleLogic.cs Assets/Scripts/Map/TicketShuffleLogic.cs.meta Assets/Scripts/Map/LootBoxSpawner.cs Assets/Scripts/Map/AlcoveSpawner.cs Assets/Scripts/Testing/TestManager.Map.cs Assets/Scripts/Tests/EditMode/TicketShuffleLogicTests.cs Assets/Scripts/Tests/EditMode/TicketShuffleLogicTests.cs.meta
 git commit -m "feat(map): 직업권 자리 셔플 — 내용물 통째 교환이라 총 치즈량 불변
@@ -239,9 +239,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Modify `Assets/Scripts/Economy/CheeseWallet.cs`, `Assets/Scripts/Player/CatClassLogic.cs`, `Assets/Scripts/Player/CatClass.cs`, `Assets/Scripts/Combat/CatPounce.cs`, `Assets/Scripts/Bots/BotShopper.cs`, `Assets/Scripts/Testing/TestManager.CatClass.cs`, `Assets/Resources/CSVInfo/BalanceInfo.csv`, `Assets/Scripts/Tests/EditMode/CatClassLogicTests.cs`
 
-- [ ] **Step 1: 왜 780인지 커밋 메시지에 남긴다** — `CatClass.CanAdvance`가 `CatClassLogic.CanAdvance(pounce.DamageStacks, move.SpeedStacks, MAX_UPGRADE_STACKS, ...)`다. 테크 v3에서 스택 = 테크 레벨이므로 조건은 **발톱 Lv3 + 발 구르기 Lv3**이고, 값은 CSV로 `100+140+180` + `80+120+160` = **780 장난기**다. 문턱이 아니라 **정해진 두 테크를 사라는 강제**였다.
-- [ ] **Step 2: CSV `CatAdvanceMischief.int` 300** → `Convert CSV → Info`.
-- [ ] **Step 3: 누적 획득을 지갑이 센다** — `CheeseWallet`에:
+- [x] **Step 1: 왜 780인지 커밋 메시지에 남긴다** — `CatClass.CanAdvance`가 `CatClassLogic.CanAdvance(pounce.DamageStacks, move.SpeedStacks, MAX_UPGRADE_STACKS, ...)`다. 테크 v3에서 스택 = 테크 레벨이므로 조건은 **발톱 Lv3 + 발 구르기 Lv3**이고, 값은 CSV로 `100+140+180` + `80+120+160` = **780 장난기**다. 문턱이 아니라 **정해진 두 테크를 사라는 강제**였다.
+- [x] **Step 2: CSV `CatAdvanceMischief.int` 300** → `Convert CSV → Info`.
+- [x] **Step 3: 누적 획득을 지갑이 센다** — `CheeseWallet`에:
 ```csharp
         // 전직 문턱은 **번 총액**을 본다(잔액이 아니다). 잔액으로 재면 테크를 사는 순간
         // 문턱이 되돌아가 "전직하려면 아무것도 사지 마라"가 된다.
@@ -250,7 +250,7 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
         public Observable<int> Earned => m_Earned.AsObservableWithCurrent();
 ```
   `AddCheese`에서만 올린다(`TrySpend`는 안 건드린다). **환급(창고 부서짐)도 `AddCheese`를 지난다** — 자기 창고를 부수고 다시 짓는 것으로 누적을 부풀릴 수 있는지 확인하고, 부풀 수 있으면 환급 경로는 `AddCheese`를 안 지나게 분리한다(판단해서 하고 이유를 커밋에 적는다).
-- [ ] **Step 4: `CatClassLogic.CanAdvance` 교체**
+- [x] **Step 4: `CatClassLogic.CanAdvance` 교체**
 ```csharp
         /// <summary>
         /// 전직할 수 있는가 — **누적 획득 장난기**가 문턱을 넘었나(2026-09-09, 기획서 §5).
@@ -260,8 +260,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
         public static bool CanAdvance(int _earnedMischief, int _threshold, CatClassId _current)
 ```
   `MischiefThreshold => Balance.CatAdvanceMischief`도 같이 뺀다. 테스트: 문턱 미만 false · 정확히 문턱 true · 이미 전직했으면 false · 문턱 0이면 즉시 true(설정 실수를 드러내는 값).
-- [ ] **Step 5: `CatClass.CanAdvance` 호출부** — `CatPounce`·`PlayerMovement` 조회를 **`CheeseWallet` 하나로 바꾼다**. 전직 창(`CatClassPopup`)은 이미 스택 스트림을 구독하고 있을 수 있으니 `grep -rn "DamageStacksChanged\|CanAdvance" Assets/Scripts`로 훑어 **지갑 스트림 구독으로 갈아 끼운다**(규칙 3 — 폴링 금지).
-- [ ] **Step 6: 광분 × 불 → max** — `CatPounce`가 두 배율을 곱하는 자리(파일 110행 근처, "둘은 서로를 모른다" 주석)를 큰 쪽만 쓰게 고친다.
+- [x] **Step 5: `CatClass.CanAdvance` 호출부** — `CatPounce`·`PlayerMovement` 조회를 **`CheeseWallet` 하나로 바꾼다**. 전직 창(`CatClassPopup`)은 이미 스택 스트림을 구독하고 있을 수 있으니 `grep -rn "DamageStacksChanged\|CanAdvance" Assets/Scripts`로 훑어 **지갑 스트림 구독으로 갈아 끼운다**(규칙 3 — 폴링 금지).
+- [x] **Step 6: 광분 × 불 → max** — `CatPounce`가 두 배율을 곱하는 자리(파일 110행 근처, "둘은 서로를 모른다" 주석)를 큰 쪽만 쓰게 고친다.
 ```csharp
         /// <summary>
         /// 광분과 전직 「불」은 **곱하지 않는다** — 기획서 §5의 "불을 고르면 광분이 흡수된다"다.
@@ -270,8 +270,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
         public static float PounceMultiplier(float _frenzy, float _fire) => Mathf.Max(_frenzy, _fire);
 ```
   순수 함수로 뽑아 EditMode로 덮는다(둘 다 1이면 1 · 한쪽만 · 둘 다면 큰 쪽).
-- [ ] **Step 7: 봇·QA 훅** — `BotShopper.BuyForCat`의 전직 분기는 `m_Class.CanAdvance`를 그대로 쓰므로 **코드 변경 없이 조건만 바뀐다**(주석의 "둘 다 만렙이면 전직"을 고친다). `TestManager.CatClass.cs`의 "스택을 만렙으로 채워 전직을 연다"(51·62행)는 **지갑 누적을 채우는 방식**으로 바꾼다 — 안 바꾸면 QA가 조용히 통과하며 아무것도 안 잰다.
-- [ ] **Step 8: EditMode PASS → Commit**
+- [x] **Step 7: 봇·QA 훅** — `BotShopper.BuyForCat`의 전직 분기는 `m_Class.CanAdvance`를 그대로 쓰므로 **코드 변경 없이 조건만 바뀐다**(주석의 "둘 다 만렙이면 전직"을 고친다). `TestManager.CatClass.cs`의 "스택을 만렙으로 채워 전직을 연다"(51·62행)는 **지갑 누적을 채우는 방식**으로 바꾼다 — 안 바꾸면 QA가 조용히 통과하며 아무것도 안 잰다.
+- [x] **Step 8: EditMode PASS → Commit**
 ```bash
 git add Assets/Resources/CSVInfo/BalanceInfo.csv Assets/Scripts/Info/Generator/ConvertInfo/BalanceInfo.cs Assets/Scripts/Economy/CheeseWallet.cs Assets/Scripts/Player/CatClassLogic.cs Assets/Scripts/Player/CatClass.cs Assets/Scripts/Combat/CatPounce.cs Assets/Scripts/Bots/BotShopper.cs Assets/Scripts/Testing/TestManager.CatClass.cs Assets/Scripts/Tests/EditMode/CatClassLogicTests.cs
 git commit -m "feat(cat): 전직 문턱 누적 장난기 300 (실효 780 = 발톱420+발구르기360 강제 해소) · 광분×불은 max
@@ -332,12 +332,12 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 **Files:** Modify `Assets/Scripts/Testing/TestManager.Tech.cs` · Create `tools/wesqa/tests/qa_v50.py` · Modify `docs/design-vault/코드 다이어그램.md`
 
-- [ ] **Step 1: 훅 4** (전부 **읽기 전용**, `TestManager` 안에 둔다 — 타입을 쪼개면 리플렉션이 못 찾는다)
+- [x] **Step 1: 훅 4** (전부 **읽기 전용**, `TestManager` 안에 둔다 — 타입을 쪼개면 리플렉션이 못 찾는다)
   - `TestGetMatchSeed()` — 판마다 다른지 본다.
   - `TestGetSoldOutTechs()` — 오늘 품절 목록(테크 id 문자열).
   - `TestGetShopSpotPositions()` — 좌표 목록. **기존 `TestGetShopSpotPos`·`TestGetShopSpotCount`로는 "판마다 달라졌나"를 못 잰다.**
   - `TestGetEarnedOf(clientId)` — 누적 획득 장난기(전직 문턱 확인).
-- [ ] **Step 2: `qa_v50.py` — MPPM 3인, 호스트=고양이.** 판을 **두 번** 연다(무작위는 한 판만 봐선 못 잰다). 항목:
+- [x] **Step 2: `qa_v50.py` — MPPM 3인, 호스트=고양이.** 판을 **두 번** 연다(무작위는 한 판만 봐선 못 잰다). 항목:
 
 | # | 확인 | 어떻게 |
 |---|---|---|
@@ -353,8 +353,8 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 | ⑩ | 봇 쥐가 상점 반경 안에 들어간다 | 봇전에서 `TestIsInShop`이 참인 봇이 1 이상 |
 
   ⑥은 **차감 0까지** 본다 — 값만 보는 QA가 배선 누락을 놓친 전례(2026-08-09)를 반복하지 않는다.
-- [ ] **Step 3: 규칙 8** — `docs/design-vault/코드 다이어그램.md`에 `MatchRandom` → `ShopSpotSpawner`·`ShopController`·`LootBoxSpawner`/`AlcoveSpawner` 세 갈래와, 봇 쥐 행동 트리의 새 가지를 넣는다.
-- [ ] **Step 4: EditMode 전체 + qa_v50 통과 확인 후 Commit**
+- [x] **Step 3: 규칙 8** — `docs/design-vault/코드 다이어그램.md`에 `MatchRandom` → `ShopSpotSpawner`·`ShopController`·`LootBoxSpawner`/`AlcoveSpawner` 세 갈래와, 봇 쥐 행동 트리의 새 가지를 넣는다.
+- [x] **Step 4: EditMode 전체 + qa_v50 통과 확인 후 Commit**
 ```bash
 git add Assets/Scripts/Testing/TestManager.Tech.cs tools/wesqa/tests/qa_v50.py "docs/design-vault/코드 다이어그램.md"
 git commit -m "test(tech): QA 훅 4 + qa_v50(두 판 비교) · 코드 다이어그램 갱신
@@ -388,6 +388,23 @@ Task 7 (QA)      — 전부 끝난 뒤
 | EditMode | **519** | 신규 4파일(시드·품절·순열·봇 쇼핑) + 갱신 4파일 → **545 안팎**. 숫자보다 **0 FAIL**이 기준 |
 | wesqa | v46·47·48·49 초록 | + **v50**. v46~49도 다시 돌린다 — `CanBuy` 시그니처와 전직 조건이 바뀌어 **기존 QA가 조용히 깨질 수 있다** |
 | 봇 계측 | 상점 이동 비용 **제외** | 포함. Task 6 Step 1·7의 전/후 표가 곧 근거 |
+
+### 실측 (2026-09-08 · Task 7 종료)
+
+| 항목 | 결과 |
+|---|---|
+| EditMode | **609 Passed · 0 Failed · 0 Skipped** (계획 예상 545를 넘겼다 — 앞 태스크들이 순수 로직 테스트를 더 촘촘히 깔았다) |
+| qa_v50 | **PASS 12 · FAIL 0 · NOTE 4** (①~⑩ 전부 초록 · 첫 실행에서 통과) |
+| qa_v46 | 11/11 |
+| qa_v47 | **처음엔 FAIL 2** → 원인은 **낡은 기대값**(품절이 그 판에 막은 숨은 창고·빠른 발). `TestClearSoldOut`을 태운 뒤 **PASS 13 · FAIL 0 · SKIP 1**(SKIP은 예전부터 훅이 없는 항목) |
+| qa_v48 | PASS 9 · FAIL 0 · SKIP 1 |
+| qa_v49 | PASS 7 · FAIL 0 · NOTE 1 |
+
+**계획에서 벗어난 판단 하나** — Task 7이 `TestManager.Tech.cs`만 고치기로 돼 있었는데
+`MatchRandom.DevClearSeed()`(QA 전용, `#if UNITY_EDITOR || DEVELOPMENT_BUILD`)를 더했다.
+이유: 품절이 매 판 쥐 테크 둘을 막으므로 **효과 스위트(qa_v46·v47)는 한 판으로 열 종류를 다 살 수
+구조적으로 없다.** 시드를 0(로비·실험실이 늘 쓰는 상태)으로 되돌려 주사위만 치운다 —
+`MatchManager.DevSetRemaining`과 같은 취급이고, 품절 자체는 qa_v50이 따로 본다.
 
 ## 이 계획이 손대지 않는 것
 
