@@ -26,6 +26,12 @@ namespace CTC.Runtime.Player
     public class EarPerk : MonoBehaviour
     {
         /// <summary>
+        /// 반대쪽(소리 반대편) 귀가 도는 비율. 연출 상수라 CSV로 안 내린다 — 튜닝 대상이 아니라
+        /// **좌우가 똑같이 도는 뻣뻣함**과 **먼 귀가 머리를 가로지르는 것**을 같이 막는 값이다.
+        /// </summary>
+        private const float FAR_EAR_RATIO = 0.45f;
+
+        /// <summary>
         /// 소리를 낼 수 있는 몸의 명부. 매 프레임 FindObjectsByType을 도는 대신 여기 등록한다
         /// (CTC 규칙 3 — Update에서 오브젝트 탐색 금지).
         ///
@@ -43,8 +49,8 @@ namespace CTC.Runtime.Player
 
         private Transform m_EarRight;
         private Transform m_EarLeft;
-        private float m_SignRight;
-        private float m_SignLeft;
+        private float m_LocalXRight;   // 몸 로컬 x — 어느 쪽 귀인지(이름이 아니라 자리가 정한다)
+        private float m_LocalXLeft;
 
         private NetworkObject m_NetObject;
         private Audio.FootstepPlayer m_Steps;
@@ -76,6 +82,12 @@ namespace CTC.Runtime.Player
 
         /// <summary>QA 전용 — 지금 적용 중인 쫑긋 세기 0~1. **살금살금 검증의 숫자 근거**다.</summary>
         public float DevPerk => m_Perk;
+
+        /// <summary>QA 전용 — 좌우 귀에 **실제로 들어간** 각(도). 먼 귀는 덜 돈다.</summary>
+        public float DevTurnRight => m_Turn * EarPerkLogic.SideScale(m_Turn, m_LocalXRight, FAR_EAR_RATIO);
+
+        /// <summary>QA 전용 — 왼귀에 실제로 들어간 각(도).</summary>
+        public float DevTurnLeft => m_Turn * EarPerkLogic.SideScale(m_Turn, m_LocalXLeft, FAR_EAR_RATIO);
 
         /// <summary>QA 전용 — 지금 붙들고 있는 소리가 있는가.</summary>
         public bool DevHearing => EarPerkLogic.Holding(Time.time - m_HeardAt, m_HoldSeconds);
@@ -136,9 +148,9 @@ namespace CTC.Runtime.Player
             }
 
             // 좌우가 어느 쪽인지는 이름이 아니라 **몸 로컬 x**가 정한다 — 모델을 갈아 끼워
-            // .L/.R 이름이 뒤집혀도 귀가 엇갈려 서지 않는다.
-            if (m_EarRight != null) m_SignRight = EarPerkLogic.PerkSign(transform.InverseTransformPoint(m_EarRight.position).x);
-            if (m_EarLeft != null) m_SignLeft = EarPerkLogic.PerkSign(transform.InverseTransformPoint(m_EarLeft.position).x);
+            // .L/.R 이름이 뒤집혀도 귀가 엇갈려 돌지 않는다.
+            if (m_EarRight != null) m_LocalXRight = transform.InverseTransformPoint(m_EarRight.position).x;
+            if (m_EarLeft != null) m_LocalXLeft = transform.InverseTransformPoint(m_EarLeft.position).x;
 
             m_Ready = true;
         }
@@ -272,24 +284,30 @@ namespace CTC.Runtime.Player
                    LocalControlLogic.Mine(m_NetObject.IsOwner, m_NetObject.IsPlayerObject);
         }
 
+        /// <summary>
+        /// 두 축으로만 돌린다 — **밑동에서 좌우로 스위블**(몸의 세로축)과 **앞으로 세우기**(몸의 좌우축).
+        ///
+        /// 처음엔 쫑긋을 몸의 **정면 축** 둘레 롤로 줬다가 사용자에게 「기괴한 각도로 꺾여 있다」를
+        /// 들었다(2026-09-08). 실제 메시를 재 보니(`Tools/CTC/Dev/Probe Ear Geometry`) 귀는
+        /// 이미 **위로** 뻗어 있고(모델 로컬 up 0.91~0.94) 바깥으로 20°쯤 기울어 있다 —
+        /// 거기에 안쪽으로 35°를 더 주면 기울기를 넘어서 **귀가 머리를 가로질러 접힌다.**
+        /// 앞으로 세우는 축은 좌우 귀가 같은 방향이라 어느 쪽도 정중선을 넘지 않는다.
+        /// </summary>
         private void Apply()
         {
             // 안 들리면 **한 톨도 안 건드린다** — 애니메이션 원본 그대로 둔다.
             if (Mathf.Abs(m_Turn) < 0.01f && m_Perk < 0.001f) return;
 
-            Quaternion turn = Quaternion.AngleAxis(m_Turn, transform.up);
-            float perk = m_PerkDeg * m_Perk;
+            Quaternion perk = Quaternion.AngleAxis(m_PerkDeg * m_Perk, transform.right);
+            ApplyOne(m_EarRight, m_LocalXRight, perk);
+            ApplyOne(m_EarLeft, m_LocalXLeft, perk);
+        }
 
-            if (m_EarRight != null)
-            {
-                m_EarRight.rotation =
-                    turn * Quaternion.AngleAxis(perk * m_SignRight, transform.forward) * m_EarRight.rotation;
-            }
-            if (m_EarLeft != null)
-            {
-                m_EarLeft.rotation =
-                    turn * Quaternion.AngleAxis(perk * m_SignLeft, transform.forward) * m_EarLeft.rotation;
-            }
+        private void ApplyOne(Transform _ear, float _localX, Quaternion _perk)
+        {
+            if (_ear == null) return;
+            float turn = m_Turn * EarPerkLogic.SideScale(m_Turn, _localX, FAR_EAR_RATIO);
+            _ear.rotation = Quaternion.AngleAxis(turn, transform.up) * _perk * _ear.rotation;
         }
 
         private static Transform FindDeep(Transform _root, string _name)

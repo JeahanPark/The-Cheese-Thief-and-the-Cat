@@ -375,6 +375,7 @@ namespace CTC.Runtime.Testing
             return $"turn={ears.DevTurnDegrees:F2}|perk={ears.DevPerk:F3}|" +
                    $"hearing={(ears.DevHearing ? 1 : 0)}|kind={ears.DevHeardKind}|" +
                    $"stepAudible={(ears.DevStepAudible ? 1 : 0)}|" +
+                   $"turnR={ears.DevTurnRight:F2}|turnL={ears.DevTurnLeft:F2}|" +
                    NearestEnemyLine(me.transform.position, ears.DevRole);
         }
 

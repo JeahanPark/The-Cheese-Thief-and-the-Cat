@@ -125,12 +125,32 @@ namespace CTC.Tests
             Assert.IsFalse(EarPerkLogic.Closer(3f, 3f));
         }
 
-        /// <summary>좌우 부호가 같으면 두 귀가 엇갈려 선다 — 반대여야 한다.</summary>
+        /// <summary>소리 쪽 귀는 다 돌고, 반대쪽 귀는 덜 돈다 — 뻣뻣함과 머리 가로지름을 같이 막는다.</summary>
         [Test]
-        public void PerkSign_LeftAndRightAreOpposite()
+        public void SideScale_NearEarTurnsFully_FarEarLess()
         {
-            Assert.AreEqual(1f, EarPerkLogic.PerkSign(0.12f));
-            Assert.AreEqual(-1f, EarPerkLogic.PerkSign(-0.12f));
+            // 소리가 오른쪽(+) → 오른귀(+x)가 가까운 쪽
+            Assert.AreEqual(1f, EarPerkLogic.SideScale(30f, 0.12f, 0.45f), 1e-4f);
+            Assert.AreEqual(0.45f, EarPerkLogic.SideScale(30f, -0.12f, 0.45f), 1e-4f);
+            // 소리가 왼쪽(−) → 왼귀(−x)가 가까운 쪽
+            Assert.AreEqual(1f, EarPerkLogic.SideScale(-30f, -0.12f, 0.45f), 1e-4f);
+            Assert.AreEqual(0.45f, EarPerkLogic.SideScale(-30f, 0.12f, 0.45f), 1e-4f);
+        }
+
+        /// <summary>안 돌 때는 좌우를 나눌 이유가 없다 — 0에 비율을 곱해도 0이라 값은 1로 둔다.</summary>
+        [Test]
+        public void SideScale_NoTurn_IsOne()
+        {
+            Assert.AreEqual(1f, EarPerkLogic.SideScale(0f, 0.12f, 0.45f), 1e-4f);
+            Assert.AreEqual(1f, EarPerkLogic.SideScale(0f, -0.12f, 0.45f), 1e-4f);
+        }
+
+        /// <summary>비율은 0~1로 막는다 — 먼 귀가 가까운 귀보다 더 돌면 안 된다.</summary>
+        [Test]
+        public void SideScale_RatioIsClamped()
+        {
+            Assert.AreEqual(1f, EarPerkLogic.SideScale(30f, -0.12f, 3f), 1e-4f);
+            Assert.AreEqual(0f, EarPerkLogic.SideScale(30f, -0.12f, -2f), 1e-4f);
         }
     }
 }

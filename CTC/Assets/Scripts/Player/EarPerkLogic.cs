@@ -48,12 +48,17 @@ namespace CTC.Runtime.Player
         }
 
         /// <summary>
-        /// 귀를 세우는 회전 부호 — 몸 정면 축(<c>transform.forward</c>) 둘레로 돌린다.
-        /// 오른귀(+x)에 양수를 주면 귀 끝이 안쪽·위로 모인다 = 쫑긋. 왼귀는 대칭이라 반대 부호.
+        /// 두 귀가 같은 양으로 도는 것은 뻣뻣하다 — **소리 쪽 귀가 더 크게 돈다**(실제 동물과 같다).
+        /// 소리 쪽(부호가 같은 쪽) 귀는 1, 반대쪽 귀는 <paramref name="_farRatio"/>만큼만 돈다.
+        ///
+        /// 반대쪽 귀를 덜 돌리는 것이 **실루엣을 지키는 장치이기도 하다**(2026-09-08):
+        /// 먼 귀를 같은 각으로 돌리면 그 끝이 머리 정중선을 가로질러 접힌 것처럼 보였다.
         /// </summary>
-        public static float PerkSign(float _earLocalX)
+        public static float SideScale(float _turnDeg, float _earLocalX, float _farRatio)
         {
-            return _earLocalX >= 0f ? 1f : -1f;
+            if (Mathf.Abs(_turnDeg) < 0.001f) return 1f;
+            bool nearSide = (_turnDeg >= 0f) == (_earLocalX >= 0f);
+            return nearSide ? 1f : Mathf.Clamp01(_farRatio);
         }
 
         private static Vector3 Flat(Vector3 _v)
