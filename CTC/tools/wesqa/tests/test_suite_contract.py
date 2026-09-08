@@ -102,6 +102,10 @@ def test_declared_item_count_matches_sites(name):
     expected = _const(tree, "EXPECTED")
     assert isinstance(expected, int), "%s: EXPECTED 상수가 없다" % name
 
+    def _exits(body):
+        """이 갈래가 main을 빠져나가며 끝나는가 — 중단 가드를 가려낸다."""
+        return bool(body) and isinstance(body[-1], ast.Return)
+
     def count(body):
         total = 0
         for node in body:
@@ -110,7 +114,19 @@ def test_declared_item_count_matches_sites(name):
                 total += sum(1 for s in ast.walk(node.test)
                              if isinstance(s, ast.Call) and isinstance(s.func, ast.Name)
                              and s.func.id in RECORDERS)
-                total += max(count(node.body), count(node.orelse))
+                # 중단 가드(`if not setup(p): check(실패); return summary(aborted=True)`)는
+                # 정상 판에서 한 번도 안 돈다 — 분모에 넣으면 매 판 「미실행 1」이 뜬다.
+                # 갈래가 return으로 끝나면 그 갈래는 대안 종착점이지 항목이 아니다.
+                body_exits = _exits(node.body)
+                else_exits = _exits(node.orelse)
+                if body_exits and not else_exits:
+                    total += count(node.orelse)
+                elif else_exits and not body_exits:
+                    total += count(node.body)
+                elif body_exits and else_exits:
+                    total += 0        # 양쪽 다 종착점 — 어느 쪽도 정상 경로가 아니다
+                else:
+                    total += max(count(node.body), count(node.orelse))
                 continue
             if isinstance(node, (ast.For, ast.While)):
                 # 반복 안의 기록은 횟수가 실행에 달렸다 — 분모에 넣지 않는다
