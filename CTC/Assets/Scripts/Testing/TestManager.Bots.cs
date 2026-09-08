@@ -110,6 +110,19 @@ namespace CTC.Runtime.Testing
             return manager != null ? manager.SightStats() : "";
         }
 
+        /// <summary>
+        /// QA: **쥐가 반격했는가** — "shots=214 catdeaths=0 catdmg=430 cats=2" (2026-09-09).
+        /// `catdeaths`가 0을 벗어나야 「고양이 전멸 = 쥐 승」 경로가 계측에 들어온 것이다.
+        /// </summary>
+        public string TestGetBotCombatStats()
+        {
+            var manager = TestBotManager.Instance;
+            return manager != null ? manager.CombatStats() : "";
+        }
+
+        /// <summary>QA: 봇 쥐의 반격을 켜고 끈다 — 손잡이를 하나씩 돌려 재려고 둔다.</summary>
+        public void TestSetBotCounterAttack(bool _on) => BotAgent.DevCounterAttack = _on;
+
         /// <summary>QA: 지금 나가 있는 지휘관 명령 수. 0이면 지휘관이 안 도는 것이다.</summary>
         public int TestGetBotOrderCount()
         {

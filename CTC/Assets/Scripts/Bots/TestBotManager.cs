@@ -55,6 +55,16 @@ namespace CTC.Runtime.Bots
         // 시야 정직성 — 소리 손잡이를 돌려도 계측이 안 움직일 때 여기부터 본다.
         private int m_RetiredSights, m_RetiredFarSights;
         private float m_RetiredSightMeters, m_RetiredMaxSight;
+
+        // 반격 계측(2026-09-09) — 「고양이 전멸 = 쥐 승」 경로가 실제로 열렸는지를 재는 상자.
+        private int m_RetiredShots, m_RetiredCatDamage, m_CatDeaths;
+
+        // 길찾기 계측 이월(2026-09-09 감사 A4). 안 옮기면 쥐가 전멸한 판의
+        // `giveups 0 · stuck 0 · detour 1.00`이 **살아남은 고양이 둘의 값**이 된다 —
+        // 「봇이 벽에 낀다 → 아니다」라는 진단서 결론이 쥐에 대해 아무 말도 안 하고 있었다.
+        private int m_RetiredNavBots, m_RetiredPlans, m_RetiredGiveUps, m_RetiredStuck;
+        private double m_RetiredPlanMillis;
+        private float m_RetiredDetour, m_RetiredShortfall, m_RetiredMoved;
         private readonly SoundLog m_Sound = new SoundLog();
 
         // 예약(쥐가 뭉치지 않게) · 명령판(고양이 지휘관) — 자세한 건 각 클래스 주석에 있다
@@ -99,6 +109,10 @@ namespace CTC.Runtime.Bots
             m_Elapsed = 0f;
             m_RetiredSights = m_RetiredFarSights = 0;
             m_RetiredSightMeters = m_RetiredMaxSight = 0f;
+            m_RetiredShots = m_RetiredCatDamage = m_CatDeaths = 0;
+            m_RetiredNavBots = m_RetiredPlans = m_RetiredGiveUps = m_RetiredStuck = 0;
+            m_RetiredPlanMillis = 0.0;
+            m_RetiredDetour = m_RetiredShortfall = m_RetiredMoved = 0f;
 
             MapLayout layout = m_Map != null ? m_Map.ActiveLayout : null;
             m_Commander = new BotCommander(m_Orders, layout != null ? layout.Seed : 0);
@@ -342,16 +356,50 @@ namespace CTC.Runtime.Bots
         // 봇 하나가 판에서 빠질 때 그 봇의 상점 계측을 누적에 옥긴다.
         private void Retire(BotAgent _agent)
         {
-            // 시야 계측은 역할을 안 가린다 — 고양이가 판 중에 죽어도 그 표본을 안 잃는다.
-            m_RetiredSights += _agent.SightSamples;
-            m_RetiredSightMeters += _agent.SightMetersSum;
-            m_RetiredFarSights += _agent.FarSightSamples;
-            if (_agent.MaxSightDistance > m_RetiredMaxSight) m_RetiredMaxSight = _agent.MaxSightDistance;
+            // **시야 정직성은 고양이만 센다**(2026-09-09 감사 A5). 쥐 표본을 섞으면
+            // 「봇 고양이가 사람보다 멀리 보나」라는 질문의 답이 흐려진다 — 쥐는 뒤를 못 봐
+            // 대개 코앞의 고양이만 잡으므로 평균을 끌어내린다(진단서 §8-1의 6.4m가 그 값이다).
+            if (_agent.Role == RoleId.Cat)
+            {
+                m_RetiredSights += _agent.SightSamples;
+                m_RetiredSightMeters += _agent.SightMetersSum;
+                m_RetiredFarSights += _agent.FarSightSamples;
+                if (_agent.MaxSightDistance > m_RetiredMaxSight) m_RetiredMaxSight = _agent.MaxSightDistance;
+            }
+
+            // 길찾기 계측 이월(감사 A4) — 죽은 봇도 걸었고 막혔다. 안 옮기면 그 판의
+            // 길찾기 통계가 살아남은 쪽(대개 고양이)의 값만 남는다.
+            BotNavigator retiredNav = _agent.Nav;
+            if (retiredNav != null)
+            {
+                m_RetiredNavBots++;
+                m_RetiredPlans += retiredNav.PlanCount;
+                m_RetiredGiveUps += retiredNav.GiveUpCount;
+                m_RetiredStuck += retiredNav.StuckCount;
+                m_RetiredPlanMillis += retiredNav.PlanMillis;
+                m_RetiredDetour += retiredNav.LastDetour;
+                m_RetiredShortfall += retiredNav.LastShortfall;
+                m_RetiredMoved += retiredNav.TravelledMeters;
+            }
+
+            // 반격 계측(2026-09-09) — 몸이 사라진 뒤에도 남겨야 「쥐가 전멸한 판」에서 0이 안 나온다.
+            m_RetiredShots += _agent.ShotsFired;
+            if (_agent.Role == RoleId.Cat)
+            {
+                // **죽어서 빠진 고양이만** 센다 — Stop()의 정리 호출은 살아 있는 봇이다.
+                // 이 숫자가 0을 벗어나는 순간이 「고양이 전멸 = 쥐 승」 경로가 열린 순간이다.
+                if (!_agent.Alive) m_CatDeaths++;
+                m_RetiredCatDamage += _agent.MaxHp > 0
+                    ? (_agent.Alive ? Mathf.Max(0, _agent.MaxHp - _agent.Hp) : _agent.MaxHp)
+                    : 0;
+            }
 
             if (_agent.Role != RoleId.Mouse) return;
 
             // **죽어서 빠진 것만** 사망으로 센다 — Stop()의 정리 호출은 살아 있는 봇이다.
-            if (!_agent.Alive) m_Deaths.Add($"{_agent.LivedSeconds:F0}:{_agent.Activity}");
+            // 라벨 둘을 같이 남긴다(감사 A6) — 앞은 죽는 순간(대개 Flee),
+            // 뒤는 **위협에 걸리기 직전에 하던 일**이다. 「어디서 지는가」는 뒤쪽이 답한다.
+            if (!_agent.Alive) m_Deaths.Add($"{_agent.LivedSeconds:F0}:{_agent.Activity}>{_agent.CalmActivity}");
             m_RetiredEarned += _agent.LastEarned;
             m_RetiredTechs += _agent.LastTechCount;
 
@@ -419,6 +467,10 @@ namespace CTC.Runtime.Bots
             float meters = m_RetiredSightMeters, max = m_RetiredMaxSight;
             foreach (BotAgent a in m_Agents)
             {
+                // **고양이만 센다**(2026-09-09 감사 A5) — 묻는 질문이 「봇 고양이가 사람보다
+                // 멀리 보나」다. 쥐 표본을 섞으면 그 답이 흐려진다(Retire도 같은 규칙).
+                if (a.Role != RoleId.Cat) continue;
+
                 sights += a.SightSamples;
                 far += a.FarSightSamples;
                 meters += a.SightMetersSum;
@@ -426,6 +478,28 @@ namespace CTC.Runtime.Bots
             }
             float avg = sights > 0 ? meters / sights : 0f;
             return $"sights={sights} avg={avg:F1} max={max:F1} far={far}";
+        }
+
+        /// <summary>
+        /// QA — **쥐가 반격했는가** 한 줄 (2026-09-09). "shots=214 catdeaths=0 catdmg=430 cats=2"
+        ///
+        /// `catdeaths`가 이 라운드의 핵심이다 — 0이면 「고양이 전멸 = 쥐 승」 경로는
+        /// 여전히 계측에서 빠져 있는 것이고, 쥐 승률은 시간 만료·생존으로만 나온 값이다.
+        /// `catdmg`는 살아 있는 고양이가 깎인 양 + 죽은 고양이의 최대 체력 — 0인데 `shots`가
+        /// 크면 **쏘긴 하는데 안 맞는다**(조준 오차가 너무 크거나 벽에 막힌다).
+        /// </summary>
+        public string CombatStats()
+        {
+            int shots = m_RetiredShots, damage = m_RetiredCatDamage, cats = 0;
+            foreach (BotAgent a in m_Agents)
+            {
+                shots += a.ShotsFired;
+                if (a.Role != RoleId.Cat) continue;
+
+                cats++;
+                if (a.MaxHp > 0) damage += Mathf.Max(0, a.MaxHp - a.Hp);
+            }
+            return $"shots={shots} catdeaths={m_CatDeaths} catdmg={damage} cats={cats}";
         }
 
         /// <summary>QA — 지금 나가 있는 지휘관 명령 수.</summary>
@@ -439,10 +513,10 @@ namespace CTC.Runtime.Bots
         /// </summary>
         public string NavStats()
         {
-            int plans = 0, giveups = 0, stuck = 0;
-            double millis = 0.0;
-            float detour = 0f, moved = 0f, shortfall = 0f;
-            int counted = 0;
+            int plans = m_RetiredPlans, giveups = m_RetiredGiveUps, stuck = m_RetiredStuck;
+            double millis = m_RetiredPlanMillis;
+            float detour = m_RetiredDetour, moved = m_RetiredMoved, shortfall = m_RetiredShortfall;
+            int counted = m_RetiredNavBots;
 
             foreach (BotAgent a in m_Agents)
             {

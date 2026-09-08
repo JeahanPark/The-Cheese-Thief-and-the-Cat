@@ -30,11 +30,11 @@ GameObject:
   - component: {fileID: 559661421635657512}
   - component: {fileID: 4113821741810692290}
   - component: {fileID: 3565572162635516458}
+  - component: {fileID: 6813391279799131985}
+  - component: {fileID: -8113807162095430264}
   - component: {fileID: 6558113436026960680}
   - component: {fileID: 2911770353754494756}
   - component: {fileID: 680282509390343821}
-  - component: {fileID: 6813391279799131985}
-  - component: {fileID: -8113807162095430264}
   m_Layer: 0
   m_Name: PlayerCat
   m_TagString: Player
@@ -410,6 +410,37 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.CatFrenzy
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &6813391279799131985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 222910d8f55977443ac4f5d46e4553ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EyeLook
+  m_HeadBoneName: head
+  m_EyeCenterLocal: {x: 0.00106, y: 0.00179, z: 0.00109}
+  m_EyeAxisLocal: {x: 0.5, y: 0.476, z: 0.724}
+  m_ScleraRadiusLocal: 0.00045
+  m_LidRadiusLocal: 0.00075
+--- !u!114 &-8113807162095430264
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
+  m_EarRightBoneName: ear.R
+  m_EarLeftBoneName: ear.L
 --- !u!82 &6558113436026960680
 AudioSource:
   m_ObjectHideFlags: 0
@@ -524,7 +555,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: c90825cc73f7f3f4284e0e5e6d78efb6, type: 3}
   - {fileID: 8300000, guid: 2531b7ed1c052a44c9aec742aa7c6707, type: 3}
   - {fileID: 8300000, guid: ef155983c61d5b540ac84c81c7d3bf2d, type: 3}
-  m_StrideMeters: 3.44
+  m_StrideMeters: 2.96
   m_WalkThreshold: 0.5
   m_NormalRange: 20
   m_SneakRange: 4
@@ -541,37 +572,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.AudioVolumeFollower
   m_Category: 0
---- !u!114 &6813391279799131985
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5090140034732257434}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 222910d8f55977443ac4f5d46e4553ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EyeLook
-  m_HeadBoneName: head
-  m_EyeCenterLocal: {x: 0.00106, y: 0.00179, z: 0.00109}
-  m_EyeAxisLocal: {x: 0.5, y: 0.476, z: 0.724}
-  m_ScleraRadiusLocal: 0.00045
-  m_LidRadiusLocal: 0.00075
---- !u!114 &-8113807162095430264
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5090140034732257434}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
-  m_EarRightBoneName: ear.R
-  m_EarLeftBoneName: ear.L
 --- !u!1001 &5872261627259609996
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -67,6 +67,11 @@ namespace CTC.Runtime.Bots
         private float m_MoveSpeed;
         private float m_PreySpeed; // 반대 역할의 이속 — 추격 경주 판정에 쓴다
 
+        // 반격 판단에 쓰는 **고양이 쪽** 수치(2026-09-09). 쥐 봇이 제 PounceRange(0)를 보면
+        // 「코앞이면 쏜다」가 영영 거짓이 된다 — 재는 건 고양이가 나를 덮칠 수 있는 거리다.
+        private readonly float m_CatPounceRange;
+        private readonly float m_CatFov;
+
         private readonly List<Vector3> m_Positions = new List<Vector3>();
         private readonly List<int> m_Grades = new List<int>();
         private readonly List<bool> m_Usable = new List<bool>();
@@ -125,8 +130,34 @@ namespace CTC.Runtime.Bots
         /// <summary>마지막으로 읽은 테크 칸 수. 몸이 사라진 뒤에도 남는다.</summary>
         public int LastTechCount { get; private set; }
 
-        /// <summary>지금 무엇을 하는 중인가. 트리의 잎이 적어 넣는다(QA 표시용).</summary>
-        public string Activity { get; set; } = "Idle";
+        /// <summary>
+        /// 지금 무엇을 하는 중인가. 트리의 잎이 적어 넣는다(QA 표시용).
+        ///
+        /// **사인 라벨로 이걸 그대로 쓰면 동어반복이다**(2026-09-09 감사 A6) — 위협 가지가
+        /// 셀렉터 상단이라 죽기 직전엔 반드시 `Flee`/`Shelter`로 덮인다. 「Flee 199/202」는
+        /// 도주의 실패율이 아니라 **트리 우선순위**를 잰 숫자였다.
+        /// 그래서 <see cref="CalmActivity"/>를 따로 남긴다.
+        /// </summary>
+        public string Activity
+        {
+            get => m_Activity;
+            set
+            {
+                m_Activity = value;
+                // 위협에 반응하는 동안의 라벨은 「무엇을 하다 걸렸나」가 아니다 — 안 덮어쓴다.
+                if (value != "Flee" && value != "Shelter") m_CalmActivity = value;
+            }
+        }
+
+        /// <summary>
+        /// **위협에 걸리기 직전에 하던 일**(`Farm`·`Travel`·`Shop`·`Wander`).
+        /// 「어디서 지는가」를 물으려면 이쪽을 봐야 한다 — 상점으로 걷다 걸린 쥐도
+        /// 죽을 땐 `Flee`라, `Activity`만 보면 「상점 가다 잡힌다」를 영영 기각하게 된다.
+        /// </summary>
+        public string CalmActivity => m_CalmActivity;
+
+        private string m_Activity = "Idle";
+        private string m_CalmActivity = "Idle";
 
         /// <summary>이 봇이 상대를 처음 찾기까지 걸린 시간(초). 못 찾았으면 -1.
         /// **소리 밸런스의 답이 이 숫자다.**</summary>
@@ -168,6 +199,10 @@ namespace CTC.Runtime.Bots
             m_PreySpeed = Info.InfoManager.Instance.PlayerOf(
                 _role == RoleId.Cat ? RoleId.Mouse : RoleId.Cat).MoveSpeed;
 
+            Info.PlayerInfo catInfo = Info.InfoManager.Instance.PlayerOf(RoleId.Cat);
+            m_CatPounceRange = catInfo.PounceRange;
+            m_CatFov = catInfo.Fov;
+
             // 배회는 봇마다 달라야 한다 — 같은 씨앗이면 전원이 같은 자리로 몰려 맵이 안 쓰인다.
             // 오브젝트 id로 씨앗을 주므로 같은 판을 다시 돌리면 같은 결과가 나온다(재현성).
             m_Rng = new System.Random((int)(_object.NetworkObjectId * 7919 + 13));
@@ -198,6 +233,7 @@ namespace CTC.Runtime.Bots
                 m_Timer = DECIDE_INTERVAL;
                 m_Senses.Observe(_sound, Time.time);
                 RefreshLead();
+                RefreshTrackedCat();
                 m_Tree.Tick(DECIDE_INTERVAL);
             }
 
@@ -371,10 +407,130 @@ namespace CTC.Runtime.Bots
             if (m_Skill != null) m_Skill.DevUse();
         }
 
-        public void Shoot()
+        /// <summary>이 봇이 실제로 쏜 횟수 — 반격 경로가 열렸는지 세는 값이다.</summary>
+        public int ShotsFired { get; private set; }
+
+        // **쫓기는 중인가** — 도주 몸짓(전력 질주·대시·긴급 요새)의 단일 기준(2026-09-09, 감사 A1).
+        // 왜 「지금 보이나」로 재면 안 되는지는 MouseBotLogic.CHASE_MEMORY_SECONDS 주석에 있다.
+        private float m_ChasedUntil = -999f;
+
+        /// <summary>지금 쫓기는가. 도주 가지가 <see cref="MarkChased"/>로 갱신한다.</summary>
+        public bool IsBeingChased => Time.time < m_ChasedUntil;
+
+        /// <summary>
+        /// 도주 가지가 매 틱 알려 준다. 눈으로 봤으면 시계를 새로 감고,
+        /// **이미 쫓기는 중이면 기척만으로도 이어 감는다** — 도주 가지 자체가
+        /// 「위협이 있다」일 때만 도므로, 여기서 이어 감는 건 곧 「추격이 이어진다」다.
+        /// </summary>
+        public void MarkChased(bool _seenNow)
         {
-            if (m_Gun != null) m_Gun.DevShootAtNearestCat();
+            if (_seenNow || IsBeingChased) m_ChasedUntil = Time.time + MouseBotLogic.CHASE_MEMORY_SECONDS;
         }
+
+        // **도망치며 뒤를 본다** — 한 번 눈으로 잡은 고양이를 몇 초 동안 계속 본다.
+        // 왜 필요한지는 MouseCombatLogic.LOOK_BACK_SECONDS 주석에 있다(몸 ≠ 카메라).
+        private Transform m_TrackedCat;
+        private float m_TrackedAt = -999f;
+
+        private void RefreshTrackedCat()
+        {
+            if (m_Role != RoleId.Mouse) return;
+
+            Transform seen = m_Senses.NearestVisible();
+            if (seen != null) { m_TrackedCat = seen; m_TrackedAt = Time.time; return; }
+
+            // 몸이 등을 돌려도 **카메라는 그쪽을 본다.** 가림이 없으면 계속 보고 있는 것이고,
+            // 벽·선반 뒤로 사라지는 순간 끊긴다 — 그 끊김이 이 게임의 진짜 탈출 수단이다.
+            if (m_TrackedCat == null) return;
+            if (!MouseCombatLogic.KeepsEyeOn(Time.time - m_TrackedAt)) return;
+            if (SightLine.IsBlocked(m_Object.transform, m_TrackedCat)) return;
+
+            m_TrackedAt = Time.time;
+        }
+
+        /// <summary>
+        /// 지금 쏠 표적. 눈앞에 있으면 그것, 아니면 **방금까지 보던 고양이**를 뒤돌아본다.
+        /// 뒤돌아보는 쪽도 **가림 검사는 그대로** 한다 — 벽 뒤로 사라지면 못 쏜다.
+        /// </summary>
+        private Transform ShootTarget()
+        {
+            Transform seen = m_Senses.NearestVisible();
+            if (seen != null) return seen;
+
+            if (m_TrackedCat == null) return null;
+            if (!MouseCombatLogic.KeepsEyeOn(Time.time - m_TrackedAt)) return null;
+            if (SightLine.IsBlocked(m_Object.transform, m_TrackedCat)) return null;
+
+            return m_TrackedCat;
+        }
+
+        /// <summary>
+        /// **지금 고양이와 시선이 통하는가**(뒤돌아보기 포함) — 통하면 그 자리를 준다.
+        ///
+        /// 도주 가지의 「전력 질주냐 잠행이냐」와 반격 가지의 「쏘느냐」가 **같은 이 신호**를 쓴다.
+        /// 서로 보이는 동안은 숨어 봐야 소용없으니 달리고, **시야가 끊기면 조용해져** 소리 자취를
+        /// 지운다. 그게 고양이보다 느린 쥐(6.6 vs 7.4)가 실제로 살아남는 유일한 길이다.
+        /// </summary>
+        public bool TryGetShootTarget(out Vector3 _pos)
+        {
+            Transform cat = ShootTarget();
+            _pos = cat != null ? cat.position : Vector3.zero;
+            return cat != null;
+        }
+
+        /// <summary>
+        /// 지금 쏠 만한가 — 행동 트리의 **반격 가지 조건**. 판단 규칙은 전부
+        /// <see cref="MouseCombatLogic.ShouldShoot"/>에 있다(EditMode로 잰다).
+        /// 여기서는 씬에서 값을 긁어 그 규칙에 넣기만 한다.
+        /// </summary>
+        /// <summary>
+        /// QA 전용 — 반격을 통째로 끈다(기본 켬). **손잡이를 하나씩 돌리려고 둔다** —
+        /// 「도주 잠행 버그 수정」과 「반격」이 같은 판에 섞이면 어느 쪽이 들었는지 모른다.
+        /// </summary>
+        public static bool DevCounterAttack = true;
+
+        public bool CanShootNow()
+        {
+            if (!DevCounterAttack) return false;
+            if (m_Gun == null || m_Role != RoleId.Mouse) return false;
+
+            Transform cat = ShootTarget();
+            if (cat == null) return false;
+
+            return MouseCombatLogic.ShouldShoot(
+                true, IsFacedBy(cat), DistanceTo(cat.position),
+                m_Gun.BotRange, m_CatPounceRange, m_Gun.BotCanFire());
+        }
+
+        /// <summary>
+        /// 맞서 쏜다. 조건은 <see cref="CanShootNow"/>가 이미 봤지만 여기서 다시 본다 —
+        /// 조건과 행동 사이에 한 틱이 흐르면 고양이가 사거리 밖으로 나갔을 수 있다.
+        /// </summary>
+        public bool Shoot()
+        {
+            if (!CanShootNow()) return false;
+
+            Transform cat = ShootTarget();
+            if (cat == null) return false;
+
+            // 조준 오차 — 봇이 백발백중이면 여덟 마리가 사람보다 조직적인 화력이 된다.
+            // 난수는 봇마다 제 것이라 같은 판을 다시 돌리면 같은 결과가 나온다(재현성).
+            float roll = (float)(m_Rng.NextDouble() * 2.0 - 1.0);
+            m_Gun.BotFire(MouseCombatLogic.AimDirection(
+                Position, cat.position, MouseCombatLogic.AIM_ERROR_DEG, roll));
+            ShotsFired++;
+            return true;
+        }
+
+        // 그 고양이가 나를 보고 있나 — **사람도 아는 정보다**(고양이가 어느 쪽을 향했는지는 보인다).
+        // 시야각은 그 역할의 카메라 값 그대로 쓴다(BotSenses가 눈을 판단하는 것과 같은 규칙).
+        private bool IsFacedBy(Transform _cat)
+            => BotSenseLogic.IsInView(_cat.position, _cat.forward, Position, m_CatFov);
+
+        /// <summary>QA — 지금 체력·최대 체력(컴포넌트가 없으면 -1). 고양이가 실제로 맞고 있는지 본다.</summary>
+        public int Hp => m_Health != null ? m_Health.Hp : -1;
+
+        public int MaxHp => m_Health != null ? m_Health.MaxHp : -1;
 
         /// <summary>깡패권을 주웠으면 곁에 온 쥐를 부하로 — 2단계를 한 번도 못 열면 그 규칙을 못 잰다.</summary>
         public void RecruitIfGang()

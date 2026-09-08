@@ -27,6 +27,27 @@ namespace CTC.Runtime.Bots
         public static bool IsSoundThreat(float _distanceToSound)
             => _distanceToSound <= SOUND_THREAT_RADIUS;
 
+        /// <summary>
+        /// **쫓기는 중**으로 치는 시간(초) — 마지막으로 고양이를 눈으로 잡은 뒤 이만큼.
+        ///
+        /// 2026-09-09 감사가 찾은 치명 버그(A1)를 여기서 막는다. 그전에는 도주 가지가
+        /// 「지금 눈에 보이나」(<c>seen</c>) 하나로 **전력 질주·대시·긴급 요새**를 모두 잠갔다.
+        /// 그런데 봇의 몸은 **걷는 방향으로 돈다**(카메라가 없다) — 등을 돌리는 순간
+        /// 고양이가 시야각 55° 밖으로 나가 다음 틱(0.5초)에 <c>seen=false</c>가 되고,
+        /// 그러면 **도망치는 쥐가 스스로 잠행을 켰다**: 6.6 → 2.97 m/s.
+        /// 고양이는 7.4다 — 「1.30배」로 잰 추격이 실제로는 **2.49배**였다.
+        ///
+        /// 그래서 기준을 「보인다」에서 **「쫓기는 중이다」**로 바꾼다. 한 번 눈으로 확인하면
+        /// 그 뒤로는 기척이 이어지는 한 계속 쫓기는 것으로 본다 —
+        /// 눈에서 놓쳤다고 갑자기 안심하고 살금살금 걷는 건 사람이 하는 짓이 아니다.
+        /// 잠행은 **눈으로 본 적 없이 기척만 느낀** 경우에만 남는다(원래 의도 그대로).
+        /// </summary>
+        public const float CHASE_MEMORY_SECONDS = 5f;
+
+        /// <summary>마지막 목격으로부터 이 시간 안이면 아직 쫓기는 중이다.</summary>
+        public static bool IsBeingChased(float _secondsSinceSeen)
+            => _secondsSinceSeen >= 0f && _secondsSinceSeen <= CHASE_MEMORY_SECONDS;
+
         /// <summary>도망 목적지로 요새를 고려하는 반경 — 이보다 멀면 뛰어가다 잡힌다.</summary>
         public const float FORT_REFUGE_RADIUS = 20f;
 
@@ -82,9 +103,11 @@ namespace CTC.Runtime.Bots
         /// **생존(요새) → 수입(창고)**(2026-08-18에 뒤집었다). 도주 중 요새는 여기와 별개로
         /// 즉석에서 산다(BotShopper.BuyFortressShield).
         ///
-        /// **새총은 안 산다**(2026-08-14). 봇은 맞서 쏘지 않으므로(그랬더니 쥐 여덟이
-        /// 도망치며 쏴 97초 만에 고양이 둘을 죽였다 — 실측) 안 쓸 총에 치즈를 태우면
-        /// 그만큼 미끼를 못 사서 경제 측정이 왜곡된다.
+        /// **새총을 산다**(2026-09-09에 뒤집었다). 2026-08-14에 뺀 이유는 「봇이 안 쏜다」였는데
+        /// 이제 조건부로 쏜다(<see cref="MouseCombatLogic"/>). 안 사면 **5축 중 공격축이 통째로
+        /// 계측에서 빠진다** — 봇 쥐가 살 수 있는 건 칸 상한(5)과 같은 5종뿐이라, 하나를 안 사면
+        /// 그 축은 영영 0이다(2026-09-09 봇 감사 A3).
+        /// 자리는 **대시·요새 다음**이다: 도주 수단과 벽이 먼저고, 무기는 그다음이다.
         ///
         /// 그다음은 **치즈 방패 → 큰 주머니**(테크 v3 계획 2b, 2026-09-08). 둘 다 산 뒤에
         /// 저절로 도는 패시브라 봇이 흉내 낼 판단이 없다 — 액티브(끈끈이)는 "언제 누르나"가
@@ -121,7 +144,13 @@ namespace CTC.Runtime.Bots
             //    테크 v3에선 Lv1(설치 "권한")만 사면 되고, 실제 설치는 매번 FortressPlaceCost를 낸다.
             if (!_hasFortress && !SoldOut(Economy.TechId.Fortress) && _cheese >= CostOf(Economy.TechId.Fortress)) return Economy.TechId.Fortress;
 
-            // ③ 창고 — **비상 벽 값(요새 설치비)뿐 아니라 창고 자체 설치비도 남기고 산다**(Task 8 갱신,
+            // ③ 새총 — 기본 딱총(피해 5 · 8m)을 12 · 10m로 올린다. 반격이 실제로 뜻을 가지려면
+            //    쏘는 물건이 있어야 한다. 다른 것들과 같이 **비상 벽 값은 남기고** 산다.
+            if (!_hasGun && !SoldOut(Economy.TechId.Gun)
+                && _cheese >= CostOf(Economy.TechId.Gun) + balance.FortressPlaceCost)
+                return Economy.TechId.Gun;
+
+            // ④ 창고 — **비상 벽 값(요새 설치비)뿐 아니라 창고 자체 설치비도 남기고 산다**(Task 8 갱신,
             //    2026-09-07). 테크 v3부터 창고도 Lv1(권한) + 설치마다 WarehousePlaceCost를 따로 낸다 —
             //    Lv1만 사고 설치비가 없으면 전부 털어 창고를 세운 것과 같아 그 직후 쫓길 때
             //    `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.
@@ -129,9 +158,9 @@ namespace CTC.Runtime.Bots
                 && _cheese >= CostOf(Economy.TechId.Warehouse) + balance.WarehousePlaceCost + balance.FortressPlaceCost)
                 return Economy.TechId.Warehouse;
 
-            // ④ 치즈 방패 Lv1 — 맞아도 HP 대신 치즈로 낸다. 봇은 도망 판단만 하지 회피를 못 해서
+            // ⑤ 치즈 방패 Lv1 — 맞아도 HP 대신 치즈로 낸다. 봇은 도망 판단만 하지 회피를 못 해서
             //    결국 한 번은 맞는다. 그 한 방을 견디는 게 이 봇이 잴 수 있는 가장 정직한 방어다.
-            // ⑤ 큰 주머니 Lv1 — 채굴 배율. 봇은 서 있기만 하면 되니 흉내 낼 판단이 없다.
+            // ⑥ 큰 주머니 Lv1 — 채굴 배율. 봇은 서 있기만 하면 되니 흉내 낼 판단이 없다.
             //
             // 둘 다 **비상 벽 값(요새 설치비)은 남기고** 산다 — 창고와 같은 이유다. 지갑을 털면
             // 그 직후 쫓길 때 `PlaceFortressForFlee`가 빈 지갑을 보고 아무것도 못 한다.

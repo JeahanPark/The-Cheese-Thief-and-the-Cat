@@ -20,6 +20,32 @@ namespace CTC.Tests.EditMode
             IReadOnlyList<TechId> soldOut = null)
             => MouseBotLogic.NextPurchase(cheese, dash, gun, warehouse, fortress, shield, pouch, owned, soldOut);
 
+        // ── 쫓기는 중인가 (2026-09-09 감사 A1) ──
+
+        [Test]
+        public void IsBeingChased_JustSeen_True()
+        {
+            // 도주 몸짓(전력 질주·대시·긴급 요새)의 기준이 「지금 보이나」면
+            // **등을 돌리는 순간 전부 꺼진다** — 봇의 몸은 걷는 방향으로 돌고
+            // 카메라가 없어서 뒤를 못 본다. 그래서 「쫓기는 중」으로 잰다.
+            Assert.IsTrue(MouseBotLogic.IsBeingChased(0f));
+            Assert.IsTrue(MouseBotLogic.IsBeingChased(MouseBotLogic.CHASE_MEMORY_SECONDS));
+        }
+
+        [Test]
+        public void IsBeingChased_LongGone_False()
+        {
+            // 영영 쫓기는 걸로 치면 쥐가 판 내내 전력 질주해 파밍 소리가 안 난다.
+            Assert.IsFalse(MouseBotLogic.IsBeingChased(MouseBotLogic.CHASE_MEMORY_SECONDS + 0.1f));
+        }
+
+        [Test]
+        public void ChaseMemory_OutlastsDecideInterval()
+        {
+            // 판단 주기(0.5초)보다 짧으면 고쳐도 소용없다 — 다음 틱에 다시 꺼진다.
+            Assert.Greater(MouseBotLogic.CHASE_MEMORY_SECONDS, BotAgent.DECIDE_INTERVAL);
+        }
+
         [Test]
         public void NextPurchase_SkipsSoldOut()
         {
@@ -54,17 +80,22 @@ namespace CTC.Tests.EditMode
                        + balance.WarehousePlaceCost
                        + balance.FortressPlaceCost;
             Assert.AreEqual(TechId.None,
-                Next(need - 1, dash: true, fortress: true, shield: true, pouch: true));
+                Next(need - 1, dash: true, gun: true, fortress: true, shield: true, pouch: true));
             Assert.AreEqual(TechId.Warehouse,
-                Next(need, dash: true, fortress: true, shield: true, pouch: true));
+                Next(need, dash: true, gun: true, fortress: true, shield: true, pouch: true));
         }
 
         [Test]
-        public void NextPurchase_NeverBuysGun()
+        public void NextPurchase_BuysGun_AfterDashAndFortress()
         {
-            // 2026-08-14 결정 — 봇은 맞서 쏘지 않는다. 총이 없어도(hasGun:false), 돈이 넘쳐도 안 산다.
-            Assert.AreEqual(TechId.None,
-                Next(99999, dash: true, warehouse: true, fortress: true, shield: true, pouch: true));
+            // 2026-09-09에 뒤집었다 — 봇이 조건부로 쏘게 됐으니(MouseCombatLogic) 쏠 물건을 산다.
+            // 안 사면 **5축 중 공격축이 통째로 계측에서 빠진다**(봇 감사 A3): 봇이 살 수 있는
+            // 종류가 칸 상한(5)과 같아서, 하나를 목록에서 빼면 그 축은 영영 0이다.
+            Assert.AreEqual(TechId.Gun, Next(99999, dash: true, fortress: true));
+
+            // 그래도 **도주 수단과 벽이 먼저다** — 째다 잡히면 총이 있어도 소용없다.
+            Assert.AreEqual(TechId.Dash, Next(99999));
+            Assert.AreEqual(TechId.Fortress, Next(99999, dash: true));
         }
 
         [Test]
@@ -83,9 +114,10 @@ namespace CTC.Tests.EditMode
             // 대시·요새·창고를 갖춘 뒤의 순서: 치즈 방패 → 큰 주머니. 둘 다 패시브라 봇이
             // 흉내 낼 판단이 없다(액티브를 주면 재는 대상이 밸런스가 아니라 봇이 된다).
             Assert.AreEqual(TechId.CheeseShield,
-                Next(9999, dash: true, warehouse: true, fortress: true, owned: 3));
+                Next(9999, dash: true, gun: true, warehouse: true, fortress: true, owned: 4));
+            // 큰 주머니는 **여섯째**다 — 칸 상한이 5라 실전에서는 사실상 안 사진다(감사 A3).
             Assert.AreEqual(TechId.BigPouch,
-                Next(9999, dash: true, warehouse: true, fortress: true, shield: true, owned: 4));
+                Next(9999, dash: true, gun: true, warehouse: true, fortress: true, shield: true, owned: 4));
         }
 
         [Test]

@@ -20,7 +20,10 @@ OUT_DIR = r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\docs\balance"
 FIELDS = ["match", "result", "remaining", "mice_left", "cats_left",
           "first_sight", "phase", "warning",
           # 「어디서 지는가」 (2026-09-09 승률 진단) — 사망 시각·그때 하던 일까지 남긴다
-          "mouse_report", "tech", "shop", "nav", "sight"]
+          "mouse_report", "tech", "shop", "nav", "sight",
+          # 「쥐가 반격했는가」 (2026-09-09) — shots/catdeaths/catdmg. catdeaths가 0이면
+          # 「고양이 전멸 = 쥐 승」 경로는 여전히 계측에서 빠져 있는 것이다.
+          "combat"]
 
 
 def parse():
@@ -31,6 +34,8 @@ def parse():
     p.add_argument("--map", type=int, default=2)      # 0 기본 · 1 확장 · 2 대형
     p.add_argument("--speed", type=float, default=5.0)
     p.add_argument("--timeout", type=float, default=900.0)   # 실시간 상한(초)
+    # 반격을 끄고 도는 대조군 — 손잡이를 하나씩 돌려 재려고 둔다(2026-09-09)
+    p.add_argument("--no-counter", action="store_true")
     return p.parse_args()
 
 
@@ -69,6 +74,7 @@ def run_one(host, args, index):
         host.invoke("TestForceStartGame")
         time.sleep(4.0)
 
+    host.invoke("TestSetBotCounterAttack", _on=not args.no_counter)
     host.invoke("TestSpawnBots", _mice=args.mice, _cats=args.cats)
     time.sleep(2.0)
     host.invoke("TestSetTimeScale", _scale=args.speed)
@@ -110,9 +116,10 @@ def run_one(host, args, index):
     shop = host.invoke("TestGetBotShopStats")
     nav = host.invoke("TestGetNavStats")
     sight = host.invoke("TestGetBotSightStats")
+    combat = host.invoke("TestGetBotCombatStats")
 
     host.invoke("TestClearBots")
-    return summary.split(",") + [warning, report, tech, shop, nav, sight], diag
+    return summary.split(",") + [warning, report, tech, shop, nav, sight, combat], diag
 
 
 def main():
@@ -149,7 +156,7 @@ def main():
             print(f"[{i:2d}/{args.matches}] {row[0]:8s} 남은{row[1]:>4s}s "
                   f"쥐{row[2]} 고양이{row[3]} 첫발견{row[4]}s {row[5]} {row[6]}")
             print(f"          {row[7]}")
-            print(f"          {row[8]} | {row[9]} | 시야 {row[11]}")
+            print(f"          {row[8]} | {row[9]} | 시야 {row[11]} | {row[12]}")
             sys.stdout.flush()
 
     print(f"\n→ {path}")
@@ -199,6 +206,8 @@ def summarize(rows):
 
     if deaths:
         times = sorted(t for t, _ in deaths)
+        # 라벨은 "죽을때>직전"이다(감사 A6) — 앞은 트리 우선순위 때문에 거의 항상 Flee라
+        # 「어디서 지는가」는 **뒤쪽**이 답한다. 옛 표(뒤가 없는 판)도 그대로 읽힌다.
         print(f"\n  쥐 사망 {len(deaths)} / 총 {mice_total}  "
               f"(중앙 {times[len(times)//2]:.0f}s · 첫 {times[0]:.0f}s · 끝 {times[-1]:.0f}s)")
         # 2분 구간 히스토그램 — 초반에 우수수인지 후반에 몰리는지가 여기서 갈린다
@@ -207,12 +216,30 @@ def summarize(rows):
             bins[int(t // 120)] = bins.get(int(t // 120), 0) + 1
         for b in sorted(bins):
             print(f"    {b*2:2d}~{b*2+2:2d}분  {'#' * bins[b]} {bins[b]}")
-        acts = {}
+        acts, calm = {}, {}
         for _, a in deaths:
-            acts[a] = acts.get(a, 0) + 1
+            dying, _, before = a.partition(">")
+            acts[dying] = acts.get(dying, 0) + 1
+            if before:
+                calm[before] = calm.get(before, 0) + 1
         print("    죽을 때 하던 일: " +
               " · ".join(f"{k} {v}" for k, v in sorted(acts.items(), key=lambda kv: -kv[1])))
+        if calm:
+            print("    걸리기 직전 하던 일: " +
+                  " · ".join(f"{k} {v}" for k, v in sorted(calm.items(), key=lambda kv: -kv[1])))
     print(f"  쥐가 번 치즈 합 {earned} · 산 테크 합 {techs}")
+
+    # ── 쥐가 반격했는가 (2026-09-09) ──
+    shots = cat_deaths = cat_dmg = 0
+    for r in rows:
+        if len(r) < 13:
+            continue
+        shots += int(_field(r[12], "shots") or 0)
+        cat_deaths += int(_field(r[12], "catdeaths") or 0)
+        cat_dmg += int(_field(r[12], "catdmg") or 0)
+    if shots or cat_dmg:
+        print(f"  쥐 사격 {shots}발 · 고양이가 입은 피해 합 {cat_dmg} · "
+              f"고양이 사망 {cat_deaths}  <- 0이면 「고양이 전멸=쥐 승」 경로는 아직 안 열렸다")
 
     dirty = [r for r in rows if len(r) > 6 and "사람쥐" in r[6]]
     if dirty:

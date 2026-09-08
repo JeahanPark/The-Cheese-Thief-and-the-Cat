@@ -53,6 +53,32 @@ namespace CTC.Runtime.Combat
             FireRpc(dir.normalized);
         }
 
+        /// <summary>
+        /// 봇 전용 — 지금 무기의 사거리(m). 티어를 타므로 총을 사면 늘어난다.
+        /// 봇이 "안 맞을 거리에선 안 쏜다"를 판단하려면 사람이 보는 것과 같은 값을 봐야 한다.
+        /// </summary>
+        public float BotRange => ShopLogic.WeaponStatsForTier(m_Tier.Value).Range;
+
+        /// <summary>
+        /// 봇 전용 — 지금 쏠 수 있나. 서버가 <see cref="FireRpc"/>에서 같은 판정을 다시 하지만,
+        /// 봇이 모르면 판단 틱마다(0.5초) 거절당하는 죽은 RPC를 계속 보낸다.
+        /// 봇은 서버에서 도므로 서버 시계를 그대로 읽는다.
+        /// </summary>
+        public bool BotCanFire()
+        {
+            if (NetworkManager == null) return false;
+
+            WeaponStats stats = ShopLogic.WeaponStatsForTier(m_Tier.Value);
+            return CombatLogic.IsCooldownReady(m_LastUseTime, NetworkManager.ServerTime.Time, stats.CooldownSeconds);
+        }
+
+        /// <summary>
+        /// 봇 전용 — 이 방향으로 쏜다. **사람과 같은 입구**(<see cref="FireRpc"/>)를 탄다 —
+        /// 사거리·쿨다운·명중 판정·후추 도트·발사음이 전부 사람 총알과 같은 코드를 지나야
+        /// 잰 값이 뜻을 갖는다. 겨누는 방향(조준 오차 포함)은 두뇌가 정한다.
+        /// </summary>
+        public void BotFire(Vector3 _direction) => FireRpc(_direction);
+
         /// <summary>QA: 가장 가까운 고양이를 향해 발사.</summary>
         public void DevShootAtNearestCat()
         {
