@@ -300,6 +300,22 @@ namespace CTC.Runtime.Testing
                    $"|aim={eyes.DevAimSource()}";
         }
 
+        /// <summary>QA: 얹은 눈을 감춘다 — 「전」 그림을 같은 거리·같은 각도로 찍으려고.</summary>
+        public void TestHideEyes() => SetEyesVisible(false);
+
+        /// <summary>QA: 감췄던 눈을 되돌린다.</summary>
+        public void TestShowEyes() => SetEyesVisible(true);
+
+        private void SetEyesVisible(bool _on)
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var eyes = me != null ? me.GetComponent<CTC.Runtime.Player.EyeLook>() : null;
+            if (eyes == null) { GameDebug.LogWarning("[TestManager] EyeLook 없음"); return; }
+            eyes.DevSetVisible(_on);
+        }
+
         /// <summary>QA: 로컬 몸의 눈을 지금 감게 한다 — 깜빡임은 랜덤 주기라 기다리면 못 잡는다.</summary>
         public void TestBlinkEyes()
         {

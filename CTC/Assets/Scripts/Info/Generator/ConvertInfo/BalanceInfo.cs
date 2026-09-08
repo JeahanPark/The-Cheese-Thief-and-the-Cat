@@ -89,6 +89,9 @@ namespace CTC.Runtime.Info
         public float EyeBlinkMinSeconds;
         public float EyeBlinkMaxSeconds;
         public float EyeBlinkSeconds;
+        public float EyeScleraScale;
+        public float EyePupilRatio;
+        public float EyePupilOffsetRatio;
     }
 
     public partial class InfoManager

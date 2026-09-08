@@ -26,8 +26,6 @@ namespace CTC.Runtime.Player
         private static readonly Vector2 UV_DARK = new Vector2(0.8125f, 0.375f);
         private static readonly Vector2 UV_SKIN = new Vector2(0.3125f, 0.75f);
 
-        private const float PUPIL_SCALE = 0.5f;      // 흰자 반지름 대비
-        private const float PUPIL_DISTANCE = 0.75f;  // 흰자 중심에서 눈동자 중심까지
         private const float BLINK_SHRINK = 0.95f;    // 감았을 때 흰자가 줄어드는 비율
         private const float LID_FLATTEN = 0.5f;      // 눈꺼풀은 눈 축으로 납작하게 — 구면 혹처럼 튀어나오면 안 된다
 
@@ -39,7 +37,7 @@ namespace CTC.Runtime.Player
         [Tooltip("오른눈이 쉴 때 보는 방향 — 머리 본 로컬.")]
         [SerializeField] private Vector3 m_EyeAxisLocal = new Vector3(0.892f, 0.396f, 0.216f);
 
-        [Tooltip("얹는 흰자 반지름 — 팩 눈동자를 덮되 흰 테두리 안에 든다.")]
+        [Tooltip("얹는 흰자 반지름(기준) — 팩 눈동자를 덮되 흰 테두리 안에 든다. CSV 배율이 곱해진다.")]
         [SerializeField] private float m_ScleraRadiusLocal = 0.00055f;
 
         [Tooltip("눈꺼풀 반지름 — 감았을 때 흰 테두리까지 덮는다.")]
@@ -55,10 +53,15 @@ namespace CTC.Runtime.Player
 
         private Transform m_EyeR, m_EyeL, m_PupilR, m_PupilL, m_LidR, m_LidL;
         private Renderer m_LidRendererR, m_LidRendererL;
+        private Renderer m_EyeRendererR, m_EyeRendererL, m_PupilRendererR, m_PupilRendererL;
 
         private Vector3 m_RestR, m_RestL;     // 머리 본 로컬
         private Vector3 m_GazeR, m_GazeL;
 
+        private float m_ScleraRadius;         // 기준 반경 × CSV 배율
+        private float m_LidRadius;
+        private float m_PupilRatio;           // 흰자 반지름 대비 눈동자 구 반지름
+        private float m_PupilDistance;        // 흰자 중심에서 눈동자 중심까지(흰자 단위)
         private float m_MaxAngleDeg;
         private float m_FollowSpeed;
         private float m_BlinkMin;
@@ -79,6 +82,13 @@ namespace CTC.Runtime.Player
             m_BlinkMin = balance.EyeBlinkMinSeconds;
             m_BlinkMax = balance.EyeBlinkMaxSeconds;
             m_BlinkSeconds = balance.EyeBlinkSeconds;
+
+            // 크기는 **인상을 바꾸는 손잡이**다(2026-09-08). 팩 캐릭터의 매력이 큰 검은 눈이라
+            // 눈동자를 너무 작게 잡으면 얼굴이 달라진다 — 플레이 거리에서 보고 CSV로 맞춘다.
+            m_ScleraRadius = m_ScleraRadiusLocal * Mathf.Max(0.05f, balance.EyeScleraScale);
+            m_LidRadius = Mathf.Max(m_LidRadiusLocal, m_ScleraRadius * 1.2f);
+            m_PupilRatio = Mathf.Clamp(balance.EyePupilRatio, 0.05f, 0.95f);
+            m_PupilDistance = Mathf.Clamp01(balance.EyePupilOffsetRatio);
             m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
 
             Build();
@@ -113,14 +123,14 @@ namespace CTC.Runtime.Player
             Vector3 centerR = m_EyeCenterLocal;
             Vector3 centerL = EyeLookLogic.Mirror(centerR);
 
-            m_EyeR = MakePart("EyeR", s_ScleraMesh, mat, sample, centerR, m_ScleraRadiusLocal, out _);
-            m_EyeL = MakePart("EyeL", s_ScleraMesh, mat, sample, centerL, m_ScleraRadiusLocal, out _);
+            m_EyeR = MakePart("EyeR", s_ScleraMesh, mat, sample, centerR, m_ScleraRadius, out m_EyeRendererR);
+            m_EyeL = MakePart("EyeL", s_ScleraMesh, mat, sample, centerL, m_ScleraRadius, out m_EyeRendererL);
 
-            m_PupilR = MakeChild("PupilR", s_PupilMesh, mat, sample, m_EyeR);
-            m_PupilL = MakeChild("PupilL", s_PupilMesh, mat, sample, m_EyeL);
+            m_PupilR = MakeChild("PupilR", s_PupilMesh, mat, sample, m_EyeR, out m_PupilRendererR);
+            m_PupilL = MakeChild("PupilL", s_PupilMesh, mat, sample, m_EyeL, out m_PupilRendererL);
 
-            m_LidR = MakePart("LidR", s_LidMesh, mat, sample, centerR, m_LidRadiusLocal, out m_LidRendererR);
-            m_LidL = MakePart("LidL", s_LidMesh, mat, sample, centerL, m_LidRadiusLocal, out m_LidRendererL);
+            m_LidR = MakePart("LidR", s_LidMesh, mat, sample, centerR, m_LidRadius, out m_LidRendererR);
+            m_LidL = MakePart("LidL", s_LidMesh, mat, sample, centerL, m_LidRadius, out m_LidRendererL);
             // 눈 축을 로컬 +z로 두면 z만 눌러 렌즈 모양이 된다 — 감았을 때 눈두덩처럼 보인다.
             m_LidR.localRotation = Quaternion.LookRotation(m_RestR);
             m_LidL.localRotation = Quaternion.LookRotation(m_RestL);
@@ -150,18 +160,20 @@ namespace CTC.Runtime.Player
             return go.transform;
         }
 
-        private Transform MakeChild(string _name, Mesh _mesh, Material _mat, GameObject _sample, Transform _parent)
+        private Transform MakeChild(string _name, Mesh _mesh, Material _mat, GameObject _sample,
+            Transform _parent, out Renderer _renderer)
         {
             var go = new GameObject(_name);
             go.layer = _sample.layer;
             go.tag = _sample.tag;
             go.transform.SetParent(_parent, false);
-            go.transform.localScale = Vector3.one * PUPIL_SCALE;
+            go.transform.localScale = Vector3.one * m_PupilRatio;
 
             go.AddComponent<MeshFilter>().sharedMesh = _mesh;
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = _mat;
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _renderer = mr;
             return go.transform;
         }
 
@@ -269,14 +281,14 @@ namespace CTC.Runtime.Player
                 ? EyeLookLogic.BlinkCover(m_BlinkElapsed, m_BlinkSeconds)
                 : 0f;
 
-            float eye = m_ScleraRadiusLocal * (1f - BLINK_SHRINK * cover);
+            float eye = m_ScleraRadius * (1f - BLINK_SHRINK * cover);
             m_EyeR.localScale = new Vector3(eye, eye, eye);
             m_EyeL.localScale = new Vector3(eye, eye, eye);
 
-            m_PupilR.localPosition = m_GazeR * PUPIL_DISTANCE;
-            m_PupilL.localPosition = m_GazeL * PUPIL_DISTANCE;
+            m_PupilR.localPosition = m_GazeR * m_PupilDistance;
+            m_PupilL.localPosition = m_GazeL * m_PupilDistance;
 
-            float lid = m_LidRadiusLocal * cover;
+            float lid = m_LidRadius * cover;
             var lidScale = new Vector3(lid, lid, lid * LID_FLATTEN);
             m_LidR.localScale = lidScale;
             m_LidL.localScale = lidScale;
@@ -317,6 +329,25 @@ namespace CTC.Runtime.Player
         public Vector3 DevPupilWorldRight()
         {
             return m_PupilR != null ? m_PupilR.position : Vector3.zero;
+        }
+
+        /// <summary>
+        /// QA 전용 — 얹은 눈을 껐다 켠다. **"전/후"를 같은 거리·같은 각도로 나란히 찍는 유일한 방법**이다
+        /// (컴포넌트만 끄면 이미 만들어 둔 구가 그대로 남는다).
+        /// </summary>
+        public void DevSetVisible(bool _on)
+        {
+            if (m_EyeRendererR != null) m_EyeRendererR.enabled = _on;
+            if (m_EyeRendererL != null) m_EyeRendererL.enabled = _on;
+            if (m_PupilRendererR != null) m_PupilRendererR.enabled = _on;
+            if (m_PupilRendererL != null) m_PupilRendererL.enabled = _on;
+            if (!_on)
+            {
+                if (m_LidRendererR != null) m_LidRendererR.enabled = false;
+                if (m_LidRendererL != null) m_LidRendererL.enabled = false;
+                m_LidVisible = false;
+            }
+            enabled = _on;   // 꺼진 동안엔 눈꺼풀이 다시 켜지지 않게 LateUpdate도 멈춘다
         }
 
         /// <summary>QA 전용 — 지금 깜빡이게 한다(랜덤 주기를 기다리지 않고 그 프레임을 잡는다).</summary>
