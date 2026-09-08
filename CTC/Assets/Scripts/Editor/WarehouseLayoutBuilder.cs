@@ -26,7 +26,9 @@ namespace CTC.Editor
             ("hallS", new Vector2(-18, -15), new Vector2(18, -15), new[] { new Vector2(-6, -3), new Vector2(10, 13) }),
             ("hallW", new Vector2(-18, -15), new Vector2(-18, 15), new[] { new Vector2(-10, -7), new Vector2(5, 8) }),
             ("hallE", new Vector2(18, -15), new Vector2(18, 15), new[] { new Vector2(-8, -5), new Vector2(8, 11) }),
-            ("p1", new Vector2(-52, 20), new Vector2(-52, 56), new[] { new Vector2(34, 37) }),
+            // 북쪽 끝을 z 56 → 50으로 물렸다: 요새자리 #0(-54,54) 앞 스폰과 이 열의 틈이 0.227 m밖에 없었다
+            // (쥐 몸 반지름 0.22) — 아래 지점 검산이 잡았다.
+            ("p1", new Vector2(-52, 20), new Vector2(-52, 50), new[] { new Vector2(34, 37) }),
             ("p2", new Vector2(-44, 20), new Vector2(-44, 56), new[] { new Vector2(24, 27), new Vector2(46, 49) }),
             ("p3", new Vector2(-36, 20), new Vector2(-36, 56), new[] { new Vector2(38, 41) }),
             ("p4", new Vector2(-28, 20), new Vector2(-28, 56), new[] { new Vector2(22, 25), new Vector2(50, 53) }),
@@ -43,8 +45,11 @@ namespace CTC.Editor
         {
             ("y1", new Rect(24, 20, 10, 4)), ("y2", new Rect(40, 18, 12, 4)),
             ("y3", new Rect(22, 30, 6, 14)), ("y4", new Rect(36, 28, 8, 8)),
-            ("y5", new Rect(48, 30, 8, 10)), ("y6", new Rect(28, 48, 12, 4)),
-            ("y7", new Rect(46, 46, 10, 8)),
+            // y5는 폭 8(x 48~56)이었다 — 강아지 벽감 #2(58,36) 정면 1.6 m가 이 벽에서 0.4 m였다(감사 M7).
+            ("y5", new Rect(48, 30, 6, 10)), ("y6", new Rect(28, 48, 12, 4)),
+            // y7은 (46,46,10,8)이었다 — 요새자리 #2(54,54)와 그 앞 쥐 스폰(52.73,52.73)을 통째로 삼켰다.
+            // 마당 북동쪽을 가리는 역할은 그대로 두고 3 m 서·2 m 남으로 물렸다(감사 M1).
+            ("y7", new Rect(44, 44, 8, 8)),
             ("n1", new Rect(-12, 24, 12, 2)), ("n2", new Rect(3, 24, 9, 2)),
             ("s1", new Rect(-12, -32, 9, 2)), ("s2", new Rect(0, -32, 12, 2)),
             ("l1", new Rect(24, -38, 8, 2)), ("l2", new Rect(35, -38, 9, 2)),
@@ -71,15 +76,17 @@ namespace CTC.Editor
             ("crateN", new Rect(10, 38, 4, 5), 3f),
         };
 
+        // 파밍 원반(반경 2 m) 안에 차단물이 들면 고양이 몸이 지점 중심에 못 서서 파밍 대치가 깨진다.
+        // #3 (-20,-20)→(-21,-20) · #10 (-30,-48)→(-32,-48) · #12 (-48,-30)→(-48,-32)로 물렸다(감사 M6).
         private static readonly (int grade, Vector2 at)[] CHEESE =
         {
             (7, new Vector2(-8, -6)), (7, new Vector2(0, 44)),
-            (6, new Vector2(10, 8)), (6, new Vector2(-20, -20)),
+            (6, new Vector2(10, 8)), (6, new Vector2(-21, -20)),
             (5, new Vector2(-32, 46)), (5, new Vector2(34, 40)),
             (4, new Vector2(-48, 30)), (4, new Vector2(50, 26)),
             (3, new Vector2(-40, 56)), (3, new Vector2(26, -22)),
-            (2, new Vector2(-30, -48)), (2, new Vector2(48, -36)),
-            (1, new Vector2(-48, -30)), (1, new Vector2(56, -6)),
+            (2, new Vector2(-32, -48)), (2, new Vector2(48, -36)),
+            (1, new Vector2(-48, -32)), (1, new Vector2(56, -6)),
         };
 
         private static readonly (Vector2 at, float yaw)[] FORTS =
@@ -200,6 +207,16 @@ namespace CTC.Editor
 
             var lights = new List<LightPlacement>();
             foreach ((Vector2 at, float r, bool moon) in LIGHTS) lights.Add(new LightPlacement { Pos = at, Radius = r, Moon = moon });
+
+            // 지점 검산 — 쥐 스폰·치즈 원반·강아지 벽감 정면이 차단물에 물리면 굽지 않는다 (감사 D-01·D-02·D-05·D-06).
+            // 상점만 검사가 있던 시절에 쥐 스폰 #2가 궤짝 벽 속으로 들어갔다(M1). 규칙은 `MapPointAudit` 한 벌이고
+            // `MapLayoutIntegrityTests`가 구운 에셋에 대고 같은 것을 다시 본다.
+            List<MapPointAudit.Finding> findings = MapPointAudit.Audit(props, forts, cheese, alcoves);
+            if (findings.Count > 0)
+            {
+                Debug.LogError($"[Warehouse] 지점 검산 위반 {findings.Count}건 — 좌표를 고쳐라\n{MapPointAudit.Describe(findings)}");
+                return;
+            }
 
             if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Maps")) AssetDatabase.CreateFolder("Assets/Prefabs", "Maps");
             var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(LayoutPath);

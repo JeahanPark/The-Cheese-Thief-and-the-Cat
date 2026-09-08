@@ -163,7 +163,8 @@ namespace CTC.Runtime.Map
             if (mover != null) mover.ServerBindLayout(m_Layout);
         }
 
-        private const float DOG_SPAWN_OFFSET = 1.6f;
+        /// <summary>벽 정면으로 강아지를 내려놓는 거리(m). 검산(<see cref="MapPointAudit"/>)이 같은 값을 봐야 한다.</summary>
+        public const float DOG_SPAWN_OFFSET = 1.6f;
 
         // 벽이 있던 자리에 상자를 세운다. **여기서 보상을 뿌리지 않는다** —
         // 뿌려 버리면 벽을 부순 19초가 곧 보상이 되어, 늦게 달려온 쪽이 줍기만 하면 된다.

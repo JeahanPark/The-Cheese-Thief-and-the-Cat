@@ -31,7 +31,9 @@ namespace CTC.Runtime.Map
             IReadOnlyList<AlcovePlacement> placements = _layout.Alcoves;
             // 벽 뒤 내용물만 판마다 섞는다 — 좌표·회전·페이로드(강아지 벽감)는 그대로다.
             // 강아지가 든 벽이 판마다 옮겨 다니면 낑낑거리는 소리 단서가 거짓말이 된다(계획 3 Task 4).
-            int[] contentOrder = TicketPermutation(placements.Count);
+            // 섞는 규칙은 `TicketShuffleLogic.ContentOrder` 하나다 — 강아지 벽을 빼고(감사 M2),
+            // 직업권 둘을 서로 가장 먼 두 벽에 남긴다(감사 M3).
+            int[] contentOrder = TicketShuffleLogic.ContentOrder(placements, TicketSeed());
 
             for (int i = 0; i < placements.Count; i++)
             {
@@ -58,20 +60,14 @@ namespace CTC.Runtime.Map
         }
 
         /// <summary>
-        /// 내용물을 섞을 순서(<c>i</c>번 자리 → <c>perm[i]</c>번 내용물). 매치 시드가 없으면(로비·봇 실험실)
-        /// **항등**이라 지금까지와 똑같이 선다.
+        /// 내용물 셔플에 쓸 시드. 매치 시드가 없으면(로비·봇 실험실) <c>0</c>을 돌려
+        /// **항등**으로 떨어뜨린다 — 구운 그대로 선다.
         /// </summary>
-        private static int[] TicketPermutation(int _count)
+        private static int TicketSeed()
         {
             Match.MatchRandom random = Match.MatchRandom.Current;
-            if (random == null || random.Seed == 0)
-            {
-                var identity = new int[_count];
-                for (int i = 0; i < _count; i++) identity[i] = i;
-                return identity;
-            }
-            return TicketShuffleLogic.Permutation(
-                _count, Match.MatchRandom.SubSeed(random.Seed, Match.MatchRandom.SALT_TICKET));
+            if (random == null || random.Seed == 0) return 0;
+            return Match.MatchRandom.SubSeed(random.Seed, Match.MatchRandom.SALT_TICKET);
         }
 
         /// <summary>서버 전용. 로비 복귀 시 판의 흔적을 지운다.</summary>

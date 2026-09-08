@@ -30,7 +30,7 @@ MonoBehaviour:
   - Pos: {x: 10, y: 8}
     Grade: 6
     Radius: 2
-  - Pos: {x: -20, y: -20}
+  - Pos: {x: -21, y: -20}
     Grade: 6
     Radius: 2
   - Pos: {x: -32, y: 46}
@@ -51,13 +51,13 @@ MonoBehaviour:
   - Pos: {x: 26, y: -22}
     Grade: 3
     Radius: 2
-  - Pos: {x: -30, y: -48}
+  - Pos: {x: -32, y: -48}
     Grade: 2
     Radius: 2
   - Pos: {x: 48, y: -36}
     Grade: 2
     Radius: 2
-  - Pos: {x: -48, y: -30}
+  - Pos: {x: -48, y: -32}
     Grade: 1
     Radius: 2
   - Pos: {x: 56, y: -6}
@@ -200,8 +200,8 @@ MonoBehaviour:
     Height: 5
   - Name: S-p1-1
     Kind: 0
-    Pos: {x: -52, y: 46.5}
-    Size: {x: 1, y: 19}
+    Pos: {x: -52, y: 43.5}
+    Size: {x: 1, y: 13}
     YawDeg: 0
     Height: 5
   - Name: S-p2-0
@@ -362,8 +362,8 @@ MonoBehaviour:
     Height: 2.4
   - Name: C-y5
     Kind: 1
-    Pos: {x: 52, y: 35}
-    Size: {x: 8, y: 10}
+    Pos: {x: 51, y: 35}
+    Size: {x: 6, y: 10}
     YawDeg: 0
     Height: 2.4
   - Name: C-y6
@@ -374,8 +374,8 @@ MonoBehaviour:
     Height: 2.4
   - Name: C-y7
     Kind: 1
-    Pos: {x: 51, y: 50}
-    Size: {x: 10, y: 8}
+    Pos: {x: 48, y: 48}
+    Size: {x: 8, y: 8}
     YawDeg: 0
     Height: 2.4
   - Name: C-n1
