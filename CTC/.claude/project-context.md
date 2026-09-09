@@ -10,7 +10,7 @@ description: This project's specifics. gamedev-team agents and orchestration ski
 > 값이 비면 해당 기능은 범용 기본값으로 동작한다.
 
 ## game
-- **name**: The Cheese Thief and the Cat (치즈 도둑과 고양이)
+- **name**: Canadian Mouse (캐네디언 마우스) — 정본은 `ProjectSettings.productName`이고 인게임 타이틀 로고도 이것이다. 레포 폴더·git 원격 이름(`The-Cheese-Thief-and-the-Cat`)과 옛 문서의 「치즈 도둑과 고양이」는 **초기 가제**다. 제목에서 규칙을 유추하지 마라 — 규칙은 아래 genre·references가 원본이다.
 - **genre**: 3D 3인칭 비대칭 멀티 경제전 — 원작 '약올리기 DX' 규칙의 3D 번안 (고양이 1~2 vs 쥐 3~6, 쥐는 개인 경제·고양이 처치는 공동 목표, 시간제한 없음)
 - **tone**: 귀엽고 코믹한 스타일라이즈드 — 위험한 돈줄에서 벌고 빠지기(약올리기) × 무장해서 보스 고양이 말려 죽이기(소모전)
 - **references**: [약올리기 DX (SC UMS) — 규칙 전체, MECCHA CHAMELEON — 3인칭·자유 카메라·관전 연출만]

@@ -1,6 +1,10 @@
 # CTC Project - Claude Instructions
 
-치즈 도둑과 고양이(CTC) — Unity 6000.5.2f1 / URP / Netcode for GameObjects 2.12 / MPPM 2.0. 3인칭 비대칭 멀티 스텔스 숨바꼭질 (고양이 1~2 vs 쥐 3~6).
+**Canadian Mouse**(캐네디언 마우스) — Unity 6000.5.2f1 / URP / Netcode for GameObjects 2.12 / MPPM 2.0. 3인칭 비대칭 멀티 스텔스 숨바꼭질 (고양이 1~2 vs 쥐 3~6).
+
+> 제목의 정본은 `ProjectSettings.productName`(= Canadian Mouse)이다. 레포 폴더·원격 이름
+> `The-Cheese-Thief-and-the-Cat`과 옛 문서의 「치즈 도둑과 고양이」는 **초기 가제**다.
+> 약칭 CTC는 그 가제에서 온 것이라 경로·어셈블리 이름으로만 남아 있다 — 계속 쓴다.
 
 프로젝트 상세(장르·톤·경로 규약): [.claude/project-context.md](.claude/project-context.md)
 
