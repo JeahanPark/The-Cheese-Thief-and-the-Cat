@@ -210,6 +210,38 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: Enter 한 번 — <see cref="Core.EscapeRouter.PressEnterKey"/>가 곧 사람이 타는 분기다.
+        /// 채팅 전송 · 확정 구매 · 채팅 열기의 갈림길을 실제로 지난다.
+        /// false = 씬에 EscapeRouter가 없다(배선 사고).
+        /// </summary>
+        public bool TestPressEnterKey()
+        {
+            var router = FindFirstObjectByType<Core.EscapeRouter>();
+            if (router == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestPressEnterKey — 씬에 EscapeRouter가 없다");
+                return false;
+            }
+            router.PressEnterKey();
+            return true;
+        }
+
+        /// <summary>
+        /// QA: 핫바 토스트가 **지금 화면에 있는 글자**(꺼져 있으면 빈 문자열).
+        /// 거절 사유는 토스트로만 나오므로, 「상점 밖에서 빈 칸을 눌렀다」의 결과를 재는 유일한 길이다.
+        /// </summary>
+        public string TestGetHotbarToast()
+        {
+            ShopHotbar bar = FindFirstObjectByType<ShopHotbar>();
+            if (bar == null) return "";
+            System.Reflection.FieldInfo info = typeof(ShopHotbar).GetField(
+                "m_Toast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var text = info != null ? info.GetValue(bar) as TMPro.TMP_Text : null;
+            if (text == null || !text.gameObject.activeInHierarchy) return "";
+            return text.text;
+        }
+
+        /// <summary>
         /// QA: 핫바 모드 줄이 화면에 그린 글자("상점 · 숫자키 = …    보유 n/5").
         /// 모드가 뒤집혔는지·전용 키 안내가 뜨는지를 **Model이 아니라 글자로** 잰다.
         /// </summary>

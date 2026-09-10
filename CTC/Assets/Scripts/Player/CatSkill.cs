@@ -69,16 +69,27 @@ namespace CTC.Runtime.Player
 
         private void ReadInput()
         {
-            if (UiFocus.BlocksGameplay) return;   // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
-            if (Cursor.lockState != CursorLockMode.Locked) return;
-
             Keyboard kb = Keyboard.current;
             if (kb == null || !kb.qKey.wasPressedThisFrame) return;
 
-            UseRpc();
+            PressSkillKey();
         }
 
-        /// <summary>QA 전용 — 키 없이 쓴다.</summary>
+        /// <summary>
+        /// Q 한 번 — **사람이 누르는 그 길**. 키를 읽는 곳과 가드를 나눈 이유는 QA다
+        /// (<c>ShopHotbar.PressSlot</c>과 같은 규약): <see cref="DevUse"/>는 가드를 건너뛰므로
+        /// 「채팅 중에도 스킬이 나간다」 같은 사고를 초록으로 통과시킨다.
+        /// <c>false</c> = 가드에 막혔다(입력창 포커스·커서 미잠금).
+        /// </summary>
+        public bool PressSkillKey()
+        {
+            if (UiFocus.BlocksGameplay) return false;   // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
+            if (Cursor.lockState != CursorLockMode.Locked) return false;
+            UseRpc();
+            return true;
+        }
+
+        /// <summary>QA 전용 — 키도 가드도 없이 쓴다. 입력 계약을 재는 스위트는 <see cref="PressSkillKey"/>를 쓴다.</summary>
         public void DevUse() => UseRpc();
 
         [Rpc(SendTo.Server, RequireOwnership = true)]

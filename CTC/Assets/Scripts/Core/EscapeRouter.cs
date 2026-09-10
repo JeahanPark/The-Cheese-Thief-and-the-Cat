@@ -47,6 +47,13 @@ namespace CTC.Runtime.Core
             if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) HandleEnter();
         }
 
+        /// <summary>
+        /// Enter 한 번 — **사람이 누르는 그 길**. 키를 읽는 곳과 나눈 이유는 QA다
+        /// (<c>ShopHotbar.PressSlot</c>과 같은 규약): 확정 구매를 <c>TryConfirmBuy</c>로 직접
+        /// 부르면 「채팅이 열려 있으면 Enter는 전송이다」라는 갈림길을 통째로 건너뛴다.
+        /// </summary>
+        public void PressEnterKey() => HandleEnter();
+
         // Enter 한 번 = 한 가지 일. 판정은 EnterRouteLogic이 하고 여기선 실행만 한다.
         private void HandleEnter()
         {

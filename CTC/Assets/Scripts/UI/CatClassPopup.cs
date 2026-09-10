@@ -33,6 +33,9 @@ namespace CTC.Runtime.UI
         private readonly SerialDisposable m_Binding = new SerialDisposable();
         private CatClass m_Class;
 
+        /// <summary>지금 화면에 떠 있는가 — QA가 「조건을 채우면 창이 뜬다」를 눈이 아니라 값으로 잰다.</summary>
+        public bool IsOpen => m_Root != null && m_Root.activeSelf;
+
         private void Start()
         {
             if (m_Root != null) m_Root.SetActive(false);

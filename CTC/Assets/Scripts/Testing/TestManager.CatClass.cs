@@ -100,6 +100,43 @@ namespace CTC.Runtime.Testing
             for (int i = 0; i < Economy.ShopLogic.MAX_UPGRADE_STACKS; i++) move.ServerAddSpeedStack();
         }
 
+        /// <summary>QA: 전직 선택 창이 지금 떠 있는가 — 조건을 채우면 저절로 떠야 한다.</summary>
+        public bool TestGetCatClassPopupOpen()
+        {
+            var popup = FindFirstObjectByType<UI.CatClassPopup>();
+            if (popup == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestGetCatClassPopupOpen — 씬에 CatClassPopup이 없다");
+                return false;
+            }
+            return popup.IsOpen;
+        }
+
+        /// <summary>
+        /// QA: 전직 선택 창의 버튼을 **실제로 누른다**(0=불 · 1=바람 · 2=빛 · 3=어둠).
+        /// 창의 onClick 배선을 지나므로 「창은 뜨는데 버튼이 안 먹는다」를 잡는다 —
+        /// <see cref="TestChooseCatClass"/>는 Rpc로 우회해 그 자리를 통째로 건너뛴다.
+        /// </summary>
+        public bool TestClickCatClassButton(int _index)
+        {
+            var popup = FindFirstObjectByType<UI.CatClassPopup>();
+            if (popup == null || !popup.IsOpen)
+            {
+                GameDebug.LogWarning("[TestManager] TestClickCatClassButton — 창이 안 떠 있다");
+                return false;
+            }
+            System.Reflection.FieldInfo info = typeof(UI.CatClassPopup).GetField(
+                "m_Buttons", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var buttons = info != null ? info.GetValue(popup) as UnityEngine.UI.Button[] : null;
+            if (buttons == null || _index < 0 || _index >= buttons.Length || buttons[_index] == null)
+            {
+                GameDebug.LogWarning($"[TestManager] TestClickCatClassButton — {_index}번 버튼이 없다");
+                return false;
+            }
+            buttons[_index].onClick.Invoke();
+            return true;
+        }
+
         /// <summary>QA: 전직 선택 — UI를 거치지 않고 같은 Rpc를 탄다(서버가 조건을 다시 본다).</summary>
         public void TestChooseCatClass(string _id)
         {
@@ -114,6 +151,23 @@ namespace CTC.Runtime.Testing
         {
             var skill = LocalComponent<CatSkill>();
             if (skill != null) skill.DevUse();
+        }
+
+        /// <summary>
+        /// QA: 전직 스킬 키(Q) 한 번 — <see cref="CatSkill.PressSkillKey"/>가 곧 사람이 타는 분기다.
+        /// <c>TestUseCatSkill</c>은 가드를 건너뛰므로 입력 계약을 재는 스위트는 이쪽을 쓴다
+        /// (<c>TestPressSlotKey</c>와 같은 이유 — 2026-09-09 감사 G-1).
+        /// <c>false</c> = 스킬이 없거나 가드에 막혔다(커서 미잠금·입력창 포커스).
+        /// </summary>
+        public bool TestPressSkillKey()
+        {
+            var skill = LocalComponent<CatSkill>();
+            if (skill == null)
+            {
+                GameDebug.LogWarning("[TestManager] TestPressSkillKey — CatSkill 없음");
+                return false;
+            }
+            return skill.PressSkillKey();
         }
 
         public bool TestGetCatSkillActive()

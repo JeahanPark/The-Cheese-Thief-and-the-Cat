@@ -82,7 +82,7 @@ namespace CTC.Tests.EditMode
         public void PurchaseOrder_FitsInTheSlotCap()
         {
             // 표가 칸 상한을 넘으면 마지막 것들이 영영 안 팔린다 — 표 자체가 상한 안이어야 한다.
-            int cap = CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap;
+            int cap = TechLogic.SlotCapOf(CTC.Runtime.Lobby.RoleId.Cat);
             Assert.LessOrEqual(CatBotLogic.PURCHASE_ORDER.Count, cap,
                 "구매 표가 칸 상한(" + cap + ")을 넘는다");
         }

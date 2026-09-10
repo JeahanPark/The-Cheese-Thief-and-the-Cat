@@ -188,6 +188,68 @@ namespace CTC.Runtime.Economy
         public static bool NeedsShopSpot(RoleId _role) => _role == RoleId.Mouse;
 
         /// <summary>
+        /// 이 역할의 핫바는 **칸이 곧 테크**인가 (2026-09-11).
+        ///
+        /// 상점에 가야 하는 역할(쥐)은 테크 10종을 칸 5개로 훑어야 해서 「같은 숫자키 반복 = 다음 후보」가
+        /// 필요하다. 상점 면제 역할(고양이)은 6종뿐이고 그중 다섯이 순수 스탯이라 넘길 것이 없다 —
+        /// 값은 못 하고 부작용만 냈다(발톱이 1·2번에, 광분이 3·5번에 겹쳐 뜬 2026-09-11 신고).
+        /// 그 역할은 카탈로그 순서대로 한 칸씩 못박는다.
+        /// </summary>
+        public static bool FixedSlots(RoleId _role) => !NeedsShopSpot(_role);
+
+        /// <summary>
+        /// 역할별 칸 수. 고정 배치 역할은 **제 테크 수만큼** 칸을 갖는다(1키 = 1테크) —
+        /// 그 수를 CSV에 또 적으면 테크가 늘 때 둘이 조용히 어긋난다. 넘기기 역할은 CSV의 전역 상한.
+        /// </summary>
+        public static int SlotCapOf(RoleId _role)
+            => FixedSlots(_role) ? Catalog(_role).Count : Info.InfoManager.Instance.Balance.TechSlotCap;
+
+        /// <summary>씬이 구워야 할 칸 수 — 역할 중 가장 많은 쪽. 남는 칸은 런타임에 역할별로 숨긴다.</summary>
+        public static int SlotCapMax()
+        {
+            int max = 0;
+            foreach (RoleId role in System.Enum.GetValues(typeof(RoleId)))
+            {
+                if (role == RoleId.None) continue;
+                int cap = SlotCapOf(role);
+                if (cap > max) max = cap;
+            }
+            return max;
+        }
+
+        /// <summary>고정 배치에서 이 칸이 맡은 테크 — 넘기기 역할이거나 범위 밖이면 None.</summary>
+        public static TechId SlotTechOf(RoleId _role, int _slot)
+        {
+            if (!FixedSlots(_role) || _slot < 0) return TechId.None;
+            IReadOnlyList<TechId> catalog = Catalog(_role);
+            return _slot < catalog.Count ? catalog[_slot] : TechId.None;
+        }
+
+        /// <summary>
+        /// 빈 칸이 넘길 다음 후보. **다른 빈 칸이 이미 보여 주는 것은 건너뛴다** — 두 칸이 같은 테크를
+        /// 가리키면 「고를 게 하나뿐」으로 읽힌다(2026-09-11 신고의 나머지 절반).
+        /// <paramref name="_taken"/>은 이미 <c>% _count</c>로 접힌 인덱스들이다.
+        /// 후보가 빈 칸보다 적어 겹침을 피할 수 없으면 그냥 다음으로 간다.
+        /// </summary>
+        public static int NextCandidateIndex(int _current, int _count, IReadOnlyList<int> _taken)
+        {
+            if (_count <= 0) return 0;
+            for (int step = 1; step <= _count; step++)
+            {
+                int idx = (_current + step) % _count;
+                bool taken = false;
+                for (int i = 0; _taken != null && i < _taken.Count; i++)
+                {
+                    if (_taken[i] != idx) continue;
+                    taken = true;
+                    break;
+                }
+                if (!taken) return idx;
+            }
+            return (_current + 1) % _count;
+        }
+
+        /// <summary>
         /// 이 역할·테크는 **액티브 전용 키로만** 쓸 수 있는가.
         ///
         /// 「밖에서 숫자키 = 쓴다」는 <b>밖이 있는 역할</b>에서만 성립한다. 상점 면제 역할(고양이)은

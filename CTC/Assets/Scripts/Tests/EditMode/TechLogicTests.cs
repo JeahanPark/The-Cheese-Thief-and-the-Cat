@@ -328,5 +328,121 @@ namespace CTC.Tests
 
             CollectionAssert.AreEqual(new[] { TechId.CatFrenzy }, actives);
         }
+
+        // ===== 역할별 칸 배치 (2026-09-11) =====
+        //
+        // 같은 테크가 두 칸에 뜬 신고(발톱 1·2번 · 광분 3·5번)의 뿌리는 「쥐용 UI를 고양이에 씌운 것」이었다.
+        // 고양이는 6종뿐이고 상점에도 안 가서 넘기기가 값을 못 하고 부작용만 냈다.
+
+        [Test]
+        public void FixedSlots_ShopExemptRoleOnly()
+        {
+            // 「칸이 곧 테크」는 상점에 안 가는 역할의 성질이다 — 두 규칙이 갈라지면 안 된다.
+            Assert.IsTrue(TechLogic.FixedSlots(RoleId.Cat));
+            Assert.IsFalse(TechLogic.FixedSlots(RoleId.Mouse));
+        }
+
+        [Test]
+        public void SlotCapOf_FixedRoleGetsOneSlotPerTech()
+        {
+            // 고정 배치 역할은 제 테크 수만큼 칸을 갖는다 — 6종이면 6칸이라 여섯째가 SlotsFull로 막히지 않는다.
+            int catalog = TechLogic.Catalog(RoleId.Cat).Count;
+            Assert.AreEqual(catalog, TechLogic.SlotCapOf(RoleId.Cat));
+            Assert.Greater(catalog, CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap,
+                "고양이 칸이 전역 상한과 같으면 이 테스트가 아무것도 안 잰다");
+        }
+
+        [Test]
+        public void SlotCapOf_CyclingRoleKeepsTheCsvCap()
+        {
+            // 쥐는 10종을 5칸으로 훑는다 — 전역 상한이 그대로 주인이다.
+            Assert.AreEqual(CTC.Runtime.Info.InfoManager.Instance.Balance.TechSlotCap,
+                TechLogic.SlotCapOf(RoleId.Mouse));
+        }
+
+        [Test]
+        public void SlotCapMax_CoversEveryRole()
+        {
+            // 씬은 이 수만큼 칸을 굽는다 — 어느 역할이든 모자라면 칸이 조용히 사라진다.
+            int max = TechLogic.SlotCapMax();
+            Assert.GreaterOrEqual(max, TechLogic.SlotCapOf(RoleId.Mouse));
+            Assert.GreaterOrEqual(max, TechLogic.SlotCapOf(RoleId.Cat));
+        }
+
+        [Test]
+        public void SlotTechOf_IsCatalogOrder_AndEverySlotIsDifferent()
+        {
+            // **신고된 버그 그 자체**: 같은 테크가 두 칸에 뜨면 안 된다.
+            IReadOnlyList<TechId> catalog = TechLogic.Catalog(RoleId.Cat);
+            var seen = new List<TechId>();
+            for (int slot = 0; slot < TechLogic.SlotCapOf(RoleId.Cat); slot++)
+            {
+                TechId id = TechLogic.SlotTechOf(RoleId.Cat, slot);
+                Assert.AreEqual(catalog[slot], id, slot + "번 칸이 카탈로그 순서가 아니다");
+                CollectionAssert.DoesNotContain(seen, id, id + "가 두 칸에 떴다");
+                seen.Add(id);
+            }
+        }
+
+        [Test]
+        public void SlotTechOf_NoneForCyclingRoleOrOutOfRange()
+        {
+            Assert.AreEqual(TechId.None, TechLogic.SlotTechOf(RoleId.Mouse, 0), "쥐는 고정 배치가 아니다");
+            Assert.AreEqual(TechId.None, TechLogic.SlotTechOf(RoleId.Cat, -1));
+            Assert.AreEqual(TechId.None, TechLogic.SlotTechOf(RoleId.Cat, TechLogic.SlotCapOf(RoleId.Cat)));
+        }
+
+        [Test]
+        public void SlotCap_LetsFixedRoleOwnEveryTech()
+        {
+            // 칸 상한이 전역 5로 남아 있었다면 여섯째 고양이 테크가 SlotsFull로 막혔다.
+            var owned = new List<TechEntry>();
+            IReadOnlyList<TechId> catalog = TechLogic.Catalog(RoleId.Cat);
+            int cap = TechLogic.SlotCapOf(RoleId.Cat);
+            for (int i = 0; i < catalog.Count; i++)
+            {
+                Assert.AreNotEqual(TechDeny.SlotsFull,
+                    TechLogic.CanBuy(owned, catalog[i], RoleId.Cat, 9999, cap),
+                    catalog[i] + "를 살 칸이 없다");
+                owned.Add(new TechEntry(catalog[i], 1));
+            }
+        }
+
+        // ===== 넘기기 겹침 (쥐) =====
+
+        [Test]
+        public void NextCandidateIndex_AdvancesWhenNothingIsTaken()
+        {
+            Assert.AreEqual(1, TechLogic.NextCandidateIndex(0, 4, null));
+            Assert.AreEqual(0, TechLogic.NextCandidateIndex(3, 4, new List<int>()), "끝에서 접힌다");
+        }
+
+        [Test]
+        public void NextCandidateIndex_SkipsWhatOtherSlotsAlreadyShow()
+        {
+            // 신고의 나머지 절반 — 넘겼는데 옆 칸과 같은 것이 떴다.
+            // 0에서 넘길 때 1·2를 옆 칸이 이미 보여 주면 3으로 건너뛴다.
+            Assert.AreEqual(3, TechLogic.NextCandidateIndex(0, 5, new List<int> { 1, 2 }));
+        }
+
+        [Test]
+        public void NextCandidateIndex_WrapsPastTakenOnes()
+        {
+            // 끝에서 접힌 뒤에도 건너뛴다 — 3에서 넘기면 0이지만 0이 차 있으면 1.
+            Assert.AreEqual(1, TechLogic.NextCandidateIndex(3, 4, new List<int> { 0 }));
+        }
+
+        [Test]
+        public void NextCandidateIndex_FallsForwardWhenEveryCandidateIsTaken()
+        {
+            // 후보가 빈 칸보다 적으면 겹침을 피할 수 없다 — 그때는 멈추지 말고 그냥 다음으로.
+            Assert.AreEqual(1, TechLogic.NextCandidateIndex(0, 3, new List<int> { 0, 1, 2 }));
+        }
+
+        [Test]
+        public void NextCandidateIndex_ZeroCandidatesIsSafe()
+        {
+            Assert.AreEqual(0, TechLogic.NextCandidateIndex(2, 0, null));
+        }
     }
 }
