@@ -7,21 +7,31 @@ using UnityEngine;
 namespace CTC.Runtime.Player
 {
     /// <summary>
-    /// 귀가 소리를 따라 선다 — 반대편 진영의 소리가 **실제로 들릴 때만** 그쪽으로 돌고 쫑긋 선다.
+    /// 귀가 소리를 따라 **쫑긋한다** — 반대편 진영의 소리가 **실제로 들릴 때만**, 그것도
+    /// **소리 하나가 새로 날 때마다 한 번씩** 그쪽으로 돌며 튕긴다.
     ///
     /// **없던 정보를 만들지 않는 것이 이 기능의 존재 이유다.** 동공 축소(기각)는
     /// 「고양이가 N m 안에 있다」를 새로 알려 줘서 살금살금(Sneak)을 배신했다. 귀는 반대다 —
     /// 이미 난 소리만 그림으로 바꾼다. 고양이가 살금살금 오면 발소리 반경이 20m→4m로 줄고,
-    /// 그 밖의 쥐 귀는 **한 톨도 안 움직인다.** 이 성질을 깨는 최적화·편의는 넣지 않는다.
+    /// 그 밖의 쥐 귀는 **한 번도 안 튕긴다.** 이 성질을 깨는 최적화·편의는 넣지 않는다.
     ///
-    /// **네트워크 0**: NetworkBehaviour가 아니다. 소리 이벤트(SfxPlayer.Played)도 발소리 상태
-    /// (FootstepPlayer.IsStepping)도 이미 모든 클라에 있으므로, 각 클라가 제 화면의 모든 몸에 대해
-    /// 같은 계산을 돌린다. 보내는 것도 받는 것도 없다.
+    /// **왜 「걷는 중」(상태)이 아니라 「한 걸음 났다」(이벤트)인가** (2026-09-10 실플레이 요구:
+    /// 「좀더 눈에 띌 정도로 쫑긋쫑긋 · 새로운 소리가 들렸을 때만 · 쫑긋도 딜레이가」).
+    /// 상태로 두면 상대가 걷는 내내 귀가 **가만히 서 있다** — 움직임이 없으니 눈에 안 띄고,
+    /// 「새 소리」도 아니다. 발소리는 원래 <see cref="Audio.FootstepPlayer"/>가 걸음마다 내는
+    /// 이산 이벤트라, 그 **걸음 하나하나**를 트리거로 삼으면 세 요구가 한꺼번에 풀린다.
+    ///
+    /// **「소리 덩어리」 단위로 묶지 않는 이유도 여기 있다**: 고양이가 계속 쫓아오는데 귀가
+    /// 처음 한 번만 서고 멈추면 **「아직 나를 쫓는다」가 안 읽힌다.** 이 기능의 값어치가 바로
+    /// 그 채널이므로(고양이는 쥐 귀를 보고 「들켰다」를 읽는다) 반드시 걸음 단위여야 한다.
+    ///
+    /// **네트워크 0**: NetworkBehaviour가 아니다. 걸음 이벤트도 일회성 소리 이벤트도 이미 모든
+    /// 클라에서 각자 나므로, 각 클라가 제 화면의 모든 몸에 대해 같은 계산을 돌린다.
     ///
     /// **새 에셋 0**: 팩 리그의 `ear.L`·`ear.R` 본을 LateUpdate에서 덧돌린다.
     /// 클립·메시·머티리얼을 만들지 않는다(모션 0 제약을 안 깬다).
     ///
-    /// 수치(최대 각도·쫑긋 각·유지·따라가는 속도)는 BalanceInfo.csv가 원본.
+    /// 수치(각도·딜레이·서는 시간·풀리는 시간·조준 속도)는 BalanceInfo.csv가 원본.
     /// </summary>
     public class EarPerk : MonoBehaviour
     {
@@ -31,16 +41,13 @@ namespace CTC.Runtime.Player
         /// </summary>
         private const float FAR_EAR_RATIO = 0.45f;
 
+        /// <summary>「쫑긋 한 번」으로 셀 문턱. 눈에 보이는 정점만 센다 — QA 계측 상수.</summary>
+        private const float PEAK_THRESHOLD = 0.6f;
+
         /// <summary>
-        /// 소리를 낼 수 있는 몸의 명부. 매 프레임 FindObjectsByType을 도는 대신 여기 등록한다
-        /// (CTC 규칙 3 — Update에서 오브젝트 탐색 금지).
-        ///
-        /// **판 도중 들어오고 나가는 것을 감당한다**: 스폰 시 1회 캐시가 아니라 OnEnable/OnDisable로
-        /// 붙고 떨어지므로, 늦게 들어온 고양이도 그 순간부터 명부에 있다(계획 2a의 StickyPatch가
-        /// 남긴 「판 도중 들어온 고양이가 안 걸린다」 부채를 되풀이하지 않는다).
-        ///
-        /// 이 컴포넌트는 쥐·고양이 두 프리팹 **양쪽**에 붙는다 — 그래서 명부가 곧 플레이어 몸 전부다.
-        /// 강아지는 제3세력이라 여기 없고, 짖음도 반대편 소리가 아니라(IsPreySound가 뺀다) 귀를 안 세운다.
+        /// 스폰돼 있는 플레이어 몸의 명부. **이제 소리를 찾는 데는 안 쓴다**(걸음이 이벤트로 온다) —
+        /// 남은 용도는 QA가 「반대편 몸이 어디 있나」를 O(n)으로 훑는 색인이다.
+        /// OnEnable/OnDisable로 붙고 떨어져 판 도중 난입·퇴장을 그대로 탄다.
         /// </summary>
         private static readonly List<EarPerk> s_All = new List<EarPerk>();
 
@@ -53,34 +60,38 @@ namespace CTC.Runtime.Player
         private float m_LocalXLeft;
 
         private NetworkObject m_NetObject;
-        private Audio.FootstepPlayer m_Steps;
         private RoleId m_Role = RoleId.None;
         private RoleId m_Enemy = RoleId.None;
 
         private float m_TurnMaxDeg;
         private float m_PerkDeg;
-        private float m_HoldSeconds;
+        private float m_DelaySeconds;
+        private float m_RiseSeconds;
+        private float m_FallSeconds;
         private float m_FollowSpeed;
 
-        private float m_Turn;       // 지금 적용 중인 좌우 각(도)
-        private float m_Perk;       // 지금 적용 중인 쫑긋 세기 0~1
+        private float m_Aim;        // 소리 쪽 조준각(도) — 부드럽게 따라간다
+        private float m_Perk;       // 지금 쫑긋 세기 0~1 (곡선값)
+        private float m_Turn;       // 실제로 적용 중인 좌우 각 = 조준각 × 쫑긋
 
-        private Vector3 m_HeardPosition;
-        private float m_HeardAt = float.NegativeInfinity;
-        private bool m_HeardIsStep;   // 지금 붙들고 있는 소리가 발소리인가(아니면 일회성) — QA 구분용
-        private bool m_StepAudibleNow; // 이 프레임에 반대편 발소리가 실제로 닿았나 — QA 판정의 근거
+        // 소리 하나 = 충격 하나. 곡선은 이 시각에서 다시 시작한다.
+        private bool m_HasImpulse;
+        private float m_ImpulseAt = float.NegativeInfinity;
+        private float m_ImpulseFrom;      // 트리거 순간의 쫑긋값 — 이어서 올라간다(안 튄다)
+        private Vector3 m_ImpulsePosition;
+        private float m_ImpulseDistance;
+        private bool m_ImpulseIsStep;
 
-        // 일회성 소리는 한 순간뿐이라 발소리와 나란히 비교할 수 없다 — 유지 시간 동안 살아 있는
-        // 후보로 따로 들고 있다가 매 프레임 발소리와 거리로 겨룬다.
-        private Vector3 m_ShotPosition;
-        private float m_ShotAt = float.NegativeInfinity;
+        private int m_Peaks;          // 눈에 띄게 튕긴 횟수(보조 지표)
+        private int m_StepImpulses;   // 들린 걸음 수
+        private int m_ShotImpulses;   // 들린 일회성 소리 수
 
         private bool m_Ready;
 
         /// <summary>QA 전용 — 지금 적용 중인 좌우 각(도). 0이면 귀가 안 돌아간 것이다.</summary>
         public float DevTurnDegrees => m_Turn;
 
-        /// <summary>QA 전용 — 지금 적용 중인 쫑긋 세기 0~1. **살금살금 검증의 숫자 근거**다.</summary>
+        /// <summary>QA 전용 — 지금 쫑긋 세기 0~1. **순간값이라 걸음 사이엔 0에 가깝다.**</summary>
         public float DevPerk => m_Perk;
 
         /// <summary>QA 전용 — 좌우 귀에 **실제로 들어간** 각(도). 먼 귀는 덜 돈다.</summary>
@@ -89,25 +100,38 @@ namespace CTC.Runtime.Player
         /// <summary>QA 전용 — 왼귀에 실제로 들어간 각(도).</summary>
         public float DevTurnLeft => m_Turn * EarPerkLogic.SideScale(m_Turn, m_LocalXLeft, FAR_EAR_RATIO);
 
-        /// <summary>QA 전용 — 지금 붙들고 있는 소리가 있는가.</summary>
-        public bool DevHearing => EarPerkLogic.Holding(Time.time - m_HeardAt, m_HoldSeconds);
+        /// <summary>
+        /// QA 전용 — **눈에 띄게 튕긴 횟수**(문턱 아래로 풀렸다 다시 정점에 닿은 수).
+        ///
+        /// 「지금 서 있나」로는 계약을 못 잰다 — 걸음 단위가 된 뒤로 순간값 표본은 대부분 0이다
+        /// (걸음 사이엔 풀려 있으니까). 다만 이 값은 **소리가 아주 촘촘하면 적게 나온다**:
+        /// 풀릴 틈 없이 다시 트리거되면 교차가 안 일어난다(귀는 계속 서 있고, 그건 맞는 그림이다).
+        /// 그래서 **계약의 주 계측값은 <see cref="DevStepImpulses"/>**이고 이 값은 보조다.
+        /// </summary>
+        public int DevPerkPeaks => m_Peaks;
 
         /// <summary>
-        /// QA 전용 — 붙들고 있는 소리의 종류 "step"(발소리) | "shot"(일회성) | "none".
-        /// **잠행 검증에 반드시 필요하다**: 잠행은 발소리만 줄인다. 덮치기·요새 파괴음은
-        /// 잠행 중에도 그대로 들리므로 "귀가 섰다"만 보면 잠행이 깨진 것처럼 오독한다.
+        /// QA 전용 — **들린 걸음 수**. 새 계약의 주 계측값이다:
+        /// 뛸 때 N회 이상 · **살금살금이면 0회**. 잠행이 줄이는 것이 정확히 이 수다.
         /// </summary>
-        public string DevHeardKind => !DevHearing ? "none" : m_HeardIsStep ? "step" : "shot";
+        public int DevStepImpulses => m_StepImpulses;
 
         /// <summary>
-        /// QA 전용 — **이 프레임에** 반대편 발소리가 실제로 귀에 닿았는가.
-        /// <see cref="DevHearing"/>은 유지 시간(1.5초) 동안 참으로 남아 「지금 들리나」와 다르다 —
-        /// 잠행 판정은 순간값으로 재야 뛰던 직전의 잔상이 안 섞인다.
+        /// QA 전용 — 들린 **일회성 소리** 수(덮치기·스킬 등). 잠행은 이걸 안 줄인다 —
+        /// 그래서 걸음과 나눠 세야 「잠행이 깨졌다」를 오독하지 않는다.
         /// </summary>
-        public bool DevStepAudible => m_StepAudibleNow;
+        public int DevShotImpulses => m_ShotImpulses;
 
-        /// <summary>QA 전용 — 붙들고 있는 소리의 위치(없으면 자기 자리).</summary>
-        public Vector3 DevHeardPosition => DevHearing ? m_HeardPosition : transform.position;
+        /// <summary>QA 전용 — 마지막 충격의 종류 "step" | "shot" | "none".</summary>
+        public string DevLastKind => !m_HasImpulse ? "none" : m_ImpulseIsStep ? "step" : "shot";
+
+        /// <summary>QA 전용 — 셈을 0으로. 창을 열고 그 안에서 몇 번 쫑긋했나를 재려고.</summary>
+        public void DevResetCounters()
+        {
+            m_Peaks = 0;
+            m_StepImpulses = 0;
+            m_ShotImpulses = 0;
+        }
 
         /// <summary>QA 전용 — 오른귀 월드 위치(고정 시점 근접 촬영의 초점).</summary>
         public Vector3 DevEarWorldRight => m_EarRight != null ? m_EarRight.position : transform.position;
@@ -121,7 +145,6 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             m_NetObject = GetComponent<NetworkObject>();
-            m_Steps = GetComponentInChildren<Audio.FootstepPlayer>(true);
 
             var tag = GetComponent<Combat.RoleTag>();
             m_Role = tag != null ? tag.Role : RoleId.None;
@@ -130,7 +153,9 @@ namespace CTC.Runtime.Player
             BalanceInfo balance = InfoManager.Instance.Balance;
             m_TurnMaxDeg = balance.EarTurnMaxDeg;
             m_PerkDeg = balance.EarPerkDeg;
-            m_HoldSeconds = balance.EarHoldSeconds;
+            m_DelaySeconds = balance.EarPerkDelaySeconds;
+            m_RiseSeconds = balance.EarPerkRiseSeconds;
+            m_FallSeconds = balance.EarPerkFallSeconds;
             m_FollowSpeed = balance.EarFollowSpeed;
 
             Build();
@@ -160,17 +185,31 @@ namespace CTC.Runtime.Player
         {
             s_All.Add(this);
             Audio.SfxPlayer.Played += OnSfxPlayed;
+            Audio.FootstepPlayer.Stepped += OnStepped;
         }
 
         private void OnDisable()
         {
+            Audio.FootstepPlayer.Stepped -= OnStepped;
             Audio.SfxPlayer.Played -= OnSfxPlayed;
             s_All.Remove(this);
         }
 
         /// <summary>
+        /// **걸음 하나** — 반대편 진영의 것만, 그것도 내 귀에 닿을 때만 받는다.
+        /// 반경 판정은 봇 청각과 **같은 함수**를 쓴다(<see cref="Bots.BotSenseLogic.CanHear"/>).
+        /// </summary>
+        private void OnStepped(RoleId _role, Vector3 _position, float _designRange)
+        {
+            if (!m_Ready || m_Enemy == RoleId.None || _role != m_Enemy) return;
+            if (!Bots.BotSenseLogic.CanHear(transform.position, _position, RangeOf(_designRange))) return;
+
+            Trigger(_position, true);
+        }
+
+        /// <summary>
         /// 일회성 소리 — 반대편이 낼 수 있는 종류(<see cref="Bots.BotSenseLogic.IsPreySound"/>)만,
-        /// 그것도 내 귀에 닿을 때만 받는다. 봇 청각과 **같은 규칙**을 쓴다.
+        /// 그것도 내 귀에 닿을 때만 받는다. 걸음과 **같은 트리거**다.
         /// </summary>
         private void OnSfxPlayed(Audio.SfxId _id, Vector3 _position, float _maxDistance)
         {
@@ -178,8 +217,28 @@ namespace CTC.Runtime.Player
             if (!Bots.BotSenseLogic.IsPreySound(_id, m_Enemy)) return;
             if (!Bots.BotSenseLogic.CanHear(transform.position, _position, RangeOf(_maxDistance))) return;
 
-            m_ShotPosition = _position;
-            m_ShotAt = Time.time;
+            Trigger(_position, false);
+        }
+
+        /// <summary>소리 하나 = 쫑긋 한 번. 곡선을 지금 값에서 다시 시작한다.</summary>
+        private void Trigger(Vector3 _position, bool _isStep)
+        {
+            float now = Time.time;
+            float distance = Flat(_position - transform.position).magnitude;
+
+            // 같은 프레임에 둘 이상 들리면 순서에 기대면 안 된다 — 가까운 쪽이 이긴다.
+            if (m_HasImpulse && Mathf.Approximately(m_ImpulseAt, now) &&
+                !EarPerkLogic.Closer(distance, m_ImpulseDistance)) return;
+
+            m_ImpulseFrom = m_Perk;
+            m_ImpulseAt = now;
+            m_ImpulsePosition = _position;
+            m_ImpulseDistance = distance;
+            m_ImpulseIsStep = _isStep;
+            m_HasImpulse = true;
+
+            if (_isStep) m_StepImpulses++;
+            else m_ShotImpulses++;
         }
 
         // 애니메이터가 귀 본을 돌린 뒤에 얹어야 한 프레임 늦지 않는다.
@@ -187,92 +246,34 @@ namespace CTC.Runtime.Player
         {
             if (!m_Ready) return;
 
-            float now = Time.time;
-            if (Listen(now, out Vector3 source, out bool isStep))
+            float perk = m_HasImpulse
+                ? EarPerkLogic.PerkEnvelope(Time.time - m_ImpulseAt, m_ImpulseFrom,
+                                            m_DelaySeconds, m_RiseSeconds, m_FallSeconds)
+                : 0f;
+            if (EarPerkLogic.CrossedPeak(m_Perk, perk, PEAK_THRESHOLD)) m_Peaks++;
+            m_Perk = perk;
+
+            if (m_HasImpulse)
             {
-                m_HeardPosition = source;
-                m_HeardAt = now;
-                m_HeardIsStep = isStep;
+                float target = EarPerkLogic.TurnDegrees(
+                    transform.forward, m_ImpulsePosition - transform.position, m_TurnMaxDeg);
+                m_Aim = EarPerkLogic.Follow(m_Aim, target, m_FollowSpeed, Time.deltaTime);
             }
 
-            bool holding = EarPerkLogic.Holding(now - m_HeardAt, m_HoldSeconds);
-            float targetTurn = holding
-                ? EarPerkLogic.TurnDegrees(transform.forward, m_HeardPosition - transform.position, m_TurnMaxDeg)
-                : 0f;
-            float targetPerk = holding ? 1f : 0f;
-
-            float dt = Time.deltaTime;
-            m_Turn = EarPerkLogic.Follow(m_Turn, targetTurn, m_FollowSpeed, dt);
-            m_Perk = EarPerkLogic.Follow(m_Perk, targetPerk, m_FollowSpeed, dt);
+            // 좌우 각도 쫑긋 곡선을 타고 나갔다 돌아온다 — 안 들리면 곡선이 0이라 각도 0이다.
+            m_Turn = m_Aim * m_Perk;
 
             Apply();
         }
 
-        /// <summary>지금 들리는 것 중 **가장 가까운** 소리의 자리. 아무것도 안 들리면 false.</summary>
-        private bool Listen(float _now, out Vector3 _source, out bool _isStep)
-        {
-            _source = Vector3.zero;
-            _isStep = false;
-            m_StepAudibleNow = false;
-            if (m_Enemy == RoleId.None) return false;
-
-            Vector3 me = transform.position;
-            float best = float.PositiveInfinity;
-            bool found = false;
-
-            for (int i = 0; i < s_All.Count; i++)
-            {
-                EarPerk other = s_All[i];
-                if (other == null || other == this || other.m_Role != m_Enemy) continue;
-
-                Audio.FootstepPlayer steps = other.m_Steps;
-                if (steps == null || !steps.IsStepping) continue;
-
-                Vector3 position = other.transform.position;
-                if (!Bots.BotSenseLogic.CanHear(me, position, FootstepRangeOf(steps))) continue;
-
-                float distance = Flat(position - me).magnitude;
-                if (found && !EarPerkLogic.Closer(distance, best)) continue;
-                found = true;
-                best = distance;
-                _source = position;
-                _isStep = true;
-                m_StepAudibleNow = true;
-            }
-
-            if (EarPerkLogic.Holding(_now - m_ShotAt, m_HoldSeconds))
-            {
-                float distance = Flat(m_ShotPosition - me).magnitude;
-                if (!found || EarPerkLogic.Closer(distance, best))
-                {
-                    found = true;
-                    _source = m_ShotPosition;
-                    _isStep = false;
-                }
-            }
-
-            return found;
-        }
-
         /// <summary>
-        /// 발소리가 이 귀에 닿는 거리. <see cref="Audio.FootstepPlayer"/>의 두 값 중 어느 쪽을 쓰나 —
-        /// **내 몸이면 HeardRange, 남의 몸이면 CurrentRange.**
+        /// 발소리·일회성 소리가 이 귀에 닿는 거리. **내 몸일 때만 「예민한 귀」 배율을 태운다.**
         ///
-        /// HeardRange는 CurrentRange에 「예민한 귀」테크 배율(<see cref="Audio.ListenerRange.Multiplier"/>)을
-        /// 곱한 값인데, 그 배율은 **이 클라이언트의** 테크다. 남의 몸 귀에까지 곱하면 내가 산 테크로
-        /// 남이 못 들은 소리에 그 사람 귀가 서는 그림이 되고, 그건 「귀는 없던 정보를 만들지 않는다」를
-        /// 정면으로 어긴다(테크를 산 고양이가 쥐 귀를 부풀려 보게 된다). 남의 테크는 복제되지 않아
-        /// 애초에 알 수도 없으므로 설계값을 쓴다.
-        ///
-        /// 그래서 기획서대로 **테크는 태우되 내 몸에만** 태운다 — 예민한 귀를 올린 사람은
-        /// 제 캐릭터의 귀가 더 자주 서는 것을 본다.
+        /// <see cref="Audio.ListenerRange.Multiplier"/>는 *이 클라이언트*의 테크다. 남의 몸 귀에까지
+        /// 곱하면 내가 산 테크로 남이 못 들은 소리에 그 사람 귀가 서는 그림이 되고, 그건
+        /// 「귀는 없던 정보를 만들지 않는다」를 정면으로 어긴다(테크를 산 고양이가 쥐 귀를 부풀려
+        /// 보게 된다). 남의 테크는 복제되지 않아 애초에 알 수도 없으므로 설계값을 쓴다.
         /// </summary>
-        private float FootstepRangeOf(Audio.FootstepPlayer _steps)
-        {
-            return Mine() ? _steps.HeardRange : _steps.CurrentRange;
-        }
-
-        /// <summary>일회성 소리 쪽 같은 규칙 — 이벤트가 주는 값은 배율이 안 곱해진 설계 반경이다.</summary>
         private float RangeOf(float _designRange)
         {
             return Mine() ? _designRange * Audio.ListenerRange.Multiplier : _designRange;
@@ -290,8 +291,10 @@ namespace CTC.Runtime.Player
         /// 처음엔 쫑긋을 몸의 **정면 축** 둘레 롤로 줬다가 사용자에게 「기괴한 각도로 꺾여 있다」를
         /// 들었다(2026-09-08). 실제 메시를 재 보니(`Tools/CTC/Dev/Probe Ear Geometry`) 귀는
         /// 이미 **위로** 뻗어 있고(모델 로컬 up 0.91~0.94) 바깥으로 20°쯤 기울어 있다 —
-        /// 거기에 안쪽으로 35°를 더 주면 기울기를 넘어서 **귀가 머리를 가로질러 접힌다.**
+        /// 거기에 안쪽으로 롤을 주면 기울기를 넘어서 **귀가 머리를 가로질러 접힌다.**
         /// 앞으로 세우는 축은 좌우 귀가 같은 방향이라 어느 쪽도 정중선을 넘지 않는다.
+        /// **각도를 키울 수 있게 된 것도 이 축 덕분이다**(2026-09-10: 26°→40° · 18°→32°) —
+        /// 짧게 튕겼다 돌아오는 동작이라 큰 각도에서도 실루엣이 안 망가진다.
         /// </summary>
         private void Apply()
         {

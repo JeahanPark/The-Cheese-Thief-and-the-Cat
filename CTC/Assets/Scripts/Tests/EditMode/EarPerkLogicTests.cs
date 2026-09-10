@@ -5,8 +5,9 @@ using UnityEngine;
 namespace CTC.Tests
 {
     /// <summary>
-    /// 귀 계산(2026-09-08). 요구사항이 **뒤집히지 않는 것** · **스냅하지 않는 것** ·
-    /// **잠시 유지하다 돌아오는 것** · **겹친 소리 중 가까운 쪽을 따르는 것**이라 그 넷을 잰다.
+    /// 귀 계산. 요구사항이 **뒤집히지 않는 것** · **스냅하지 않는 것** ·
+    /// **딜레이 뒤에 빠르게 섰다 천천히 풀리는 것**(2026-09-10 걸음 단위 재설계) ·
+    /// **겹친 소리 중 가까운 쪽을 따르는 것**이라 그 넷을 잰다.
     /// 트랜스폼·시간을 안 쓰는 순수 함수만 본다.
     /// </summary>
     public class EarPerkLogicTests
@@ -95,26 +96,74 @@ namespace CTC.Tests
             Assert.AreEqual(12f, EarPerkLogic.Follow(12f, 50f, 8f, 0f), 1e-4f);
         }
 
+        /// <summary>딜레이 동안은 **아직 안 선다** — 듣자마자 튀면 기계 같다.</summary>
         [Test]
-        public void Holding_WithinWindow_True()
+        public void PerkEnvelope_DuringDelay_StaysAtStart()
         {
-            Assert.IsTrue(EarPerkLogic.Holding(0f, 1.5f));
-            Assert.IsTrue(EarPerkLogic.Holding(1.49f, 1.5f));
+            Assert.AreEqual(0f, EarPerkLogic.PerkEnvelope(0f, 0f, 0.07f, 0.08f, 0.45f), 1e-4f);
+            Assert.AreEqual(0f, EarPerkLogic.PerkEnvelope(0.069f, 0f, 0.07f, 0.08f, 0.45f), 1e-4f);
         }
 
+        /// <summary>딜레이가 끝나면 빠르게 1까지 오른다.</summary>
         [Test]
-        public void Holding_AfterWindow_False()
+        public void PerkEnvelope_RisesToOne()
         {
-            Assert.IsFalse(EarPerkLogic.Holding(1.5f, 1.5f));
-            Assert.IsFalse(EarPerkLogic.Holding(9f, 1.5f));
+            float mid = EarPerkLogic.PerkEnvelope(0.07f + 0.04f, 0f, 0.07f, 0.08f, 0.45f);
+            Assert.Greater(mid, 0.2f);
+            Assert.Less(mid, 0.8f);
+            Assert.AreEqual(1f, EarPerkLogic.PerkEnvelope(0.07f + 0.08f, 0f, 0.07f, 0.08f, 0.45f), 1e-3f);
         }
 
-        /// <summary>한 번도 못 들었으면(음의 무한대 시각) 유지도 없다.</summary>
+        /// <summary>다 풀리면 정확히 0 — 「안 들리면 안 움직인다」가 여기서 끝난다.</summary>
         [Test]
-        public void Holding_NeverHeard_False()
+        public void PerkEnvelope_AfterFall_IsExactlyZero()
         {
-            Assert.IsFalse(EarPerkLogic.Holding(float.PositiveInfinity, 1.5f));
-            Assert.IsFalse(EarPerkLogic.Holding(-1f, 1.5f));
+            Assert.AreEqual(0f, EarPerkLogic.PerkEnvelope(0.07f + 0.08f + 0.45f, 0f, 0.07f, 0.08f, 0.45f), 1e-6f);
+            Assert.AreEqual(0f, EarPerkLogic.PerkEnvelope(99f, 1f, 0.07f, 0.08f, 0.45f), 1e-6f);
+        }
+
+        /// <summary>풀리는 쪽이 서는 쪽보다 느려야 동물 같다 — 같은 진행률에서 아직 더 높다.</summary>
+        [Test]
+        public void PerkEnvelope_FallsSlowerThanItRises()
+        {
+            const float delay = 0.07f, rise = 0.08f, fall = 0.45f;
+            float halfUp = EarPerkLogic.PerkEnvelope(delay + rise * 0.5f, 0f, delay, rise, fall);
+            float sameTimeAfterPeak = EarPerkLogic.PerkEnvelope(delay + rise + rise * 0.5f, 0f, delay, rise, fall);
+            Assert.Greater(sameTimeAfterPeak, halfUp);
+        }
+
+        /// <summary>
+        /// 풀리는 도중에 또 들으면 **0으로 뚝 떨어졌다 오르지 않는다** — 그 자리에서 이어 오른다.
+        /// 이게 없으면 뛰는 상대 앞에서 귀가 덜덜 떤다.
+        /// </summary>
+        [Test]
+        public void PerkEnvelope_RetriggerContinuesFromCurrent()
+        {
+            float at = EarPerkLogic.PerkEnvelope(0.001f, 0.6f, 0.07f, 0.08f, 0.45f);
+            Assert.AreEqual(0.6f, at, 1e-4f);
+            Assert.Greater(EarPerkLogic.PerkEnvelope(0.07f + 0.02f, 0.6f, 0.07f, 0.08f, 0.45f), 0.6f);
+        }
+
+        /// <summary>값은 언제나 0~1 안이다 — 시작값이 범위를 벗어나도.</summary>
+        [Test]
+        public void PerkEnvelope_StaysInRange()
+        {
+            for (float t = 0f; t < 1f; t += 0.017f)
+            {
+                float v = EarPerkLogic.PerkEnvelope(t, 3f, 0.07f, 0.08f, 0.45f);
+                Assert.GreaterOrEqual(v, 0f);
+                Assert.LessOrEqual(v, 1f);
+            }
+        }
+
+        /// <summary>정점을 **넘어설 때만** 한 번 센다 — 이미 서 있는 동안엔 안 센다.</summary>
+        [Test]
+        public void CrossedPeak_CountsRisingEdgeOnly()
+        {
+            Assert.IsTrue(EarPerkLogic.CrossedPeak(0.2f, 0.7f, 0.6f));
+            Assert.IsFalse(EarPerkLogic.CrossedPeak(0.7f, 0.9f, 0.6f));
+            Assert.IsFalse(EarPerkLogic.CrossedPeak(0.9f, 0.3f, 0.6f));
+            Assert.IsFalse(EarPerkLogic.CrossedPeak(0f, 0f, 0.6f));
         }
 
         [Test]

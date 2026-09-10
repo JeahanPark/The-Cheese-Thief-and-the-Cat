@@ -21,12 +21,27 @@ namespace CTC.Runtime.Audio
         [SerializeField] private float m_NormalRange = 8f;
         [SerializeField] private float m_SneakRange = 4f;
 
+        /// <summary>
+        /// **한 걸음이 났다** — 누가(진영)·어디서·설계 반경 몇 m까지. **듣는 쪽이 구독한다.**
+        ///
+        /// 왜 여기 있나(2026-09-10): 귀 연출(<see cref="Player.EarPerk"/>)이 「걷는 중인가」라는
+        /// 상태를 매 프레임 읽던 것을 「한 걸음 났다」는 이벤트로 바꿨다. 발소리는 원래 걸음마다
+        /// 나는 이산 사건이고, **그걸 아는 것은 소리를 내는 이쪽**이다. 상태를 밖에서 폴링하면
+        /// 걸음 사이를 구별할 수 없어 「새로운 소리」도 「쫑긋쫑긋」도 만들 수 없다.
+        ///
+        /// 반경은 <see cref="CurrentRange"/>(설계값)를 준다 — 「예민한 귀」배율은 **듣는 쪽이**
+        /// 제 몸에만 곱한다(<see cref="SfxPlayer.Played"/>와 같은 규약).
+        /// 구독자가 없으면(배포 빌드) 아무 일도 일어나지 않는다.
+        /// </summary>
+        public static event System.Action<Lobby.RoleId, Vector3, float> Stepped;
+
         private Vector3 m_LastPosition;
         private float m_SmoothedSpeed;
         private float m_Accumulated;
         private bool m_WasMoving;
         private int m_LastClip = -1;
         private Player.Sneak m_Sneak; // 잠행 중엔 발소리가 아주 좁게만 들린다(고양이·쥐 공통)
+        private Lobby.RoleId m_Role = Lobby.RoleId.None; // 걸음 이벤트에 실어 보낸다 — 듣는 쪽이 아군/적군을 가른다
 
         /// <summary>지금 걷고 있어 발소리가 나는 중인가(QA·봇 청각).</summary>
         public bool IsStepping { get; private set; }
@@ -44,6 +59,8 @@ namespace CTC.Runtime.Audio
         {
             m_LastPosition = transform.position;
             m_Sneak = GetComponentInParent<Player.Sneak>();
+            var tag = GetComponentInParent<Combat.RoleTag>();
+            m_Role = tag != null ? tag.Role : Lobby.RoleId.None;
         }
 
         private void Update()
@@ -82,7 +99,11 @@ namespace CTC.Runtime.Audio
             m_WasMoving = true;
 
             m_Accumulated = FootstepLogic.Advance(m_Accumulated, distance, m_StrideMeters, out bool step);
-            if (step) PlayStep();
+            if (!step) return;
+
+            // 클립이 비어도 **걸음은 났다** — SfxPlayer.Played와 같은 규약으로 먼저 알린다.
+            Stepped?.Invoke(m_Role, transform.position, range);
+            PlayStep();
         }
 
         private void PlayStep()

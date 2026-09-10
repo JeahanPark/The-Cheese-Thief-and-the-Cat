@@ -30,17 +30,47 @@ namespace CTC.Runtime.Player
             return Mathf.Lerp(_current, _target, 1f - Mathf.Exp(-_speed * _deltaTime));
         }
 
-        /// <summary>들은 지 _sinceHeard초 — 아직 귀를 세우고 있어야 하나(음수 시각 = 아직 못 들었다).</summary>
-        public static bool Holding(float _sinceHeard, float _holdSeconds)
+        /// <summary>
+        /// **쫑긋 한 번**의 세기 곡선 0~1 — 딜레이 → 빠르게 섬 → 천천히 풀림.
+        ///
+        /// 「지속 상태」가 아니라 곡선인 이유(2026-09-10 사용자 요구): 상태로 두면 상대가 걷는
+        /// 내내 귀가 **가만히 서 있어서** 눈에 안 띄고, 「새로운 소리」도 아니다. 걸음마다 이 곡선을
+        /// 다시 트리거하면 뛸 때 여러 번 튕겨 **쫑긋쫑긋**이 되고, 딜레이도 여기 들어간다.
+        ///
+        /// <paramref name="_from"/>은 트리거 순간의 값이다 — 풀리는 도중에 또 들으면 **0으로 뚝
+        /// 떨어졌다 다시 오르지 않고** 그 자리에서 이어 오른다(연속이라 튀지 않는다).
+        /// </summary>
+        public static float PerkEnvelope(float _elapsed, float _from, float _delay, float _rise, float _fall)
         {
-            return _sinceHeard >= 0f && _sinceHeard < Mathf.Max(0f, _holdSeconds);
+            float from = Mathf.Clamp01(_from);
+            if (_elapsed < 0f) return from;
+
+            float delay = Mathf.Max(0f, _delay);
+            if (_elapsed < delay) return from;          // 듣고 나서 잠깐 — 반응 지연
+
+            float rise = Mathf.Max(1e-4f, _rise);
+            float t = _elapsed - delay;
+            if (t < rise) return Mathf.Lerp(from, 1f, Mathf.SmoothStep(0f, 1f, t / rise));
+
+            float fall = Mathf.Max(1e-4f, _fall);
+            float k = (t - rise) / fall;
+            return k >= 1f ? 0f : Mathf.SmoothStep(1f, 0f, k);
+        }
+
+        /// <summary>
+        /// 쫑긋이 **눈에 보이는 정점**에 새로 닿았나 — QA가 「몇 번 쫑긋했나」를 셀 때 쓰는 문턱.
+        /// 걸음 단위가 된 뒤로는 「그 순간 서 있나」를 표본으로 재면 대부분 0이 나온다(걸음 사이엔
+        /// 풀려 있으니까). 세야 하는 것은 **횟수**다.
+        /// </summary>
+        public static bool CrossedPeak(float _previous, float _current, float _threshold)
+        {
+            return _previous < _threshold && _current >= _threshold;
         }
 
         /// <summary>
         /// 소리가 겹쳤을 때 무엇을 따를까 — **더 가까운 쪽이 이긴다.**
-        ///
-        /// 「최근」을 안 쓰는 이유: 발소리는 매 프레임 다시 '지금'이라 일회성 소리를 항상 눌러 버린다.
-        /// 두 종류가 함께 가진 축은 거리뿐이고, 사람 귀가 실제로 향하는 것도 가까워서 큰 쪽이다.
+        /// 걸음은 이제 이벤트라 나중 것이 앞의 것을 덮지만, **같은 프레임에 둘 이상** 들리면
+        /// 순서에 기대면 안 된다 — 그때 이 규칙이 정한다.
         /// </summary>
         public static bool Closer(float _candidateDistance, float _bestDistance)
         {
@@ -68,4 +98,3 @@ namespace CTC.Runtime.Player
         }
     }
 }
-

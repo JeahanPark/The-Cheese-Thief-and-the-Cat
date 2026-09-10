@@ -96,7 +96,9 @@ namespace CTC.Runtime.Info
         public float EyePupilOffsetRatio;
         public float EarTurnMaxDeg;
         public float EarPerkDeg;
-        public float EarHoldSeconds;
+        public float EarPerkDelaySeconds;
+        public float EarPerkRiseSeconds;
+        public float EarPerkFallSeconds;
         public float EarFollowSpeed;
         public float EyeFlatten;
         public float EyeInsetRatio;

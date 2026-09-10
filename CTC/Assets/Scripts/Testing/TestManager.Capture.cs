@@ -6,6 +6,7 @@
 // 개발 빌드에도 실린다(2026-08-31) — 빌드 E2E QA(wesqa)의 진입점이라서. 배포 빌드에선 빠진다.
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.IO;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CTC.Runtime.Testing
@@ -311,6 +312,56 @@ namespace CTC.Runtime.Testing
                    $"turn={(ears != null ? ears.DevTurnDegrees : 0f):F2} " +
                    $"perk={(ears != null ? ears.DevPerk : 0f):F3} " +
                    $"gaze={gaze.x:F3},{gaze.y:F3},{gaze.z:F3}";
+        }
+
+        /// <summary>
+        /// QA: **쫑긋의 정점 프레임**을 잡아 정면·옆면 두 장을 쓴다(2026-09-10).
+        ///
+        /// 귀가 걸음 단위로 튕기게 바뀐 뒤로 정점은 0.1초쯤만 산다 — 파이썬이 폴링해서 찍으면
+        /// 왕복 지연에 놓쳐 「안 움직였다」와 구별이 안 된다. 그래서 **유니티 안에서 기다렸다가**
+        /// 그 프레임에 렌더한다. 결과는 <see cref="TestGetEarPeakShotResult"/>로 받는다.
+        ///
+        /// 파일은 `_path` + "_front.png" / "_side.png"로 쓴다.
+        /// </summary>
+        public string TestCaptureEarPeakShot(string _path, int _size, float _threshold, float _timeoutSeconds)
+        {
+            m_EarPeakShotResult = "";
+            EarPeakShotAsync(_path, _size, _threshold, _timeoutSeconds, destroyCancellationToken).Forget();
+            return "armed";
+        }
+
+        /// <summary>QA: <see cref="TestCaptureEarPeakShot"/>의 결과. 빈 문자열이면 아직 기다리는 중.</summary>
+        public string TestGetEarPeakShotResult() => m_EarPeakShotResult;
+
+        private string m_EarPeakShotResult = "";
+
+        private async UniTaskVoid EarPeakShotAsync(
+            string _path, int _size, float _threshold, float _timeoutSeconds,
+            System.Threading.CancellationToken _token)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var ears = local != null ? local.GetComponent<CTC.Runtime.Player.EarPerk>() : null;
+            if (ears == null) { m_EarPeakShotResult = "no EarPerk"; return; }
+
+            float deadline = Time.time + Mathf.Max(0.5f, _timeoutSeconds);
+            float best = 0f;
+            while (Time.time < deadline)
+            {
+                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, _token);
+                best = Mathf.Max(best, ears.DevPerk);
+                if (ears.DevPerk < _threshold) continue;
+
+                // 정점에서 두 장 — 옆면을 같이 찍는다. 꺾임은 정면에서 안 보인다.
+                GameObject body = local.gameObject;
+                string front = CaptureHeadShot(_path + "_front.png", _size, 0f, 6f, body);
+                string side = CaptureHeadShot(_path + "_side.png", _size, 88f, 6f, body);
+                m_EarPeakShotResult =
+                    $"ok perk={ears.DevPerk:F3} turnR={ears.DevTurnRight:F2} turnL={ears.DevTurnLeft:F2} " +
+                    $"peaks={ears.DevPerkPeaks} | {front} | {side}";
+                return;
+            }
+            m_EarPeakShotResult = $"timeout bestPerk={best:F3} peaks={ears.DevPerkPeaks}";
         }
 
         private static Transform FindDeep(Transform _root, string _name)

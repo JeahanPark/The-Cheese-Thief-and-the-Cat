@@ -518,10 +518,15 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
-        /// QA: 로컬 몸의 귀 한 줄 — "turn=deg|perk=0..1|hearing=0/1|near=Cat@5.2m|range=20.0|stepping=1|sneak=0".
-        /// 연출이라 Model 값만 보면 배선 누락을 못 잡는다 — **실제 EarPerk가 적용 중인 각**과
-        /// **그 판단의 재료**(가장 가까운 반대편 · 그 몸의 발소리 반경)를 같이 준다.
-        /// 잠행 검증은 이 한 줄로 끝난다: 같은 near에서 sneak=1이면 range가 줄고 perk=0이어야 한다.
+        /// QA: 로컬 몸의 귀 한 줄 —
+        /// "turn=deg|perk=0..1|peaks=N|steps=N|shots=N|kind=step|turnR=|turnL=|near=Cat@5.2m|range=20.0|stepping=1|sneak=0".
+        ///
+        /// **`peaks`가 새 계약의 계측값이다**(2026-09-10). 귀가 걸음 단위로 튕기게 바뀐 뒤로
+        /// `perk`는 순간값이라 표본을 아무 때나 뜨면 대부분 0이 나온다(걸음 사이엔 풀려 있다) —
+        /// 그건 회귀가 아니다. <see cref="TestResetEarCounters"/>로 창을 열고
+        /// **그 창 안에 몇 번 쫑긋했나**를 세야 한다: 뛸 때 N회 이상 · 살금살금이면 0회.
+        /// `steps`와 `shots`를 나눠 세는 이유는 잠행이 **걸음만** 줄이기 때문이다
+        /// (덮치기·스킬 소리는 잠행 중에도 들려 귀가 선다 — 안 나누면 오독한다).
         /// </summary>
         public string TestGetEarState()
         {
@@ -532,8 +537,8 @@ namespace CTC.Runtime.Testing
             if (ears == null) return "none";
 
             return $"turn={ears.DevTurnDegrees:F2}|perk={ears.DevPerk:F3}|" +
-                   $"hearing={(ears.DevHearing ? 1 : 0)}|kind={ears.DevHeardKind}|" +
-                   $"stepAudible={(ears.DevStepAudible ? 1 : 0)}|" +
+                   $"peaks={ears.DevPerkPeaks}|steps={ears.DevStepImpulses}|shots={ears.DevShotImpulses}|" +
+                   $"kind={ears.DevLastKind}|" +
                    $"turnR={ears.DevTurnRight:F2}|turnL={ears.DevTurnLeft:F2}|" +
                    NearestEnemyLine(me.transform.position, ears.DevRole);
         }
@@ -552,10 +557,26 @@ namespace CTC.Runtime.Testing
             if (best == null) return "none";
 
             return $"turn={best.DevTurnDegrees:F2}|perk={best.DevPerk:F3}|" +
-                   $"hearing={(best.DevHearing ? 1 : 0)}|kind={best.DevHeardKind}|" +
-                   $"stepAudible={(best.DevStepAudible ? 1 : 0)}|" +
+                   $"peaks={best.DevPerkPeaks}|steps={best.DevStepImpulses}|shots={best.DevShotImpulses}|" +
+                   $"kind={best.DevLastKind}|" +
                    $"self={Vector3.Distance(best.transform.position, from):F2}m|" +
                    NearestEnemyLine(best.transform.position, best.DevRole);
+        }
+
+        /// <summary>
+        /// QA: 모든 몸의 귀 셈(쫑긋 횟수·들린 걸음·들린 일회성)을 0으로. **계측 창을 여는 훅**이다.
+        /// 몇 마리를 비웠는지 돌려준다.
+        /// </summary>
+        public int TestResetEarCounters()
+        {
+            int count = 0;
+            foreach (CTC.Runtime.Player.EarPerk body in CTC.Runtime.Player.EarPerk.DevAll)
+            {
+                if (body == null) continue;
+                body.DevResetCounters();
+                count++;
+            }
+            return count;
         }
 
         /// <summary>
