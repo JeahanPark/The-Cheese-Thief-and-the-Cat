@@ -362,6 +362,63 @@ namespace CTC.Runtime.Testing
             return $"writes={aim.DevWrites}|seconds={seconds:F2}|hz={hz:F2}|source={aim.DevSource()}";
         }
 
+        /// <summary>
+        /// QA: **두 눈동자가 같은 쪽을 보는가**(2026-09-10). 오른눈만 재던 훅으로는 못 잡던 것이다.
+        ///
+        /// 각 눈동자가 제 흰자 중심에서 얼마나 밀려났는지를 **몸 로컬**로 준다(흰자 반지름 단위).
+        /// 몸 로컬 x가 그 캐릭터의 오른쪽이므로, 조준을 오른쪽으로 옮겼을 때
+        /// **두 값이 같은 쪽으로 움직이면** 눈이 같이 도는 것이다.
+        /// "offR=x,y,z|offL=x,y,z|dot=..." — dot은 두 오프셋 방향의 코사인(1이면 완전히 같은 쪽).
+        /// </summary>
+        public string TestGetEyePupils(string _role = "")
+        {
+            GameObject body = string.IsNullOrEmpty(_role) ? LocalBody() : NearestOtherBody(_role);
+            if (body == null) return "none";
+            var eyes = body.GetComponent<CTC.Runtime.Player.EyeLook>();
+            if (eyes == null) return "no EyeLook";
+
+            Transform t = body.transform;
+            Vector3 offR = t.InverseTransformVector(eyes.DevPupilWorldRight() - eyes.DevEyeWorldRight());
+            Vector3 offL = t.InverseTransformVector(eyes.DevPupilWorldLeft() - eyes.DevEyeWorldLeft());
+            float scale = Mathf.Max(1e-9f, offR.magnitude);
+            Vector3 nr = offR.normalized;
+            Vector3 nl = offL.normalized;
+            return $"offR={offR.x / scale:F4},{offR.y / scale:F4},{offR.z / scale:F4}" +
+                   $"|offL={offL.x / scale:F4},{offL.y / scale:F4},{offL.z / scale:F4}" +
+                   $"|dot={Vector3.Dot(nr, nl):F4}" +
+                   $"|gazeR={eyes.DevGazeRight().x:F3},{eyes.DevGazeRight().y:F3},{eyes.DevGazeRight().z:F3}" +
+                   $"|gazeL={eyes.DevGazeLeft().x:F3},{eyes.DevGazeLeft().y:F3},{eyes.DevGazeLeft().z:F3}";
+        }
+
+        /// <summary>
+        /// QA: 로컬 몸의 조준을 이 각도에 **못박는다** — 전/후 시트를 같은 값에서 찍으려고.
+        /// yaw 양수가 그 몸의 오른쪽, pitch 양수가 위.
+        /// </summary>
+        public void TestSetGazeAim(float _yawDeg, float _pitchDeg)
+        {
+            GameObject body = LocalBody();
+            var aim = body != null ? body.GetComponent<CTC.Runtime.Player.GazeAim>() : null;
+            if (aim == null) { GameDebug.LogWarning("[TestManager] GazeAim 없음"); return; }
+            aim.DevForce(_yawDeg, _pitchDeg);
+        }
+
+        /// <summary>QA: 못박은 조준을 푼다.</summary>
+        public void TestClearGazeAim()
+        {
+            GameObject body = LocalBody();
+            var aim = body != null ? body.GetComponent<CTC.Runtime.Player.GazeAim>() : null;
+            if (aim == null) { GameDebug.LogWarning("[TestManager] GazeAim 없음"); return; }
+            aim.DevClearForce();
+        }
+
+        private static GameObject LocalBody()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            return me != null ? me.gameObject : null;
+        }
+
         /// <summary>QA: 위 셈을 0부터 다시 센다 — 재기 직전에 부른다.</summary>
         public void TestResetGazeWrites()
         {

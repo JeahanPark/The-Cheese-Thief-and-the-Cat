@@ -40,8 +40,12 @@ namespace CTC.Runtime.Player
         [Tooltip("오른눈 중심 — 머리 본 로컬. 왼눈은 x를 뒤집는다.")]
         [SerializeField] private Vector3 m_EyeCenterLocal = new Vector3(0.00132f, 0.00100f, 0.00034f);
 
-        [Tooltip("오른눈이 쉴 때 보는 방향 — 머리 본 로컬.")]
+        [Tooltip("오른눈이 쉴 때 보는 방향 — 머리 본 로컬. 왼눈은 x를 뒤집는다.")]
         [SerializeField] private Vector3 m_EyeAxisLocal = new Vector3(0.892f, 0.396f, 0.216f);
+
+        [Tooltip("머리 본 로컬 **정면** — 여기를 조준하면 두 눈동자가 흰자 한가운데 앉는다. " +
+                 "리그가 종마다 달라 굽는다(고양이 +z · 쥐 +y). 0이면 두 눈의 대칭축으로 물러선다.")]
+        [SerializeField] private Vector3 m_HeadForwardLocal = new Vector3(0f, 0f, 1f);
 
         [Tooltip("얹는 흰자 반지름(기준) — 팩 눈동자를 덮되 흰 테두리 안에 든다. CSV 배율이 곱해진다.")]
         [SerializeField] private float m_ScleraRadiusLocal = 0.00055f;
@@ -62,6 +66,7 @@ namespace CTC.Runtime.Player
         private Renderer m_EyeRendererR, m_EyeRendererL, m_PupilRendererR, m_PupilRendererL;
 
         private Vector3 m_RestR, m_RestL;     // 머리 본 로컬
+        private Vector3 m_GazePivot;          // 두 눈이 함께 도는 기준축(머리 본 로컬)
         private Vector3 m_GazeR, m_GazeL;
 
         private float m_ScleraRadius;         // 기준 반경 × CSV 배율
@@ -134,6 +139,7 @@ namespace CTC.Runtime.Player
 
             m_RestR = m_EyeAxisLocal.normalized;
             m_RestL = EyeLookLogic.Mirror(m_RestR);
+            m_GazePivot = EyeLookLogic.GazePivot(m_HeadForwardLocal, m_RestR, m_RestL);
             m_GazeR = m_RestR;
             m_GazeL = m_RestL;
 
@@ -272,10 +278,11 @@ namespace CTC.Runtime.Player
             float dt = Time.deltaTime;
             Vector3 aimLocal = m_Head.InverseTransformDirection(AimDirection());
 
-            m_GazeR = EyeLookLogic.Follow(
-                m_GazeR, EyeLookLogic.ClampGaze(m_RestR, aimLocal, m_MaxAngleDeg), m_FollowSpeed, dt);
-            m_GazeL = EyeLookLogic.Follow(
-                m_GazeL, EyeLookLogic.ClampGaze(m_RestL, aimLocal, m_MaxAngleDeg), m_FollowSpeed, dt);
+            // **한 회전을 두 눈에 똑같이 먹인다**(2026-09-10) — 눈마다 따로 클램프하면 회전축이
+            // 갈려 오른쪽을 보라 해도 한쪽만 가로로 돌았다(EyeLookLogic.GazeSwing 주석에 실측값).
+            Quaternion swing = EyeLookLogic.GazeSwing(m_GazePivot, aimLocal, m_MaxAngleDeg);
+            m_GazeR = EyeLookLogic.Follow(m_GazeR, swing * m_RestR, m_FollowSpeed, dt);
+            m_GazeL = EyeLookLogic.Follow(m_GazeL, swing * m_RestL, m_FollowSpeed, dt);
 
             StepBlink(dt);
             Apply();
@@ -413,6 +420,33 @@ namespace CTC.Runtime.Player
         public Vector3 DevGazeRight()
         {
             return m_GazeR;
+        }
+
+        /// <summary>
+        /// QA 전용 — **두 눈동자가 같은 쪽을 보는지는 둘을 같이 재야 안다**(2026-09-10).
+        /// 오른눈만 재던 훅으로는 좌우가 갈리는 것을 못 잡았다.
+        /// </summary>
+        public Vector3 DevPupilWorldLeft()
+        {
+            return m_PupilL != null ? m_PupilL.position : Vector3.zero;
+        }
+
+        /// <summary>QA 전용 — 왼눈 흰자의 월드 위치.</summary>
+        public Vector3 DevEyeWorldLeft()
+        {
+            return m_EyeL != null ? m_EyeL.position : transform.position;
+        }
+
+        /// <summary>QA 전용 — 머리 본 로컬 시선(왼눈).</summary>
+        public Vector3 DevGazeLeft()
+        {
+            return m_GazeL;
+        }
+
+        /// <summary>QA 전용 — 두 눈이 함께 도는 기준축(머리 본 로컬). 굽는 값이 맞는지 재는 근거.</summary>
+        public Vector3 DevGazePivot()
+        {
+            return m_GazePivot;
         }
     }
 }

@@ -120,6 +120,76 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: **두 눈을 한 프레임에** 크게 찍는다(2026-09-10).
+        ///
+        /// <see cref="TestCaptureEyeShot"/>은 오른눈 하나를 옆에서 본다 — 「두 눈동자가 같은 쪽을
+        /// 보는가」는 그걸로 증명할 수가 없다. <see cref="TestCaptureHeadShot"/>은 플레이 거리라
+        /// 얼굴이 너무 작아 눈동자 자리를 못 읽는다. 그래서 **두 흰자 중심의 가운데**를 정면에서
+        /// 직교 투영으로 잡아 좌·우 눈이 같은 배율로 나란히 들어오게 한다.
+        /// </summary>
+        public string TestCaptureEyePairShot(string _path, int _size, string _role = "")
+        {
+            GameObject local = string.IsNullOrEmpty(_role) ? LocalBody() : NearestOtherBody(_role);
+            if (local == null) return "no body";
+            var eyes = local.GetComponent<CTC.Runtime.Player.EyeLook>();
+            if (eyes == null) return "no EyeLook";
+
+            Transform body = local.transform;
+            Vector3 eyeR = eyes.DevEyeWorldRight();
+            Vector3 eyeL = eyes.DevEyeWorldLeft();
+            Vector3 focus = (eyeR + eyeL) * 0.5f;
+            float span = Mathf.Max(0.01f, Vector3.Distance(eyeR, eyeL));
+
+            Vector3 pos = focus + body.forward * (span * 3f);
+            int size = _size > 0 ? _size : 512;
+            var camGo = new GameObject("QaEyePairCam");
+            var lightGo = new GameObject("QaEyePairLight");
+            try
+            {
+                _path = _path.Trim().Trim('"').Replace('\\', '/');
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(focus - pos, body.up));
+                cam.orthographic = true;
+                cam.orthographicSize = span * 0.75f;
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = new Color(0.08f, 0.09f, 0.11f, 1f);
+                cam.nearClipPlane = 0.005f;
+
+                Light light = lightGo.AddComponent<Light>();
+                light.type = LightType.Directional;
+                light.intensity = 2.0f;
+                lightGo.transform.rotation = cam.transform.rotation;
+
+                var rt = new RenderTexture(size, size, 24, RenderTextureFormat.ARGB32);
+                cam.targetTexture = rt;
+                cam.Render();
+
+                RenderTexture prev = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                tex.ReadPixels(new Rect(0, 0, size, size), 0, 0);
+                tex.Apply();
+                RenderTexture.active = prev;
+
+                File.WriteAllBytes(_path, tex.EncodeToPNG());
+                cam.targetTexture = null;
+                Destroy(tex);
+                rt.Release();
+                Destroy(rt);
+            }
+            catch (System.Exception ex)
+            {
+                return "ERR path=[" + _path + "] " + ex.Message;
+            }
+            finally
+            {
+                Destroy(camGo);
+                Destroy(lightGo);
+            }
+            return "ok span=" + span.ToString("F4");
+        }
+
+        /// <summary>
         /// QA: 얼굴 정면 한 장 — **인게임 3인칭 카메라와 같은 거리·같은 화각**으로 앞에서 찍는다.
         ///
         /// 게임 화면으로는 뒤통수만 나와 눈도 귀도 안 보인다. 그렇다고 근접 렌더로 찍으면

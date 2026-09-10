@@ -43,6 +43,8 @@ namespace CTC.Runtime.Player
 
         private Camera m_Camera;
         private CharacterController m_Controller;
+        private bool m_Forced;          // QA — 조준을 못박았나
+        private short m_ForcedPacked;
         private float m_NextSendAt;
         private int m_Writes;        // QA — 실제로 쓴 횟수(대역폭의 유일한 근거)
         private float m_WritesSince; // 그 셈을 시작한 시각
@@ -79,6 +81,24 @@ namespace CTC.Runtime.Player
             m_WritesSince = Time.time;
         }
 
+        /// <summary>
+        /// QA 전용 — 조준을 이 몸 로컬 각도에 **못박는다**(2026-09-10).
+        /// 전/후 비교 시트는 좌·중·우를 **같은 값**에서 찍어야 비교가 되는데,
+        /// 카메라를 손으로 돌려 맞추면 매번 다른 각도가 나온다.
+        /// </summary>
+        public void DevForce(float _yawDeg, float _pitchDeg)
+        {
+            m_Forced = true;
+            m_ForcedPacked = GazeAimLogic.PackAngles(_yawDeg, _pitchDeg);
+            if (IsSpawned && IsOwner) m_Packed.Value = m_ForcedPacked;
+        }
+
+        /// <summary>QA 전용 — 못박은 조준을 푼다.</summary>
+        public void DevClearForce()
+        {
+            m_Forced = false;
+        }
+
         /// <summary>QA 전용 — 조준을 어디서 가져오나("cam" | "bot" | "body").</summary>
         public string DevSource()
         {
@@ -104,7 +124,9 @@ namespace CTC.Runtime.Player
             float now = Time.time;
             if (now < m_NextSendAt) return;
 
-            short packed = GazeAimLogic.Pack(transform.InverseTransformDirection(SourceDirection()));
+            short packed = m_Forced
+                ? m_ForcedPacked
+                : GazeAimLogic.Pack(transform.InverseTransformDirection(SourceDirection()));
             if (packed == m_Packed.Value) return;   // 안 바뀌면 0바이트
 
             m_Packed.Value = packed;

@@ -489,6 +489,7 @@ MonoBehaviour:
   m_HeadBoneName: head
   m_EyeCenterLocal: {x: 0.00132, y: 0.001, z: 0.00034}
   m_EyeAxisLocal: {x: 0.892, y: 0.396, z: 0.216}
+  m_HeadForwardLocal: {x: 0, y: 0.87630075, z: 0.48176444}
   m_ScleraRadiusLocal: 0.00055
   m_LidRadiusLocal: 0.0009
 --- !u!114 &-1286795333664132771
