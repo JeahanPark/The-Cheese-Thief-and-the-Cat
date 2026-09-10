@@ -104,6 +104,7 @@ namespace CTC.Runtime.Info
         public float EyeInsetRatio;
         public int CatAdvanceMischief;
         public int SoldOutCount;
+        public float EyeInwardPastCenterDeg;
     }
 
     public partial class InfoManager

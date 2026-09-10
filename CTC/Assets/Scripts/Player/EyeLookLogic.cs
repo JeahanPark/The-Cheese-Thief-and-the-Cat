@@ -90,6 +90,54 @@ namespace CTC.Runtime.Player
         }
 
         /// <summary>
+        /// 그 눈이 **정면을 지나 안쪽까지** 갈 수 있는 최대 각(쉬는 방향 기준).
+        ///
+        /// 쉬는 각도가 종마다 다르므로(고양이 33° · 쥐 63° 바깥) 한계를 하나로 두면 안 맞는다 —
+        /// 30°로는 쥐의 안쪽 눈이 33° 바깥에서 멈춰 **인중 근처도 못 간다**.
+        /// 그래서 「정면을 얼마나 지나칠 수 있나」로 적고 쉬는 각도를 더한다:
+        /// 프리팹에 구워진 축에서 종마다 자동으로 갈려 손으로 둘을 관리하지 않아도 된다.
+        /// </summary>
+        public static float InwardLimitDeg(Vector3 _restDir, Vector3 _pivotDir, float _pastCenterDeg)
+        {
+            return Vector3.Angle(_restDir, _pivotDir) + Mathf.Max(0f, _pastCenterDeg);
+        }
+
+        /// <summary>
+        /// 눈 하나가 실제로 볼 방향 — **공유 회전을 그대로 받되 제 한계까지만** 따라간다.
+        ///
+        /// 두 눈은 <see cref="GazeSwing"/>의 회전 **축**을 나눠 쓰므로 언제나 같은 쪽으로 움직인다.
+        /// 다만 각도는 눈마다 다를 수 있다: 바깥으로 가는 눈은 <paramref name="_outwardMaxDeg"/>에서
+        /// 멈춰 눈동자가 흰자를 벗어나지 않고, 안쪽으로 가는 눈은 <paramref name="_inwardMaxDeg"/>까지
+        /// 더 가 **인중 쪽을 본다**. 옆눈(쥐)은 이 비대칭이 없으면 안쪽에 닿지를 못한다.
+        ///
+        /// 각도가 갈려도 **갈려 보이지 않는다** — 축이 하나라 화면에서 방향이 같다
+        /// (2026-09-10 실측: 쥐·고양이 모두 방향 일치 cos = +1.00).
+        /// </summary>
+        public static Vector3 EyeGaze(Vector3 _restDir, Vector3 _pivotDir, Quaternion _swing,
+                                      float _outwardMaxDeg, float _inwardMaxDeg)
+        {
+            Vector3 rest = _restDir.sqrMagnitude > 1e-12f ? _restDir.normalized : Vector3.forward;
+
+            _swing.ToAngleAxis(out float angle, out Vector3 axis);
+            if (angle > 180f)
+            {
+                angle = 360f - angle;
+                axis = -axis;
+            }
+            if (angle <= 1e-4f || axis.sqrMagnitude <= 1e-12f || float.IsNaN(angle)) return rest;
+
+            Vector3 pivot = _pivotDir.sqrMagnitude > 1e-12f ? _pivotDir.normalized : Vector3.forward;
+            float restAngle = Vector3.Angle(rest, pivot);
+
+            // 이 회전이 이 눈을 안쪽으로 데려가는가 — 조금만 돌려 보고 정면에 가까워지면 안쪽이다.
+            Vector3 probe = Quaternion.AngleAxis(Mathf.Min(1f, angle), axis) * rest;
+            bool inward = Vector3.Angle(probe, pivot) < restAngle;
+
+            float limit = Mathf.Max(0f, inward ? _inwardMaxDeg : _outwardMaxDeg);
+            return (Quaternion.AngleAxis(Mathf.Min(angle, limit), axis) * rest).normalized;
+        }
+
+        /// <summary>
         /// 눈동자가 앉을 자리 — **머리 본 로컬**, 흰자 반지름 단위.
         ///
         /// 흰자는 눈 축으로 눌린 타원체다(<c>EyeFlatten</c>). <see cref="EyeLook"/>는 흰자를

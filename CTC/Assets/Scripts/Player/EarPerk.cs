@@ -150,6 +150,17 @@ namespace CTC.Runtime.Player
             m_Role = tag != null ? tag.Role : RoleId.None;
             m_Enemy = m_Role == RoleId.Mouse ? RoleId.Cat : m_Role == RoleId.Cat ? RoleId.Mouse : RoleId.None;
 
+            ReadTuning();
+
+            Build();
+        }
+
+        /// <summary>
+        /// CSV 수치를 캐시로 옮긴다. 귀 값은 전부 **매 프레임 쓰는 것**이라 여기만 다시 부르면 된다 —
+        /// 개발용 조절기 창(<c>Tools/CTC/Dev/눈·귀 수치 조절기</c>)이 그 경로를 쓴다.
+        /// </summary>
+        private void ReadTuning()
+        {
             BalanceInfo balance = InfoManager.Instance.Balance;
             m_TurnMaxDeg = balance.EarTurnMaxDeg;
             m_PerkDeg = balance.EarPerkDeg;
@@ -157,9 +168,15 @@ namespace CTC.Runtime.Player
             m_RiseSeconds = balance.EarPerkRiseSeconds;
             m_FallSeconds = balance.EarPerkFallSeconds;
             m_FollowSpeed = balance.EarFollowSpeed;
-
-            Build();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>**CSV 수치를 지금 다시 읽는다**(2026-09-10) — 조절기 창의 진입점.</summary>
+        public void DevReloadTuning()
+        {
+            ReadTuning();
+        }
+#endif
 
         private void Build()
         {

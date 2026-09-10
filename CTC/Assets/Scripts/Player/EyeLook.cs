@@ -75,9 +75,12 @@ namespace CTC.Runtime.Player
         private float m_PupilDistance;        // 흰자 중심에서 눈동자 중심까지(흰자 단위)
         private float m_Flatten;              // 눈 축 방향 눌림(1이면 완전한 구)
         private float m_Inset;                // 눈 축 안쪽으로 미는 양(흰자 반지름 단위)
+        private float m_PastCenterDeg;        // 안쪽 눈이 정면을 지나칠 수 있는 각(CSV)
         private Quaternion m_EyeRotR, m_EyeRotL;      // 로컬 +z = 눈 축
         private Quaternion m_EyeRotInvR, m_EyeRotInvL;
-        private float m_MaxAngleDeg;
+        private float m_MaxAngleDeg;      // 바깥·위아래 한계(쉬는 방향 기준)
+        private float m_InwardMaxDeg;     // 안쪽 한계 — 쉬는 각도 + CSV의 «정면을 지나치는 각»
+        private float m_SwingMaxDeg;      // 공유 회전의 한계 = 둘 중 큰 쪽
         private float m_FollowSpeed;
         private float m_BlinkMin;
         private float m_BlinkMax;
@@ -92,6 +95,19 @@ namespace CTC.Runtime.Player
             m_NetObject = GetComponent<NetworkObject>();
             m_Aim = GetComponent<GazeAim>();
 
+            ReadTuning();
+            m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
+
+            Build();
+        }
+
+        /// <summary>
+        /// CSV 수치를 캐시로 옮긴다. **여기 하나만 다시 부르면 값이 갈아 끼워진다** —
+        /// 개발용 조절기 창(<c>Tools/CTC/Dev/눈·귀 수치 조절기</c>)이 그 경로를 쓴다.
+        /// 쉬는 방향·기준축이 필요한 것(안쪽 한계)은 <see cref="Build"/> 뒤에 다시 잡는다.
+        /// </summary>
+        private void ReadTuning()
+        {
             BalanceInfo balance = InfoManager.Instance.Balance;
             m_MaxAngleDeg = balance.EyeMaxAngleDeg;
             m_FollowSpeed = balance.EyeFollowSpeed;
@@ -111,9 +127,14 @@ namespace CTC.Runtime.Player
             // 팩 눈동자가 밑에서 비치지 않으면서 옆에서도 안 솟는다.
             m_Flatten = Mathf.Clamp(balance.EyeFlatten, 0.1f, 1f);
             m_Inset = Mathf.Clamp(balance.EyeInsetRatio, 0f, 0.6f);
-            m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
+            m_PastCenterDeg = Mathf.Max(0f, balance.EyeInwardPastCenterDeg);
+        }
 
-            Build();
+        /// <summary>쉬는 방향이 정해진 뒤에야 알 수 있는 한계 — 안쪽은 종마다 다르다.</summary>
+        private void ReadLimits()
+        {
+            m_InwardMaxDeg = EyeLookLogic.InwardLimitDeg(m_RestR, m_GazePivot, m_PastCenterDeg);
+            m_SwingMaxDeg = Mathf.Max(m_MaxAngleDeg, m_InwardMaxDeg);
         }
 
         private void Build()
@@ -140,6 +161,7 @@ namespace CTC.Runtime.Player
             m_RestR = m_EyeAxisLocal.normalized;
             m_RestL = EyeLookLogic.Mirror(m_RestR);
             m_GazePivot = EyeLookLogic.GazePivot(m_HeadForwardLocal, m_RestR, m_RestL);
+            ReadLimits();
             m_GazeR = m_RestR;
             m_GazeL = m_RestL;
 
@@ -280,9 +302,12 @@ namespace CTC.Runtime.Player
 
             // **한 회전을 두 눈에 똑같이 먹인다**(2026-09-10) — 눈마다 따로 클램프하면 회전축이
             // 갈려 오른쪽을 보라 해도 한쪽만 가로로 돌았다(EyeLookLogic.GazeSwing 주석에 실측값).
-            Quaternion swing = EyeLookLogic.GazeSwing(m_GazePivot, aimLocal, m_MaxAngleDeg);
-            m_GazeR = EyeLookLogic.Follow(m_GazeR, swing * m_RestR, m_FollowSpeed, dt);
-            m_GazeL = EyeLookLogic.Follow(m_GazeL, swing * m_RestL, m_FollowSpeed, dt);
+            // 각도는 눈마다 다를 수 있다 — 안쪽으로 가는 눈이 더 간다(옆눈은 안 그러면 인중에 못 닿는다).
+            Quaternion swing = EyeLookLogic.GazeSwing(m_GazePivot, aimLocal, m_SwingMaxDeg);
+            Vector3 targetR = EyeLookLogic.EyeGaze(m_RestR, m_GazePivot, swing, m_MaxAngleDeg, m_InwardMaxDeg);
+            Vector3 targetL = EyeLookLogic.EyeGaze(m_RestL, m_GazePivot, swing, m_MaxAngleDeg, m_InwardMaxDeg);
+            m_GazeR = EyeLookLogic.Follow(m_GazeR, targetR, m_FollowSpeed, dt);
+            m_GazeL = EyeLookLogic.Follow(m_GazeL, targetL, m_FollowSpeed, dt);
 
             StepBlink(dt);
             Apply();
@@ -443,10 +468,54 @@ namespace CTC.Runtime.Player
             return m_GazeL;
         }
 
+        /// <summary>
+        /// QA 전용 — 이 몸의 **머리 본**. 조절기 창이 얼굴 카메라를 여기에 매단다:
+        /// 몸에 매달면 애니메이터가 머리를 굴릴 때 얼굴이 화면 밖으로 흘러 나간다.
+        /// </summary>
+        public Transform DevHead()
+        {
+            return m_Head;
+        }
+
         /// <summary>QA 전용 — 두 눈이 함께 도는 기준축(머리 본 로컬). 굽는 값이 맞는지 재는 근거.</summary>
         public Vector3 DevGazePivot()
         {
             return m_GazePivot;
         }
+
+        /// <summary>QA 전용 — "바깥한계/안쪽한계/쉬는각도"(도). 종마다 갈리는 값이라 눈으로 확인한다.</summary>
+        public Vector3 DevLimitsDeg()
+        {
+            return new Vector3(m_MaxAngleDeg, m_InwardMaxDeg, Vector3.Angle(m_RestR, m_GazePivot));
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>
+        /// **CSV 수치를 지금 다시 읽어 그 자리에서 반영한다**(2026-09-10).
+        ///
+        /// 개발용 조절기 창이 부르는 단 하나의 진입점이다. 창은 <c>BalanceInfo</c>를 덮어쓰고
+        /// 씬에 서 있는 몸마다 이걸 부른다 — 다시 플레이하거나 씬을 굽지 않아도 된다.
+        /// 매 프레임 쓰는 값뿐 아니라 **얹을 때 한 번만 쓰던 것**(눈 파묻힘·눈동자 크기)도 같이 고친다.
+        /// </summary>
+        public void DevReloadTuning()
+        {
+            if (!m_Ready) return;
+
+            ReadTuning();
+            ReadLimits();
+
+            // 얹을 때 한 번만 반영하던 것들 — 다시 안 잡으면 슬라이더가 안 먹는 것처럼 보인다.
+            Vector3 centerR = m_EyeCenterLocal - m_RestR * (m_ScleraRadius * m_Inset);
+            Vector3 centerL = EyeLookLogic.Mirror(centerR);
+            m_EyeR.localPosition = centerR;
+            m_EyeL.localPosition = centerL;
+            m_LidR.localPosition = centerR;
+            m_LidL.localPosition = centerL;
+            m_PupilR.localScale = Vector3.one * m_PupilRatio;
+            m_PupilL.localScale = Vector3.one * m_PupilRatio;
+
+            Apply();
+        }
+#endif
     }
 }

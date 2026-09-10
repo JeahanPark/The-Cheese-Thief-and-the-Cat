@@ -394,9 +394,11 @@ namespace CTC.Runtime.Testing
         /// QA: 로컬 몸의 조준을 이 각도에 **못박는다** — 전/후 시트를 같은 값에서 찍으려고.
         /// yaw 양수가 그 몸의 오른쪽, pitch 양수가 위.
         /// </summary>
-        public void TestSetGazeAim(float _yawDeg, float _pitchDeg)
+        public void TestSetGazeAim(float _yawDeg, float _pitchDeg, string _role = "")
         {
-            GameObject body = LocalBody();
+            // 봇 몸은 서버가 소유하므로 호스트에서는 남의 몸도 못박을 수 있다 —
+            // 쥐 얼굴을 보며 수치를 만질 때 그 쥐가 옆을 봐 줘야 안쪽 눈이 움직인다.
+            GameObject body = string.IsNullOrEmpty(_role) ? LocalBody() : NearestOtherBody(_role);
             var aim = body != null ? body.GetComponent<CTC.Runtime.Player.GazeAim>() : null;
             if (aim == null) { GameDebug.LogWarning("[TestManager] GazeAim 없음"); return; }
             aim.DevForce(_yawDeg, _pitchDeg);

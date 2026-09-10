@@ -156,7 +156,8 @@ namespace CTC.Tests
 
         private const float FLATTEN = 0.25f;    // BalanceInfo.EyeFlatten
         private const float PUPIL_D = 0.42f;    // BalanceInfo.EyePupilOffsetRatio
-        private const float MAX_DEG = 30f;      // BalanceInfo.EyeMaxAngleDeg
+        private const float MAX_DEG = 30f;      // BalanceInfo.EyeMaxAngleDeg (바깥·위아래)
+        private const float PAST_DEG = 6f;      // BalanceInfo.EyeInwardPastCenterDeg
 
         /// <summary>
         /// 한 종의 머리 본 프레임. 가로축은 좌우 대칭축이라 늘 x이고, 위는 정면에서 뽑는다
@@ -202,16 +203,30 @@ namespace CTC.Tests
                     _head.Up.normalized * Mathf.Sin(pitch)).normalized;
         }
 
+        /// <summary>그 조준에서 두 눈이 실제로 보는 방향 - EyeLook.LateUpdate와 **같은 순서**다.</summary>
+        private static void Gazes(Head _head, float _yawDeg, float _pitchDeg,
+                                  out Vector3 _right, out Vector3 _left)
+        {
+            Vector3 restR = _head.Axis.normalized;
+            Vector3 restL = EyeLookLogic.Mirror(restR);
+            Vector3 pivot = EyeLookLogic.GazePivot(_head.Forward, restR, restL);
+            float inward = EyeLookLogic.InwardLimitDeg(restR, pivot, PAST_DEG);
+            float swingMax = Mathf.Max(MAX_DEG, inward);
+
+            Quaternion swing = EyeLookLogic.GazeSwing(pivot, Aim(_head, _yawDeg, _pitchDeg), swingMax);
+            _right = EyeLookLogic.EyeGaze(restR, pivot, swing, MAX_DEG, inward);
+            _left = EyeLookLogic.EyeGaze(restL, pivot, swing, MAX_DEG, inward);
+        }
+
         /// <summary>그 조준에서 두 눈동자가 앉는 자리(머리 본 로컬, 흰자 반지름 단위).</summary>
         private static void Pupils(Head _head, float _yawDeg, float _pitchDeg,
                                    out Vector3 _right, out Vector3 _left)
         {
             Vector3 restR = _head.Axis.normalized;
             Vector3 restL = EyeLookLogic.Mirror(restR);
-            Vector3 pivot = EyeLookLogic.GazePivot(_head.Forward, restR, restL);
-            Quaternion swing = EyeLookLogic.GazeSwing(pivot, Aim(_head, _yawDeg, _pitchDeg), MAX_DEG);
-            _right = EyeLookLogic.PupilOffset(restR, swing * restR, FLATTEN, PUPIL_D);
-            _left = EyeLookLogic.PupilOffset(restL, swing * restL, FLATTEN, PUPIL_D);
+            Gazes(_head, _yawDeg, _pitchDeg, out Vector3 gazeR, out Vector3 gazeL);
+            _right = EyeLookLogic.PupilOffset(restR, gazeR, FLATTEN, PUPIL_D);
+            _left = EyeLookLogic.PupilOffset(restL, gazeL, FLATTEN, PUPIL_D);
         }
 
         /// <summary>
@@ -233,8 +248,10 @@ namespace CTC.Tests
                 Assert.Greater(dR, 0.01f, head.Name + " - 오른쪽을 보는데 오른눈 눈동자가 안 갔다");
                 Assert.Greater(dL, 0.01f, head.Name + " - 오른쪽을 보는데 왼눈 눈동자가 안 갔다(또는 반대로 갔다)");
 
+                // 둘이 똑같이 갈 필요는 없다 - 바깥으로 가는 눈이 먼저 한계에 걸리는 건 의도한 것이다
+                // (안 그러면 옆눈이 안쪽에 못 닿는다). 다만 **한쪽만 일하는 것**은 여전히 금지다.
                 float ratio = Mathf.Min(dR, dL) / Mathf.Max(dR, dL);
-                Assert.Greater(ratio, 0.5f,
+                Assert.Greater(ratio, 0.3f,
                     head.Name + " - 한 눈만 일한다: 오른눈 " + dR + " vs 왼눈 " + dL);
             }
         }
@@ -347,6 +364,106 @@ namespace CTC.Tests
             Vector3 restR = MOUSE.Axis.normalized;
             Vector3 pivot = EyeLookLogic.GazePivot(MOUSE.Forward, restR, EyeLookLogic.Mirror(restR));
             Assert.Less(Vector3.Angle(pivot, MOUSE.Forward), 0.01f);
+        }
+
+        /// <summary>
+        /// **인중 쪽으로 갈 수 있는가**(2026-09-10). 실플레이 제보: 「이쪽 눈동자가 반대편 눈 쪽으로
+        /// 바라봤을 때 눈이 인중 쪽으로 안 가?」 — 한계가 종 구분 없이 30°였을 때 쥐는 눈이 63° 바깥에
+        /// 쉬어서 33° 바깥에서 멈췄다.
+        ///
+        /// 핵심 계약은 **안쪽 눈이 바깥 눈보다 더 움직인다**는 것이다. 한계가 대칭이면 둘이 같아서
+        /// 이 단언이 바로 빨개진다 — 그게 예전 코드였다.
+        /// </summary>
+        [Test]
+        public void InnerEye_TravelsFartherThanOuterEye()
+        {
+            foreach (Head head in HEADS)
+            {
+                Vector3 restR = head.Axis.normalized;
+                Vector3 restL = EyeLookLogic.Mirror(restR);
+
+                // 크게 틀면 두 눈이 각자 한계까지 간다
+                Gazes(head, 90f, 0f, out Vector3 gazeR, out Vector3 gazeL);
+
+                // 오른쪽으로 틀면 **왼눈**이 안쪽(인중 쪽) 눈이다
+                float inner = Vector3.Angle(gazeL, restL);
+                float outer = Vector3.Angle(gazeR, restR);
+
+                Assert.Greater(inner, outer + 1f,
+                    head.Name + " — 안쪽 눈이 바깥 눈보다 더 가야 인중에 닿는다: 안 " + inner + "° / 밖 " + outer + "°");
+                Assert.LessOrEqual(outer, MAX_DEG + 0.01f,
+                    head.Name + " — 바깥 눈이 한계를 넘었다: " + outer + "°");
+            }
+        }
+
+        /// <summary>
+        /// 옆눈(쥐)은 **정면까지 온다**. 이 종이 문제의 발단이었다 — 쉬는 자리가 63° 바깥이라
+        /// 30° 한계로는 33° 바깥에서 멈췄다.
+        ///
+        /// 고양이는 여기까지 못 온다(15° 남짓에서 멈춘다). 두 눈이 **회전 하나**를 나눠 쓰므로
+        /// 눈은 그 축 둘레의 **원뿔**을 따라 돌고, 쉬는 방향이 축과 수직이 아니면 정면을 스쳐 지날
+        /// 뿐 닿지는 않는다. 쥐는 그 축과 거의 수직이라 닿고 고양이는 아니다 — 지금은 그대로 둔다
+        /// (얼굴을 보고 정하는 값이라 조절기 창에서 만져 보고 결정한다).
+        /// </summary>
+        [Test]
+        public void SideEyedHead_InnerEyeReachesTheMidline()
+        {
+            Vector3 restR = MOUSE.Axis.normalized;
+            Vector3 pivot = EyeLookLogic.GazePivot(MOUSE.Forward, restR, EyeLookLogic.Mirror(restR));
+
+            Gazes(MOUSE, 90f, 0f, out Vector3 _, out Vector3 gazeL);
+            float fromCenter = Vector3.Angle(gazeL, pivot);
+
+            Assert.LessOrEqual(fromCenter, PAST_DEG + 1f,
+                "쥐 안쪽 눈이 정면까지 못 온다: 정면에서 " + fromCenter + "°");
+        }
+
+        /// <summary>한계가 갈려도 **갈려 보이면 안 된다** - 축이 하나라 화면 방향은 같아야 한다.</summary>
+        [Test]
+        public void AsymmetricLimits_StillMoveBothPupilsTheSameWay()
+        {
+            foreach (Head head in HEADS)
+            {
+                Vector3 up = head.Up.normalized;
+                Pupils(head, 0f, 0f, out Vector3 midR, out Vector3 midL);
+                Pupils(head, 90f, 0f, out Vector3 farR, out Vector3 farL);
+
+                var dR = new Vector2(farR.x - midR.x, Vector3.Dot(farR - midR, up));
+                var dL = new Vector2(farL.x - midL.x, Vector3.Dot(farL - midL, up));
+                Assert.Greater(Vector2.Dot(dR.normalized, dL.normalized), 0.5f,
+                    head.Name + " - 한계에서 두 눈동자가 갈라진다");
+            }
+        }
+
+        /// <summary>안쪽 한계는 **쉬는 각도에 상대적**이다 - 그래서 종마다 자동으로 갈린다.</summary>
+        [Test]
+        public void InwardLimit_IsRelativeToTheRestSplay()
+        {
+            foreach (Head head in HEADS)
+            {
+                Vector3 restR = head.Axis.normalized;
+                Vector3 pivot = EyeLookLogic.GazePivot(head.Forward, restR, EyeLookLogic.Mirror(restR));
+                float rest = Vector3.Angle(restR, pivot);
+                Assert.AreEqual(rest + PAST_DEG, EyeLookLogic.InwardLimitDeg(restR, pivot, PAST_DEG), 0.01f,
+                    head.Name);
+            }
+            // 쥐가 고양이보다 훨씬 옆을 보므로 안쪽 한계도 훨씬 커야 한다
+            Vector3 catPivot = EyeLookLogic.GazePivot(CAT.Forward, CAT.Axis.normalized,
+                                                      EyeLookLogic.Mirror(CAT.Axis.normalized));
+            Vector3 mousePivot = EyeLookLogic.GazePivot(MOUSE.Forward, MOUSE.Axis.normalized,
+                                                       EyeLookLogic.Mirror(MOUSE.Axis.normalized));
+            Assert.Greater(EyeLookLogic.InwardLimitDeg(MOUSE.Axis, mousePivot, PAST_DEG),
+                           EyeLookLogic.InwardLimitDeg(CAT.Axis, catPivot, PAST_DEG) + 20f);
+        }
+
+        /// <summary>돌 일이 없으면(회전이 항등) 눈은 쉬는 방향 그대로다.</summary>
+        [Test]
+        public void EyeGaze_IdentitySwing_KeepsRest()
+        {
+            Vector3 rest = MOUSE.Axis.normalized;
+            Vector3 pivot = EyeLookLogic.GazePivot(MOUSE.Forward, rest, EyeLookLogic.Mirror(rest));
+            Vector3 gaze = EyeLookLogic.EyeGaze(rest, pivot, Quaternion.identity, MAX_DEG, 60f);
+            Assert.Less(Vector3.Angle(gaze, rest), 0.01f);
         }
 
         /// <summary>
