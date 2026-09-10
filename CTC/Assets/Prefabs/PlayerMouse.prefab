@@ -34,11 +34,12 @@ GameObject:
   - component: {fileID: 3521756704669989981}
   - component: {fileID: 2937753257608233824}
   - component: {fileID: 7957813808338237726}
+  - component: {fileID: 7273524695464127916}
+  - component: {fileID: -1993819827998674870}
+  - component: {fileID: -1286795333664132771}
   - component: {fileID: 2977953179673282696}
   - component: {fileID: 316232477143233120}
   - component: {fileID: 6539816911504078304}
-  - component: {fileID: -1993819827998674870}
-  - component: {fileID: -1286795333664132771}
   m_Layer: 9
   m_Name: PlayerMouse
   m_TagString: Player
@@ -460,6 +461,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4ba3840d5d9eb5418a76547abfc0dd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.UI.JobBadge
+--- !u!114 &7273524695464127916
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d68b67148d70d8845a4103acdb58cf40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GazeAim
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &-1993819827998674870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 222910d8f55977443ac4f5d46e4553ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EyeLook
+  m_HeadBoneName: head
+  m_EyeCenterLocal: {x: 0.00132, y: 0.001, z: 0.00034}
+  m_EyeAxisLocal: {x: 0.892, y: 0.396, z: 0.216}
+  m_ScleraRadiusLocal: 0.00055
+  m_LidRadiusLocal: 0.0009
+--- !u!114 &-1286795333664132771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
+  m_EarRightBoneName: ear.R
+  m_EarLeftBoneName: ear.L
 --- !u!82 &2977953179673282696
 AudioSource:
   m_ObjectHideFlags: 0
@@ -591,37 +636,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Audio.AudioVolumeFollower
   m_Category: 0
---- !u!114 &-1993819827998674870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 618008594229528120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 222910d8f55977443ac4f5d46e4553ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EyeLook
-  m_HeadBoneName: head
-  m_EyeCenterLocal: {x: 0.00132, y: 0.001, z: 0.00034}
-  m_EyeAxisLocal: {x: 0.892, y: 0.396, z: 0.216}
-  m_ScleraRadiusLocal: 0.00055
-  m_LidRadiusLocal: 0.0009
---- !u!114 &-1286795333664132771
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 618008594229528120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4fdc0b7d4fb749a42b58b826cd724882, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
-  m_EarRightBoneName: ear.R
-  m_EarLeftBoneName: ear.L
 --- !u!1001 &3590425873836912933
 PrefabInstance:
   m_ObjectHideFlags: 0

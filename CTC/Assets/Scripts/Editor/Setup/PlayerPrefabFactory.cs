@@ -126,6 +126,11 @@ namespace CTC.Editor
                     root.AddComponent<CTC.Runtime.UI.JobBadge>();
                 }
 
+                // 조준 방향 복제(2026-09-10) — **EyeLook보다 먼저 붙인다**(EyeLook이 Awake에서 집어 간다).
+                // 굽는 값이 없다: 보내는 주기·양자화는 연출 상수라 컴포넌트가 들고 있다.
+                // 이게 빠지면 남의 눈동자가 다시 가운데 붙어 죽는다 — DevAimSource가 그걸 이름으로 뱉는다.
+                root.AddComponent<GazeAim>();
+
                 // 눈동자가 보는 곳을 따라간다(2026-09-08) — 팩 모델에 눈 본이 없어 흰자·눈동자·눈꺼풀
                 // 구를 머리 본 아래에 얹는다. 자리·크기는 실제 메시를 재서 나온 **머리 본 로컬** 값이라
                 // CSV(밸런스)가 아니라 여기서 굽는다(Tools/CTC/Dev/Probe Eye Geometry가 원본).

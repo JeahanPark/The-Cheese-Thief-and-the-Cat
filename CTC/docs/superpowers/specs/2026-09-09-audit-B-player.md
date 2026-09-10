@@ -29,7 +29,8 @@
 | 치즈 방패 흡수 | 서버 (지갑·TechSlots) | 지갑만 | 서버 | `CheeseShield.cs:26` |
 | 후추 도트 | **서버 전용 컴포넌트**(클라엔 아예 없음) | HP로만 | 서버 | `PepperDot.cs:16` |
 | 가시 벽 반사 | 서버 `NetworkVariable<int>` | 전원 | 서버 | `ThornWall.cs:16` |
-| 눈(EyeLook) | **각 클라 로컬** (네트워크 0) | 없음 | 클라 | `EyeLook.cs:33` |
+| 눈(EyeLook) | 그리기만 — 상태는 `GazeAim`이 갖는다 | `GazeAim.m_Packed`(short, Owner 쓰기) | 소유자 | `EyeLook.cs` · `GazeAim.cs` |
+| 시선(GazeAim) | **2바이트 · 초당 12회 상한 · 변화 시에만**(2026-09-10) | 위와 같음 | 소유자 | `GazeAim.cs` |
 | 귀(EarPerk) | **각 클라 로컬** (네트워크 0, static 명부) | 없음 | 클라 | `EarPerk.cs:37` |
 | 피격 연출(HitFeedback) | 로컬 (HP 변화 구독) | — | 클라 | `HitFeedback.cs:41` |
 | 차폐 페이드 | 로컬 | — | 클라 | `OccluderFader.cs:29` |
@@ -197,7 +198,7 @@ base(60, PlayerInfo.csv)
 | **B-05** | **총 RPC 소유권.** 쥐 A의 인스턴스에서 쥐 B의 `MousePopgun.FireRpc`를 부르면 B의 쿨다운이 **안 닳아야** 한다 | wesqa (3인) | `TestGetWeaponCooldownOf`(신규) 또는 발사 횟수 카운터 | **P0** |
 | **B-06** | **잠행 → 귀 불변식.** 고양이가 쥐 8m 앞에서 (1) 뛴다 → 쥐 `perk>0.5`·`stepAudible=1` (2) 잠행한다 → `perk≈0`·`stepAudible=0`. 같은 상황에서 덮치기(일회성 소리)는 잠행 중에도 `kind=shot`으로 들려야 한다 | wesqa (신규 `qa_v51`) | **이미 있다** — `TestGetEarState`(`turn/perk/hearing/kind/stepAudible/turnR/turnL`) | **P0** |
 | **B-07** | **「예민한 귀」가 남의 귀를 부풀리지 않는다.** 고양이가 CatEar Lv3(×2)을 산 뒤 **쥐 클라에서 읽은** 쥐 귀의 `stepAudible`이 배율 없이 판정돼야 한다(내 몸 `HeardRange` vs 남의 몸 `CurrentRange` 분기) | wesqa (3인) | `TestGetEarState`(내 몸) + `TestGetEarStateOfRole`(남의 몸) + `TestGetListenerMultiplier` | P1 |
-| **B-08** | **눈이 조준을 따라간다 + 남의 눈은 안 샌다.** 내 몸: 카메라를 90도 돌린 뒤 `TestGetEyeGaze`의 `aim=cam`이고 눈동자 월드 위치가 이동. 남의 몸: `aim=body(notMine)` | wesqa | **이미 있다** — `TestGetEyeGaze` · `TestBlinkEyes` | P1 |
+| **B-08** | **눈이 조준을 따라간다 — 남의 화면에서도**(2026-09-10 개정). 내 몸: 카메라를 90도 돌린 뒤 `TestGetEyeGaze`의 `aim=gaze:cam`이고 눈동자 월드 위치가 이동. **남의 몸: 다른 인스턴스에서 `TestGetOtherEyeGaze`의 `packed`가 바뀌고 눈동자가 따라 돈다** — 예전 기대값(`aim=body(notMine)` = 안 샌다)은 **폐기**다. 그건 「남의 눈이 죽었다」를 통과로 채점하던 항목이었다 | wesqa | `TestGetEyeGaze` · `TestGetOtherEyeGaze` · `TestCaptureOtherHeadShot` · `TestGetGazeWrites` | P1 |
 | **B-09** | **씬 재생성 후에도 눈·귀가 붙어 있다.** 두 프리팹에 `EyeLook`·`EarPerk`가 있고 `m_EyeCenterLocal`이 `EyeAnchorBaker` 상수와 일치 | EditMode (에셋 로드형, `MapValidatorTests` 패턴) | 없음 — `AssetDatabase` | P1 |
 | **B-10** | **CSV↔프리팹 자동 대조.** `PlayerInfo.csv`의 14개 열이 두 프리팹에 구워진 값과 같은지, `m_StrideMeters == StrideOf(MoveSpeed, 걸음/초)`인지 | EditMode | 없음 — `AssetDatabase` + `InfoManager` | **P0**(지금 손으로만 막고 있다) |
 | **B-11** | **반사 사망 경합.** 부채꼴 안에 요새 Lv3 두 채 + 쥐 하나를 두고, 첫 요새 반사로 고양이가 죽는 상황에서 **두 번째 요새·쥐가 피해를 안 받아야** 한다 | wesqa | `TestGetHpOf`(다중) + `TestDevPounce`(신규) | P1 |

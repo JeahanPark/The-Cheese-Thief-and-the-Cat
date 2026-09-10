@@ -312,9 +312,94 @@ namespace CTC.Runtime.Testing
             Vector3 g = eyes.DevGazeRight();
             Vector3 p = eyes.DevPupilWorldRight();
             Vector3 f = Camera.main != null ? Camera.main.transform.forward : Vector3.zero;
+            var aim = me.GetComponent<CTC.Runtime.Player.GazeAim>();
+            Vector2 a = aim != null ? aim.DevAngles : Vector2.zero;
             return $"gaze={g.x:F3},{g.y:F3},{g.z:F3}|pupil={p.x:F3},{p.y:F3},{p.z:F3}" +
                    $"|camFwd={f.x:F3},{f.y:F3},{f.z:F3}|bodyFwd={me.transform.forward.x:F3},{me.transform.forward.z:F3}" +
-                   $"|aim={eyes.DevAimSource()}";
+                   $"|aim={eyes.DevAimSource()}" +
+                   $"|packed={(aim != null ? aim.DevPacked : (short)0)}|yaw={a.x:F2}|pitch={a.y:F2}";
+        }
+
+        /// <summary>
+        /// QA: **남의 몸** 눈동자 — 이 기능의 값어치는 전부 여기서 나온다(2026-09-10).
+        /// 3인칭이라 제 눈은 거의 못 보고, 예전엔 남의 눈이 늘 가운데 붙어 죽어 있었다.
+        /// 가장 가까운 남의 몸을 잡아 "role|packed|yaw,pitch|gaze|pupil"을 준다 —
+        /// `packed`가 0이 아닌 값으로 바뀌면 **복제가 이 클라까지 닿았다**는 뜻이다.
+        /// </summary>
+        public string TestGetOtherEyeGaze(string _role = "")
+        {
+            GameObject body = NearestOtherBody(_role);
+            if (body == null) return "none";
+
+            var eyes = body.GetComponent<CTC.Runtime.Player.EyeLook>();
+            var aim = body.GetComponent<CTC.Runtime.Player.GazeAim>();
+            if (eyes == null) return "no EyeLook";
+
+            Vector3 g = eyes.DevGazeRight();
+            Vector3 p = eyes.DevPupilWorldRight();
+            Vector2 a = aim != null ? aim.DevAngles : Vector2.zero;
+            var tag = body.GetComponent<RoleTag>();
+            return $"role={(tag != null ? tag.Role.ToString() : "None")}" +
+                   $"|packed={(aim != null ? aim.DevPacked : (short)0)}|yaw={a.x:F2}|pitch={a.y:F2}" +
+                   $"|gaze={g.x:F3},{g.y:F3},{g.z:F3}|pupil={p.x:F4},{p.y:F4},{p.z:F4}" +
+                   $"|aim={eyes.DevAimSource()}|mine={eyes.DevMine()}";
+        }
+
+        /// <summary>
+        /// QA: 시선 복제가 **초당 몇 번** 쓰였나 — 대역폭의 유일한 실측 근거(2026-09-10).
+        /// "writes=N|seconds=S|hz=H". 한 번 쓸 때 나가는 것은 `short` 2바이트 + NGO 델타 봉투다.
+        /// </summary>
+        public string TestGetGazeWrites()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var aim = me != null ? me.GetComponent<CTC.Runtime.Player.GazeAim>() : null;
+            if (aim == null) return "none";
+
+            float seconds = aim.DevWriteSeconds;
+            float hz = seconds > 0.01f ? aim.DevWrites / seconds : 0f;
+            return $"writes={aim.DevWrites}|seconds={seconds:F2}|hz={hz:F2}|source={aim.DevSource()}";
+        }
+
+        /// <summary>QA: 위 셈을 0부터 다시 센다 — 재기 직전에 부른다.</summary>
+        public void TestResetGazeWrites()
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            var aim = me != null ? me.GetComponent<CTC.Runtime.Player.GazeAim>() : null;
+            if (aim == null) { GameDebug.LogWarning("[TestManager] GazeAim 없음"); return; }
+            aim.DevResetWrites();
+        }
+
+        /// <summary>
+        /// 이 클라에서 **가장 가까운 남의 몸**. 봇도 남이다 — 귀 명부(`EarPerk.DevAll`)를 쓴다.
+        /// 봇 몸은 플레이어 오브젝트가 아니라 clientId로는 못 찾는다.
+        /// </summary>
+        private static GameObject NearestOtherBody(string _role = "")
+        {
+            RoleId want = RoleId.None;
+            if (!string.IsNullOrEmpty(_role) && !Enum.TryParse(_role, true, out want)) want = RoleId.None;
+
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            Unity.Netcode.NetworkObject me =
+                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            Vector3 from = me != null ? me.transform.position : Vector3.zero;
+
+            GameObject best = null;
+            float bestSqr = float.PositiveInfinity;
+            foreach (CTC.Runtime.Player.EarPerk body in CTC.Runtime.Player.EarPerk.DevAll)
+            {
+                if (body == null) continue;
+                if (me != null && body.gameObject == me.gameObject) continue;
+                if (want != RoleId.None && body.DevRole != want) continue;
+                float sqr = (body.transform.position - from).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                bestSqr = sqr;
+                best = body.gameObject;
+            }
+            return best;
         }
 
         /// <summary>QA: 얹은 눈을 감춘다 — 「전」 그림을 같은 거리·같은 각도로 찍으려고.</summary>

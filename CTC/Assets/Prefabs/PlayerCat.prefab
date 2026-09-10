@@ -30,6 +30,7 @@ GameObject:
   - component: {fileID: 559661421635657512}
   - component: {fileID: 4113821741810692290}
   - component: {fileID: 3565572162635516458}
+  - component: {fileID: 3231663289781353737}
   - component: {fileID: 6813391279799131985}
   - component: {fileID: -8113807162095430264}
   - component: {fileID: 6558113436026960680}
@@ -409,6 +410,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 106a4b634883ff74d8790940ae812efb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.CatFrenzy
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &3231663289781353737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d68b67148d70d8845a4103acdb58cf40, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GazeAim
   ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &6813391279799131985
 MonoBehaviour:

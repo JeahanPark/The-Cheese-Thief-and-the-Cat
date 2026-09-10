@@ -129,7 +129,7 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public string TestCaptureFaceShot(string _path, int _size)
         {
-            return CaptureHeadShot(_path, _size, 0f, 0f);
+            return TestCaptureHeadShot(_path, _size, 0f, 0f);
         }
 
         /// <summary>
@@ -139,14 +139,30 @@ namespace CTC.Runtime.Testing
         /// </summary>
         public string TestCaptureHeadShot(string _path, int _size, float _yaw, float _pitch)
         {
-            return CaptureHeadShot(_path, _size, _yaw, _pitch);
-        }
-
-        private string CaptureHeadShot(string _path, int _size, float _yaw, float _pitch)
-        {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
-            if (local == null) return "no local player";
+            return CaptureHeadShot(_path, _size, _yaw, _pitch, local != null ? local.gameObject : null);
+        }
+
+        /// <summary>
+        /// QA: **남의 몸** 얼굴을 같은 거리·같은 화각으로 찍는다(2026-09-10).
+        ///
+        /// 시선 복제의 값어치는 「남이 볼 때」 나오는데 <see cref="TestCaptureHeadShot"/>은
+        /// 제 몸만 찍는다 — 그걸로는 남의 눈이 도는 것을 **증명할 수가 없다**.
+        /// 가장 가까운 남의 몸(봇 포함)을 잡아 그 얼굴 앞에서 찍는다.
+        /// </summary>
+        public string TestCaptureOtherHeadShot(string _path, int _size, float _yaw, float _pitch,
+            string _role = "")
+        {
+            GameObject body = NearestOtherBody(_role);
+            if (body == null) return "no other body";
+            return CaptureHeadShot(_path, _size, _yaw, _pitch, body);
+        }
+
+        private string CaptureHeadShot(string _path, int _size, float _yaw, float _pitch, GameObject _body)
+        {
+            if (_body == null) return "no local player";
+            GameObject local = _body;
 
             var tag = local.GetComponent<CTC.Runtime.Combat.RoleTag>();
             CTC.Runtime.Lobby.RoleId role = tag != null ? tag.Role : CTC.Runtime.Lobby.RoleId.Mouse;
@@ -215,8 +231,13 @@ namespace CTC.Runtime.Testing
 
             var ears = local.GetComponent<CTC.Runtime.Player.EarPerk>();
             var eyes = local.GetComponent<CTC.Runtime.Player.EyeLook>();
+            var aim = local.GetComponent<CTC.Runtime.Player.GazeAim>();
             Vector3 gaze = eyes != null ? eyes.DevGazeRight() : Vector3.zero;
-            return $"ok role={role} dist={info.CamDistance:F1} fov={info.Fov:F0} " +
+            Vector2 angles = aim != null ? aim.DevAngles : Vector2.zero;
+            return $"ok role={role} mine={(eyes != null && eyes.DevMine())} " +
+                   $"packed={(aim != null ? aim.DevPacked : (short)0)} " +
+                   $"aimYaw={angles.x:F1} aimPitch={angles.y:F1} " +
+                   $"dist={info.CamDistance:F1} fov={info.Fov:F0} " +
                    $"turn={(ears != null ? ears.DevTurnDegrees : 0f):F2} " +
                    $"perk={(ears != null ? ears.DevPerk : 0f):F3} " +
                    $"gaze={gaze.x:F3},{gaze.y:F3},{gaze.z:F3}";

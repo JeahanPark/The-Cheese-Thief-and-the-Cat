@@ -13,8 +13,14 @@ namespace CTC.Runtime.Player
     /// 셋 다 모델과 **같은 머티리얼**을 쓰고 팔레트 텍셀만 골라 찍으므로 새 머티리얼·셰이더가 없다
     /// (색이 M_Cat_URP·M_Mouse_URP의 틴트를 그대로 따라온다).
     ///
-    /// **네트워크 0**: 전부 각 클라가 자기 화면에서 계산한다. 내 몸은 내 카메라가 보는 곳을,
-    /// 남의 몸은 그 몸의 정면을 본다. 보내는 것도 받는 것도 없다.
+    /// **조준 방향은 복제된다**(2026-09-10). 예전엔 통신 0이었는데 — 남의 몸은 그 몸의 정면을
+    /// 보게 해 놨더니 눈이 쉬는 방향도 결국 머리 정면이라 <c>ClampGaze(정면, 정면) = 정면</c>,
+    /// **남의 눈동자가 늘 가운데 붙어 아무것도 안 했다.** 3인칭이라 내 눈은 내가 거의 못 보므로
+    /// 이 연출의 값어치는 **남이 볼 때** 나온다. 그래서 <see cref="GazeAim"/>이 조준 방향을
+    /// 몸 로컬 각도 **2바이트**로 접어 초당 12회 상한·변화 시에만 복제한다.
+    /// 이 클래스는 그 값을 **읽기만** 한다 — 여전히 NetworkBehaviour가 아니고, 상태를 안 가진다.
+    ///
+    /// 눈꺼풀(깜빡임)은 그대로 통신 0이다 — 각자 제 시계로 랜덤하게 깜빡인다.
     ///
     /// 수치(최대 각도·따라가는 속도·깜빡임)는 BalanceInfo.csv가 원본.
     /// 눈의 자리·크기는 모델 지오메트리라 CSV가 아니라 프리팹에 굽는다(PlayerPrefabFactory).
@@ -49,7 +55,7 @@ namespace CTC.Runtime.Player
 
         private Transform m_Head;
         private NetworkObject m_NetObject;
-        private Camera m_Camera;
+        private GazeAim m_Aim;
 
         private Transform m_EyeR, m_EyeL, m_PupilR, m_PupilL, m_LidR, m_LidL;
         private Renderer m_LidRendererR, m_LidRendererL;
@@ -79,6 +85,7 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             m_NetObject = GetComponent<NetworkObject>();
+            m_Aim = GetComponent<GazeAim>();
 
             BalanceInfo balance = InfoManager.Instance.Balance;
             m_MaxAngleDeg = balance.EyeMaxAngleDeg;
@@ -325,15 +332,14 @@ namespace CTC.Runtime.Player
             }
         }
 
-        /// <summary>내 몸이면 내가 보는 곳, 남의 몸이면 그 몸의 정면 — 어느 쪽도 통신하지 않는다.</summary>
+        /// <summary>
+        /// **내 몸이든 남의 몸이든 같은 곳에서 읽는다** — 복제되는 <see cref="GazeAim"/> 하나다.
+        /// 소유자도 제 카메라를 직접 안 본다: 내가 보는 내 눈과 남이 보는 내 눈이 갈리면
+        /// "저 고양이가 날 봤나"가 사람마다 다른 답을 준다.
+        /// </summary>
         private Vector3 AimDirection()
         {
-            if (m_NetObject != null &&
-                LocalControlLogic.Mine(m_NetObject.IsOwner, m_NetObject.IsPlayerObject))
-            {
-                if (m_Camera == null) m_Camera = Camera.main;
-                if (m_Camera != null) return m_Camera.transform.forward;
-            }
+            if (m_Aim != null) return m_Aim.Direction;
             return transform.forward;
         }
 
@@ -379,13 +385,22 @@ namespace CTC.Runtime.Player
             m_BlinkElapsed = m_BlinkSeconds * 0.5f;   // 가장 많이 감은 순간
         }
 
-        /// <summary>QA 전용 — 조준을 어디서 가져왔나("cam" | "body"). 배선 누락은 이 한 글자로 갈린다.</summary>
+        /// <summary>
+        /// QA 전용 — 조준을 어디서 가져왔나. 배선 누락은 이 한 글자로 갈린다.
+        /// `gaze:*`면 복제값을 읽고 있는 것이고, `body(noGazeAim)`면 **프리팹에 컴포넌트가 안 붙었다**
+        /// (씬 재생성이 매번 프리팹을 새로 굽는다 — 빠지면 남의 눈이 다시 죽는다).
+        /// </summary>
         public string DevAimSource()
         {
-            bool mine = m_NetObject != null &&
-                        LocalControlLogic.Mine(m_NetObject.IsOwner, m_NetObject.IsPlayerObject);
-            if (!mine) return "body(notMine)";
-            return m_Camera != null ? "cam" : "body(noCamera)";
+            if (m_Aim == null) return "body(noGazeAim)";
+            return "gaze:" + m_Aim.DevSource();
+        }
+
+        /// <summary>QA 전용 — 내가 조종하는 몸인가(남의 눈을 보고 있는지 가르는 값).</summary>
+        public bool DevMine()
+        {
+            return m_NetObject != null &&
+                   LocalControlLogic.Mine(m_NetObject.IsOwner, m_NetObject.IsPlayerObject);
         }
 
         /// <summary>QA 전용 — 오른눈 흰자의 월드 위치(고정 시점 근접 촬영의 초점).</summary>
