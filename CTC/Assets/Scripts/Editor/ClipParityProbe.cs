@@ -1,0 +1,103 @@
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+namespace CTC.Editor
+{
+    /// <summary>
+    /// 클립 두 개가 **같은 동작인지** 잰다. 블렌더 왕복이 뼈를 틀어뜨렸는지 보는 자다.
+    /// Tools > CTC > Dev > Probe Clip Parity
+    ///
+    /// 씬에 세워서 재지 않는다. `AnimationUtility.GetEditorCurve`로 **클립 안의 커브를 직접**
+    /// 평가한다 — 본을 코드로 돌려도 에디터에서 스킨드 메시가 다시 스키닝되지 않기 때문이다
+    /// (CLAUDE.md 애니메이션 함정). 커브를 직접 읽으면 그 문제를 통째로 비껴간다.
+    /// </summary>
+    public static class ClipParityProbe
+    {
+        private const string PACK_MOUSE_FBX =
+            "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/Mouse_Animations.fbx";
+
+        private const string ROUNDTRIP_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
+        private const string ROUNDTRIP_CLIP = "Walk";
+        private const int SAMPLE_COUNT = 21;
+        private const float EPSILON = 1e-3f;
+
+        private static string ReportPath => Path.Combine(Path.GetTempPath(), "ctc-clip-parity.txt");
+
+        /// <summary>
+        /// 클립의 모든 커브를 <paramref name="_sampleCount"/>번 균등하게 잰다.
+        /// 키는 `경로:프로퍼티` — **이 문자열이 곧 유니티가 뼈를 찾는 방법이다.**
+        /// </summary>
+        public static CurveSample[] SampleClip(AnimationClip _clip, int _sampleCount)
+        {
+            if (_clip == null) return new CurveSample[0];
+
+            var result = new List<CurveSample>();
+            float length = _clip.length;
+
+            foreach (EditorCurveBinding binding in AnimationUtility.GetCurveBindings(_clip))
+            {
+                AnimationCurve curve = AnimationUtility.GetEditorCurve(_clip, binding);
+                if (curve == null) continue;
+
+                var values = new float[_sampleCount];
+                for (int i = 0; i < _sampleCount; i++)
+                {
+                    float t = _sampleCount <= 1 ? 0f : length * i / (_sampleCount - 1);
+                    values[i] = curve.Evaluate(t);
+                }
+
+                result.Add(new CurveSample($"{binding.path}:{binding.propertyName}", values));
+            }
+
+            return result.ToArray();
+        }
+
+        [MenuItem("Tools/CTC/Dev/Probe Clip Parity")]
+        public static void Probe()
+        {
+            AnimationClip packWalk = FindClip(PACK_MOUSE_FBX, ROUNDTRIP_CLIP);
+            AnimationClip madeWalk = FindClip(ROUNDTRIP_FBX, ROUNDTRIP_CLIP);
+
+            if (packWalk == null)
+            {
+                Debug.LogError($"[ClipParityProbe] 팩 '{ROUNDTRIP_CLIP}'을 못 찾았다: {PACK_MOUSE_FBX}");
+                return;
+            }
+
+            if (madeWalk == null)
+            {
+                Debug.LogError(
+                    $"[ClipParityProbe] 왕복 '{ROUNDTRIP_CLIP}'을 못 찾았다: {ROUNDTRIP_FBX}\n" +
+                    "아직 내보내지 않았거나, 유니티가 클립을 하나도 못 읽었다(= 리그 인식 실패).");
+                return;
+            }
+
+            ParityReport report = ClipParityLogic.Compare(
+                SampleClip(packWalk, SAMPLE_COUNT), SampleClip(madeWalk, SAMPLE_COUNT), EPSILON);
+
+            string text =
+                $"=== 클립 동일성 ===\nA(팩)   {PACK_MOUSE_FBX} :: {ROUNDTRIP_CLIP}\n" +
+                $"B(왕복) {ROUNDTRIP_FBX} :: {ROUNDTRIP_CLIP}\n" +
+                $"길이 {packWalk.length:F4}s vs {madeWalk.length:F4}s · " +
+                $"fps {packWalk.frameRate:F1} vs {madeWalk.frameRate:F1}\n\n" +
+                report.ToText();
+
+            File.WriteAllText(ReportPath, text);
+
+            if (report.IsIdentical) Debug.Log($"[ClipParityProbe] 같다 → {ReportPath}\n{text}");
+            else Debug.LogError($"[ClipParityProbe] 다르다 → {ReportPath}\n{text}");
+        }
+
+        private static AnimationClip FindClip(string _assetPath, string _clipName)
+        {
+            foreach (Object o in AssetDatabase.LoadAllAssetsAtPath(_assetPath))
+            {
+                var clip = o as AnimationClip;
+                if (clip != null && clip.name == _clipName) return clip;
+            }
+            return null;
+        }
+    }
+}

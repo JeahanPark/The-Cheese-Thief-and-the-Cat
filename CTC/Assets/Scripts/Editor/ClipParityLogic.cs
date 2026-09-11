@@ -59,7 +59,7 @@ namespace CTC.Editor
     }
 
     /// <summary>
-    /// 클립 두 벌을 견준다. **Unity 애니메이션 API를 모른다** — 채취는 ClipParityProbe(Task 2)가 한다.
+    /// 클립 두 벌을 견준다. **Unity 애니메이션 API를 모른다** — 채취는 <see cref="ClipParityProbe"/>가 한다.
     ///
     /// 왜 키 집합을 값보다 먼저 보는가(2026-09-12): 블렌더 FBX 왕복이 깨지는 세 가지가
     /// 전부 **키 집합의 사고**다 — 뼈 이름이 `아마추어이름+뼈이름`으로 바뀌거나, 계층에
