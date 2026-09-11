@@ -7,7 +7,7 @@ root와 뒷다리는 건드리지 않는다 - 발이 미끄러져 보인다.
 각도는 설계 문서(2026-09-12-mouse-shoot-clip-design.md) 3절의 출발값이다.
 미리보기 렌더를 보며 굴린다.
 """
-from math import radians
+from math import cos, radians, sin
 
 NAME = "Shoot"
 
@@ -29,18 +29,23 @@ POSES = {
 
 
 def build(_armature_object):
-    """포즈 본을 프레임마다 세우고 키를 찍는다. apply_clip.py가 부른다."""
+    """포즈 본을 프레임마다 세우고 키를 찍는다. apply_clip.py가 부른다.
+
+    **rotation_mode을 건드리지 않는다.** 그건 액션이 아니라 아마추어 본 자체의 속성이라,
+    바꾸면 .blend에 저장되어 **다른 액션 19개의 베이크까지 깨진다** — 그쪽은
+    rotation_quaternion으로 키가 찍혀 있는데 오일러 채널을 읽게 되기 때문이다.
+    2026-09-12에 실제로 그렇게 깨뜨렸고 Probe Clip Parity가 잡았다.
+    """
     import bpy
 
     for bone_name in POSES:
-        bone = _armature_object.pose.bones.get(bone_name)
-        if bone is None:
+        if _armature_object.pose.bones.get(bone_name) is None:
             raise SystemExit(f"포즈 본 '{bone_name}'이 없다 - 리그가 바뀌었다")
-        bone.rotation_mode = "XYZ"
 
     for bone_name, frames in POSES.items():
         bone = _armature_object.pose.bones[bone_name]
         for frame, degrees in frames:
             bpy.context.scene.frame_set(frame)
-            bone.rotation_euler = (radians(degrees), 0.0, 0.0)
-            bone.keyframe_insert(data_path="rotation_euler", frame=frame)
+            half = radians(degrees) * 0.5
+            bone.rotation_quaternion = (cos(half), sin(half), 0.0, 0.0)  # (w, x, y, z)
+            bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)

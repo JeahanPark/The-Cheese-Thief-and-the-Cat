@@ -64,6 +64,16 @@ def main():
 
     mod.build(arm)
 
+    # 클립 정의가 rotation_mode를 건드리면 그 순간 다른 액션 19개의 베이크가 깨진다.
+    # 액션이 아니라 아마추어의 속성이라서다 - 저장되면 전부에 걸린다.
+    bad = [b.name for b in arm.pose.bones if b.rotation_mode != "QUATERNION"]
+    if bad:
+        raise SystemExit(
+            f"포즈 본의 rotation_mode가 바뀌었다: {bad}\n"
+            "클립 정의는 rotation_mode를 건드리면 안 된다 - "
+            "rotation_quaternion으로 키를 찍어라."
+        )
+
     bpy.ops.object.mode_set(mode="OBJECT")
 
     got = bpy.data.actions.get(mod.NAME)
