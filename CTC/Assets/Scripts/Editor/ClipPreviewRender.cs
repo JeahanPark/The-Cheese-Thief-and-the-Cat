@@ -27,10 +27,20 @@ namespace CTC.Editor
         private const string ROUNDTRIP_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
         private const string CLIP_NAME = "Walk";
 
-        private const int RESOLUTION = 512;
+        /// <summary>팩에 없는 신규 클립. 왕복 FBX에서만 렌더한다.</summary>
+        private const string SHOOT_CLIP_NAME = "Shoot";
+
+        private const int RESOLUTION = 768;
 
         /// <summary>클립 길이를 이 비율들로 나눠 잰다 — 시작·중간·끝을 고루 본다.</summary>
         private static readonly float[] NORMALIZED_TIMES = { 0f, 0.2f, 0.4f, 0.6f, 0.8f, 1f };
+
+        /// <summary>
+        /// Shoot은 블렌더 프레임 1~11(10프레임)이라 0.1 간격이 **블렌더 프레임과 1:1로 맞는다**.
+        /// 리코일(5프레임)이 3프레임과 별개의 박자로 읽히는지 보려면 촘촘해야 해서 11장 전부 뽑는다.
+        /// </summary>
+        private static readonly float[] SHOOT_NORMALIZED_TIMES =
+            { 0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f };
 
         [MenuItem("Tools/CTC/Dev/클립 미리보기 렌더")]
         public static void Render()
@@ -50,7 +60,7 @@ namespace CTC.Editor
             }
 
             var paths = new List<string>();
-            paths.AddRange(RenderClip(prefab, packClip, "pack"));
+            paths.AddRange(RenderClip(prefab, packClip, "pack", NORMALIZED_TIMES));
 
             AnimationClip roundTripClip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, CLIP_NAME);
             if (roundTripClip == null)
@@ -60,13 +70,26 @@ namespace CTC.Editor
             }
             else
             {
-                paths.AddRange(RenderClip(prefab, roundTripClip, "roundtrip"));
+                paths.AddRange(RenderClip(prefab, roundTripClip, "roundtrip", NORMALIZED_TIMES));
+            }
+
+            // Shoot은 팩에 없다 — 왕복 FBX 한쪽만 렌더한다.
+            AnimationClip shootClip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, SHOOT_CLIP_NAME);
+            if (shootClip == null)
+            {
+                Debug.LogWarning(
+                    $"[ClipPreviewRender] Shoot 클립을 못 찾았다(스킵): {ROUNDTRIP_FBX} :: {SHOOT_CLIP_NAME}");
+            }
+            else
+            {
+                paths.AddRange(RenderClip(prefab, shootClip, "roundtrip", SHOOT_NORMALIZED_TIMES));
             }
 
             Debug.Log($"[ClipPreviewRender] {paths.Count}장 렌더 완료:\n" + string.Join("\n", paths));
         }
 
-        private static List<string> RenderClip(GameObject _prefab, AnimationClip _clip, string _tag)
+        private static List<string> RenderClip(
+            GameObject _prefab, AnimationClip _clip, string _tag, float[] _normalizedTimes)
         {
             var writtenPaths = new List<string>();
             PreviewRenderUtility preview = null;
@@ -74,6 +97,9 @@ namespace CTC.Editor
             // try 밖에서 선언한다 — 오브젝트(GameObject)를 지워도 그 MeshFilter가 물고 있던
             // 독립된 Mesh 애셋은 따로 남는다. 굽는 도중 예외가 나도 finally에서 반드시 지운다.
             var bakedPairs = new List<(SkinnedMeshRenderer smr, Mesh mesh)>();
+            var bakedGos = new List<GameObject>();
+            GameObject ground = null;
+            Material groundMat = null;
 
             try
             {
@@ -94,21 +120,6 @@ namespace CTC.Editor
                 preview.lights[0].intensity = 1.2f;
                 preview.lights[0].transform.rotation = Quaternion.Euler(50f, -30f, 0f);
                 preview.lights[1].intensity = 0.6f;
-
-                // 첫 프레임을 한 번 샘플링해서 실제 렌더러 경계를 잰다 — 크기를 몰라도 카메라가 맞는다.
-                // (원래 SkinnedMeshRenderer가 아직 켜져 있을 때 재야 한다 — 꺼버린 뒤에는 bounds가 0이 된다.)
-                _clip.SampleAnimation(instance, 0f);
-                Bounds bounds = ComputeBounds(instance);
-                Vector3 center = bounds.center;
-
-                // 수직 FOV 기준으로 전신이 들어오도록 거리를 역산한다(여유 1.1배) — 정면/후면
-                // 어느 쪽에서 봐도 잘리지 않게 3/4 각도·약간 위에서 내려다보는 구도를 쓴다.
-                float halfFovRad = preview.cameraFieldOfView * 0.5f * Mathf.Deg2Rad;
-                float distance = Mathf.Max(bounds.extents.magnitude * 1.1f / Mathf.Tan(halfFovRad), 0.15f);
-                Vector3 dir = new Vector3(1f, 0.6f, -1.3f).normalized;
-
-                preview.camera.transform.position = center + dir * distance;
-                preview.camera.transform.LookAt(center);
 
                 // **스킨드 메시는 이 오프스크린 루프 안에서 프레임마다 다시 스키닝되지 않는다**
                 // (2026-09-12 실측 — `updateWhenOffscreen=true`를 줘도 마찬가지). 본 회전은 매
@@ -142,13 +153,51 @@ namespace CTC.Editor
                     var mr = bakedGo.AddComponent<MeshRenderer>();
                     mr.sharedMaterials = smr.sharedMaterials;
 
+                    bakedGos.Add(bakedGo);
                     smr.enabled = false;
                 }
 
                 float length = _clip.length;
-                for (int i = 0; i < NORMALIZED_TIMES.Length; i++)
+
+                // **카메라 틀은 클립 전 구간을 한 번 구워 보고 정한다.** 첫 프레임만 재면 Shoot처럼
+                // 중간에 일어서는 클립이 위로 잘린다 — 첫 프레임은 네발로 엎드린 자세라 낮다.
+                // SkinnedMeshRenderer.bounds는 여기서 갱신되지 않으므로(위 주석) 구운 메시의
+                // bounds를 직접 월드로 옮겨 합친다 — BakeMesh가 동기적으로 채워 주는 값이다.
+                Bounds bounds = BakeAndEncapsulate(
+                    _clip, instance, bakedPairs, bakedGos, _normalizedTimes, length, out float floorY);
+                Vector3 center = bounds.center;
+
+                // **거의 눈높이의 앞 3/4**로 본다 — 쥐는 +Z를 보고 서 있다.
+                // 두 번 틀리고 나서 여기로 왔다(2026-09-12 실측):
+                //   부감(위에서)  → 반쯤 선 프레임에서 **다리가 몸통에 가려 전부 사라졌다**.
+                //   정측면        → 앞다리가 머리 실루엣과 정확히 겹쳐 **앞발이 안 보였다**
+                //                   (앞다리 뿌리 X=±0.087, 머리 반지름도 그쯤이다).
+                // 정면 가까이(40도)도 틀렸다 — 원근 압축에 몸통 피치가 뭉개진다.
+                // 측면에서 **25도만** 앞으로 튼 각이 둘 다 살린다.
+                float halfFovRad = preview.cameraFieldOfView * 0.5f * Mathf.Deg2Rad;
+                float distance = Mathf.Max(bounds.extents.magnitude * 0.85f / Mathf.Tan(halfFovRad), 0.15f);
+                Vector3 dir = new Vector3(1f, 0.20f, 0.45f).normalized;
+
+                preview.camera.transform.position = center + dir * distance;
+                preview.camera.transform.LookAt(center);
+
+                // 바닥판 — 「발이 붙어 있나」·「정말 일어섰나」는 기준선이 있어야 보인다.
+                // 셰이더는 **캐릭터가 실제로 쓰는 것**을 빌려 쓴다. `Shader.Find("Universal
+                // Render Pipeline/Lit")`으로 만들면 이 오프스크린 씬에서 마젠타로 나왔다
+                // (2026-09-12 실측). 이미 화면에 제대로 그려지고 있는 셰이더면 확실하다.
+                Shader groundShader = null;
+                if (bakedPairs.Count > 0)
                 {
-                    float t = length * NORMALIZED_TIMES[i];
+                    Material src = bakedPairs[0].smr.sharedMaterial;
+                    if (src != null) groundShader = src.shader;
+                }
+
+                ground = MakeGround(bounds, floorY, groundShader, out groundMat);
+                if (ground != null) preview.AddSingleGO(ground);
+
+                for (int i = 0; i < _normalizedTimes.Length; i++)
+                {
+                    float t = length * _normalizedTimes[i];
                     _clip.SampleAnimation(instance, t);
 
                     foreach ((SkinnedMeshRenderer smr, Mesh mesh) pair in bakedPairs)
@@ -160,7 +209,11 @@ namespace CTC.Editor
                     preview.Render();
                     Texture2D tex = preview.EndStaticPreview();
 
-                    string fileName = $"ctc-clip-preview-{_tag}-{_clip.name}-f{i}.png";
+                    // 파일 이름에 **순서와 블렌더 프레임**을 같이 박는다. 0채움이라 사전순 정렬이
+                    // 곧 재생 순서다 — f10이 f2 앞으로 튀어나오지 않는다.
+                    int blenderFrame = 1 + Mathf.RoundToInt(_normalizedTimes[i] * 10f);
+                    string fileName =
+                        $"ctc-clip-preview-{_tag}-{_clip.name}-{i:D2}-bf{blenderFrame:D2}.png";
                     string path = Path.Combine(Path.GetTempPath(), fileName);
                     File.WriteAllBytes(path, tex.EncodeToPNG());
                     UnityEngine.Object.DestroyImmediate(tex);
@@ -177,6 +230,9 @@ namespace CTC.Editor
                     if (pair.mesh != null) UnityEngine.Object.DestroyImmediate(pair.mesh);
                 }
 
+                if (ground != null) UnityEngine.Object.DestroyImmediate(ground);
+                // 머티리얼은 오브젝트와 따로 남는다 — 코드로 만든 건 코드로 지운다.
+                if (groundMat != null) UnityEngine.Object.DestroyImmediate(groundMat);
                 if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
                 preview?.Cleanup();
             }
@@ -184,14 +240,106 @@ namespace CTC.Editor
             return writtenPaths;
         }
 
-        private static Bounds ComputeBounds(GameObject _root)
+        /// <summary>
+        /// 샘플 지점마다 굽고 그 메시의 월드 경계를 전부 합친다 — 클립 어느 순간에도 안 잘리는 틀.
+        /// </summary>
+        private static Bounds BakeAndEncapsulate(
+            AnimationClip _clip,
+            GameObject _instance,
+            List<(SkinnedMeshRenderer smr, Mesh mesh)> _bakedPairs,
+            List<GameObject> _bakedGos,
+            float[] _normalizedTimes,
+            float _length,
+            out float _floorY)
         {
-            Renderer[] renderers = _root.GetComponentsInChildren<Renderer>();
-            if (renderers.Length == 0) return new Bounds(_root.transform.position, Vector3.one);
+            var bounds = new Bounds();
+            bool seeded = false;
 
-            Bounds bounds = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            // 바닥 높이는 **첫 프레임(중립 자세)** 기준이다 — 그 자세에서 네 발이 땅에 붙어 있다.
+            // 클립 전체의 최저점을 쓰면 꼬리가 처지는 프레임에 바닥이 끌려 내려가 기준이 안 된다.
+            _floorY = float.MaxValue;
+
+            for (int i = 0; i < _normalizedTimes.Length; i++)
+            {
+                _clip.SampleAnimation(_instance, _length * _normalizedTimes[i]);
+
+                for (int b = 0; b < _bakedPairs.Count; b++)
+                {
+                    _bakedPairs[b].smr.BakeMesh(_bakedPairs[b].mesh, true);
+
+                    Bounds local = _bakedPairs[b].mesh.bounds;
+                    Transform tr = _bakedGos[b].transform;
+                    Vector3 e = local.extents;
+
+                    for (int c = 0; c < 8; c++)
+                    {
+                        var corner = new Vector3(
+                            (c & 1) == 0 ? -e.x : e.x,
+                            (c & 2) == 0 ? -e.y : e.y,
+                            (c & 4) == 0 ? -e.z : e.z);
+                        Vector3 world = tr.TransformPoint(local.center + corner);
+
+                        if (i == 0) _floorY = Mathf.Min(_floorY, world.y);
+
+                        if (!seeded)
+                        {
+                            bounds = new Bounds(world, Vector3.zero);
+                            seeded = true;
+                        }
+                        else
+                        {
+                            bounds.Encapsulate(world);
+                        }
+                    }
+                }
+            }
+
+            if (!seeded)
+            {
+                _floorY = _instance.transform.position.y;
+                return new Bounds(_instance.transform.position, Vector3.one);
+            }
+
             return bounds;
+        }
+
+        /// <summary>
+        /// 기준선용 바닥판. 발이 붙어 있는지·정말 섰는지는 바닥이 있어야 눈으로 읽힌다.
+        /// </summary>
+        private static GameObject MakeGround(
+            Bounds _bounds, float _floorY, Shader _shader, out Material _material)
+        {
+            _material = null;
+
+            // 셰이더는 반드시 널 검사한다 — `new Material(null)`은 예외도 경고도 없이
+            // **마젠타**를 굽는다(CLAUDE.md 조용히 깨지는 함정 6번).
+            if (_shader == null)
+            {
+                Debug.LogWarning("[ClipPreviewRender] 바닥판 셰이더를 못 구했다 — 바닥 없이 렌더한다");
+                return null;
+            }
+
+            _material = new Material(_shader) { hideFlags = HideFlags.HideAndDontSave };
+            // 캐릭터 머티리얼에서 셰이더만 빌려 왔으므로 텍스처는 비운다 — 무늬가 있으면
+            // 바닥이 기준선 구실을 못 한다. 이름 두 개를 다 시도한다(URP/빌트인).
+            var grey = new Color(0.40f, 0.40f, 0.44f);
+            if (_material.HasProperty("_BaseMap")) _material.SetTexture("_BaseMap", null);
+            if (_material.HasProperty("_MainTex")) _material.SetTexture("_MainTex", null);
+            if (_material.HasProperty("_BaseColor")) _material.SetColor("_BaseColor", grey);
+            if (_material.HasProperty("_Color")) _material.SetColor("_Color", grey);
+
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "ClipPreviewGround";
+            UnityEngine.Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.GetComponent<MeshRenderer>().sharedMaterial = _material;
+
+            // 캐릭터보다 넉넉히 넓게, 두께는 아주 얇게 — 윗면이 정확히 _floorY에 오도록 내린다.
+            float span = Mathf.Max(_bounds.size.x, _bounds.size.z) * 6f + 0.5f;
+            float thickness = Mathf.Max(_bounds.size.y * 0.02f, 0.001f);
+            go.transform.localScale = new Vector3(span, thickness, span);
+            go.transform.position = new Vector3(_bounds.center.x, _floorY - thickness * 0.5f, _bounds.center.z);
+
+            return go;
         }
     }
 }
