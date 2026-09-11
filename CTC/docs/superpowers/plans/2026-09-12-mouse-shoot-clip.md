@@ -310,21 +310,26 @@ POSES = {
 
 
 def build(_armature_object):
-    """포즈 본을 프레임마다 세우고 키를 찍는다. apply_clip.py가 부른다."""
-    import bpy
+    """포즈 본을 프레임마다 세우고 키를 찍는다. apply_clip.py가 부른다.
 
-    for bone_name, frames in POSES.items():
-        bone = _armature_object.pose.bones.get(bone_name)
-        if bone is None:
+    **rotation_mode을 건드리지 않는다.** 그건 액션이 아니라 아마추어 본 자체의
+    속성이라, 바꾸면 .blend에 저장되어 **다른 액션 19개의 베이크까지 깨진다**.
+    2026-09-12에 실제로 그렇게 깨뜨렸고 Probe Clip Parity가 잡았다.
+    """
+    import bpy
+    from math import cos, sin
+
+    for bone_name in POSES:
+        if _armature_object.pose.bones.get(bone_name) is None:
             raise SystemExit(f"포즈 본 '{bone_name}'이 없다 - 리그가 바뀌었다")
-        bone.rotation_mode = "XYZ"
 
     for bone_name, frames in POSES.items():
         bone = _armature_object.pose.bones[bone_name]
         for frame, degrees in frames:
             bpy.context.scene.frame_set(frame)
-            bone.rotation_euler = (radians(degrees), 0.0, 0.0)
-            bone.keyframe_insert(data_path="rotation_euler", frame=frame)
+            half = radians(degrees) * 0.5
+            bone.rotation_quaternion = (cos(half), sin(half), 0.0, 0.0)  # (w, x, y, z)
+            bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
 ```
 
 - [ ] **Step 2: `apply_clip.py`를 쓴다**
@@ -404,6 +409,17 @@ def main():
     if got is None:
         raise SystemExit(f"'{mod.NAME}' 액션이 안 만들어졌다")
 
+    # 클립 정의가 rotation_mode를 건드리면 그 순간 다른 액션 19개의 베이크가 깨진다.
+    # 액션이 아니라 아마추어의 속성이라서다 - 저장되면 전부에 걸린다(2026-09-12 실측).
+    bad = [b.name for b in arm.pose.bones if b.rotation_mode != "QUATERNION"]
+    if bad:
+        raise SystemExit(
+            f"포즈 본의 rotation_mode가 바뀌었다: {bad}
+"
+            "클립 정의는 rotation_mode를 건드리면 안 된다 - "
+            "rotation_quaternion으로 키를 찍어라."
+        )
+
     print(f"APPLIED {mod.NAME} frames={mod.FRAME_START}..{mod.FRAME_END}")
     print(f"ACTIONS {sorted(a.name for a in bpy.data.actions)}")
 
@@ -432,6 +448,24 @@ echo "exit=$?"
 기대: `APPLIED Shoot frames=1..11` · `ACTIONS [... 20개, 'Shoot' 포함 ...]` · `SAVED ...` · `exit=0`
 
 **액션이 20개여야 한다.** 19개면 기존 것을 덮어썼거나 새 것이 저장되지 않은 것이다.
+
+### ⚠️ rotation_mode를 절대 건드리지 않는다 (2026-09-12 실측)
+
+초안은 `bone.rotation_mode = "XYZ"` 후 `rotation_euler`로 키를 찍게 돼 있었다.
+**그게 기존 액션 19개를 통째로 깼다.**
+
+`rotation_mode`는 **액션이 아니라 아마추어 본 자체의 속성**이다. 바꾸면 `.blend`에 저장되고,
+그 뒤로 블렌더가 `Walk`를 구울 때 **쿼터니언 커브를 무시하고 오일러(0,0,0)를 읽는다.**
+
+```
+[값 어긋남] 16건
+  Rig/root/body/leg.F.L:m_LocalRotation.y[0]: 0.21644 vs 0.00000
+  Rig/root/body/leg.F.L:m_LocalRotation.z[0]: 0.97630 vs 1.00000   ← 항등 쿼터니언
+```
+
+어긋난 뼈 6개가 `POSES`의 키와 **정확히 일치**했다. `apply_clip.py`에 가드를 넣었다.
+
+**Task 3의 「기존 19개부터 잰다」가 이걸 잡았다.** 그 단계가 없었으면 사격만 보고 넘어갔다.
 
 - [ ] **Step 4: 실패하면 — 진단표**
 
