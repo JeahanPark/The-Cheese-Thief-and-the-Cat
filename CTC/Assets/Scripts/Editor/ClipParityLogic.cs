@@ -27,17 +27,22 @@ namespace CTC.Editor
         public List<string> ExtraInB { get; } = new List<string>();
         public List<string> ValueMismatches { get; } = new List<string>();
 
-        /// <summary>비교에 쓴 커브 수(양쪽에 다 있는 키). 0이면 잰 것이 없다는 뜻이다.</summary>
+        /// <summary>같은 리스트 안에서 키가 두 번 이상 나온 경우. 채취(추출) 쪽이 잘못됐다는 신호다.</summary>
+        public List<string> DuplicateKeys { get; } = new List<string>();
+
+        /// <summary>비교에 쓴 커브 수(양쪽에 다 있는 고유 키). 0이면 잰 것이 없다는 뜻이다.</summary>
         public int ComparedCurves { get; set; }
 
         public bool IsIdentical =>
             ComparedCurves > 0 &&
-            MissingInB.Count == 0 && ExtraInB.Count == 0 && ValueMismatches.Count == 0;
+            MissingInB.Count == 0 && ExtraInB.Count == 0 &&
+            ValueMismatches.Count == 0 && DuplicateKeys.Count == 0;
 
         public string ToText()
         {
             var sb = new StringBuilder();
             sb.AppendLine($"견준 커브: {ComparedCurves}");
+            Section(sb, "중복 키(채취가 잘못됐다)", DuplicateKeys);
             Section(sb, "A에만 있음(사라진 뼈·프로퍼티)", MissingInB);
             Section(sb, "B에만 있음(늘어난 뼈·말단 본)", ExtraInB);
             Section(sb, "값 어긋남", ValueMismatches);
@@ -68,47 +73,73 @@ namespace CTC.Editor
         {
             var report = new ParityReport();
 
-            var byKeyA = new Dictionary<string, float[]>();
-            foreach (CurveSample s in _a) byKeyA[s.Key] = s.Values;
+            Dictionary<string, float[]> byKeyA = BuildIndex(_a, "A", report.DuplicateKeys);
+            Dictionary<string, float[]> byKeyB = BuildIndex(_b, "B", report.DuplicateKeys);
 
-            var byKeyB = new Dictionary<string, float[]>();
-            foreach (CurveSample s in _b) byKeyB[s.Key] = s.Values;
-
-            foreach (CurveSample s in _a)
+            // 이후 루프는 전부 딕셔너리(고유 키) 기준으로 돈다 — 원본 리스트를 다시 돌면
+            // 중복 키가 있을 때 같은 키를 여러 번 세거나 서로 다른 판정을 두 번 내게 된다.
+            foreach (string key in byKeyA.Keys)
             {
-                if (!byKeyB.ContainsKey(s.Key)) report.MissingInB.Add(s.Key);
+                if (!byKeyB.ContainsKey(key)) report.MissingInB.Add(key);
             }
 
-            foreach (CurveSample s in _b)
+            foreach (string key in byKeyB.Keys)
             {
-                if (!byKeyA.ContainsKey(s.Key)) report.ExtraInB.Add(s.Key);
+                if (!byKeyA.ContainsKey(key)) report.ExtraInB.Add(key);
             }
 
-            foreach (CurveSample s in _a)
+            foreach (KeyValuePair<string, float[]> kv in byKeyA)
             {
-                if (!byKeyB.TryGetValue(s.Key, out float[] other)) continue;
+                if (!byKeyB.TryGetValue(kv.Key, out float[] other)) continue;
                 report.ComparedCurves++;
 
-                if (s.Values.Length != other.Length)
+                float[] mine = kv.Value;
+                if (mine.Length != other.Length)
                 {
                     report.ValueMismatches.Add(
-                        $"{s.Key}: 샘플 수가 다르다 {s.Values.Length} vs {other.Length}");
+                        $"{kv.Key}: 샘플 수가 다르다 {mine.Length} vs {other.Length}");
                     continue;
                 }
 
-                for (int i = 0; i < s.Values.Length; i++)
+                for (int i = 0; i < mine.Length; i++)
                 {
-                    float delta = s.Values[i] - other[i];
+                    // 무한대끼리 빼면 NaN이고, NaN은 어떤 비교(<=)도 통과하지 못한다.
+                    // 그래서 같은 값(무한대 포함)은 뺄셈 전에 먼저 걸러야 오탐이 안 난다.
+                    if (mine[i] == other[i]) continue;
+
+                    float delta = mine[i] - other[i];
                     if (delta < 0f) delta = -delta;
                     if (delta <= _epsilon) continue;
 
                     report.ValueMismatches.Add(
-                        $"{s.Key}[{i}]: {s.Values[i]:F5} vs {other[i]:F5} (Δ{delta:F5})");
+                        $"{kv.Key}[{i}]: {mine[i]:F5} vs {other[i]:F5} (Δ{delta:F5})");
                     break; // 커브당 한 건만 — 보고서가 수천 줄이 되면 안 읽는다
                 }
             }
 
             return report;
+        }
+
+        /// <summary>
+        /// 키 → 값 배열 인덱스를 만든다. 같은 키가 두 번 나오면 채취가 잘못된 것이므로
+        /// <paramref name="_duplicates"/>에 적어 두고 **먼저 들어온 값을 그대로 둔다**(먼저 값이 이긴다).
+        /// </summary>
+        private static Dictionary<string, float[]> BuildIndex(
+            IReadOnlyList<CurveSample> _samples, string _side, List<string> _duplicates)
+        {
+            var byKey = new Dictionary<string, float[]>();
+            foreach (CurveSample s in _samples)
+            {
+                if (byKey.ContainsKey(s.Key))
+                {
+                    _duplicates.Add($"{_side}: {s.Key}");
+                    continue;
+                }
+
+                byKey[s.Key] = s.Values;
+            }
+
+            return byKey;
         }
     }
 }

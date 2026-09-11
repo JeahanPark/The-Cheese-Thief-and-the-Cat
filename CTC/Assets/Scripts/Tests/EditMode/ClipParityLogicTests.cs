@@ -93,5 +93,41 @@ namespace CTC.Tests
             Assert.IsFalse(r.IsIdentical,
                 "커브가 0개인 두 클립을 '같다'고 하면 배선이 죽은 것을 통과시킨다");
         }
+
+        [Test]
+        public void DuplicateKeyInA_IsReportedAndNotDoubleCounted()
+        {
+            var a = new[] { S("Rig/root:x", 0f), S("Rig/root:x", 0f) };
+            var b = new[] { S("Rig/root:x", 0f) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f);
+
+            Assert.IsFalse(r.IsIdentical, r.ToText());
+            Assert.AreEqual(1, r.DuplicateKeys.Count, r.ToText());
+            StringAssert.Contains("Rig/root:x", r.DuplicateKeys[0]);
+            Assert.AreEqual(1, r.ComparedCurves, "중복 키가 있어도 고유 키 기준으로 한 번만 세야 한다");
+        }
+
+        [Test]
+        public void DuplicateKeyMissingInB_IsListedOnce()
+        {
+            var a = new[] { S("Rig/root/body:x", 0f), S("Rig/root/body:x", 0f) };
+            var b = new CurveSample[0];
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f);
+
+            CollectionAssert.AreEqual(new[] { "Rig/root/body:x" }, r.MissingInB);
+        }
+
+        [Test]
+        public void IdenticalInfinities_AreNotReported()
+        {
+            var a = new[] { S("Rig/root:x", 0f, float.PositiveInfinity) };
+            var b = new[] { S("Rig/root:x", 0f, float.PositiveInfinity) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f);
+
+            Assert.IsTrue(r.IsIdentical, r.ToText());
+        }
     }
 }
