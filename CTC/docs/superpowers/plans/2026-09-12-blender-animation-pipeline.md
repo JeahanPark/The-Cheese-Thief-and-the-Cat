@@ -906,7 +906,7 @@ def main():
         axis_up="Y",
         global_scale=1.0,
         apply_unit_scale=True,
-        apply_scale_options="FBX_SCALE_ALL",
+        apply_scale_options="FBX_SCALE_NONE",  # 2026-09-12 실측: ALL이면 뼈 위치가 100배 어긋난다
         bake_anim=True,
         bake_anim_use_all_bones=True,
         bake_anim_use_nla_strips=True,
