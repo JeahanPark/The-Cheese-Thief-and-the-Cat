@@ -80,15 +80,109 @@ namespace CTC.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => ClipParityProbe.SampleClip(walk, 1));
         }
 
-        [Test]
-        public void ClipSettings_AreComparedAgainstPack()
+        /// <summary>
+        /// 인메모리 클립을 만든다. 팩 에셋에 기대지 않아 조건을 하나씩 정확히 통제할 수 있다.
+        /// `length`는 커브의 마지막 키프레임 시각에서 따라온다 — 직접 세팅할 수 없다.
+        /// </summary>
+        private static AnimationClip MakeClip(float _curveEndTime, float _frameRate, bool _looping)
         {
-            AnimationClip walk = Pack("Walk");
-            var report = new ParityReport();
+            var clip = new AnimationClip { frameRate = _frameRate };
+            clip.SetCurve("Rig/root", typeof(Transform), "m_LocalPosition.x",
+                AnimationCurve.Linear(0f, 0f, _curveEndTime, 1f));
 
-            ClipParityProbe.CompareClipSettings(walk, walk, report);
+            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = _looping;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            CollectionAssert.IsEmpty(report.SettingMismatches, report.ToText());
+            return clip;
+        }
+
+        [Test]
+        public void ClipSettings_Identical_ReportsNoMismatch()
+        {
+            AnimationClip a = MakeClip(0.5f, 24f, true);
+            AnimationClip b = MakeClip(0.5f, 24f, true);
+            try
+            {
+                var report = new ParityReport();
+                ClipParityProbe.CompareClipSettings(a, b, report);
+
+                CollectionAssert.IsEmpty(report.SettingMismatches, report.ToText());
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(a);
+                UnityEngine.Object.DestroyImmediate(b);
+            }
+        }
+
+        [Test]
+        public void ClipSettings_DifferentLength_IsReported()
+        {
+            AnimationClip a = MakeClip(0.5f, 24f, true);
+            AnimationClip b = MakeClip(1.0f, 24f, true);
+            try
+            {
+                var report = new ParityReport();
+                ClipParityProbe.CompareClipSettings(a, b, report);
+
+                Assert.AreEqual(1, report.SettingMismatches.Count, report.ToText());
+                string line = report.SettingMismatches[0];
+                StringAssert.Contains("길이", line);
+                StringAssert.Contains(a.length.ToString("F5"), line);
+                StringAssert.Contains(b.length.ToString("F5"), line);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(a);
+                UnityEngine.Object.DestroyImmediate(b);
+            }
+        }
+
+        [Test]
+        public void ClipSettings_DifferentFrameRate_IsReported()
+        {
+            AnimationClip a = MakeClip(0.5f, 24f, true);
+            AnimationClip b = MakeClip(0.5f, 30f, true);
+            try
+            {
+                var report = new ParityReport();
+                ClipParityProbe.CompareClipSettings(a, b, report);
+
+                Assert.AreEqual(1, report.SettingMismatches.Count, report.ToText());
+                string line = report.SettingMismatches[0];
+                StringAssert.Contains("프레임레이트", line);
+                StringAssert.Contains(a.frameRate.ToString("F5"), line);
+                StringAssert.Contains(b.frameRate.ToString("F5"), line);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(a);
+                UnityEngine.Object.DestroyImmediate(b);
+            }
+        }
+
+        [Test]
+        public void ClipSettings_DifferentLooping_IsReported()
+        {
+            AnimationClip a = MakeClip(0.5f, 24f, true);
+            AnimationClip b = MakeClip(0.5f, 24f, false);
+            try
+            {
+                var report = new ParityReport();
+                ClipParityProbe.CompareClipSettings(a, b, report);
+
+                Assert.AreEqual(1, report.SettingMismatches.Count, report.ToText());
+                string line = report.SettingMismatches[0];
+                StringAssert.Contains("반복", line);
+                StringAssert.Contains(a.isLooping.ToString(), line);
+                StringAssert.Contains(b.isLooping.ToString(), line);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(a);
+                UnityEngine.Object.DestroyImmediate(b);
+            }
         }
     }
 }
