@@ -111,6 +111,8 @@
 - 에셋(스크립트, 프리팹 등)을 추가/수정/삭제한 경우 작업 완료 후 반드시 `u_editor_asset(action: refresh)`를 호출하여 Unity 에디터에 반영한다.
 - **MCP 플러그인 수정 시**: 반드시 원본 저장소(`C:\GitFork\MCP_Unity\MCP_Unity_Plugin`)에서 먼저 수정한 뒤 프로젝트(`Assets/MCP_Unity_Plugin/`)로 복사한다. 프로젝트 내 파일을 직접 수정하지 않는다.
 - **MCP 서버 재빌드/재시작**: 배치 파일 `C:\GitFork\MCP_Unity\MCP\MCP\MCP\stop_and_rebuild.bat`를 실행한다.
+- **`u_play invoke`의 `args`는 쉼표 구분 문자열**(`"80,0"`)이다. JSON 배열(`[80,0]`)로 주면 **조용히 버려지고 전부 0**이 들어간다 — wesqa `InvokeBridge`와 같은 부류의 함정이다(2026-09-10 실측, 30분 소모).
+- **에디터에서는 `GameDebug.Log/LogWarning`이 아무것도 안 찍는다**(`[Conditional("DEVELOPMENT_BUILD")]`). 훅이 조용히 실패해도 콘솔이 비어 있으니 **로그로 진단하지 마라**.
 - **McpBridge 미응답 시** (도메인 리로드 후 에디터 미포커스): `powershell -NoProfile -File tools/focus-unity.ps1`
 
 ## 조용히 깨지는 함정 (2026-08-30 실측 — 전부 에러가 안 난다)
@@ -125,6 +127,8 @@
 | 6 | `new Material(null)` | `LoadAssetAtPath<Shader>`가 **대규모 리임포트 중에 null**을 준다. 예외도 경고도 없이 **마젠타 머티리얼이 구워져 프리팹에 박힌다** | 셰이더 로드를 널 검사하고, 구운 뒤 `mat.shader == null`을 한 번 더 본다. 큰 에셋을 지운 직후엔 리임포트가 끝난 뒤 생성기를 돌린다 |
 | 7 | 상태를 **같은 프레임에 껐다 켬** | 감시자가 전환을 못 본다. `RequestRestart()`→`RequestStartGame()`을 붙여 부르니 `MatchManager`가 "시작됨→꺼짐"을 놓쳐 타이머를 안 채웠고, **2판부터 시작하자마자 시간 만료**로 끝났다 | 껐다 켜는 사이에 **한 프레임을 준다**(`UniTask.NextFrame`) |
 | 8 | 한글 주석이 든 `.ps1` | PowerShell 5.1은 `.ps1`을 **ANSI로 읽는다**. 글자가 깨져 **파싱 자체가 실패**한다 — 문법 오류로만 보여 원인이 안 보인다 | `.ps1`은 **UTF-8 BOM**으로 저장한다. 만들고 나면 반드시 한 번 실행해 본다 |
+| 9 | **MPPM 클론을 프로세스로 죽임** | MPPM이 「재시작할까?」 **모달**을 띄우고 그 모달이 **에디터 업데이트 루프를 멈춘다** — MCP 호출이 전부 타임아웃해 「클론이 파이프를 가로챘다」와 증상이 똑같아 보인다. 2026-09-11엔 그 상태에서 자식 파이프가 멈춰 **유니티가 fatal assert로 자진 종료**했다 | 끄려면 메뉴 `Tools/CTC/Dev/MPPM 1인 …`(MPPM API로 비활성화 — 모달이 안 뜬다). 이미 떴으면 `tools/dismiss-mppm-modal.ps1`이 **에디터가 멈춰 있어도 밖에서** 닫는다 |
+| 10 | **스팀 클라이언트를 켜 둔 채 유니티 작업** | Facepunch 트랜스포트 때문에 에디터가 `steamclient64.dll`·`gameoverlayrenderer64.dll`(오버레이)을 물고, 종료·서브시스템 정리 경로에서 **크래시한다**(2026-09-11 실측) | **유니티 작업 중엔 스팀을 끈다.** 웹으로 `partner.steamgames.com`을 보는 건 상관없다 — **스팀 클라이언트 실행**이 문제다 |
 
 애니메이션·이펙트를 다룰 때 추가로 겪은 것:
 - **커브·마스크 경로는 Animator 기준**이다. Animator가 자식(`Model`)에 있으면 그 접두를 뺀다. 틀려도 에러가 없다.
