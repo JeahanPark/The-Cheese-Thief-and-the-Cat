@@ -30,7 +30,7 @@ namespace CTC.Editor
         public const float EPSILON = 1e-3f;
 
         /// <summary>클립 길이·프레임레이트 비교 허용 오차. 부동소수 저장 오차 수준이라 값 비교보다 훨씬 빡빡할 필요는 없다.</summary>
-        private const float SETTING_EPSILON = 1e-3f;
+        public const float SETTING_EPSILON = 1e-3f;
 
         private static string ReportPath => Path.Combine(Path.GetTempPath(), "ctc-clip-parity.txt");
 

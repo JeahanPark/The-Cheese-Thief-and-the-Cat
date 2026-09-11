@@ -71,6 +71,9 @@ namespace CTC.Editor
             var writtenPaths = new List<string>();
             PreviewRenderUtility preview = null;
             GameObject instance = null;
+            // try 밖에서 선언한다 — 오브젝트(GameObject)를 지워도 그 MeshFilter가 물고 있던
+            // 독립된 Mesh 애셋은 따로 남는다. 굽는 도중 예외가 나도 finally에서 반드시 지운다.
+            var bakedPairs = new List<(SkinnedMeshRenderer smr, Mesh mesh)>();
 
             try
             {
@@ -115,7 +118,14 @@ namespace CTC.Editor
                 // 전부 첫 포즈로 고정돼 나왔다. 그래서 `BakeMesh`로 **매 프레임 강제로 CPU 스킨을
                 // 굽고**, 원래 SkinnedMeshRenderer는 끈 채 그 결과를 정적 MeshFilter/MeshRenderer로
                 // 그린다 — BakeMesh는 호출 즉시 동기적으로 굽어서 이 문제를 완전히 비껴간다.
-                var bakedPairs = new List<(SkinnedMeshRenderer smr, Mesh mesh)>();
+                // **`useScale: true`로 굽는다 — 실측 확인함(2026-09-12).** MOUSE_PREFAB은 단위
+                // 스케일이 아니다: SkinnedMeshRenderer 자신의 트랜스폼(Mesh_LOD0..3)이 45배,
+                // 별도 가지인 본(Rig)은 100배다 — 본 쪽 100배는 바인드포즈가 흡수하므로 무관하고,
+                // `useScale`이 실제로 상관하는 건 SMR 자신의 45배뿐이다. `BakeMesh(mesh, true)`는
+                // 그 45배를 **뺀** 축소 메시를 주고(측정: bounds.size가 원래의 1/45), 아래서 복사하는
+                // `smr.transform.localScale`(45)이 그걸 다시 곱해 원래 크기로 되돌린다 — 굽기 전
+                // `smr.bounds`와 대조해 확인했다. **`useScale: false`를 썼다면** 이미 다 큰 메시에
+                // 45배가 다시 곱해져 실제보다 **45배 커졌을 것**(측정치로 실제 그렇게 나왔다).
                 foreach (SkinnedMeshRenderer smr in instance.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
                     var baked = new Mesh { name = smr.name + "_baked" };
@@ -157,11 +167,16 @@ namespace CTC.Editor
 
                     writtenPaths.Add(path);
                 }
-
-                foreach ((SkinnedMeshRenderer smr, Mesh mesh) pair in bakedPairs) UnityEngine.Object.DestroyImmediate(pair.mesh);
             }
             finally
             {
+                // 오브젝트(GameObject)를 지워도 Mesh는 따로 남는다 — 굽는 도중 예외가 나서
+                // try 본문의 나머지가 안 돌아도 여기서는 반드시 지운다.
+                foreach ((SkinnedMeshRenderer smr, Mesh mesh) pair in bakedPairs)
+                {
+                    if (pair.mesh != null) UnityEngine.Object.DestroyImmediate(pair.mesh);
+                }
+
                 if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
                 preview?.Cleanup();
             }

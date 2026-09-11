@@ -252,9 +252,9 @@ namespace CTC.Tests
             AnimationClip roundTripWalk = RoundTrip("Walk");
             if (roundTripWalk == null) Assert.Ignore($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
 
-            Assert.AreEqual(packWalk.length, roundTripWalk.length, 1e-3f,
+            Assert.AreEqual(packWalk.length, roundTripWalk.length, ClipParityProbe.SETTING_EPSILON,
                 $"길이가 다르다: {packWalk.length:F5} vs {roundTripWalk.length:F5}");
-            Assert.AreEqual(packWalk.frameRate, roundTripWalk.frameRate, 1e-3f,
+            Assert.AreEqual(packWalk.frameRate, roundTripWalk.frameRate, ClipParityProbe.SETTING_EPSILON,
                 $"프레임레이트가 다르다: {packWalk.frameRate:F5} vs {roundTripWalk.frameRate:F5}");
             Assert.AreEqual(packWalk.isLooping, roundTripWalk.isLooping,
                 $"반복 여부가 다르다: {packWalk.isLooping} vs {roundTripWalk.isLooping}");
@@ -274,6 +274,10 @@ namespace CTC.Tests
                 Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
             }
 
+            const string RECOVERY_HINT =
+                "메타가 새로 생성되면서 clipAnimations의 takeName 매핑이 사라졌다 — " +
+                "임포터의 Animation 탭에서 클립 이름을 다시 'Walk'로 잡아야 한다.";
+
             var names = new List<string>();
             foreach (AnimationClip clip in RealClips(ROUNDTRIP_FBX)) names.Add(clip.name);
 
@@ -281,14 +285,10 @@ namespace CTC.Tests
             bool hasPipe = names.Exists(n => n.Contains("|"));
 
             Assert.IsTrue(hasWalk,
-                $"'Walk'라는 이름의 클립이 없다(실제: {string.Join(", ", names)}). " +
-                "메타가 새로 생성되면서 clipAnimations의 takeName 매핑이 사라졌다 — " +
-                "임포터의 Animation 탭에서 클립 이름을 다시 'Walk'로 잡아야 한다.");
+                $"'Walk'라는 이름의 클립이 없다(실제: {string.Join(", ", names)}). " + RECOVERY_HINT);
             Assert.IsFalse(hasPipe,
                 $"'|'가 든 클립 이름이 있다(실제: {string.Join(", ", names)}) — 블렌더가 하드코딩한 " +
-                "'Rig|Walk' 같은 테이크 이름이 그대로 새어나온 것이다. " +
-                "메타가 새로 생성되면서 clipAnimations의 takeName 매핑이 사라졌다 — " +
-                "임포터의 Animation 탭에서 클립 이름을 다시 'Walk'로 잡아야 한다.");
+                "'Rig|Walk' 같은 테이크 이름이 그대로 새어나온 것이다. " + RECOVERY_HINT);
         }
 
         /// <summary>
