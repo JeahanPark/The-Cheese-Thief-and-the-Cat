@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CTC.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -17,11 +18,47 @@ namespace CTC.Tests
         private const string PACK_FBX =
             "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/Mouse_Animations.fbx";
 
+        private const string ROUNDTRIP_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
+
         private static AnimationClip Pack(string _name)
         {
             AnimationClip clip = ClipParityProbe.FindClip(PACK_FBX, _name);
             if (clip == null) Assert.Ignore($"팩 원본에 '{_name}'이 없다: {PACK_FBX}");
             return clip;
+        }
+
+        /// <summary>
+        /// 왕복 FBX를 찾는다. 파일 자체가 없으면(레포를 받았지만 아직 블렌더 왕복을 안 돌린
+        /// 경우) 실패가 아니라 스킵이어야 한다 — 이 테스트들은 산출물이 있을 때만 의미가 있다.
+        /// </summary>
+        private static AnimationClip RoundTrip(string _name)
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
+            {
+                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+            }
+
+            AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, _name);
+            return clip;
+        }
+
+        /// <summary>
+        /// 에셋에 든 **사람이 쓰는 클립**만. `LoadAllAssetsAtPath`는 유니티 내부의 `__preview__`
+        /// 클립까지 돌려주는데, 그쪽은 FBX의 **원본 테이크 이름**(`Rig|Walk`)을 그대로 달고 있어
+        /// 이름을 검사하면 실제와 다른 것을 본다(2026-09-12 실측).
+        /// </summary>
+        private static List<AnimationClip> RealClips(string _assetPath)
+        {
+            var clips = new List<AnimationClip>();
+            foreach (UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(_assetPath))
+            {
+                var clip = o as AnimationClip;
+                if (clip == null) continue;
+                if (clip.name.StartsWith("__preview__")) continue;
+                if ((clip.hideFlags & HideFlags.HideInHierarchy) != 0) continue;
+                clips.Add(clip);
+            }
+            return clips;
         }
 
         [Test]
@@ -183,6 +220,104 @@ namespace CTC.Tests
                 UnityEngine.Object.DestroyImmediate(a);
                 UnityEngine.Object.DestroyImmediate(b);
             }
+        }
+
+        /// <summary>
+        /// **진짜 왕복 검사.** 팩 원본 Walk와 블렌더를 거쳐 나온 Walk가 커브까지 같은지 잰다.
+        /// 산출물이 없으면(레포만 받은 상태) 스킵 — 있는데 다르면 반드시 실패해야 한다.
+        /// </summary>
+        [Test]
+        public void RoundTrippedWalk_MatchesPackWalk()
+        {
+            AnimationClip packWalk = Pack("Walk");
+            AnimationClip roundTripWalk = RoundTrip("Walk");
+            if (roundTripWalk == null) Assert.Ignore($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
+
+            ParityReport report = ClipParityLogic.Compare(
+                ClipParityProbe.SampleClip(packWalk, ClipParityProbe.SAMPLE_COUNT),
+                ClipParityProbe.SampleClip(roundTripWalk, ClipParityProbe.SAMPLE_COUNT),
+                ClipParityProbe.EPSILON);
+
+            Assert.IsTrue(report.IsIdentical, report.ToText());
+        }
+
+        /// <summary>
+        /// 커브 비교가 못 보는 부분(길이·프레임레이트·반복)을 따로 잰다 — 정규화된 지점마다
+        /// 재는 커브 비교는 길이가 늘어나도 매 지점에서 같은 값을 찍기 때문이다.
+        /// </summary>
+        [Test]
+        public void RoundTrippedWalk_HasSameClipSettings()
+        {
+            AnimationClip packWalk = Pack("Walk");
+            AnimationClip roundTripWalk = RoundTrip("Walk");
+            if (roundTripWalk == null) Assert.Ignore($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
+
+            Assert.AreEqual(packWalk.length, roundTripWalk.length, 1e-3f,
+                $"길이가 다르다: {packWalk.length:F5} vs {roundTripWalk.length:F5}");
+            Assert.AreEqual(packWalk.frameRate, roundTripWalk.frameRate, 1e-3f,
+                $"프레임레이트가 다르다: {packWalk.frameRate:F5} vs {roundTripWalk.frameRate:F5}");
+            Assert.AreEqual(packWalk.isLooping, roundTripWalk.isLooping,
+                $"반복 여부가 다르다: {packWalk.isLooping} vs {roundTripWalk.isLooping}");
+        }
+
+        /// <summary>
+        /// `CTC_Mouse_Clips.fbx.meta`의 `clipAnimations`(손으로 쓴 `takeName: Rig|Walk` →
+        /// `name: Walk` 매핑)를 지키는 회귀 테스트다. 메타가 새로 생성되면(리임포트,
+        /// 임포터 Reset) 이 매핑이 사라지고 클립이 조용히 `Rig|Walk`로 되돌아간다 —
+        /// 아무 데도 에러가 안 나서 이 테스트가 없으면 아무도 못 본다.
+        /// </summary>
+        [Test]
+        public void RoundTrippedClip_IsNamedWalk_NotRigPipeWalk()
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
+            {
+                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+            }
+
+            var names = new List<string>();
+            foreach (AnimationClip clip in RealClips(ROUNDTRIP_FBX)) names.Add(clip.name);
+
+            bool hasWalk = names.Contains("Walk");
+            bool hasPipe = names.Exists(n => n.Contains("|"));
+
+            Assert.IsTrue(hasWalk,
+                $"'Walk'라는 이름의 클립이 없다(실제: {string.Join(", ", names)}). " +
+                "메타가 새로 생성되면서 clipAnimations의 takeName 매핑이 사라졌다 — " +
+                "임포터의 Animation 탭에서 클립 이름을 다시 'Walk'로 잡아야 한다.");
+            Assert.IsFalse(hasPipe,
+                $"'|'가 든 클립 이름이 있다(실제: {string.Join(", ", names)}) — 블렌더가 하드코딩한 " +
+                "'Rig|Walk' 같은 테이크 이름이 그대로 새어나온 것이다. " +
+                "메타가 새로 생성되면서 clipAnimations의 takeName 매핑이 사라졌다 — " +
+                "임포터의 Animation 탭에서 클립 이름을 다시 'Walk'로 잡아야 한다.");
+        }
+
+        /// <summary>
+        /// 팩에 있는 클립 이름이 왕복 FBX에도 전부 있는지 본다. 테이크가 하나로 뭉개지는
+        /// 실패(전부 `Take 001`)는 이름 하나만 보면 못 잡고, 목록 전체를 대조해야 잡힌다.
+        /// </summary>
+        [Test]
+        public void RoundTrippedFbx_HasAllPackClips()
+        {
+            if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
+            {
+                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+            }
+
+            var packNames = new List<string>();
+            foreach (AnimationClip clip in RealClips(PACK_FBX)) packNames.Add(clip.name);
+
+            var roundTripNames = new List<string>();
+            foreach (AnimationClip clip in RealClips(ROUNDTRIP_FBX)) roundTripNames.Add(clip.name);
+
+            var missing = new List<string>();
+            foreach (string name in packNames)
+            {
+                if (!roundTripNames.Contains(name)) missing.Add(name);
+            }
+
+            Assert.IsEmpty(missing,
+                $"팩에는 있는데 왕복에는 없는 클립: {string.Join(", ", missing)} " +
+                $"(왕복 FBX에 실제로 있는 클립: {string.Join(", ", roundTripNames)})");
         }
     }
 }
