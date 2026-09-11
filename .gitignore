@@ -4,3 +4,7 @@ Thumbs.db
 desktop.ini
 *.swp
 *~
+
+# Blender 자동 백업 (.blend 위에 다시 저장하면 생긴다)
+*.blend1
+*.blend2
