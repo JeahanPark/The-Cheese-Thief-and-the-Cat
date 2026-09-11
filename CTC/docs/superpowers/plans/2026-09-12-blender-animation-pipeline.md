@@ -746,7 +746,7 @@ def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(
         filepath=src,
-        ignore_leaf_bones=True,
+        ignore_leaf_bones=False,  # 2026-09-12 실측: True면 진짜 뼈 tail.02가 사라진다
         automatic_bone_orientation=False,
     )
 
@@ -780,7 +780,21 @@ def main():
 main()
 ```
 
-**`ignore_leaf_bones=True`가 중요하다** — 안 켜면 들어올 때부터 없던 말단 뼈가 생겨 나갈 때 그대로 따라 나간다.
+> **2026-09-12 실측 정정 — 이 플래그는 `False`여야 한다.**
+>
+> 계획 초안은 `ignore_leaf_bones=True`로 적혀 있었다(안 켜면 없던 말단 뼈가 생겨 나갈 때
+> 따라 나간다는 이유로). **이 FBX에서는 정반대다.** 양쪽으로 직접 재 봤다:
+>
+> | `ignore_leaf_bones` | 뼈 수 | |
+> |---|:--:|---|
+> | `True` | **10** | **진짜 뼈 `tail.02`가 사라진다** |
+> | `False` | 11 | 정확히 기대한 집합. 없던 `_end` 뼈는 **0개** |
+>
+> 블렌더의 말단 제거 휴리스틱이 「자식 없는 뼈」를 가짜로 오인하는데, 하필 `tail.02`만
+> 지우고 똑같이 자식 없는 `ear.L/R`·다리 넷은 남긴다. 일관성이 없다.
+>
+> **`EXPECTED_BONES`는 건드리지 않는다.** 그쪽이 정확한 집합 비교라, 진짜로 가짜 말단
+> 뼈를 가진 팩이 나중에 오면 플래그와 무관하게 「늘어남」으로 걸린다 — 위험 3은 여전히 잡힌다.
 
 - [ ] **Step 2: 돌린다**
 
@@ -807,7 +821,8 @@ SAVED ...\art\blender\mouse.blend
 
 | 증상 | 원인 | 조치 |
 |---|---|---|
-| `뼈 이름이 어긋났다 … 늘어남: ['..._end']` | `ignore_leaf_bones`가 안 켜졌다 | 스크립트의 그 인자를 확인한다 |
+| `뼈 이름이 어긋났다 … 빠짐: ['tail.02']` | `ignore_leaf_bones`가 **켜졌다** | 끈다. 위 정정 상자를 읽어라 |
+| `뼈 이름이 어긋났다 … 늘어남: ['..._end']` | 이 팩은 진짜로 가짜 말단 뼈를 갖고 있다 | 그때는 `ignore_leaf_bones=True`가 맞다. **재 보고 정하라** |
 | `아마추어가 0개다` | 동작 전용 FBX에 스킨이 없어 못 읽었다 | `Models/Mouse_LOD0.fbx`를 먼저 들이고 동작 FBX를 그 위에 얹는 2단계로 바꾼다: `import_scene.fbx(model)` 후 `import_scene.fbx(anim)` |
 | `ACTIONS 1: ['Take 001']` | FBX가 take을 하나로 묶어 왔다 | 그대로 진행한다. Task 5 Step 5의 마지막 줄에서 유니티 임포터가 자른다 |
 | 뼈 이름이 `Rig_root` 꼴 | 팩 FBX 자체가 접두를 갖고 있다 | `EXPECTED_BONES`를 실제 이름으로 고치지 **말고**, 접두를 떼는 줄을 추가한다: `for b in arm.data.bones: b.name = b.name.replace("Rig_", "")` |
@@ -821,7 +836,8 @@ git commit -m "feat(art): 팩 리그를 블렌더로 들인다 — 뼈 11개와 
 아마추어 오브젝트 이름을 Rig로 못 박는다. 유니티 Generic은 트랜스폼 경로 문자열로
 뼈를 찾고 팩 프리팹의 그 자리가 Rig다. 어긋나면 에러 없이 커브가 전부 죽는다.
 
-ignore_leaf_bones를 켜서 들여온다 - 들어올 때 생긴 말단 뼈는 나갈 때 그대로 따라 나간다.
+ignore_leaf_bones는 끈다 - 실측해 보니 이 FBX에서는 그 플래그가 진짜 뼈 tail.02를
+지운다. EXPECTED_BONES는 정확한 집합 비교라 가짜 말단 뼈는 여전히 잡힌다.
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
