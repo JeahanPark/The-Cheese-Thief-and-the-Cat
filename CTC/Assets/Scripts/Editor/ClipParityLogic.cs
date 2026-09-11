@@ -30,11 +30,18 @@ namespace CTC.Editor
         /// <summary>같은 리스트 안에서 키가 두 번 이상 나온 경우. 채취(추출) 쪽이 잘못됐다는 신호다.</summary>
         public List<string> DuplicateKeys { get; } = new List<string>();
 
+        /// <summary>
+        /// 커브 밖의 클립 설정(길이·프레임레이트·반복) 어긋남. 커브 비교는 이걸 못 본다 —
+        /// 길이가 늘어나도 정규화된 지점마다 같은 값이 찍히기 때문이다.
+        /// </summary>
+        public List<string> SettingMismatches { get; } = new List<string>();
+
         /// <summary>비교에 쓴 커브 수(양쪽에 다 있는 고유 키). 0이면 잰 것이 없다는 뜻이다.</summary>
         public int ComparedCurves { get; set; }
 
         public bool IsIdentical =>
             ComparedCurves > 0 &&
+            SettingMismatches.Count == 0 &&
             MissingInB.Count == 0 && ExtraInB.Count == 0 &&
             ValueMismatches.Count == 0 && DuplicateKeys.Count == 0;
 
@@ -42,6 +49,8 @@ namespace CTC.Editor
         {
             var sb = new StringBuilder();
             sb.AppendLine($"견준 커브: {ComparedCurves}");
+            // 길이가 다르면 아래 커브 비교 자체가 의미 없어진다 — 맨 앞에 둔다.
+            Section(sb, "클립 설정 어긋남", SettingMismatches);
             Section(sb, "중복 키(채취가 잘못됐다)", DuplicateKeys);
             Section(sb, "A에만 있음(사라진 뼈·프로퍼티)", MissingInB);
             Section(sb, "B에만 있음(늘어난 뼈·말단 본)", ExtraInB);

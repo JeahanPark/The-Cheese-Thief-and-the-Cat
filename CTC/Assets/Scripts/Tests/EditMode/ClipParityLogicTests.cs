@@ -129,5 +129,21 @@ namespace CTC.Tests
 
             Assert.IsTrue(r.IsIdentical, r.ToText());
         }
+
+        [Test]
+        public void SettingMismatch_MakesReportNotIdentical()
+        {
+            var a = new[] { S("Rig/root:x", 0f, 1f) };
+            var b = new[] { S("Rig/root:x", 0f, 1f) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f);
+            Assert.IsTrue(r.IsIdentical, r.ToText()); // 커브만 보면 아직 같다
+
+            r.SettingMismatches.Add("길이: 0.41667 vs 0.83333");
+
+            Assert.IsFalse(r.IsIdentical,
+                "설정(길이·프레임레이트·반복)이 틀어져도 커브값만 같으면 '같다'로 남으면 안 된다");
+            StringAssert.Contains("길이: 0.41667 vs 0.83333", r.ToText());
+        }
     }
 }

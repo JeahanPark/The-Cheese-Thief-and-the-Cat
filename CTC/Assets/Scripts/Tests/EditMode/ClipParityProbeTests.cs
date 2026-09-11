@@ -1,3 +1,4 @@
+using System;
 using CTC.Editor;
 using NUnit.Framework;
 using UnityEditor;
@@ -16,22 +17,9 @@ namespace CTC.Tests
         private const string PACK_FBX =
             "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/Mouse_Animations.fbx";
 
-        private const int SAMPLES = 21;
-        private const float EPSILON = 1e-3f;
-
-        private static AnimationClip LoadFrom(string _assetPath, string _name)
-        {
-            foreach (Object o in AssetDatabase.LoadAllAssetsAtPath(_assetPath))
-            {
-                var clip = o as AnimationClip;
-                if (clip != null && clip.name == _name) return clip;
-            }
-            return null;
-        }
-
         private static AnimationClip Pack(string _name)
         {
-            AnimationClip clip = LoadFrom(PACK_FBX, _name);
+            AnimationClip clip = ClipParityProbe.FindClip(PACK_FBX, _name);
             if (clip == null) Assert.Ignore($"팩 원본에 '{_name}'이 없다: {PACK_FBX}");
             return clip;
         }
@@ -39,7 +27,7 @@ namespace CTC.Tests
         [Test]
         public void SampleClip_FindsBoneCurves()
         {
-            CurveSample[] samples = ClipParityProbe.SampleClip(Pack("Walk"), SAMPLES);
+            CurveSample[] samples = ClipParityProbe.SampleClip(Pack("Walk"), ClipParityProbe.SAMPLE_COUNT);
 
             Assert.Greater(samples.Length, 0, "커브를 하나도 못 뽑았다 — 채취가 죽어 있다");
 
@@ -56,8 +44,8 @@ namespace CTC.Tests
         {
             AnimationClip walk = Pack("Walk");
             ParityReport r = ClipParityLogic.Compare(
-                ClipParityProbe.SampleClip(walk, SAMPLES),
-                ClipParityProbe.SampleClip(walk, SAMPLES), EPSILON);
+                ClipParityProbe.SampleClip(walk, ClipParityProbe.SAMPLE_COUNT),
+                ClipParityProbe.SampleClip(walk, ClipParityProbe.SAMPLE_COUNT), ClipParityProbe.EPSILON);
 
             Assert.IsTrue(r.IsIdentical, r.ToText());
         }
@@ -66,8 +54,8 @@ namespace CTC.Tests
         public void Walk_ComparedToRun_IsDifferent()
         {
             ParityReport r = ClipParityLogic.Compare(
-                ClipParityProbe.SampleClip(Pack("Walk"), SAMPLES),
-                ClipParityProbe.SampleClip(Pack("Run"), SAMPLES), EPSILON);
+                ClipParityProbe.SampleClip(Pack("Walk"), ClipParityProbe.SAMPLE_COUNT),
+                ClipParityProbe.SampleClip(Pack("Run"), ClipParityProbe.SAMPLE_COUNT), ClipParityProbe.EPSILON);
 
             Assert.IsFalse(r.IsIdentical,
                 "Walk와 Run을 '같다'고 한다 — 자가 아무것도 안 재고 있다");
@@ -81,6 +69,26 @@ namespace CTC.Tests
             Assert.LessOrEqual(walk.length * walk.frameRate, 10.5f,
                 $"팩 예산이 0~10프레임인데 {walk.length * walk.frameRate:F1}프레임이다 — " +
                 "새 클립의 기준이 흔들린다");
+        }
+
+        [Test]
+        public void SampleClip_RejectsFewerThanTwoSamples()
+        {
+            AnimationClip walk = Pack("Walk");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => ClipParityProbe.SampleClip(walk, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => ClipParityProbe.SampleClip(walk, 1));
+        }
+
+        [Test]
+        public void ClipSettings_AreComparedAgainstPack()
+        {
+            AnimationClip walk = Pack("Walk");
+            var report = new ParityReport();
+
+            ClipParityProbe.CompareClipSettings(walk, walk, report);
+
+            CollectionAssert.IsEmpty(report.SettingMismatches, report.ToText());
         }
     }
 }
