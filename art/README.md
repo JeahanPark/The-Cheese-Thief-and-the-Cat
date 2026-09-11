@@ -32,5 +32,13 @@ FBX를 커밋하면 그 의존이 생기지 않는다.
 
 내보낸 뒤에는 유니티에서 `Tools/CTC/Dev/Probe Clip Parity`로 잰다.
 
+## `.blend`·FBX는 바이트로 재현되지 않는다
+
+같은 입력으로 다시 돌려도 **파일 바이트는 달라진다**(타임스탬프·내부 id). 내용은 같다 —
+2026-09-12에 처음부터 다시 돌려 `판정: 같다`를 확인했다.
+
+그러니 **`git diff`로 「제대로 나왔나」를 판정하지 마라.** 판정하는 것은 자다. 다시 구웠는데
+자가 초록이면 그 바이너리는 커밋하지 말고 `git checkout --`로 되돌려라 — 뜻 없는 변경이다.
+
 설계: `CTC/docs/superpowers/specs/2026-09-12-blender-animation-pipeline-design.md`
 계획: `CTC/docs/superpowers/plans/2026-09-12-blender-animation-pipeline.md`
