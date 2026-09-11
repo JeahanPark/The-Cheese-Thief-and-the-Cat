@@ -129,12 +129,47 @@
 | 8 | 한글 주석이 든 `.ps1` | PowerShell 5.1은 `.ps1`을 **ANSI로 읽는다**. 글자가 깨져 **파싱 자체가 실패**한다 — 문법 오류로만 보여 원인이 안 보인다 | `.ps1`은 **UTF-8 BOM**으로 저장한다. 만들고 나면 반드시 한 번 실행해 본다 |
 | 9 | **MPPM 클론을 프로세스로 죽임** | MPPM이 「재시작할까?」 **모달**을 띄우고 그 모달이 **에디터 업데이트 루프를 멈춘다** — MCP 호출이 전부 타임아웃해 「클론이 파이프를 가로챘다」와 증상이 똑같아 보인다. 2026-09-11엔 그 상태에서 자식 파이프가 멈춰 **유니티가 fatal assert로 자진 종료**했다 | 끄려면 메뉴 `Tools/CTC/Dev/MPPM 1인 …`(MPPM API로 비활성화 — 모달이 안 뜬다). 이미 떴으면 `tools/dismiss-mppm-modal.ps1`이 **에디터가 멈춰 있어도 밖에서** 닫는다 |
 | 10 | **스팀 클라이언트를 켜 둔 채 유니티 작업** | Facepunch 트랜스포트 때문에 에디터가 `steamclient64.dll`·`gameoverlayrenderer64.dll`(오버레이)을 물고, 종료·서브시스템 정리 경로에서 **크래시한다**(2026-09-11 실측) | **유니티 작업 중엔 스팀을 끈다.** 웹으로 `partner.steamgames.com`을 보는 건 상관없다 — **스팀 클라이언트 실행**이 문제다 |
+| 11 | **이름 없는 씬이 열린 채 EditMode 테스트 실행** | 테스트 러너가 실행 전에 「수정된 씬을 저장하라」고 요구하는데, 열린 씬에 경로가 없으면 유니티가 **네이티브 파일 대화상자**를 띄운다. 그게 에디터 업데이트 루프를 멈춰 MCP가 전멸한다 — **「브리지가 죽었다」와 증상이 똑같다.** 2026-09-12에 세 번 물렸다 | 이미 `Tools/CTC/Run EditMode Tests`가 시작 전에 **경로 없는 씬의 수정 표시만** 지운다(저장 안 함, 경로 있는 씬은 안 건드림). 그래도 뜨면 `tools/dismiss-save-scene.ps1`이 밖에서 닫는다(`-Watch N`으로 상주) |
+| 12 | **MCP가 씬을 말없이 저장하는 경로 4개** | `u_editor_scene`(`McpBridgeScene.cs:32`) · 프리팹 인스턴스화(`McpBridgeInstantiate.cs:77`) · `u_play`(`McpBridgePlayMode.cs:23`) · 씬 오브젝트 조작. 이름 없는 씬이면 전부 함정 11로 간다 | **이름 없는 씬이 열려 있는 동안 이 넷을 쓰지 않는다.** 에셋만 보는 일은 `AssetDatabase`로 되고, 미리보기는 `PreviewRenderUtility`로 씬 없이 된다 |
+| 13 | **`LoadAllAssetsAtPath`로 FBX 클립 이름 훑기** | 유니티 내부의 **`__preview__` 복제 클립**까지 딸려 오는데, 그쪽은 임포터가 매핑한 이름이 아니라 **FBX 원본 테이크 이름**(`__preview__Rig\|Walk`)을 달고 있다. 이름으로 검사하면 실제와 다른 것을 본다 | 이름이 `__preview__`로 시작하는 것과 `HideFlags.HideInHierarchy`인 것을 **걸러낸다**. 이름을 정확히 아는 경우엔 `ClipParityProbe.FindClip`처럼 완전 일치로 찾으면 안 걸린다 |
+| 14 | **`PreviewRenderUtility`에서 스킨드 메시 연속 렌더** | 한 동기 루프 안에서 `Render()`를 여러 번 불러도 `SkinnedMeshRenderer`가 **다시 스키닝되지 않는다**(`updateWhenOffscreen`을 켜도). 본은 실제로 움직이는데 **프레임이 전부 바이트까지 같게** 나온다 | 프레임마다 `BakeMesh`로 정적 메시에 구워 그린다(`Assets/Scripts/Editor/ClipPreviewRender.cs`가 그렇게 한다) |
+| 15 | **블렌더 `-P` 스크립트에서 `SystemExit`가 아닌 예외** | 트레이스백은 찍히는데 블렌더가 **종료 코드 0**으로 끝난다. FBX 경로 오타도 저장 실패도 자동화 입장에선 **성공**이다 | `main()`을 감싸 일반 예외를 `SystemExit`로 올린다(`tools/blender/*.py`가 그렇게 한다). 그리고 **출력이 아니라 `echo $?`로 판정한다** |
 
 애니메이션·이펙트를 다룰 때 추가로 겪은 것:
 - **커브·마스크 경로는 Animator 기준**이다. Animator가 자식(`Model`)에 있으면 그 접두를 뺀다. 틀려도 에러가 없다.
 - `AvatarMask.AddTransformPath`는 **계층 루트 기준** 경로를 넣는다 → 기준이 어긋나 마스크가 0개를 켠다. 경로를 직접 계산해 넣는다.
 - 본을 코드로 직접 돌려도 **에디터에서는 스킨드 메시가 다시 스키닝되지 않는다.** 클립을 만들어 샘플링해야 반영된다.
 - 씬 뷰 스크린샷(`u_editor_sceneview`)은 갱신이 안 붙어 같은 그림을 반복해 준다. 확인이 필요하면 **임시 카메라로 직접 렌더**한다.
+
+### 블렌더로 애니메이션 클립 만들기 (2026-09-12)
+
+리그는 **Generic**이라 유니티가 뼈를 **트랜스폼 경로 문자열**로 찾는다(`Rig/root/body/head/ear.L`).
+리타깃이 없어서 이름이 한 글자만 어긋나도 **에러 없이 그 커브가 죽는다.**
+
+| | |
+|---|---|
+| 도구 | Blender **5.2.1 LTS**. 버전을 올리면 **먼저 파이썬 API를 재라** — `bpy.ops.export_scene.fbx.get_rna_type()` |
+| 작업 파일 | `art/blender/*.blend` — **`Assets/` 밖.** 안에 넣으면 유니티가 블렌더를 직접 실행해 변환하고, 블렌더가 없는 기계에서 프로젝트가 안 열린다 |
+| 들이기 | `blender -b --factory-startup -P tools/blender/import_pack.py -- <in.fbx> <out.blend>` |
+| 내보내기 | `blender -b <blend> -P tools/blender/export_clips.py -- <out.fbx>` |
+| **검증** | `Tools/CTC/Dev/Probe Clip Parity` — **보고서의 첫 절이 병명이다.** 값부터 보지 마라 |
+| 눈으로 | `Tools/CTC/Dev/클립 미리보기 렌더` — 오프스크린 PNG. 씬을 안 건드린다 |
+
+**설정을 고쳤으면 반드시 자를 다시 돌린다.** 아래 넷은 전부 **에러 없이** 어긋난다:
+
+| 설정 | 틀리면 |
+|---|---|
+| `apply_scale_options="FBX_SCALE_NONE"` | `ALL`이면 뼈의 **월드 스케일이 100배** 어긋난다. 합성 트랜스폼은 같아서 **뷰어로는 멀쩡해 보이고**, 팩 프리팹에 물려야 스키닝이 1/100로 쪼그라든다 |
+| `add_leaf_bones=False` | 없던 말단 뼈가 생겨 경로가 어긋난다 |
+| `bake_anim_simplify_factor=0.0` | 기본값 1.0이 키를 솎아내 값이 달라진다 |
+| `ignore_leaf_bones=False` (들일 때) | **켜면 진짜 뼈 `tail.02`가 사라진다.** 팩마다 다르니 재 보고 정한다 |
+
+유니티 쪽 `.meta`에 손으로 넣은 것이 둘 있다 — `preserveHierarchy: 1`과 `clipAnimations`의
+`takeName: Rig|…` 매핑(블렌더가 테이크 이름을 `{오브젝트}|{액션}`으로 강제해서다).
+**메타가 새로 생성되면 조용히 되돌아간다.** `RoundTrippedClip_IsNamedWalk_NotRigPipeWalk`가
+그때 빨개지라고 있는 것이다.
+
+설계·계획: `docs/superpowers/specs/2026-09-12-blender-animation-pipeline-design.md`
 
 ### MPPM 클론이 MCP 브리지를 가로챈다 (2026-08-30)
 
