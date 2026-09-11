@@ -98,12 +98,18 @@ Mouse            ← Animator · LODGroup       (PlayerMouse.prefab에서 "Model
 
 ## 5. 내보내기 설정
 
-블렌더 **4.5 LTS**를 쓴다 (5.0이 2025-11에 나왔지만 LTS가 2027년 중반까지 지원되고 연동
-자료·애드온이 여기 맞춰져 있다).
+블렌더 **5.2.1 LTS**를 쓴다.
 
 ```
 winget install BlenderFoundation.Blender
 ```
+
+> **2026-09-12 정정.** 처음엔 4.5 LTS로 적었다 — 웹 자료가 그걸 「현재 LTS」라고 해서다.
+> 실제로 깔아 보니 **5.2.1이 LTS다**(2026-08-25 빌드). 4.5는 지난 LTS다.
+>
+> 버전을 올리기 전에 파이썬 API가 그대로인지 **쟀다**(`bpy.ops...get_rna_type()`):
+> 내보내기 42개 인자 중 아래 표가 쓰는 **19개가 전부 있고**, 가져오기의
+> `ignore_leaf_bones`·`automatic_bone_orientation`도 있다. 스크립트를 고칠 필요가 없다.
 
 FBX 내보내기:
 

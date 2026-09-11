@@ -6,7 +6,7 @@
 
 **Architecture:** 먼저 **자**를 만든다(클립 두 개가 같은지 재는 에디터 도구). 그 자를 「Walk vs Walk = 같다 / Walk vs Run = 다르다」로 검증한 뒤에야 블렌더를 세우고, 팩 `Walk`를 아무것도 안 고치고 왕복시켜 그 자에 올린다. **자가 먼저 초록이 아니면 왕복 결과를 믿을 수 없다.**
 
-**Tech Stack:** Unity 6000.5.2f1 (Generic rig · `AnimationUtility`) · NUnit EditMode · Blender 4.5 LTS (`bpy`, 헤드리스) · FBX
+**Tech Stack:** Unity 6000.5.2f1 (Generic rig · `AnimationUtility`) · NUnit EditMode · Blender 5.2.1 LTS (`bpy`, 헤드리스) · FBX
 
 **설계 문서:** [2026-09-12-blender-animation-pipeline-design.md](../specs/2026-09-12-blender-animation-pipeline-design.md)
 
@@ -603,13 +603,27 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Create: `art/README.md`
 - Create: `art/blender/.gitkeep`
 
-- [ ] **Step 1: 블렌더 4.5 LTS를 깐다**
+- [ ] **Step 1: 블렌더 LTS를 깐다**
 
 ```bash
 winget install --id BlenderFoundation.Blender --accept-package-agreements --accept-source-agreements
 ```
 
-5.0이 아니라 **4.5 LTS**다 — 2027년 중반까지 지원되고 연동 자료·애드온이 여기 맞춰져 있다. winget이 5.x를 깔았다면 [blender.org/download/lts](https://www.blender.org/download/lts/)에서 4.5 설치본을 직접 받는다.
+**2026-09-12 실측: 이게 깔아 주는 것이 `5.2.1 LTS`다**(2026-08-25 빌드, `C:\Program Files\Blender Foundation\Blender 5.2\`). 설계 초안은 4.5 LTS로 적혀 있었지만 그건 **지난 LTS**다 — 웹 자료가 낡았다.
+
+버전을 받아들이기 전에 파이썬 API를 쟀다. 아래 Task 4·5의 스크립트가 쓰는 인자가 **전부 그대로 있다**:
+
+| | 확인 |
+|---|---|
+| `export_scene.fbx` | 42개 인자 중 우리가 쓰는 **19개 전부 존재** |
+| `import_scene.fbx` | `ignore_leaf_bones` · `automatic_bone_orientation` **존재** |
+| `export_scene.fbx_new` | 없다 (새 C++ 내보내기는 아직 이 이름이 아니다) |
+
+**다른 버전이 깔렸으면 진행하기 전에 같은 것을 재라** — 인자 이름이 하나라도 빠지면 `export_scene.fbx`는 그냥 `TypeError`를 낸다(조용히 깨지진 않는다):
+
+```bash
+"<blender.exe>" -b --factory-startup --python-expr "import bpy; print(sorted(p.identifier for p in bpy.ops.export_scene.fbx.get_rna_type().properties))"
+```
 
 - [ ] **Step 2: 헤드리스로 도는지 확인한다**
 
@@ -620,10 +634,10 @@ ls -d "/c/Program Files/Blender Foundation"/*/blender.exe
 나온 경로로:
 
 ```bash
-"/c/Program Files/Blender Foundation/Blender 4.5/blender.exe" -b --version
+"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --version
 ```
 
-기대: `Blender 4.5.x`가 찍힌다. **이 경로를 이후 단계에서 그대로 쓴다.**
+기대: `Blender 5.2.1 LTS (hash ... built 2026-08-25 ...)`가 찍힌다. **이 경로를 이후 단계에서 그대로 쓴다.**
 
 - [ ] **Step 3: 작업 폴더와 설명을 만든다**
 
@@ -773,7 +787,7 @@ main()
 저장소 루트에서:
 
 ```bash
-"/c/Program Files/Blender Foundation/Blender 4.5/blender.exe" -b --factory-startup \
+"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b --factory-startup \
   -P tools/blender/import_pack.py -- \
   "CTC/Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/Mouse_Animations.fbx" \
   "art/blender/mouse.blend"
@@ -898,7 +912,7 @@ main()
 저장소 루트에서:
 
 ```bash
-"/c/Program Files/Blender Foundation/Blender 4.5/blender.exe" -b art/blender/mouse.blend \
+"/c/Program Files/Blender Foundation/Blender 5.2/blender.exe" -b art/blender/mouse.blend \
   -P tools/blender/export_clips.py -- "CTC/Assets/Animations/Pets/CTC_Mouse_Clips.fbx"
 ```
 
