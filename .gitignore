@@ -8,3 +8,7 @@ desktop.ini
 # Blender 자동 백업 (.blend 위에 다시 저장하면 생긴다)
 *.blend1
 *.blend2
+
+# 파이썬 캐시 (blender 스크립트가 clips 모듈을 import할 때 생긴다)
+__pycache__/
+*.pyc
