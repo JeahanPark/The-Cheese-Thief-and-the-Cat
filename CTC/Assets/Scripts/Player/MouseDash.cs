@@ -21,9 +21,13 @@ namespace CTC.Runtime.Player
         // 구매 여부. 서버 기록(ShopController), 소유자 읽기.
         private readonly NetworkVariable<bool> m_Owned = new NetworkVariable<bool>();
 
-        // 대시 구르기 모션 지속(이동 애니메이션 잠금 시간) — 대시 자체(0.2초대)보다 조금 길게
-        // 잡아 착지까지 보이게 한다. 클립은 팩의 Roll을 그대로 쓴다(새 클립 0).
-        private const float ROLL_ANIM_SECONDS = 0.45f;
+        // 대시 모션 지속(이동 애니메이션 잠금 시간) — 대시 자체(0.2초대)보다 조금 길게
+        // 잡아 가라앉는 끝까지 보이게 한다.
+        //
+        // **클립은 전용으로 만든 Dash다**(2026-09-13). 예전엔 팩의 Roll을 빌려 썼는데
+        // 그건 앞구르기 공중제비라 「회피 구르기」로 읽혔다 — 직선 돌진과 안 맞는다.
+        // 0.45초는 11프레임짜리 클립(24fps = 0.417초)을 끝까지 보여 주는 값이다.
+        private const float DASH_ANIM_SECONDS = 0.45f;
 
         private CharacterController m_Controller;
         private TechSlots m_TechSlots;      // Awake에서 한 번 — 쿨은 매 프레임 읽힌다
@@ -131,7 +135,7 @@ namespace CTC.Runtime.Player
 
             if (m_AnimationDriver != null)
             {
-                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Roll, ROLL_ANIM_SECONDS);
+                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Dash, DASH_ANIM_SECONDS);
             }
         }
 

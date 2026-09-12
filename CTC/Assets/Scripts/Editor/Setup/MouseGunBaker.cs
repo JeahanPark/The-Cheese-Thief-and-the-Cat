@@ -99,7 +99,7 @@ namespace CTC.Editor
         [MenuItem("Tools/CTC/Dev/Bake Mouse Gun")]
         public static void BakeAll()
         {
-            AddShootStates();
+            AddMouseOnlyStates();
             BakeIntoPrefab();
             AssetDatabase.SaveAssets();
         }
@@ -237,7 +237,7 @@ namespace CTC.Editor
         /// YAML을 손으로 쓰지 않는다 — FBX 하위 클립의 fileID는 임포터가 정하는 값이라
         /// 손으로 적으면 엉뚱한 클립을 가리킬 수 있다. 컨트롤러 API가 그 참조를 맺게 한다.
         /// </summary>
-        private static void AddShootStates()
+        private static void AddMouseOnlyStates()
         {
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(MOUSE_CONTROLLER);
             if (controller == null)
@@ -268,7 +268,7 @@ namespace CTC.Editor
                 if (state == null)
                 {
                     state = machine.AddState(name);
-                    Debug.Log($"[MouseGunBaker] 상태 추가: AC_Mouse :: {name}");
+                    Debug.Log($"[MouseGunBaker] 상태 추가(쥐 전용): AC_Mouse :: {name}");
                 }
 
                 state.motion = clip;

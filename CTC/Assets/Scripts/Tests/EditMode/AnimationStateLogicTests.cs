@@ -128,9 +128,45 @@ namespace CTC.Tests
             CollectionAssert.AreEqual(expected, AnimationStateLogic.Shared);
         }
 
+        /// <summary>
+        /// 쥐 전용 상태가 **고양이 컨트롤러에는 없어야** 한다(2026-09-13).
+        ///
+        /// 「AC_Mouse에 있나」는 <c>MouseGunVisualLogicTests.ShootStates_ExistInMouseController</c>가
+        /// 이미 같은 <c>MouseOnly</c> 목록으로 덮고 있다 — 2026-09-13에 가짜 이름을 넣어
+        /// 확인했다(그쪽이 빨개졌다). **여기서 다시 세지 않는다.**
+        ///
+        /// 안 덮여 있던 것은 반대쪽이다: 쥐 전용이 AC_Cat에 섞여 들어가면 고양이가
+        /// 총 쏘고 대시하는 상태를 갖게 되는데, 그건 아무 테스트도 안 보고 있었다.
+        /// </summary>
+        [Test]
+        public void MouseOnly_StatesAreAbsentFromCatController()
+        {
+            AssertStatesAbsent("AC_Cat.controller", AnimationStateLogic.MouseOnly);
+        }
+
         private static void AssertStatesExist(string _controllerFile)
         {
             AssertStatesExist(_controllerFile, ONE_SHOT_STATES);
+        }
+
+        private static void AssertStatesAbsent(string _controllerFile, string[] _states)
+        {
+            string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _controllerFile);
+            if (!File.Exists(path))
+            {
+                Assert.Ignore($"컨트롤러 원본이 없다: {path}");
+                return;
+            }
+
+            string[] lines = File.ReadAllLines(path);
+            foreach (string state in _states)
+            {
+                foreach (string line in lines)
+                {
+                    Assert.AreNotEqual("m_Name: " + state, line.Trim(),
+                        $"{_controllerFile}에 쥐 전용 '{state}'가 들어갔다 — 고양이 몫이 아니다");
+                }
+            }
         }
 
         private static void AssertStatesExist(string _controllerFile, string[] _states)

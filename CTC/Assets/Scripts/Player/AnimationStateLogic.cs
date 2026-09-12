@@ -16,7 +16,7 @@ namespace CTC.Runtime.Player
         // Quirky 팩(AC_Cat·AC_Mouse)이 이미 가지고 있으면서 안 쓰던 상태 여섯을 동작에 붙인 것뿐이다.
         // 이름이 틀리면 CrossFadeInFixedTime은 **에러 없이 조용히 아무 일도 안 한다** —
         // 그래서 문자열을 호출부에 흘리지 않고 여기 모아 EditMode가 철자를 묶어 둔다.
-        public const string Roll = "Roll";       // 대시 — 구르기
+        public const string Roll = "Roll";       // 팩 원본 앞구르기 — **대시에서는 더 이상 안 쓴다**(Dash 참조)
         public const string Bounce = "Bounce";   // 끈끈이 — 발밑에 내려찍기
         public const string Jump = "Jump";       // 요새 — 뛰어올랐다 내려오며 벽이 선다
         public const string Spin = "Spin";       // 광분 — 한 바퀴
@@ -31,6 +31,17 @@ namespace CTC.Runtime.Player
         public const string ShootDraw = "ShootDraw"; // 허리춤에서 뽑아 첫 발
 
         /// <summary>
+        /// 쥐 대시(2026-09-13) — **AC_Mouse에만** 있다. 고양이는 대시를 사지 않는다.
+        ///
+        /// 예전엔 팩의 <see cref="Roll"/>을 빌려 썼는데 그건 **앞구르기 공중제비**다
+        /// (렌더로 확인 — 3~8프레임에서 몸이 완전히 뒤집힌다). 0.2초짜리 직선 돌진에
+        /// 붙으면 「회피 구르기」로 읽히고, 루트가 통째로 도는 바람에 CharacterController가
+        /// 만드는 실제 전진과 따로 논다. 그래서 블렌더로 새로 만들었다
+        /// (원본: <c>tools/blender/clips/dash.py</c>).
+        /// </summary>
+        public const string Dash = "Dash";
+
+        /// <summary>
         /// 이 게임이 이름으로 부르는 상태 전부. `Animator`가 주는 것은 이름이 아니라 해시라서,
         /// 「지금 무엇이 도는가」를 글자로 되돌리려면 후보 목록이 있어야 한다
         /// (<see cref="PlayerAnimationDriver.PlayingState"/>).
@@ -40,14 +51,14 @@ namespace CTC.Runtime.Player
         public static readonly string[] All =
         {
             Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
-            Shoot, ShootDraw,
+            Shoot, ShootDraw, Dash,
         };
 
         /// <summary>
         /// **AC_Mouse에만** 있는 상태. 고양이 컨트롤러에 이 이름이 생기면 그건 실수다 —
         /// 고양이는 총을 쏘지 않는다. EditMode가 양쪽을 이 목록으로 갈라 검사한다.
         /// </summary>
-        public static readonly string[] MouseOnly = { Shoot, ShootDraw };
+        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash };
 
         /// <summary>두 컨트롤러가 **둘 다** 가져야 하는 상태 — <see cref="All"/>에서 쥐 전용을 뺀 것.</summary>
         public static readonly string[] Shared = Except(All, MouseOnly);
