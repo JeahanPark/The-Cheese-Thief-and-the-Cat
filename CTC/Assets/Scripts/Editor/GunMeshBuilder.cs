@@ -88,12 +88,57 @@ namespace CTC.Editor
 
             Mesh mesh = SdfMesher.SaveMesh(built, PropAssets.MOUSE_GUN_MESH);
             Material material = SdfMesher.SaveMaterial(PropAssets.MOUSE_GUN_MATERIAL, "M_MouseGun", GUN_COLOR, GUN_SMOOTHNESS);
+            MakeTransparent(material);
             SdfMesher.Commit(PropAssets.MOUSE_GUN_MESH);
 
             SavePrefab(mesh, material);
 
             Debug.Log($"[GunMeshBuilder] 완료 → {PREFAB_PATH} " +
                       $"(정점 {mesh.vertexCount} / 삼각형 {mesh.triangles.Length / 3})");
+        }
+
+        /// <summary>
+        /// 총 머티리얼을 **반투명**으로 세운다 — 총이 뽑히고 넣히는 동안 알파로 떴다 사라지기 때문이다
+        /// (<see cref="CTC.Runtime.Player.GunFadeLogic"/>·<c>MouseGunVisual</c>).
+        ///
+        /// **왜 여기(빌더)서 하는가**: 이 에셋의 주인은 빌더다. 런타임에서 고치면 매 판 켜질 때마다
+        /// 머티리얼을 손대야 하고, 저장된 <c>.mat</c>은 여전히 불투명이라 **에디터에서 본 것과
+        /// 게임에서 보는 것이 갈린다.** 굽는 자리에 두면 디스크의 값이 곧 진실이다.
+        ///
+        /// **왜 알파만 낮추면 안 되는가**: URP/Lit은 Surface Type이 Opaque인 동안 알파를
+        /// **통째로 무시한다** — 에러도 경고도 없이 총이 계속 또렷하게 보인다(조용히 깨지는 종류).
+        /// 그래서 표면 타입·블렌드 팩터·ZWrite·렌더 큐·키워드를 다 같이 바꾼다. 하나라도 빠지면
+        /// 안 되므로 한 함수에 모아 둔다.
+        /// </summary>
+        private static void MakeTransparent(Material _material)
+        {
+            if (_material == null) return;
+
+            _material.SetFloat("_Surface", 1f);  // 0 = Opaque, 1 = Transparent
+            _material.SetFloat("_Blend", 0f);    // 0 = Alpha (Premultiply·Additive·Multiply가 아니다)
+            _material.SetFloat("_AlphaClip", 0f);
+
+            // SrcAlpha / OneMinusSrcAlpha — 평범한 알파 블렌딩.
+            // 보존 스페큘러(_BlendModePreserveSpecular)는 끈다: 켜면 URP가 SrcBlend를 One으로
+            // 바꾸고 셰이더에서 미리 곱해 버려, 여기 적은 팩터와 실제가 달라진다.
+            _material.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            _material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            _material.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            _material.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            _material.SetFloat("_BlendModePreserveSpecular", 0f);
+
+            // 반투명은 깊이를 쓰지 않는다 — 쓰면 뒤에 있는 것이 지워져 총 너머가 안 보인다.
+            _material.SetFloat("_ZWrite", 0f);
+            _material.SetFloat("_QueueOffset", 0f);
+
+            _material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            _material.DisableKeyword("_ALPHATEST_ON");
+            _material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+
+            _material.renderQueue = (int)RenderQueue.Transparent; // 3000
+            _material.SetOverrideTag("RenderType", "Transparent");
+
+            EditorUtility.SetDirty(_material);
         }
 
         /// <summary>총열(회전 없음)과 손잡이(X축으로 기울인 로컬 프레임) 를 스무스 유니언한다.</summary>

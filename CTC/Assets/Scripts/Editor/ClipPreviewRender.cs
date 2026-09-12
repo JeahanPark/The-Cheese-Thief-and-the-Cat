@@ -106,8 +106,52 @@ namespace CTC.Editor
             Debug.Log($"[ClipPreviewRender] {paths.Count}장 렌더 완료:\n" + string.Join("\n", paths));
         }
 
+        /// <summary>
+        /// 페이드 단계별 미리보기 — **같은 포즈**를 알파만 바꿔 찍는다. 0 / 0.25 / 0.5 / 1.
+        /// 포즈가 고정이라 네 장의 차이가 곧 알파의 차이다: 다른 것이 같이 움직이면
+        /// 「페이드가 되는가」를 그림으로 판정할 수 없다.
+        /// </summary>
+        private static readonly float[] FADE_ALPHAS = { 0f, 0.25f, 0.5f, 1f };
+
+        /// <summary>
+        /// 포즈는 바꿔치기(3/24초)가 **지난 뒤**로 고정한다 — 그 구간에서 보이는 것이 든 총이고,
+        /// 뽑기·수납 페이드가 실제로 걸리는 대상도 그 총이다. 0.6이면 팔이 다 올라온 발사 자세다.
+        /// </summary>
+        private const float FADE_POSE_NORMALIZED = 0.6f;
+
+        [MenuItem("Tools/CTC/Dev/총 페이드 미리보기 렌더")]
+        public static void RenderFade()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_PREFAB);
+            if (prefab == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] 프리팹을 못 찾았다: {MOUSE_PREFAB}");
+                return;
+            }
+
+            AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, SHOOT_DRAW_CLIP_NAME);
+            if (clip == null)
+            {
+                Debug.LogError(
+                    $"[ClipPreviewRender] {SHOOT_DRAW_CLIP_NAME} 클립을 못 찾았다: {ROUNDTRIP_FBX}");
+                return;
+            }
+
+            var times = new float[FADE_ALPHAS.Length];
+            for (int i = 0; i < times.Length; i++) times[i] = FADE_POSE_NORMALIZED;
+
+            List<string> paths = RenderClip(prefab, clip, "fade", times, FADE_ALPHAS);
+            Debug.Log($"[ClipPreviewRender] 총 페이드 {paths.Count}장 렌더 완료:\n" + string.Join("\n", paths));
+        }
+
+        /// <param name="_gunAlphas">
+        /// 널이 아니면 <paramref name="_normalizedTimes"/>와 **나란한 길이**의 총 알파 목록이다.
+        /// 같은 포즈를 알파만 바꿔 가며 찍어 페이드가 실제로 보이는지 눈으로 확인하는 용도
+        /// (<see cref="RenderFade"/>). 널이면 알파를 건드리지 않는다 — 기존 클립 렌더 그대로다.
+        /// </param>
         private static List<string> RenderClip(
-            GameObject _prefab, AnimationClip _clip, string _tag, float[] _normalizedTimes)
+            GameObject _prefab, AnimationClip _clip, string _tag, float[] _normalizedTimes,
+            float[] _gunAlphas = null)
         {
             var writtenPaths = new List<string>();
             PreviewRenderUtility preview = null;
@@ -234,6 +278,9 @@ namespace CTC.Editor
                     _clip.SampleAnimation(instance, t);
                     ShowGunsFor(_clip.name, t, heldGun, holsteredGun);
 
+                    // 페이드 확인용 — 게임과 **같은 방식**으로 알파를 준다(프로퍼티 블록, 머티리얼 사본 없음).
+                    if (_gunAlphas != null) SetGunAlpha(heldGun, holsteredGun, _gunAlphas[i]);
+
                     foreach ((SkinnedMeshRenderer smr, Mesh mesh) pair in bakedPairs)
                     {
                         pair.smr.BakeMesh(pair.mesh, true);
@@ -246,8 +293,10 @@ namespace CTC.Editor
                     // 파일 이름에 **순서와 블렌더 프레임**을 같이 박는다. 0채움이라 사전순 정렬이
                     // 곧 재생 순서다 — f10이 f2 앞으로 튀어나오지 않는다.
                     int blenderFrame = 1 + Mathf.RoundToInt(_normalizedTimes[i] * 10f);
-                    string fileName =
-                        $"ctc-clip-preview-{_tag}-{_clip.name}-{i:D2}-bf{blenderFrame:D2}.png";
+                    string fileName = _gunAlphas != null
+                        // 알파 판은 포즈가 전부 같으므로 프레임 번호 대신 **알파**를 박는다(0채움 정렬).
+                        ? $"ctc-gun-fade-{_clip.name}-{i:D2}-a{Mathf.RoundToInt(_gunAlphas[i] * 100f):D3}.png"
+                        : $"ctc-clip-preview-{_tag}-{_clip.name}-{i:D2}-bf{blenderFrame:D2}.png";
                     string path = Path.Combine(Path.GetTempPath(), fileName);
                     File.WriteAllBytes(path, tex.EncodeToPNG());
                     UnityEngine.Object.DestroyImmediate(tex);
@@ -326,6 +375,39 @@ namespace CTC.Editor
 
             if (_held != null) _held.gameObject.SetActive(held);
             if (_holstered != null) _holstered.gameObject.SetActive(holstered);
+        }
+
+        /// <summary>
+        /// 총 알파를 <see cref="MaterialPropertyBlock"/>으로 준다 — 게임의
+        /// <c>MouseGunVisual</c>과 **같은 방식**이다(머티리얼 사본을 만들지 않는다).
+        /// 두 총에 같이 건다: 이 프레임에 어느 쪽이 보이든 같은 진하기여야 한다.
+        ///
+        /// 주의(정직하게): 이 렌더의 머티리얼은 <see cref="RepaintGunForPreview"/>가 갈아 끼운
+        /// <c>Sprites/Default</c>다 — 게임에 나가는 URP/Lit이 아니다. 그래서 이 그림이 보여 주는
+        /// 것은 **알파 배선과 시간표**이지, URP 반투명 설정이 맞는지가 아니다.
+        /// 그건 저장된 <c>M_MouseGun.mat</c>의 값을 직접 읽어서 확인한다.
+        /// </summary>
+        private static void SetGunAlpha(Renderer _held, Renderer _holstered, float _alpha)
+        {
+            var block = new MaterialPropertyBlock();
+            foreach (Renderer gun in new[] { _held, _holstered })
+            {
+                if (gun == null) continue;
+
+                var tint = new Color(0.24f, 0.24f, 0.26f, _alpha);
+                Material mat = gun.sharedMaterial;
+                if (mat != null)
+                {
+                    if (mat.HasProperty("_BaseColor")) tint = mat.GetColor("_BaseColor");
+                    else if (mat.HasProperty("_Color")) tint = mat.GetColor("_Color");
+                }
+                tint.a = _alpha;
+
+                gun.GetPropertyBlock(block);
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_Color", tint);
+                gun.SetPropertyBlock(block);
+            }
         }
 
         /// <summary>
