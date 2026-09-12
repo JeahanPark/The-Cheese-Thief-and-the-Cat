@@ -39,6 +39,13 @@ namespace CTC.Runtime.Player
         private const float BLINK_SHRINK = 0.95f;    // 감았을 때 흰자가 줄어드는 비율
         private const float LID_FLATTEN = 0.5f;      // 눈꺼풀은 눈 축으로 납작하게 — 구면 혹처럼 튀어나오면 안 된다
 
+        /// <summary>
+        /// 셰이프키로 굴린다(기본). **A/B 검수용 임시 손잡이다** — CSV에 안 내린다(밸런스가 아니다).
+        /// 검수가 끝나면 이 필드와 진 쪽 경로를 같이 지운다
+        /// (설계: docs/superpowers/specs/2026-09-13-eye-blendshape-design.md §5).
+        /// </summary>
+        [SerializeField] private bool m_UseBlendShapes = true;
+
         [SerializeField] private string m_HeadBoneName = "head";
 
         [Tooltip("오른눈 중심 — 머리 본 로컬. 왼눈은 x를 뒤집는다.")]
@@ -94,6 +101,8 @@ namespace CTC.Runtime.Player
         private bool m_LidVisible;
         private bool m_Ready;
 
+        private EyeBlendShapes m_Shapes;   // 셰이프키 모드일 때만 붙는다
+
         /// <summary>
         /// 쏠 때 감는 시간표의 위상(<see cref="ShotBlinkLogic"/>) — **발사 순간이 0**이라
         /// 지연 구간은 음수다. <c>+무한</c>이면 안 감는 중이다(<c>Cover</c>가 0을 준다).
@@ -111,7 +120,8 @@ namespace CTC.Runtime.Player
             ReadTuning();
             m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
 
-            Build();
+            if (m_UseBlendShapes) BuildBlendShapeMode();
+            else Build();
         }
 
         /// <summary>
@@ -150,14 +160,53 @@ namespace CTC.Runtime.Player
             m_SwingMaxDeg = Mathf.Max(m_MaxAngleDeg, m_InwardMaxDeg);
         }
 
-        private void Build()
+        /// <summary>
+        /// 두 모드가 **함께 쓰는** 준비 — 머리 본·쉬는 방향·회전 한계.
+        /// 여기까지는 구를 얹든 셰이프키를 밀든 똑같이 필요하다.
+        /// </summary>
+        private bool SetupDirections()
         {
             m_Head = FindDeep(transform, m_HeadBoneName);
             if (m_Head == null)
             {
-                Debug.LogWarning("[EyeLook] 머리 본을 못 찾았다 — 눈을 얹지 않는다: " + m_HeadBoneName);
+                Debug.LogWarning("[EyeLook] 머리 본을 못 찾았다 — 눈을 굴리지 않는다: " + m_HeadBoneName);
+                return false;
+            }
+
+            m_RestR = m_EyeAxisLocal.normalized;
+            m_RestL = EyeLookLogic.Mirror(m_RestR);
+            m_GazePivot = EyeLookLogic.GazePivot(m_HeadForwardLocal, m_RestR, m_RestL);
+            ReadLimits();
+            m_GazeR = m_RestR;
+            m_GazeL = m_RestL;
+            return true;
+        }
+
+        /// <summary>
+        /// 셰이프키 모드 — **새 오브젝트를 하나도 안 만든다.** 팩 메시가 이미 가진
+        /// eyes.look* / eyes.blink를 밀 뿐이다.
+        /// </summary>
+        private void BuildBlendShapeMode()
+        {
+            if (!SetupDirections()) return;
+
+            m_Shapes = GetComponent<EyeBlendShapes>();
+            // AddComponent는 그 자리에서 Awake를 돌리므로 Ready가 바로 정해진다.
+            if (m_Shapes == null) m_Shapes = gameObject.AddComponent<EyeBlendShapes>();
+            if (!m_Shapes.Ready)
+            {
+                // 컴포넌트가 이미 경고를 찍었다 — 여기서 또 찍지 않는다.
+                m_Shapes = null;
                 return;
             }
+
+            Apply();
+            m_Ready = true;
+        }
+
+        private void Build()
+        {
+            if (!SetupDirections()) return;
 
             SkinnedMeshRenderer skin = GetComponentInChildren<SkinnedMeshRenderer>(true);
             if (skin == null || skin.sharedMaterial == null)
@@ -170,13 +219,6 @@ namespace CTC.Runtime.Player
             GameObject sample = skin.gameObject;
 
             EnsureMeshes();
-
-            m_RestR = m_EyeAxisLocal.normalized;
-            m_RestL = EyeLookLogic.Mirror(m_RestR);
-            m_GazePivot = EyeLookLogic.GazePivot(m_HeadForwardLocal, m_RestR, m_RestL);
-            ReadLimits();
-            m_GazeR = m_RestR;
-            m_GazeL = m_RestL;
 
             m_EyeRotR = Quaternion.LookRotation(m_RestR);
             m_EyeRotL = Quaternion.LookRotation(m_RestL);
@@ -441,6 +483,13 @@ namespace CTC.Runtime.Player
 
         private void Apply()
         {
+            if (m_Shapes != null)
+            {
+                m_Shapes.Apply(EyeBlendShapeLogic.Weights(
+                    m_RestR, m_RestL, m_GazeR, m_GazeL, m_GazePivot, m_MaxAngleDeg, CurrentCover()));
+                return;
+            }
+
             float cover = CurrentCover();
 
             // 가로(x·y)는 그대로 두고 눈 축(z)만 눌러 돔으로 만든다 — 부모의 비균등 스케일이
@@ -514,6 +563,43 @@ namespace CTC.Runtime.Player
                 m_LidVisible = false;
             }
             enabled = _on;   // 꺼진 동안엔 눈꺼풀이 다시 켜지지 않게 LateUpdate도 멈춘다
+        }
+
+        /// <summary>
+        /// QA 전용 — 구 방식 ↔ 셰이프키 방식을 런타임에 바꾼다. **A/B를 같은 몸·같은 카메라로
+        /// 찍는 유일한 방법**이다(몸을 둘 세우면 조명·각도가 미세하게 갈린다).
+        /// </summary>
+        public void DevSetEyeMode(bool _useBlendShapes)
+        {
+            if (_useBlendShapes == m_UseBlendShapes && m_Ready) return;
+            m_UseBlendShapes = _useBlendShapes;
+
+            if (m_Shapes != null)
+            {
+                m_Shapes.ClearWeights();
+                m_Shapes = null;
+            }
+            DestroySpheres();
+
+            m_Ready = false;
+            enabled = true;
+            if (m_UseBlendShapes) BuildBlendShapeMode();
+            else Build();
+        }
+
+        /// <summary>얹은 구를 지운다 — 컴포넌트만 꺼도 구는 그대로 남는다.</summary>
+        private void DestroySpheres()
+        {
+            // 눈동자는 흰자의 자식이라 흰자를 지우면 같이 간다.
+            Transform[] parts = { m_EyeR, m_EyeL, m_LidR, m_LidL };
+            foreach (Transform t in parts)
+            {
+                if (t != null) Destroy(t.gameObject);
+            }
+            m_EyeR = m_EyeL = m_PupilR = m_PupilL = m_LidR = m_LidL = null;
+            m_EyeRendererR = m_EyeRendererL = m_PupilRendererR = m_PupilRendererL = null;
+            m_LidRendererR = m_LidRendererL = null;
+            m_LidVisible = false;
         }
 
         /// <summary>
