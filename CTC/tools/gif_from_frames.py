@@ -16,6 +16,15 @@ import sys
 
 from PIL import Image
 
+# 윈도우 콘솔 기본 인코딩이 cp949라, 한글 도움말에 든 em-dash 같은 글자에서
+# `--help`가 UnicodeEncodeError로 **죽는다**(2026-09-12 실측). 도움말이 크래시하는
+# 도구는 쓸 수 없으므로 표준 출력을 UTF-8로 바꿔 둔다.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 # 파일명 규약(ClipPreviewRender.cs): "<prefix>-<index:D2>-<suffix>.png" 형태로
 # 0채움 인덱스가 접미사(bf03, a025 등) 바로 앞 하이픈 구간에 온다. 접미사는 문자를
 # 섞어 쓰므로(bf, a) "'-'로 나눈 조각 중 순수 숫자인 마지막 조각"이 곧 인덱스다 —
