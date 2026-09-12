@@ -1,4 +1,6 @@
+using System.Threading;
 using CTC.Runtime.Info;
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -21,6 +23,8 @@ namespace CTC.Runtime.Player
     /// 이 클래스는 그 값을 **읽기만** 한다 — 여전히 NetworkBehaviour가 아니고, 상태를 안 가진다.
     ///
     /// 눈꺼풀(깜빡임)은 그대로 통신 0이다 — 각자 제 시계로 랜덤하게 깜빡인다.
+    /// **쏠 때 질끈 감는 것도 여기서 돈다**(2026-09-12, <see cref="BlinkForShot"/>) —
+    /// 발사 RPC가 이미 전원에게 가므로 이것도 통신이 0이다.
     ///
     /// 수치(최대 각도·따라가는 속도·깜빡임)는 BalanceInfo.csv가 원본.
     /// 눈의 자리·크기는 모델 지오메트리라 CSV가 아니라 프리팹에 굽는다(PlayerPrefabFactory).
@@ -89,6 +93,15 @@ namespace CTC.Runtime.Player
         private float m_BlinkElapsed = -1f;   // 음수면 안 깜빡이는 중
         private bool m_LidVisible;
         private bool m_Ready;
+
+        /// <summary>
+        /// 쏠 때 감는 시간표의 위상(<see cref="ShotBlinkLogic"/>) — **발사 순간이 0**이라
+        /// 지연 구간은 음수다. <c>+무한</c>이면 안 감는 중이다(<c>Cover</c>가 0을 준다).
+        /// </summary>
+        private float m_ShotPhase = float.PositiveInfinity;
+
+        /// <summary>순수 C# 객체라 `?.`를 써도 된다(규칙 9 예외).</summary>
+        private CancellationTokenSource m_ShotBlinkCts;
 
         private void Awake()
         {
@@ -332,11 +345,103 @@ namespace CTC.Runtime.Player
             if (m_BlinkTimer <= 0f) m_BlinkElapsed = 0f;
         }
 
-        private void Apply()
+        /// <summary>
+        /// **한 발 쐈다 — 그 순간 눈을 질끈 감는다.**
+        ///
+        /// 부르는 쪽은 <c>MousePopgun.TracerRpc</c> 하나다(<c>SendTo.Everyone</c>이라 **남의 쥐가
+        /// 쏘는 것도 똑같이 보인다** — 여기에 소유자 검사를 넣으면 안 된다).
+        ///
+        /// 왜 눈꺼풀을 가진 이 클래스가 받는가: 눈꺼풀 스케일을 쓰는 곳이 <see cref="Apply"/> 하나뿐이라야
+        /// 「평상 깜빡임」과 「쏠 때 감기」가 서로를 덮어쓸 수가 없다. 바깥에서 내부를 만지는 대신
+        /// **부탁만 한다** — 부르는 쪽은 눈꺼풀이 몇 개인지도 모른다.
+        ///
+        /// 시간 계산은 <see cref="ShotBlinkLogic"/>이 전부 갖고 있다(EditMode가 거기를 덮는다).
+        /// 여기서 하는 일은 그 위상을 프레임마다 밀어 주는 것뿐이다.
+        /// </summary>
+        /// <param name="_alreadyOut">
+        /// 쏘기 직전에 총이 나와 있었나 — 클립을 고르는 값과 **같은 값**이다
+        /// (<see cref="MouseGunVisualLogic.ClipForShot"/>). 클립마다 터지는 프레임이 달라
+        /// 감는 시각도 같이 갈린다.
+        /// </param>
+        public void BlinkForShot(bool _alreadyOut)
         {
-            float cover = m_BlinkElapsed >= 0f
+            if (!m_Ready) return;
+
+            // **취소보다 먼저 읽는다** — 지금 돌고 있는 위상이 이어 감기의 근거다.
+            float phase = ShotBlinkLogic.RetriggerPhase(m_ShotPhase, ShotBlinkLogic.DelayFor(_alreadyOut));
+
+            CancelShotBlink();
+            m_ShotBlinkCts = CancellationTokenSource.CreateLinkedTokenSource(destroyCancellationToken);
+            ShotBlinkAsync(phase, m_ShotBlinkCts.Token).Forget();
+        }
+
+        /// <summary>
+        /// 위상을 프레임마다 민다. 코루틴이 아니라 UniTask다(CTC 규칙 1).
+        /// <see cref="Apply"/>가 <c>LateUpdate</c>에서 이 위상을 읽으므로 여기서는 스케일을 안 만진다 —
+        /// 눈꺼풀을 쓰는 곳이 둘이 되면 마지막에 쓴 쪽이 조용히 이긴다.
+        /// </summary>
+        private async UniTaskVoid ShotBlinkAsync(float _phase, CancellationToken _token)
+        {
+            m_ShotPhase = _phase;
+            try
+            {
+                while (!ShotBlinkLogic.IsComplete(m_ShotPhase))
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update, _token);
+                    m_ShotPhase += Time.deltaTime;
+                }
+            }
+            // `using System;`을 안 쓴다 — 이 파일은 UnityEngine.Random을 쓰는데
+            // System.Random과 이름이 겹쳐 컴파일이 깨진다(CS0104).
+            catch (System.OperationCanceledException)
+            {
+                // 다음 발이 이어받았거나(그 쪽이 위상을 이미 정했다) 꺼지는 중이다.
+                // 여기서 되돌리면 연사 중에 눈이 한 번 뜬다.
+                return;
+            }
+
+            m_ShotPhase = float.PositiveInfinity;
+        }
+
+        private void CancelShotBlink()
+        {
+            m_ShotBlinkCts?.Cancel();
+            m_ShotBlinkCts?.Dispose();
+            m_ShotBlinkCts = null;
+        }
+
+        /// <summary>
+        /// 꺼질 때는 **반드시 눈을 뜬 상태로 되돌린다.** 감는 도중에 꺼지면
+        /// <c>LateUpdate</c>가 멈춰 눈꺼풀이 그 스케일 그대로 굳는다 — 다시 켜도 감긴 채다.
+        /// </summary>
+        private void OnDisable()
+        {
+            CancelShotBlink();
+            m_ShotPhase = float.PositiveInfinity;
+
+            // 파괴 중이면 얹어 둔 구가 이미 사라졌을 수 있다 — Unity 객체는 `!= null`로만 본다(규칙 9).
+            if (m_Ready && m_EyeR != null && m_LidR != null) Apply();
+        }
+
+        /// <summary>
+        /// 지금 눈꺼풀이 덮는 양(0 = 활짝, 1 = 완전히 감음). **평상 깜빡임과 쏠 때 감기는
+        /// 서로를 모른다** — 더 많이 감은 쪽이 이긴다. 둘을 더하거나 순서로 덮으면
+        /// 겹친 순간에 눈이 튄다.
+        ///
+        /// QA(<see cref="DevLidCover"/>)도 이 함수를 본다 — 둘로 나누면 「보이는 값」과
+        /// 「재는 값」이 갈려 QA가 거짓말을 한다.
+        /// </summary>
+        private float CurrentCover()
+        {
+            float idle = m_BlinkElapsed >= 0f
                 ? EyeLookLogic.BlinkCover(m_BlinkElapsed, m_BlinkSeconds)
                 : 0f;
+            return Mathf.Max(idle, ShotBlinkLogic.Cover(m_ShotPhase));
+        }
+
+        private void Apply()
+        {
+            float cover = CurrentCover();
 
             // 가로(x·y)는 그대로 두고 눈 축(z)만 눌러 돔으로 만든다 — 부모의 비균등 스케일이
             // 눈동자까지 같이 눌러 주므로 눈동자도 표면을 따라 붙는다.
@@ -409,6 +514,22 @@ namespace CTC.Runtime.Player
                 m_LidVisible = false;
             }
             enabled = _on;   // 꺼진 동안엔 눈꺼풀이 다시 켜지지 않게 LateUpdate도 멈춘다
+        }
+
+        /// <summary>
+        /// QA 전용 — 지금 눈이 얼마나 감겼나(0 = 활짝, 1 = 완전히 감음).
+        /// **눈꺼풀 스케일이 아니라 그걸 정하는 값**이라, 「감았다고 말은 하는데 안 감겼다」가 안 생긴다.
+        /// 총 흔적 기록(<c>TestManager.Gun</c>)이 프레임마다 이걸 적어 감는 시각을 **재게** 한다.
+        /// </summary>
+        public float DevLidCover()
+        {
+            return CurrentCover();
+        }
+
+        /// <summary>QA 전용 — 쏠 때 감기의 위상(초, 발사 순간이 0). 지연 구간이 음수로 보인다.</summary>
+        public float DevShotBlinkPhase()
+        {
+            return m_ShotPhase;
         }
 
         /// <summary>QA 전용 — 지금 깜빡이게 한다(랜덤 주기를 기다리지 않고 그 프레임을 잡는다).</summary>

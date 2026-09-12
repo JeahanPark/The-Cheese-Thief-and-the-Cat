@@ -1,4 +1,4 @@
-// TestManager의 일부 — **총이 실제로 보이고 있나**(2026-09-12 첫 플레이 검증).
+﻿// TestManager의 일부 — **총이 실제로 보이고 있나**(2026-09-12 첫 플레이 검증).
 //
 // 알파 페이드는 0.10초(뽑기)·0.08초(바꿔치기)짜리다. MCP/wesqa 왕복은 그보다 느려서
 // 한 번 물어보는 방식으로는 **그 구간을 통째로 놓친다** — `TestGetAnimObserved`와 같은 병이다.
@@ -19,6 +19,13 @@ namespace CTC.Runtime.Testing
         private readonly List<string> m_GunSamples = new List<string>();
         private MouseGunVisual m_GunWatched;
         private PlayerAnimationDriver m_GunWatchedDriver;
+
+        /// <summary>
+        /// 같은 창에서 **눈**도 같이 적는다 — 쏠 때 감기는 0.05초 만에 닫히고 0.31초면 끝난다.
+        /// 한 번 물어보는 방식으로는 그 구간을 통째로 놓친다(총 알파와 똑같은 병이라 같은 창을 쓴다).
+        /// 눈과 총을 **한 줄에** 적어야 「총이 나오는 프레임에 눈이 어땠나」가 맞춰진다.
+        /// </summary>
+        private EyeLook m_GunWatchedEyes;
         private float m_GunSampleStart;
         private string m_GunLastSample;
 
@@ -64,6 +71,7 @@ namespace CTC.Runtime.Testing
             GameObject p = FindPlayerGo(_clientId);
             m_GunWatched = p != null ? p.GetComponent<MouseGunVisual>() : null;
             m_GunWatchedDriver = p != null ? p.GetComponent<PlayerAnimationDriver>() : null;
+            m_GunWatchedEyes = p != null ? p.GetComponent<EyeLook>() : null;
             m_GunSamples.Clear();
             m_GunLastSample = null;
             m_GunSampleStart = Time.time;
@@ -75,10 +83,11 @@ namespace CTC.Runtime.Testing
         {
             m_GunWatched = null;
             m_GunWatchedDriver = null;
+            m_GunWatchedEyes = null;
         }
 
         /// <summary>
-        /// QA: 기록된 흔적. 한 줄 = "t|허리춤|손|애니상태", 연속 중복은 접힌다.
+        /// QA: 기록된 흔적. 한 줄 = "t|허리춤|손|애니상태|눈감김", 연속 중복은 접힌다.
         /// 알파는 소수 둘째까지 반올림해 비교하므로 미세 흔들림은 한 줄로 접힌다.
         /// </summary>
         public string TestGetGunTrace()
@@ -100,6 +109,13 @@ namespace CTC.Runtime.Testing
         /// 몇 프레임 생기는 게 정상이다. 길면 「총이 둘로 보인다」).
         /// bothHidden = 총이 나와 있어야 하는데 둘 다 0.05 미만인 프레임 수.
         /// stuck = 마지막 샘플이 0도 1도 아닌 어중간한 알파인가(반투명인 채로 굳음).
+        ///
+        /// 눈(2026-09-12): lidMax = 가장 많이 감긴 정도(1.00이어야 «질끈»이다) ·
+        /// lidCloseT = 감기 시작한 시각 · lidShutT = 완전히 감긴 시각 · lidLast = 마지막 값.
+        /// lidLast는 마지막 표본의 감김이다 — 연사가 끝난 **직후**에 읽으면 0이어야 한다.
+        /// 한참 뒤에 읽으면 **평상 깜빡임 한복판**에 걸려 0이 아닐 수 있다(2026-09-12 실측 0.61) —
+        /// 그때는 <see cref="TestGetGunTrace"/>의 원문을 봐야 갈린다. 굳은 눈은 0.00으로 안 돌아온다.
+        /// 시각은 기록 창을 연 순간이 0이라, 쏘기 직전에 열었다면 그대로 «발사 후 몇 초»로 읽힌다.
         /// </summary>
         public string TestGetGunTraceSummary()
         {
@@ -108,6 +124,7 @@ namespace CTC.Runtime.Testing
             int both = 0, neither = 0;
             float maxHeld = 0f, maxHolstered = 0f;
             float lastHeld = 0f, lastHolstered = 0f;
+            float lidMax = 0f, lidLast = 0f, lidCloseT = -1f, lidShutT = -1f;
             var states = new List<string>();
 
             foreach (string s in m_GunSamples)
@@ -122,12 +139,22 @@ namespace CTC.Runtime.Testing
                 if (hol > maxHolstered) maxHolstered = hol;
                 lastHeld = held; lastHolstered = hol;
                 if (states.Count == 0 || states[states.Count - 1] != f[3]) states.Add(f[3]);
+
+                if (f.Length < 5) continue;
+                float.TryParse(f[0], out float when);
+                float.TryParse(f[4], out float lid);
+                if (lid > lidMax) lidMax = lid;
+                lidLast = lid;
+                if (lidCloseT < 0f && lid > 0.02f) lidCloseT = when;
+                if (lidShutT < 0f && lid >= 0.99f) lidShutT = when;
             }
 
             bool stuck = (lastHeld > 0.05f && lastHeld < 0.95f) || (lastHolstered > 0.05f && lastHolstered < 0.95f);
             return $"samples={m_GunSamples.Count} maxHeld={maxHeld:F2} maxHolstered={maxHolstered:F2} " +
                    $"bothVisible={both} bothHidden={neither} lastHeld={lastHeld:F2} lastHolstered={lastHolstered:F2} " +
-                   $"stuck={(stuck ? 1 : 0)} states={string.Join(">", states)}";
+                   $"stuck={(stuck ? 1 : 0)} " +
+                   $"lidMax={lidMax:F2} lidCloseT={lidCloseT:F2} lidShutT={lidShutT:F2} lidLast={lidLast:F2} " +
+                   $"states={string.Join(">", states)}";
         }
 
         private void Update()
@@ -136,7 +163,8 @@ namespace CTC.Runtime.Testing
 
             float t = Time.time - m_GunSampleStart;
             string state = m_GunWatchedDriver != null ? m_GunWatchedDriver.PlayingState : "-";
-            string line = $"{t:F2}|{m_GunWatched.HolsteredAlpha:F2}|{m_GunWatched.HeldAlpha:F2}|{state}";
+            float lid = m_GunWatchedEyes != null ? m_GunWatchedEyes.DevLidCover() : 0f;
+            string line = $"{t:F2}|{m_GunWatched.HolsteredAlpha:F2}|{m_GunWatched.HeldAlpha:F2}|{state}|{lid:F2}";
 
             // 시각을 뺀 나머지가 같으면 접는다 — 안 그러면 60fps짜리 잡음만 쌓인다.
             string key = line.Substring(line.IndexOf('|'));
@@ -221,6 +249,51 @@ namespace CTC.Runtime.Testing
             if (gun == null) return false;
             gun.BotFire(gun.transform.forward);
             return true;
+        }
+
+        /// <summary>
+        /// QA: <paramref name="_shots"/>발을 <paramref name="_intervalSeconds"/> 간격으로 **연사한다**.
+        ///
+        /// 왜 필요한가: 기관총 쿨다운은 0.15초다. MCP/wesqa 왕복은 그보다 한참 느려서
+        /// **훅을 여러 번 불러서는 연사를 절대 재현할 수 없다** — 0.5초씩 벌어진 단발이 될 뿐이다.
+        /// 그런데 「연사 뒤에 눈이 감긴 채로 굳지 않나」는 EditMode가 못 덮는다(UniTask 취소 경로다).
+        /// 그래서 게임 안에서 시간을 재며 쏜다. 쿨다운은 그대로 도므로 간격이 너무 짧으면
+        /// 서버가 알아서 거른다 — 여기서 판정을 흉내 내지 않는다.
+        ///
+        /// 흔적은 <see cref="TestStartGunTrace"/>로 먼저 열어 둔다. 끝난 뒤
+        /// <see cref="TestGetGunTraceSummary"/>의 <c>lidLast</c>가 0이어야 눈이 다시 뜬 것이다.
+        /// </summary>
+        public bool TestShootBurst(int _shots, float _intervalSeconds)
+        {
+            Combat.MousePopgun gun = LocalComponent<Combat.MousePopgun>();
+            if (gun == null) return false;
+
+            BurstAsync(gun, Mathf.Clamp(_shots, 1, 50), Mathf.Clamp(_intervalSeconds, 0.02f, 2f),
+                destroyCancellationToken).Forget();
+            return true;
+        }
+
+        private static async Cysharp.Threading.Tasks.UniTaskVoid BurstAsync(
+            Combat.MousePopgun _gun, int _shots, float _interval,
+            System.Threading.CancellationToken _token)
+        {
+            try
+            {
+                for (int i = 0; i < _shots; i++)
+                {
+                    // Unity 객체는 `!= null`로만 본다(규칙 9) — 도중에 죽으면 몸이 사라진다.
+                    if (_gun == null) return;
+                    _gun.BotFire(_gun.transform.forward);
+                    if (i + 1 >= _shots) break;
+
+                    await Cysharp.Threading.Tasks.UniTask.Delay(
+                        System.TimeSpan.FromSeconds(_interval), cancellationToken: _token);
+                }
+            }
+            catch (System.OperationCanceledException)
+            {
+                // 판이 끝났거나 몸이 파괴됐다 — 남은 발은 쏘지 않는다.
+            }
         }
 
         /// <summary>

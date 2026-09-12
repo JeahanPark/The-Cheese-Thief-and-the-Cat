@@ -198,6 +198,12 @@ namespace CTC.Runtime.Combat
                 driver.PlayOneShot(Player.MouseGunVisualLogic.ClipForShot(alreadyOut), SHOOT_ANIM_SECONDS);
             }
 
+            // 제 총소리에 눈을 질끈 감는다 — 제 몸만 한 총을 든 짐승의 움찔(2026-09-12).
+            // **클립과 같은 `alreadyOut`을 넘긴다**: 클립마다 터지는 프레임이 달라(Shoot 5 · ShootDraw 7)
+            // 감는 시각도 같이 갈려야 한다. 하나만 바꾸면 첫 발에서 겨누는 내내 눈이 감긴다.
+            var eyes = GetComponent<Player.EyeLook>();
+            if (eyes != null) eyes.BlinkForShot(alreadyOut);
+
             var go = new GameObject("PopgunTracer");
             LineRenderer line = go.AddComponent<LineRenderer>();
             line.positionCount = 2;
