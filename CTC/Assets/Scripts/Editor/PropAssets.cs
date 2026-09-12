@@ -38,6 +38,10 @@ namespace CTC.Editor
         public const string HERO_TICKET_MATERIAL = MATERIAL_FOLDER + "/M_HeroTicket.mat";
         public const string GANG_TICKET_MATERIAL = MATERIAL_FOLDER + "/M_GangTicket.mat";
 
+        // 쥐가 등 뒤에서 뽑아 쏘는 장난감 권총 — GunMeshBuilder가 굽는다.
+        public const string MOUSE_GUN_MESH = PROP_FOLDER + "/Mesh_MouseGun.asset";
+        public const string MOUSE_GUN_MATERIAL = MATERIAL_FOLDER + "/M_MouseGun.mat";
+
         /// <summary>
         /// 없으면 null과 경고. **에러가 아니라 경고인 이유**: 메시 빌더를 아직 안 돌린 상태에서도
         /// `Setup Networking Scene`은 끝까지 돌아야 한다. 부르는 쪽이 프리미티브로 되돌아간다.
