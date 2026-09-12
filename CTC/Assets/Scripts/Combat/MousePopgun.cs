@@ -167,8 +167,11 @@ namespace CTC.Runtime.Combat
             TracerRpc(origin, end);
         }
 
-        // 발사 모션 지속 — 이동 애니메이션 잠금 시간
-        private const float ATTACK_ANIM_SECONDS = 0.4f;
+        // 발사 모션 지속 — 이동 애니메이션 잠금 시간.
+        // 이름을 바꿨다(2026-09-12): 이제 트는 것은 Attack이 아니라 Shoot/ShootDraw다.
+        // 두 클립 다 10프레임 @24fps = 0.417초라 그 길이에 맞춘다 — 짧게 잡으면 뽑는
+        // 동작 중간에 이동 상태가 끼어들어 총이 손에서 튄다.
+        private const float SHOOT_ANIM_SECONDS = 0.42f;
 
         // 발사 피드백 — 전 클라이언트에 짧은 궤적 선 + 발사 모션.
         // 쿨다운 통과한 실제 발사에서만 서버가 보내므로 별도 게이트 불필요.
@@ -180,10 +183,19 @@ namespace CTC.Runtime.Combat
                 : m_Tier.Value == 1 ? Audio.SfxId.SlingshotFire : Audio.SfxId.PopgunFire;
             Audio.SfxPlayer.PlayAt(fireSfx, _start);
 
+            // 총을 손에 띄우고(없었으면 이제 뽑는다) **직전 상태**를 돌려받는다.
+            // 이미 들고 있었으면 반동만, 아니면 뽑기부터 — 기관총 테크가 5배 빨라서
+            // 매 발에 뽑기를 넣으면 0.1초마다 총을 다시 뽑는 그림이 된다.
+            // 이 RPC는 SendTo.Everyone이라 **남의 쥐가 쏘는 것도 똑같이 보인다** —
+            // 소유자 검사를 여기 넣으면 안 된다.
+            bool alreadyOut = false;
+            var gun = GetComponent<Player.MouseGunVisual>();
+            if (gun != null) alreadyOut = gun.ShowForShot();
+
             Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)
             {
-                driver.PlayOneShot(Player.AnimationStateLogic.Attack, ATTACK_ANIM_SECONDS);
+                driver.PlayOneShot(Player.MouseGunVisualLogic.ClipForShot(alreadyOut), SHOOT_ANIM_SECONDS);
             }
 
             var go = new GameObject("PopgunTracer");

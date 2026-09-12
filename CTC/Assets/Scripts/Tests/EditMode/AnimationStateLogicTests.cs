@@ -105,10 +105,27 @@ namespace CTC.Tests
         }
 
         [Test]
-        public void All_StatesExistInBothControllers()
+        public void Shared_StatesExistInBothControllers()
         {
-            AssertStatesExist("AC_Mouse.controller", AnimationStateLogic.All);
-            AssertStatesExist("AC_Cat.controller", AnimationStateLogic.All);
+            AssertStatesExist("AC_Mouse.controller", AnimationStateLogic.Shared);
+            AssertStatesExist("AC_Cat.controller", AnimationStateLogic.Shared);
+        }
+
+        /// <summary>
+        /// <c>Shared</c>가 <c>All</c>에서 쥐 전용만 뺀 것인지 — 이게 어긋나면 위 테스트가
+        /// **검사 범위를 조용히 잃는다**(예: Shared가 빈 배열이면 전부 통과한다).
+        /// </summary>
+        [Test]
+        public void Shared_IsAllMinusMouseOnly()
+        {
+            var expected = new List<string>();
+            foreach (string s in AnimationStateLogic.All)
+            {
+                if (System.Array.IndexOf(AnimationStateLogic.MouseOnly, s) < 0) expected.Add(s);
+            }
+
+            Assert.IsNotEmpty(AnimationStateLogic.MouseOnly, "쥐 전용이 비었다 — 분리가 무의미해졌다");
+            CollectionAssert.AreEqual(expected, AnimationStateLogic.Shared);
         }
 
         private static void AssertStatesExist(string _controllerFile)

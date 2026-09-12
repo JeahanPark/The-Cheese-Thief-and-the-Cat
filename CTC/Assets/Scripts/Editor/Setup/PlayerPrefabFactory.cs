@@ -180,6 +180,11 @@ namespace CTC.Editor
                 foreach (var r in model.GetComponentsInChildren<Renderer>(true))
                     r.sharedMaterials = Enumerable.Repeat(_material, r.sharedMaterials.Length).ToArray();
 
+                // 쥐 앞발에 총을 물린다(2026-09-12) — 모델이 선 뒤라야 본이 있다.
+                // **꺼진 채로** 달리고, 쏠 때만 MouseGunVisual이 켠다. 자리·회전은 실측값이라
+                // 메뉴(Tools/CTC/Dev/Bake Mouse Gun)와 **같은 함수**를 부른다 — 값이 갈리지 않게.
+                if (_role == RoleId.Mouse) MouseGunBaker.Attach(root);
+
                 // 카메라 Deoccluder IgnoreTag용 — 히트한 '콜라이더의 GO' 태그를 비교하므로
                 // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다
                 foreach (Transform tr in root.GetComponentsInChildren<Transform>(true))
