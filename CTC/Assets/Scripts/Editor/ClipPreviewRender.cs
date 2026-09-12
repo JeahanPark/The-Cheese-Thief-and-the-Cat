@@ -30,6 +30,13 @@ namespace CTC.Editor
         /// <summary>팩에 없는 신규 클립. 왕복 FBX에서만 렌더한다.</summary>
         private const string SHOOT_CLIP_NAME = "Shoot";
 
+        /// <summary>
+        /// 총을 뽑아 첫 발을 쏘는 클립. 기관총 테크가 5배 빨라서 뽑는 동작을 매 발에
+        /// 넣을 수 없어 Shoot(반동만)과 따로 존재한다 — 둘을 나란히 봐야 발사 자세가
+        /// 서로 맞는지 알 수 있으므로 같은 샘플 간격으로 같이 렌더한다.
+        /// </summary>
+        private const string SHOOT_DRAW_CLIP_NAME = "ShootDraw";
+
         private const int RESOLUTION = 768;
 
         /// <summary>클립 길이를 이 비율들로 나눠 잰다 — 시작·중간·끝을 고루 본다.</summary>
@@ -73,15 +80,17 @@ namespace CTC.Editor
                 paths.AddRange(RenderClip(prefab, roundTripClip, "roundtrip", NORMALIZED_TIMES));
             }
 
-            // Shoot은 팩에 없다 — 왕복 FBX 한쪽만 렌더한다.
-            AnimationClip shootClip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, SHOOT_CLIP_NAME);
-            if (shootClip == null)
+            // 사격 클립 둘은 팩에 없다 — 왕복 FBX 한쪽만 렌더한다.
+            foreach (string name in new[] { SHOOT_CLIP_NAME, SHOOT_DRAW_CLIP_NAME })
             {
-                Debug.LogWarning(
-                    $"[ClipPreviewRender] Shoot 클립을 못 찾았다(스킵): {ROUNDTRIP_FBX} :: {SHOOT_CLIP_NAME}");
-            }
-            else
-            {
+                AnimationClip shootClip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, name);
+                if (shootClip == null)
+                {
+                    Debug.LogWarning(
+                        $"[ClipPreviewRender] {name} 클립을 못 찾았다(스킵): {ROUNDTRIP_FBX} :: {name}");
+                    continue;
+                }
+
                 paths.AddRange(RenderClip(prefab, shootClip, "roundtrip", SHOOT_NORMALIZED_TIMES));
             }
 
