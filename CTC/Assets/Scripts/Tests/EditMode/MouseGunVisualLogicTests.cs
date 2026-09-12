@@ -35,6 +35,44 @@ namespace CTC.Tests
             Assert.AreEqual(AnimationStateLogic.Shoot, MouseGunVisualLogic.ClipForShot(true));
         }
 
+        // ===== 뽑기 바꿔치기 시점 =====
+        //
+        // 허리춤 총 → 든 총으로 넘어가는 순간. 클립은 24fps 10프레임이고, 앞발이 허리를 떠나
+        // 위로 휘어 나오는 것이 4프레임째라 3프레임(=3/24초)에서 바꾼다.
+
+        [Test]
+        public void DrawSwap_IsThreeFramesAt24Fps()
+        {
+            Assert.AreEqual(3f / 24f, MouseGunVisualLogic.DRAW_SWAP_SECONDS, 1e-6f);
+        }
+
+        [Test]
+        public void BeforeSwap_HolsteredGunShows()
+        {
+            Assert.IsTrue(MouseGunVisualLogic.HolsteredAt(0f));
+            Assert.IsTrue(MouseGunVisualLogic.HolsteredAt(MouseGunVisualLogic.DRAW_SWAP_SECONDS - 0.001f));
+        }
+
+        [Test]
+        public void AtAndAfterSwap_HeldGunShows()
+        {
+            Assert.IsFalse(MouseGunVisualLogic.HolsteredAt(MouseGunVisualLogic.DRAW_SWAP_SECONDS));
+            Assert.IsFalse(MouseGunVisualLogic.HolsteredAt(1f));
+        }
+
+        /// <summary>
+        /// 바꿔치기는 클립이 끝나기 **한참 전에** 일어나야 한다 — 클립이 끝난 뒤에 바뀌면
+        /// 총이 허리에 붙어 있는 채로 발사 포즈가 지나간다. 클립 길이(10프레임 @24fps)의
+        /// 절반을 넘으면 그건 더 이상 "뽑는 순간"이 아니다.
+        /// </summary>
+        [Test]
+        public void DrawSwap_HappensWellInsideTheClip()
+        {
+            const float CLIP_SECONDS = 10f / 24f;
+            Assert.Less(MouseGunVisualLogic.DRAW_SWAP_SECONDS, CLIP_SECONDS * 0.5f);
+            Assert.Greater(MouseGunVisualLogic.DRAW_SWAP_SECONDS, 0f);
+        }
+
         // ===== 철자 =====
         //
         // 상수 값이 곧 애니메이터 상태 이름이자 FBX 클립 이름이다. 세 곳이 같은 글자여야
@@ -128,6 +166,64 @@ namespace CTC.Tests
                 Assert.IsFalse(clip.name.Contains("|"),
                     $"'{clip.name}'은 원본 테이크 이름 그대로다 — 클립 분리가 안 됐다");
             }
+        }
+
+        // ===== 총 모델은 하나뿐이다 =====
+
+        /// <summary>
+        /// **티어마다 다른 총을 보여 주면 고양이가 「저 쥐가 어느 티어인가」를 알게 된다 —
+        /// 없던 정보다.** 소리는 거리로 줄지만 보이는 모델은 안 줄어든다.
+        ///
+        /// 지금까지 이 규칙을 지키는 건 주석뿐이었다. 티어별 총 메시를 하나 추가해도
+        /// 아무것도 빨개지지 않았다 — 그래서 여기서 **개수를 센다.**
+        /// </summary>
+        [Test]
+        public void OnlyOneGunMeshExists_NoPerTierVariants()
+        {
+            const string PROPS_DIR = "Assets/Models/Props";
+            const string GUN_MESH = PROPS_DIR + "/Mesh_MouseGun.asset";
+
+            Assert.IsNotNull(AssetDatabase.LoadAssetAtPath<Mesh>(GUN_MESH),
+                $"총 메시가 없다: {GUN_MESH} — Tools/CTC/Build Gun Mesh로 굽는다");
+
+            string dir = Path.Combine(
+                Application.dataPath, PROPS_DIR.Substring("Assets/".Length));
+            if (!Directory.Exists(dir)) Assert.Ignore($"폴더가 없다: {dir}");
+
+            var found = new List<string>();
+            foreach (string path in Directory.GetFiles(dir, "*.asset", SearchOption.AllDirectories))
+            {
+                string name = Path.GetFileNameWithoutExtension(path);
+                if (name.IndexOf("Gun", System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                found.Add(name);
+            }
+
+            CollectionAssert.AreEqual(new[] { "Mesh_MouseGun" }, found,
+                "총 메시가 하나가 아니다. 티어(새총·기관총·긴 총열)는 **같은 모델을 나눠 써야 한다** — " +
+                "티어마다 다른 총을 보여 주면 고양이가 「저 쥐가 어느 티어인가」를 알게 된다. " +
+                "없던 정보다. 찾은 것: " + string.Join(", ", found));
+        }
+
+        /// <summary>
+        /// 프리팹도 하나여야 한다 — 메시를 공유하면서 프리팹만 늘려도 재질·크기로 티어가 샌다.
+        /// </summary>
+        [Test]
+        public void OnlyOneGunPrefabExists()
+        {
+            string dir = Path.Combine(Application.dataPath, "Prefabs/Props");
+            if (!Directory.Exists(dir)) Assert.Ignore($"폴더가 없다: {dir}");
+
+            var found = new List<string>();
+            foreach (string path in Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories))
+            {
+                string name = Path.GetFileNameWithoutExtension(path);
+                if (name.IndexOf("Gun", System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                found.Add(name);
+            }
+
+            CollectionAssert.AreEqual(new[] { "MouseGun" }, found,
+                "총 프리팹이 하나가 아니다 — 티어별 총은 「저 쥐가 어느 티어인가」를 새게 한다. " +
+                "찾은 것: " + string.Join(", ", found));
         }
 
         /// <summary>

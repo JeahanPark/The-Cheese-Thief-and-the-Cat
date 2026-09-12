@@ -35,6 +35,18 @@ namespace CTC.Editor
         /// <summary>발(파지 지점) 뭉치로 볼 정점의 기준 — 밑동에서 이 비율보다 먼 것들.</summary>
         private const float PAW_CLUSTER_RATIO = 0.8f;
 
+        /// <summary>수납된 총이 매달릴 본 — 앞다리는 엉덩이에 못 닿는다.</summary>
+        private const string BODY_BONE = "body";
+
+        /// <summary>꼬리 밑동 = 엉덩이. 허리춤 자리의 해부학적 기준점이다.</summary>
+        private const string TAIL_BONE = "tail.01";
+
+        /// <summary>꼬리 밑동 근처로 볼 앞뒤 폭 — 밑동 거리의 이 비율만큼 앞뒤로.</summary>
+        private const float SLAB_RATIO = 0.25f;
+
+        /// <summary>옆구리 프로파일 격자 해상도 — 몸통을 z·y로 이만큼씩 나눠 굵기를 본다.</summary>
+        private const int PROFILE_BANDS = 5;
+
         /// <summary>
         /// 실측한 발 뭉치 중심(본 로컬). <see cref="ProbeSkin"/>이 찍는 값을 그대로 옮겨 적었다 —
         /// 포즈 구간에서 「발이 지금 어디 있나」를 같이 찍으려면 상수가 하나 필요하다.
@@ -49,6 +61,7 @@ namespace CTC.Editor
             var sb = new StringBuilder();
             ProbeHierarchy(sb);
             ProbeSkin(sb);
+            ProbeHip(sb);
             ProbePose(sb);
 
             File.WriteAllText(ReportPath, sb.ToString());
@@ -240,6 +253,169 @@ namespace CTC.Editor
             {
                 PrefabUtility.UnloadPrefabContents(root);
             }
+        }
+
+        /// <summary>
+        /// **허리춤(수납 자리)**을 잰다 — 총이 뽑히기 전에 얹혀 있을 곳.
+        ///
+        /// 앞다리는 엉덩이에 닿을 수 없다(2026-09-12에 렌더로 확인했다 — 「가슴 밑에서
+        /// 들어 올린다」로만 읽혔다). 그래서 수납된 총은 **몸통 본(`body`)**의 자식으로 따로
+        /// 두고, 뽑는 순간 보이기를 바꿔치기한다. 그 자리를 눈대중으로 잡으면 총이 몸에
+        /// 박히거나 공중에 뜬다 — 그래서 메시에서 직접 잰다.
+        ///
+        /// 재는 것:
+        ///  - `body` 본 축이 몸 기준 어디를 보는지(뒤·아래가 어느 축인가)
+        ///  - `tail.01` 본 원점 = **꼬리 밑동**. 해부학적으로 그게 곧 엉덩이다
+        ///  - 꼬리 밑동 근처 몸통 표면의 **옆구리 반지름**과 높이 — 그만큼 밖으로 내야 안 박힌다
+        /// </summary>
+        private static void ProbeHip(StringBuilder _sb)
+        {
+            _sb.AppendLine();
+            _sb.AppendLine($"=== 허리춤 실측 — {Path.GetFileName(MOUSE_LOD0)} :: {BODY_BONE} ===");
+
+            GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_LOD0);
+            SkinnedMeshRenderer smr = go != null ? go.GetComponentInChildren<SkinnedMeshRenderer>(true) : null;
+            Mesh mesh = smr != null ? smr.sharedMesh : null;
+            if (mesh == null) { _sb.AppendLine("  메시 없음"); return; }
+
+            Transform[] bones = smr.bones;
+            int body = IndexOf(bones, BODY_BONE);
+            int tail = IndexOf(bones, TAIL_BONE);
+            if (body < 0) { _sb.AppendLine($"  {BODY_BONE} 본 없음"); return; }
+
+            Matrix4x4 meshToBody = mesh.bindposes[body];
+
+            // 꼬리 밑동을 몸통 본 로컬로 — 바인드포즈 역이 본→메시, 그 결과를 다시 몸통 본으로.
+            Vector3 tailBase = Vector3.zero;
+            bool hasTail = tail >= 0;
+            if (hasTail)
+            {
+                Vector3 tailInMesh = mesh.bindposes[tail].inverse.MultiplyPoint3x4(Vector3.zero);
+                tailBase = meshToBody.MultiplyPoint3x4(tailInMesh);
+                _sb.AppendLine($"  꼬리 밑동(몸통 본 로컬) = {F(tailBase)}");
+            }
+            else
+            {
+                _sb.AppendLine($"  {TAIL_BONE} 본 없음 — 꼬리 밑동을 못 잡는다");
+            }
+
+            Vector3[] verts = mesh.vertices;
+            BoneWeight[] weights = mesh.boneWeights;
+
+            var owned = new List<Vector3>();
+            for (int v = 0; v < verts.Length; v++)
+            {
+                BoneWeight w = weights[v];
+                if ((w.boneIndex0 == body && w.weight0 > 0.5f) ||
+                    (w.boneIndex1 == body && w.weight1 > 0.5f))
+                {
+                    owned.Add(meshToBody.MultiplyPoint3x4(verts[v]));
+                }
+            }
+            if (owned.Count == 0) { _sb.AppendLine("  매인 정점 0"); return; }
+
+            var bounds = new Bounds(owned[0], Vector3.zero);
+            foreach (Vector3 p in owned) bounds.Encapsulate(p);
+            _sb.AppendLine($"  몸통 정점 {owned.Count}  바운드 중심={F(bounds.center)} 크기={F(bounds.size)}");
+
+            if (!hasTail) return;
+
+            // 꼬리 밑동과 **앞뒤로 같은 높이**인 띠만 본다. 그 띠의 옆구리 최대치가
+            // 「여기서 몸이 얼마나 굵은가」다 — 총을 그만큼은 내야 표면 밖에 앉는다.
+            // 앞뒤 축은 꼬리 밑동이 원점에서 가장 크게 벗어난 축으로 잡는다(리그를 안 가정한다).
+            int rearAxis = 0;
+            for (int a = 1; a < 3; a++)
+            {
+                if (Mathf.Abs(tailBase[a]) > Mathf.Abs(tailBase[rearAxis])) rearAxis = a;
+            }
+            _sb.AppendLine($"  앞뒤 축 = 로컬 {"xyz"[rearAxis]} (꼬리 밑동이 {tailBase[rearAxis]:F5})");
+
+            float slab = Mathf.Abs(tailBase[rearAxis]) * SLAB_RATIO;
+            float lateralMax = 0f, upMax = float.MinValue, downMin = float.MaxValue;
+            int inSlab = 0;
+            foreach (Vector3 p in owned)
+            {
+                if (Mathf.Abs(p[rearAxis] - tailBase[rearAxis]) > slab) continue;
+                inSlab++;
+                for (int a = 0; a < 3; a++)
+                {
+                    if (a == rearAxis) continue;
+                    lateralMax = Mathf.Max(lateralMax, Mathf.Abs(p[a]));
+                }
+                upMax = Mathf.Max(upMax, p.y);
+                downMin = Mathf.Min(downMin, p.y);
+            }
+
+            _sb.AppendLine($"  꼬리 밑동 띠(±{slab:F5}) 정점 {inSlab}  " +
+                           $"최대 옆구리={lateralMax:F5}  y=[{downMin:F5}, {upMax:F5}]");
+
+            // **옆구리 표면 프로파일.** 최대 한 값만으로는 못 놓는다 — 몸이 둥글어서 같은 슬랩
+            // 안에서도 y·z에 따라 굵기가 다르다. 가장 굵은 자리에 맞추면 총이 뒤쪽에서 붕 뜨고,
+            // 가장 얇은 자리에 맞추면 배에 박힌다. 그래서 (z, y) 칸마다 최대 |x|를 찍는다.
+            _sb.AppendLine("  옆구리 |x| 프로파일 (행 = z 구간, 열 = y 구간, 단위: 본 로컬)");
+            float zLo = bounds.min.z, zHi = bounds.max.z;
+            float yLo = bounds.min.y, yHi = bounds.max.y;
+            _sb.Append("        y:");
+            for (int yi = 0; yi < PROFILE_BANDS; yi++)
+            {
+                _sb.Append($"  {Mathf.Lerp(yLo, yHi, (yi + 0.5f) / PROFILE_BANDS):F5}");
+            }
+            _sb.AppendLine();
+
+            for (int zi = 0; zi < PROFILE_BANDS; zi++)
+            {
+                float zc = Mathf.Lerp(zLo, zHi, (zi + 0.5f) / PROFILE_BANDS);
+                _sb.Append($"    z={zc:F5}:");
+                for (int yi = 0; yi < PROFILE_BANDS; yi++)
+                {
+                    float yc = Mathf.Lerp(yLo, yHi, (yi + 0.5f) / PROFILE_BANDS);
+                    float zHalf = (zHi - zLo) * 0.5f / PROFILE_BANDS;
+                    float yHalf = (yHi - yLo) * 0.5f / PROFILE_BANDS;
+
+                    float best = 0f;
+                    foreach (Vector3 q in owned)
+                    {
+                        if (Mathf.Abs(q.z - zc) > zHalf || Mathf.Abs(q.y - yc) > yHalf) continue;
+                        best = Mathf.Max(best, Mathf.Abs(q.x));
+                    }
+                    _sb.Append(best > 0f ? $"  {best:F5}" : "        .");
+                }
+                _sb.AppendLine();
+            }
+
+            Transform bone = null;
+            GameObject prefab = PrefabUtility.LoadPrefabContents(MOUSE_PREFAB);
+            if (prefab != null)
+            {
+                try
+                {
+                    bone = FindDeep(prefab.transform, BODY_BONE);
+                    if (bone != null)
+                    {
+                        _sb.AppendLine($"  몸통 본 월드 스케일 = {F(bone.lossyScale)}");
+                        _sb.AppendLine($"  본 로컬축 → 몸 로컬: " +
+                                       $"right={F(prefab.transform.InverseTransformDirection(bone.right))} " +
+                                       $"up={F(prefab.transform.InverseTransformDirection(bone.up))} " +
+                                       $"fwd={F(prefab.transform.InverseTransformDirection(bone.forward))}");
+                        _sb.AppendLine($"  → 꼬리 밑동까지 월드 거리(m) ≈ " +
+                                       $"{(tailBase.magnitude * bone.lossyScale.x):F4}");
+                        _sb.AppendLine($"  → 옆구리 반지름(m) ≈ {(lateralMax * bone.lossyScale.x):F4}");
+                    }
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(prefab);
+                }
+            }
+        }
+
+        private static int IndexOf(Transform[] _bones, string _name)
+        {
+            for (int i = 0; i < _bones.Length; i++)
+            {
+                if (_bones[i] != null && _bones[i].name == _name) return i;
+            }
+            return -1;
         }
 
         private static Vector3 LossyOf(Transform _root, Transform _t)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using CTC.Runtime.Player;
 using UnityEditor;
 using UnityEngine;
 
@@ -117,7 +118,8 @@ namespace CTC.Editor
             var bakedGos = new List<GameObject>();
             GameObject ground = null;
             Material groundMat = null;
-            Renderer gunRenderer = null;
+            Renderer heldGun = null;
+            Renderer holsteredGun = null;
             Material gunMat = null;
 
             try
@@ -129,8 +131,12 @@ namespace CTC.Editor
 
                 // 총을 앞발에 물린다. 본의 자식이라 SampleAnimation이 본을 돌리면 그대로 따라간다 —
                 // 스킨드 메시와 달리 정적 MeshRenderer는 다시 스키닝할 게 없어 BakeMesh가 필요 없다.
-                gunRenderer = AttachGun(instance);
-                gunMat = RepaintGunForPreview(gunRenderer, instance);
+                heldGun = AttachGun(instance, MouseGunBaker.GUN_BONE, "MouseGun",
+                    MouseGunBaker.HeldPosition, MouseGunBaker.HeldEuler);
+                holsteredGun = AttachGun(instance, MouseGunBaker.HOLSTER_BONE, "MouseGunHolstered",
+                    MouseGunBaker.HolsterPosition, MouseGunBaker.HolsterEuler);
+
+                gunMat = RepaintGunForPreview(new[] { heldGun, holsteredGun }, instance);
 
                 // LOD0으로 고정 — 카메라 거리 계산에 따라 다른 LOD가 뽑히면 비교가 안 맞는다.
                 var lodGroup = instance.GetComponentInChildren<LODGroup>();
@@ -187,8 +193,10 @@ namespace CTC.Editor
                 // 중간에 일어서는 클립이 위로 잘린다 — 첫 프레임은 네발로 엎드린 자세라 낮다.
                 // SkinnedMeshRenderer.bounds는 여기서 갱신되지 않으므로(위 주석) 구운 메시의
                 // bounds를 직접 월드로 옮겨 합친다 — BakeMesh가 동기적으로 채워 주는 값이다.
+                // 경계는 **둘 다 보이는 셈 치고** 잡는다 — 실제로는 한 번에 하나만 보이지만,
+                // 틀이 프레임마다 바뀌면 장끼리 비교가 안 된다.
                 Bounds bounds = BakeAndEncapsulate(
-                    _clip, instance, bakedPairs, bakedGos, gunRenderer,
+                    _clip, instance, bakedPairs, bakedGos, heldGun, holsteredGun,
                     _normalizedTimes, length, out float floorY);
                 Vector3 center = bounds.center;
 
@@ -224,6 +232,7 @@ namespace CTC.Editor
                 {
                     float t = length * _normalizedTimes[i];
                     _clip.SampleAnimation(instance, t);
+                    ShowGunsFor(_clip.name, t, heldGun, holsteredGun);
 
                     foreach ((SkinnedMeshRenderer smr, Mesh mesh) pair in bakedPairs)
                     {
@@ -267,16 +276,17 @@ namespace CTC.Editor
         }
 
         /// <summary>
-        /// 미리보기 인스턴스의 `leg.F.R`에 총을 매단다 — 게임에서 보이는 것과 **같은 자리**로.
-        /// 프리팹 연결은 맺지 않는다(<c>Instantiate</c>): 이건 렌더가 끝나면 지울 임시 오브젝트다.
+        /// 미리보기 인스턴스의 본에 총을 매단다 — 게임에서 보이는 것과 **같은 자리**로.
+        /// 자리·회전 숫자는 <see cref="MouseGunBaker"/>가 원본이라 여기서 다시 적지 않는다.
+        /// 프리팹 연결은 맺지 않는다(<c>Instantiate</c>): 렌더가 끝나면 지울 임시 오브젝트다.
         /// </summary>
-        private static Renderer AttachGun(GameObject _instance)
+        private static Renderer AttachGun(
+            GameObject _instance, string _boneName, string _objectName, Vector3 _position, Vector3 _euler)
         {
-            Transform bone = MouseGunBaker.FindGunBone(_instance.transform);
+            Transform bone = MouseGunBaker.FindBone(_instance.transform, _boneName);
             if (bone == null)
             {
-                Debug.LogWarning(
-                    $"[ClipPreviewRender] '{MouseGunBaker.GUN_BONE}' 본을 못 찾았다 — 총 없이 렌더한다");
+                Debug.LogWarning($"[ClipPreviewRender] '{_boneName}' 본을 못 찾았다 — {_objectName} 없이 렌더한다");
                 return null;
             }
 
@@ -288,13 +298,34 @@ namespace CTC.Editor
             }
 
             var gun = UnityEngine.Object.Instantiate(gunAsset);
-            gun.name = "MouseGun";
-            MouseGunBaker.Place(gun.transform, bone);
-            // **여기서는 켠 채로 둔다.** 게임에서는 쏠 때만 보이지만, 미리보기의 목적이
-            // "쏘는 동안 무엇이 보이는가"를 확인하는 것이라 그 구간을 그대로 그려야 한다.
-            gun.SetActive(true);
+            gun.name = _objectName;
+            MouseGunBaker.Place(gun.transform, bone, _position, _euler);
+            gun.SetActive(true); // 보이기는 아래 ShowGunsFor가 프레임마다 다시 정한다
 
             return gun.GetComponentInChildren<Renderer>(true);
+        }
+
+        /// <summary>
+        /// 이 프레임에 **어느 총이 보이나**. 게임과 같은 규칙을 그대로 쓴다
+        /// (<see cref="MouseGunVisualLogic.HolsteredAt"/>) — 렌더와 런타임이 갈리면
+        /// 미리보기가 거짓말을 한다. 그게 이 도구의 유일한 존재 이유를 부순다.
+        ///
+        /// <list type="bullet">
+        /// <item>ShootDraw — 앞발이 허리를 떠나기 전(3프레임)은 허리춤, 그 뒤로는 든 총</item>
+        /// <item>Shoot — 이미 뽑은 뒤라 든 총만</item>
+        /// <item>그 밖(Walk 등) — 둘 다 숨김. 평소에 총이 보이면 안 된다</item>
+        /// </list>
+        /// </summary>
+        private static void ShowGunsFor(string _clipName, float _seconds, Renderer _held, Renderer _holstered)
+        {
+            bool isDraw = _clipName == AnimationStateLogic.ShootDraw;
+            bool isShoot = _clipName == AnimationStateLogic.Shoot;
+
+            bool holstered = isDraw && MouseGunVisualLogic.HolsteredAt(_seconds);
+            bool held = (isDraw && !holstered) || isShoot;
+
+            if (_held != null) _held.gameObject.SetActive(held);
+            if (_holstered != null) _holstered.gameObject.SetActive(holstered);
         }
 
         /// <summary>
@@ -302,15 +333,11 @@ namespace CTC.Editor
         ///
         /// 총의 진짜 머티리얼(M_MouseGun)은 URP/Lit인데, <see cref="PreviewRenderUtility"/>의
         /// 프라이빗 씬에서는 그게 **마젠타로 나온다**(2026-09-12 실측 — 바닥판에서 이미 겪은 것과
-        /// 같은 증상이라 같은 처방을 쓴다). 캐릭터가 지금 멀쩡히 그려지고 있는 셰이더를 빌려
-        /// 총의 원래 색만 옮겨 담는다 — 게임에서 보이는 색과 같고, 미리보기에서도 보인다.
-        ///
-        /// 색을 손으로 적지 않는다: 진짜 머티리얼에서 읽어 온다. 총 색을 바꾸면 여기도 따라온다.
+        /// 같은 증상이라 같은 처방을 쓴다). 둘이 같은 머티리얼을 나눠 쓴다 — 든 총과 수납된 총이
+        /// 서로 달라 보이면 바꿔치기가 눈에 띈다.
         /// </summary>
-        private static Material RepaintGunForPreview(Renderer _gun, GameObject _instance)
+        private static Material RepaintGunForPreview(Renderer[] _guns, GameObject _instance)
         {
-            if (_gun == null) return null;
-
             // `Sprites/Default`를 쓴다. 캐릭터 셰이더를 빌려 보니(1차 시도) 그건 팩의
             // 셰이더그래프라 `_BaseColor`·`_Color`를 **안 받는다** — 텍스처를 비운 순간
             // 총이 흰 덩어리로 나와 바닥과 구분이 안 갔다(2026-09-12 실측).
@@ -333,12 +360,15 @@ namespace CTC.Editor
                 return null;
             }
 
+            // 색은 손으로 적지 않고 진짜 머티리얼에서 읽어 온다 — 총 색을 바꾸면 여기도 따라온다.
             var color = new Color(0.24f, 0.24f, 0.26f);
-            Material real = _gun.sharedMaterial;
-            if (real != null)
+            foreach (Renderer gun in _guns)
             {
-                if (real.HasProperty("_BaseColor")) color = real.GetColor("_BaseColor");
-                else if (real.HasProperty("_Color")) color = real.GetColor("_Color");
+                if (gun == null) continue;
+                Material real = gun.sharedMaterial;
+                if (real == null) continue;
+                if (real.HasProperty("_BaseColor")) { color = real.GetColor("_BaseColor"); break; }
+                if (real.HasProperty("_Color")) { color = real.GetColor("_Color"); break; }
             }
 
             var mat = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
@@ -347,7 +377,10 @@ namespace CTC.Editor
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
             if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
 
-            _gun.sharedMaterial = mat;
+            foreach (Renderer gun in _guns)
+            {
+                if (gun != null) gun.sharedMaterial = mat;
+            }
             return mat;
         }
 
@@ -359,7 +392,8 @@ namespace CTC.Editor
             GameObject _instance,
             List<(SkinnedMeshRenderer smr, Mesh mesh)> _bakedPairs,
             List<GameObject> _bakedGos,
-            Renderer _gunRenderer,
+            Renderer _heldGun,
+            Renderer _holsteredGun,
             float[] _normalizedTimes,
             float _length,
             out float _floorY)
@@ -407,7 +441,8 @@ namespace CTC.Editor
 
                 // 총도 틀 안에 들어와야 한다 — 뽑아 든 프레임에서 총구가 잘리면 그림이 거짓말을 한다.
                 // 정적 메시라 Renderer.bounds가 매 샘플 정확히 갱신된다(스킨드와 달리).
-                if (_gunRenderer != null && seeded) bounds.Encapsulate(_gunRenderer.bounds);
+                if (seeded && _heldGun != null) bounds.Encapsulate(_heldGun.bounds);
+                if (seeded && _holsteredGun != null) bounds.Encapsulate(_holsteredGun.bounds);
             }
 
             if (!seeded)

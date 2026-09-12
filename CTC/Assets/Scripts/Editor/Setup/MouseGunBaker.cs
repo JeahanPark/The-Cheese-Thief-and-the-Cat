@@ -25,11 +25,19 @@ namespace CTC.Editor
 
         private const string CLIPS_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
 
-        /// <summary>총을 매다는 본. 클립이 이 본에 총을 들려 놓고 짜여 있다.</summary>
+        /// <summary>든 총을 매다는 본. 클립이 이 본에 총을 들려 놓고 짜여 있다.</summary>
         public const string GUN_BONE = "leg.F.R";
+
+        /// <summary>
+        /// 수납된 총을 매다는 본. **앞다리가 아니라 몸통이다** — 앞다리는 엉덩이에 닿을 수 없어서,
+        /// 총 하나만 발에 물려 놓으면 뽑는 동작이 「가슴 밑에서 들어 올린다」로 읽힌다(2026-09-12).
+        /// </summary>
+        public const string HOLSTER_BONE = "body";
 
         /// <summary>총 오브젝트 이름 — 다시 구울 때 이 이름으로 찾아 지운다(멱등).</summary>
         private const string GUN_OBJECT_NAME = "MouseGun";
+
+        private const string HOLSTERED_OBJECT_NAME = "MouseGunHolstered";
 
         /// <summary>
         /// 파지 지점(본 로컬). 실측: `leg.F.R`에 매인 정점 73개 중 밑동에서 먼 20%(= 발 뭉치)
@@ -62,6 +70,32 @@ namespace CTC.Editor
         /// </summary>
         private const float GUN_LOCAL_SCALE = 0.01f;
 
+        /// <summary>
+        /// 허리춤 자리(몸통 본 로컬). 몸통 본 축은 몸 축과 **같다**(실측: right=+X·up=+Y·fwd=+Z)라
+        /// 여기 숫자를 그대로 「오른쪽·아래·뒤」로 읽으면 된다. ×100이 미터다.
+        ///
+        /// 근거(2026-09-12 실측):
+        ///  - 꼬리 밑동(= 해부학적 엉덩이)이 몸통 본 로컬 (0, -0.0007, -0.0022), 월드 0.228m 뒤.
+        ///  - 몸통 옆구리 |x| 프로파일을 (z, y) 5×5로 찍었더니, 총이 누울 띠(y≈-0.0004)에서
+        ///    앞쪽 z=-0.0008은 0.00194, 꼬리 쪽 z=-0.0022는 0.00161로 **뒤로 갈수록 가늘어진다.**
+        ///  - 그래서 x는 그 중간(0.0019)으로 잡았다. 손잡이 쪽은 옆구리에 살짝 파묻히고
+        ///    총구 쪽은 꼬리 앞으로 조금 비어져 나온다 — 「끼워 넣었다」로 읽히는 상태다.
+        ///  - z = -0.00105는 몸통 한가운데 조금 뒤. 총이 0.22m라 꼬리 밑동에 손잡이를 두면
+        ///    총구가 몸 뒤로 15cm 튀어나와 꼬리처럼 보인다 — 앞으로 당겨 옆구리에 눕혔다.
+        /// </summary>
+        private static readonly Vector3 HOLSTER_LOCAL_POSITION = new Vector3(0.0019f, -0.0004f, -0.00105f);
+
+        /// <summary>
+        /// 허리춤 총의 회전. Y를 180° 돌려 **총구를 뒤(-Z)로** 보내고, X로 20° 숙여
+        /// 총구가 아래로 처지게 한다 — 꽂아 둔 총의 자세다. Y를 192°로 12° 더 튼 것은
+        /// 몸이 뒤로 갈수록 가늘어지기 때문이다(위 프로파일 0.00194 → 0.00161):
+        /// 그 기울기를 따라가야 총이 옆구리에 붙어 있고, 안 그러면 총구 쪽이 떠 보인다.
+        ///
+        /// Y를 180° 쓰는 이유가 따로 있다 — X만으로 총구를 뒤로 보내려면 90°를 넘겨야 하고,
+        /// 그러면 총의 +Y(슬라이드 위쪽)가 **아래로 뒤집힌다.** Y로 돌리면 위가 위로 남는다.
+        /// </summary>
+        private static readonly Vector3 HOLSTER_LOCAL_EULER = new Vector3(20f, 192f, 0f);
+
         [MenuItem("Tools/CTC/Dev/Bake Mouse Gun")]
         public static void BakeAll()
         {
@@ -78,28 +112,51 @@ namespace CTC.Editor
         {
             if (_root == null) return;
 
-            Transform bone = FindDeep(_root.transform, GUN_BONE);
+            GameObject gun = AttachOne(
+                _root, GUN_BONE, GUN_OBJECT_NAME, GUN_LOCAL_POSITION, GUN_LOCAL_EULER);
+
+            GameObject holstered = AttachOne(
+                _root, HOLSTER_BONE, HOLSTERED_OBJECT_NAME,
+                HOLSTER_LOCAL_POSITION, HOLSTER_LOCAL_EULER);
+
+            var visual = _root.GetComponent<MouseGunVisual>();
+            if (visual == null) visual = _root.AddComponent<MouseGunVisual>();
+
+            var so = new SerializedObject(visual);
+            so.FindProperty("m_Gun").objectReferenceValue = gun;
+            so.FindProperty("m_HolsteredGun").objectReferenceValue = holstered;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// 총 하나를 지정한 본에 단다. 든 것과 수납된 것이 **같은 프리팹·같은 함수**를 탄다 —
+        /// 티어가 달라도 모델이 하나여야 하는 것과 같은 이유로, 둘도 서로 달라 보이면 안 된다.
+        /// </summary>
+        private static GameObject AttachOne(
+            GameObject _root, string _boneName, string _objectName, Vector3 _position, Vector3 _euler)
+        {
+            Transform bone = FindDeep(_root.transform, _boneName);
             if (bone == null)
             {
-                Debug.LogWarning($"[MouseGunBaker] '{GUN_BONE}' 본을 못 찾았다 — 총을 못 단다");
-                return;
+                Debug.LogWarning($"[MouseGunBaker] '{_boneName}' 본을 못 찾았다 — {_objectName}을 못 단다");
+                return null;
             }
 
             // 멱등 — 전에 단 것이 있으면 지우고 다시 단다. 자리·회전의 주인이 이 코드라
             // 「있으면 안 덮어쓴다」 규칙(손으로 옮긴 프리팹 보호)의 대상이 아니다.
-            Transform old = bone.Find(GUN_OBJECT_NAME);
+            Transform old = bone.Find(_objectName);
             if (old != null) Object.DestroyImmediate(old.gameObject);
 
             var gunAsset = AssetDatabase.LoadAssetAtPath<GameObject>(GUN_PREFAB);
             if (gunAsset == null)
             {
                 Debug.LogWarning($"[MouseGunBaker] 총 프리팹이 없다: {GUN_PREFAB}");
-                return;
+                return null;
             }
 
             var gun = (GameObject)PrefabUtility.InstantiatePrefab(gunAsset);
-            gun.name = GUN_OBJECT_NAME;
-            Place(gun.transform, bone);
+            gun.name = _objectName;
+            Place(gun.transform, bone, _position, _euler);
 
             // 몸과 같은 태그·레이어 — 카메라 Deoccluder와 물리 필터가 계층 전체를 같은 값으로 본다.
             gun.tag = bone.gameObject.tag;
@@ -109,12 +166,7 @@ namespace CTC.Editor
             // "저 쥐는 무장했다"를 알게 된다 — 원래 없던 정보다(MouseGunVisual 주석 참조).
             gun.SetActive(false);
 
-            var visual = _root.GetComponent<MouseGunVisual>();
-            if (visual == null) visual = _root.AddComponent<MouseGunVisual>();
-
-            var so = new SerializedObject(visual);
-            so.FindProperty("m_Gun").objectReferenceValue = gun;
-            so.ApplyModifiedPropertiesWithoutUndo();
+            return gun;
         }
 
         /// <summary>
@@ -122,13 +174,13 @@ namespace CTC.Editor
         /// (<see cref="ClipPreviewRender"/>)도 이 함수를 부른다: 렌더에서 본 자세와
         /// 게임에서 보는 자세가 갈리면 미리보기가 거짓말을 한다.
         /// </summary>
-        public static void Place(Transform _gun, Transform _bone)
+        public static void Place(Transform _gun, Transform _bone, Vector3 _position, Vector3 _euler)
         {
             if (_gun == null || _bone == null) return;
 
             _gun.SetParent(_bone, false);
-            _gun.localPosition = GUN_LOCAL_POSITION;
-            _gun.localRotation = Quaternion.Euler(GUN_LOCAL_EULER);
+            _gun.localPosition = _position;
+            _gun.localRotation = Quaternion.Euler(_euler);
             _gun.localScale = Vector3.one * GUN_LOCAL_SCALE;
 
             // 인스펙터가 보여 주는 각을 같이 맞춘다. 회전은 쿼터니언으로 저장되지만 인스펙터는
@@ -139,13 +191,22 @@ namespace CTC.Editor
             SerializedProperty hint = so.FindProperty("m_LocalEulerAnglesHint");
             if (hint != null)
             {
-                hint.vector3Value = GUN_LOCAL_EULER;
+                hint.vector3Value = _euler;
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
         }
 
-        /// <summary>총을 매단 본을 찾는다 — 계층 어디에 있든 이름으로 찾는다.</summary>
-        public static Transform FindGunBone(Transform _root) => FindDeep(_root, GUN_BONE);
+        /// <summary>이름으로 본을 찾는다 — 계층 어디에 있든.</summary>
+        public static Transform FindBone(Transform _root, string _name) => FindDeep(_root, _name);
+
+        /// <summary>미리보기 렌더러가 **같은 숫자**로 붙이도록 내보낸다 — 둘이 갈리면 미리보기가 거짓말을 한다.</summary>
+        public static Vector3 HeldPosition => GUN_LOCAL_POSITION;
+
+        public static Vector3 HeldEuler => GUN_LOCAL_EULER;
+
+        public static Vector3 HolsterPosition => HOLSTER_LOCAL_POSITION;
+
+        public static Vector3 HolsterEuler => HOLSTER_LOCAL_EULER;
 
         private static void BakeIntoPrefab()
         {
