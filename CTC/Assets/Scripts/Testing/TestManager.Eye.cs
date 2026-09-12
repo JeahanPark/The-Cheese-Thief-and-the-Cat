@@ -24,7 +24,8 @@ namespace CTC.Runtime.Testing
         /// <summary>"in,out,up,down,blink" — 쉼표로 붙인 다섯 값. 셰이프키 모드가 아니면 빈 문자열.</summary>
         public string TestGetEyeShapeWeights()
         {
-            EyeBlendShapes shapes = FindFirstObjectByType<EyeBlendShapes>();
+            // FindFirstObjectByType는 6000.5에서 폐기 경고가 난다 — 순서가 필요 없으니 Any로 찾는다.
+            EyeBlendShapes shapes = FindAnyObjectByType<EyeBlendShapes>();
             if (shapes == null) return string.Empty;
 
             EyeShapeWeights w = shapes.DevWeights();

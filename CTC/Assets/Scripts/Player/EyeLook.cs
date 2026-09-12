@@ -568,6 +568,11 @@ namespace CTC.Runtime.Player
         /// <summary>
         /// QA 전용 — 구 방식 ↔ 셰이프키 방식을 런타임에 바꾼다. **A/B를 같은 몸·같은 카메라로
         /// 찍는 유일한 방법**이다(몸을 둘 세우면 조명·각도가 미세하게 갈린다).
+        ///
+        /// **바꾸면 시선이 쉬는 방향으로 돌아간다**(<see cref="SetupDirections"/>가 다시 잡는다).
+        /// 시간을 멈춰 두고(`Time.timeScale = 0`) 찍으면 <c>Follow</c>가 한 발짝도 못 가서
+        /// 그대로 머문다 — 2026-09-13에 이걸 모르고 찍어 **시선이 다른 두 장**을 나란히 놓았다.
+        /// A/B는 양쪽 다 바꾼 뒤에 찍어 같은 시선으로 맞춘다.
         /// </summary>
         public void DevSetEyeMode(bool _useBlendShapes)
         {

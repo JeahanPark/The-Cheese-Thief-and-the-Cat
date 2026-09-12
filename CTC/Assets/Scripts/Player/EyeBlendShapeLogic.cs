@@ -19,6 +19,13 @@ namespace CTC.Runtime.Player
             LookDown = _down;
             Blink = _blink;
         }
+
+        /// <summary>QA가 값을 **눈으로 읽을 수 있게** — 구조체 기본 ToString은 타입 이름만 준다.</summary>
+        public override string ToString()
+        {
+            return string.Format("in={0:0.##} out={1:0.##} up={2:0.##} down={3:0.##} blink={4:0.##}",
+                LookIn, LookOut, LookUp, LookDown, Blink);
+        }
     }
 
     /// <summary>
