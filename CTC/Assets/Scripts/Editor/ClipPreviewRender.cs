@@ -107,6 +107,49 @@ namespace CTC.Editor
         }
 
         /// <summary>
+        /// GIF 조립용 — 클립 하나를 **블렌더 프레임 전부**(1→length+1, 촘촘하고 고른 간격)로
+        /// 렌더하고 실제로 쓴 파일 경로를 그대로 돌려준다. <see cref="ClipGifExport"/>가 이
+        /// 목록을 파이썬 조립기(<c>tools/gif_from_frames.py</c>)에 넘긴다 — 정지 이미지 몇 장으로는
+        /// 타이밍(리코일이 박자로 읽히는지 등)을 판정할 수 없어서 움직이는 그림이 필요하다.
+        /// </summary>
+        public static List<string> RenderClipFramesForGif(string _clipName)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_PREFAB);
+            if (prefab == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] 프리팹을 못 찾았다: {MOUSE_PREFAB}");
+                return null;
+            }
+
+            AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, _clipName);
+            if (clip == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] {_clipName} 클립을 못 찾았다: {ROUNDTRIP_FBX}");
+                return null;
+            }
+
+            float[] times = DenseNormalizedTimes(clip);
+            List<string> paths = RenderClip(prefab, clip, "gif", times);
+            Debug.Log($"[ClipPreviewRender] GIF용 {_clipName} {paths.Count}장 렌더 완료:\n" +
+                string.Join("\n", paths));
+            return paths;
+        }
+
+        /// <summary>
+        /// 클립 길이·프레임레이트로부터 **블렌더 프레임 1장 1장**에 해당하는 정규화 시간을
+        /// 만든다. <see cref="SHOOT_NORMALIZED_TIMES"/>처럼 손으로 박은 표본이 아니라 클립
+        /// 자체 길이를 재서 만들므로 다른 클립에도 그대로 쓸 수 있다 — GIF는 몇 프레임을
+        /// 골라 보여주는 게 아니라 **전부**를 보여줘야 움직임이 매끄럽게 읽힌다.
+        /// </summary>
+        private static float[] DenseNormalizedTimes(AnimationClip _clip)
+        {
+            int frameCount = Mathf.Max(1, Mathf.RoundToInt(_clip.length * _clip.frameRate));
+            var times = new float[frameCount + 1];
+            for (int i = 0; i <= frameCount; i++) times[i] = (float)i / frameCount;
+            return times;
+        }
+
+        /// <summary>
         /// 페이드 단계별 미리보기 — **같은 포즈**를 알파만 바꿔 찍는다. 0 / 0.25 / 0.5 / 1.
         /// 포즈가 고정이라 네 장의 차이가 곧 알파의 차이다: 다른 것이 같이 움직이면
         /// 「페이드가 되는가」를 그림으로 판정할 수 없다.
