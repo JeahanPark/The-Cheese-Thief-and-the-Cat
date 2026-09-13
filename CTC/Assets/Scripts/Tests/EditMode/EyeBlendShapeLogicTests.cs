@@ -5,8 +5,12 @@ using UnityEngine;
 namespace CTC.Tests
 {
     /// <summary>
-    /// 시선 → 셰이프키 가중치(2026-09-13). 팩 셰이프키는 **두 눈이 거울 대칭으로 묶여** 있어
-    /// 좌우 비대칭 시선을 표현할 수 없다 — 그 성질을 코드가 실제로 그렇게 다루는지까지 잰다.
+    /// 시선 → 셰이프키 가중치(2026-09-13). 수평은 **눈마다 따로**, 수직은 두 눈 공통이다.
+    ///
+    /// 처음엔 팩 키가 두 눈을 거울 대칭으로 묶어 평균할 수밖에 없었고, 그래서 「옆 목표를 쫓는」
+    /// 시선이 0으로 뭉개졌다(인게임 yaw +75도에서 눈마다 49.3도 어긋남). 키를 좌우로 쪼갠 뒤로는
+    /// **그 자세가 눈마다 제 값을 받아야 한다** — <see cref="LookingToTheSide_EachEyeGetsItsOwnDirection"/>이
+    /// 이 작업의 존재 이유를 붙들고 있다.
     /// </summary>
     public class EyeBlendShapeLogicTests
     {
@@ -26,43 +30,63 @@ namespace CTC.Tests
         public void Rest_AllDirectionWeightsAreZero()
         {
             EyeShapeWeights w = At(REST_R, REST_L);
-            Assert.AreEqual(0f, w.LookIn, 0.01f);
-            Assert.AreEqual(0f, w.LookOut, 0.01f);
-            Assert.AreEqual(0f, w.LookUp, 0.01f);
-            Assert.AreEqual(0f, w.LookDown, 0.01f);
+            float[] all = { w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down };
+            foreach (float v in all) Assert.AreEqual(0f, v, 0.01f);
         }
 
         [Test]
-        public void FullInward_LookInIsFull_LookOutIsZero()
+        public void BothEyesInward_BothInAreFull()
         {
-            // 두 눈이 각자 코 쪽으로 최대각만큼 — 정면을 모아 보는 자세다.
+            // 두 눈이 각자 코 쪽으로 최대각만큼 — 정면의 가까운 것을 모아 보는 자세다.
             Vector3 gazeR = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_R;
             Vector3 gazeL = Quaternion.AngleAxis(+MAX, Vector3.up) * REST_L;
             EyeShapeWeights w = At(gazeR, gazeL);
-            Assert.AreEqual(100f, w.LookIn, 0.5f);
-            Assert.AreEqual(0f, w.LookOut, 0.01f);
+            Assert.AreEqual(100f, w.InR, 0.5f);
+            Assert.AreEqual(100f, w.InL, 0.5f);
+            Assert.AreEqual(0f, w.OutR, 0.01f);
+            Assert.AreEqual(0f, w.OutL, 0.01f);
         }
 
         [Test]
-        public void FullOutward_LookOutIsFull_LookInIsZero()
+        public void BothEyesOutward_BothOutAreFull()
         {
             Vector3 gazeR = Quaternion.AngleAxis(+MAX, Vector3.up) * REST_R;
             Vector3 gazeL = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_L;
             EyeShapeWeights w = At(gazeR, gazeL);
-            Assert.AreEqual(100f, w.LookOut, 0.5f);
-            Assert.AreEqual(0f, w.LookIn, 0.01f);
+            Assert.AreEqual(100f, w.OutR, 0.5f);
+            Assert.AreEqual(100f, w.OutL, 0.5f);
+            Assert.AreEqual(0f, w.InR, 0.01f);
+            Assert.AreEqual(0f, w.InL, 0.01f);
+        }
+
+        /// <summary>
+        /// **이 작업의 존재 이유.** 두 눈을 월드에서 **같은 쪽**으로 돌리면(옆의 목표를 쫓는다)
+        /// 한 눈은 안쪽, 다른 눈은 바깥쪽이 된다. 평균하던 시절엔 이게 서로 지워져 0이 됐다.
+        /// 이제는 눈마다 제 방향을 온전히 받아야 한다.
+        /// </summary>
+        [Test]
+        public void LookingToTheSide_EachEyeGetsItsOwnDirection()
+        {
+            Vector3 gazeR = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_R;   // 오른눈: 안쪽
+            Vector3 gazeL = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_L;   // 왼눈: 바깥쪽
+            EyeShapeWeights w = At(gazeR, gazeL);
+
+            Assert.AreEqual(100f, w.InR, 0.5f, "오른눈이 안쪽을 못 받았다 — 평균으로 되돌아갔나");
+            Assert.AreEqual(100f, w.OutL, 0.5f, "왼눈이 바깥쪽을 못 받았다 — 평균으로 되돌아갔나");
+            Assert.AreEqual(0f, w.OutR, 0.01f);
+            Assert.AreEqual(0f, w.InL, 0.01f);
         }
 
         [Test]
-        public void LookingUp_DrivesLookUp_NotLookDown()
+        public void LookingUp_DrivesUp_NotDown()
         {
             // 축 순서가 뒤집히면 **아래를 보게 된다** — Cross(up, rest)로 돌리면 고도각이 −30도다
             // (2026-09-13 계산으로 확인). 부호가 조용히 뒤집히는 자리라 여기 적어 둔다.
             Vector3 gazeR = Quaternion.AngleAxis(MAX, Vector3.Cross(REST_R, Vector3.up)) * REST_R;
             Vector3 gazeL = Quaternion.AngleAxis(MAX, Vector3.Cross(REST_L, Vector3.up)) * REST_L;
             EyeShapeWeights w = At(gazeR, gazeL);
-            Assert.Greater(w.LookUp, 90f);
-            Assert.AreEqual(0f, w.LookDown, 0.01f);
+            Assert.Greater(w.Up, 90f);
+            Assert.AreEqual(0f, w.Down, 0.01f);
         }
 
         [Test]
@@ -71,31 +95,24 @@ namespace CTC.Tests
             Vector3 gazeR = Quaternion.AngleAxis(-MAX * 3f, Vector3.up) * REST_R;
             Vector3 gazeL = Quaternion.AngleAxis(+MAX * 3f, Vector3.up) * REST_L;
             EyeShapeWeights w = At(gazeR, gazeL);
-            Assert.AreEqual(100f, w.LookIn, 0.01f);
+            Assert.AreEqual(100f, w.InR, 0.01f);
+            Assert.AreEqual(100f, w.InL, 0.01f);
         }
 
         [Test]
-        public void AsymmetricGaze_CancelsToNearZero()
-        {
-            // 오른눈은 안쪽, 왼눈은 바깥쪽 — 「옆의 목표를 쫓는」 자세다.
-            // 셰이프키로는 표현할 수 없으므로 **평균이 0에 가까워야** 한다(설계 §2).
-            Vector3 gazeR = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_R;
-            Vector3 gazeL = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_L;
-            EyeShapeWeights w = At(gazeR, gazeL);
-            Assert.Less(w.LookIn, 1f);
-            Assert.Less(w.LookOut, 1f);
-        }
-
-        [Test]
-        public void SameAxisPair_NeverBothNonZero()
+        public void SameEyeSameAxis_NeverBothNonZero()
         {
             for (int i = -12; i <= 12; i++)
             {
-                Vector3 gazeR = Quaternion.AngleAxis(i * 5f, Vector3.up) * REST_R;
-                Vector3 gazeL = Quaternion.AngleAxis(-i * 5f, Vector3.up) * REST_L;
-                EyeShapeWeights w = At(gazeR, gazeL);
-                Assert.IsTrue(w.LookIn <= 0.01f || w.LookOut <= 0.01f, "In/Out 동시 점등 i=" + i);
-                Assert.IsTrue(w.LookUp <= 0.01f || w.LookDown <= 0.01f, "Up/Down 동시 점등 i=" + i);
+                for (int j = -12; j <= 12; j += 4)
+                {
+                    Vector3 gazeR = Quaternion.AngleAxis(i * 5f, Vector3.up) * REST_R;
+                    Vector3 gazeL = Quaternion.AngleAxis(j * 5f, Vector3.up) * REST_L;
+                    EyeShapeWeights w = At(gazeR, gazeL);
+                    Assert.IsTrue(w.InR <= 0.01f || w.OutR <= 0.01f, $"오른눈 In/Out 동시 점등 i={i} j={j}");
+                    Assert.IsTrue(w.InL <= 0.01f || w.OutL <= 0.01f, $"왼눈 In/Out 동시 점등 i={i} j={j}");
+                    Assert.IsTrue(w.Up <= 0.01f || w.Down <= 0.01f, $"Up/Down 동시 점등 i={i} j={j}");
+                }
             }
         }
 
@@ -115,7 +132,6 @@ namespace CTC.Tests
         /// <summary>
         /// **뒤집힘 문턱을 넘지 않는다.** 쥐·고양이 둘 다 가중치 1.48에서 눈 메시의 위아래가
         /// 교차해 노멀이 뒤집힌다 — 그 밑에 머물러야 한다는 것이 이 상수의 존재 이유다.
-        /// 여기가 빨개지면 <c>blink_overdrive.py</c>로 다시 재고 나서 값을 옮겨라.
         /// </summary>
         [Test]
         public void BlinkFullWeight_StaysBelowTheNormalFlipThreshold()
@@ -136,9 +152,9 @@ namespace CTC.Tests
                     Vector3 gazeR = Quaternion.AngleAxis(i * 6f, Vector3.up) * REST_R;
                     Vector3 gazeL = Quaternion.AngleAxis(j * 6f, Vector3.up) * REST_L;
                     EyeShapeWeights w = At(gazeR, gazeL, 3f);   // cover도 범위 밖으로 준다
-                    // 방향 넷은 0~100이고 **감김만 140까지** 간다 — 둘을 같은 상한으로 묶으면
+                    // 방향 여섯은 0~100이고 **감김만 140까지** 간다 — 둘을 같은 상한으로 묶으면
                     // 감김의 외삽을 막거나 방향의 초과를 놓친다.
-                    float[] dirs = { w.LookIn, w.LookOut, w.LookUp, w.LookDown };
+                    float[] dirs = { w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down };
                     foreach (float v in dirs)
                     {
                         Assert.GreaterOrEqual(v, 0f);

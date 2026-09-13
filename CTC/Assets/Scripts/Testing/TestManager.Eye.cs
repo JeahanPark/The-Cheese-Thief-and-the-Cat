@@ -13,7 +13,10 @@ namespace CTC.Runtime.Testing
         // TestSetEyeMode는 2026-09-13에 지웠다 — 구 방식과 셰이프키 방식을 오가는 A/B 손잡이였고,
         // 검수가 끝나 셰이프키로 정해지면서 **바꿀 상대가 없어졌다**.
 
-        /// <summary>"in,out,up,down,blink" — 쉼표로 붙인 다섯 값. 셰이프키가 없으면 빈 문자열.</summary>
+        /// <summary>
+        /// "inR,outR,inL,outL,up,down,blink" — 쉼표로 붙인 일곱 값. 셰이프키가 없으면 빈 문자열.
+        /// 수평이 눈마다 둘씩인 것은 2026-09-13부터다(좌우로 쪼갠 키) — 그 전엔 다섯 값이었다.
+        /// </summary>
         public string TestGetEyeShapeWeights()
         {
             // FindFirstObjectByType는 6000.5에서 폐기 경고가 난다 — 순서가 필요 없으니 Any로 찾는다.
@@ -21,8 +24,8 @@ namespace CTC.Runtime.Testing
             if (shapes == null) return string.Empty;
 
             EyeShapeWeights w = shapes.DevWeights();
-            return string.Format("{0:0.##},{1:0.##},{2:0.##},{3:0.##},{4:0.##}",
-                w.LookIn, w.LookOut, w.LookUp, w.LookDown, w.Blink);
+            return string.Format("{0:0.##},{1:0.##},{2:0.##},{3:0.##},{4:0.##},{5:0.##},{6:0.##}",
+                w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down, w.Blink);
         }
     }
 }

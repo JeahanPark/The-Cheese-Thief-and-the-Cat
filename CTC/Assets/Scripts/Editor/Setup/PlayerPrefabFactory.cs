@@ -180,6 +180,11 @@ namespace CTC.Editor
                 foreach (var r in model.GetComponentsInChildren<Renderer>(true))
                     r.sharedMaterials = Enumerable.Repeat(_material, r.sharedMaterials.Length).ToArray();
 
+                // 눈 셰이프키를 좌우로 쪼갠 파생 메시로 갈아 끼운다(2026-09-13). 팩 원본 키는 두 눈을
+                // 거울 대칭으로 묶어 「옆 목표를 쫓는 시선」이 안 된다. **여기서 굽는 이유**: 씬 재생성이
+                // 매번 프리팹을 새로 굽기 때문에 메뉴로 한 번 물린 메시는 다음 재생성에서 사라진다.
+                EyeSplitMeshBaker.Apply(model);
+
                 // 쥐 앞발에 총을 물린다(2026-09-12) — 모델이 선 뒤라야 본이 있다.
                 // **꺼진 채로** 달리고, 쏠 때만 MouseGunVisual이 켠다. 자리·회전은 실측값이라
                 // 메뉴(Tools/CTC/Dev/Bake Mouse Gun)와 **같은 함수**를 부른다 — 값이 갈리지 않게.

@@ -440,8 +440,6 @@ MonoBehaviour:
   m_EyeCenterLocal: {x: 0.00106, y: 0.00179, z: 0.00109}
   m_EyeAxisLocal: {x: 0.5, y: 0.476, z: 0.724}
   m_HeadForwardLocal: {x: 0, y: 0.3070406, z: 0.9516964}
-  m_ScleraRadiusLocal: 0.00045
-  m_LidRadiusLocal: 0.00075
 --- !u!114 &-8113807162095430264
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -696,6 +694,10 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 9034959398813414370, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 20166c0f8f1806549bdaa01a8bb165fc, type: 2}
+    - target: {fileID: 9034959398813414370, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: f1a535e430c638c4c8133c8953457063, type: 2}
@@ -703,6 +705,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 9034959398827294764, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: b7d3d99563a5cf14da443bf38568f27b, type: 2}
     - target: {fileID: 9034959398827294764, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -712,6 +718,10 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 9034959398898609687, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 4dd0afce8f387c2429d1412e06d3e2a9, type: 2}
+    - target: {fileID: 9034959398898609687, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: f1a535e430c638c4c8133c8953457063, type: 2}
@@ -719,6 +729,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 9034959399742601881, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: e2d2b4113129d3945b915ad4d70085a0, type: 2}
     - target: {fileID: 9034959399742601881, guid: 27e82c8a2f2dc474a8d10d84ae09e664, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

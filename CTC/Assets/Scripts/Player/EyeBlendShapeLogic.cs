@@ -2,42 +2,52 @@ using UnityEngine;
 
 namespace CTC.Runtime.Player
 {
-    /// <summary>셰이프키 가중치 다섯(유니티 규약 0~100).</summary>
+    /// <summary>
+    /// 셰이프키 가중치 — 수평은 **눈마다** 넷, 수직은 두 눈 공통 둘, 감김 하나(유니티 규약 0~100, 감김만 140까지).
+    /// </summary>
     public readonly struct EyeShapeWeights
     {
-        public readonly float LookIn;
-        public readonly float LookOut;
-        public readonly float LookUp;
-        public readonly float LookDown;
+        public readonly float InR;
+        public readonly float OutR;
+        public readonly float InL;
+        public readonly float OutL;
+        public readonly float Up;
+        public readonly float Down;
         public readonly float Blink;
 
-        public EyeShapeWeights(float _in, float _out, float _up, float _down, float _blink)
+        public EyeShapeWeights(float _inR, float _outR, float _inL, float _outL,
+                               float _up, float _down, float _blink)
         {
-            LookIn = _in;
-            LookOut = _out;
-            LookUp = _up;
-            LookDown = _down;
+            InR = _inR;
+            OutR = _outR;
+            InL = _inL;
+            OutL = _outL;
+            Up = _up;
+            Down = _down;
             Blink = _blink;
         }
 
         /// <summary>QA가 값을 **눈으로 읽을 수 있게** — 구조체 기본 ToString은 타입 이름만 준다.</summary>
         public override string ToString()
         {
-            return string.Format("in={0:0.##} out={1:0.##} up={2:0.##} down={3:0.##} blink={4:0.##}",
-                LookIn, LookOut, LookUp, LookDown, Blink);
+            return string.Format(
+                "R(in={0:0.##} out={1:0.##}) L(in={2:0.##} out={3:0.##}) up={4:0.##} down={5:0.##} blink={6:0.##}",
+                InR, OutR, InL, OutL, Up, Down, Blink);
         }
     }
 
     /// <summary>
-    /// 시선 방향을 팩 메시의 셰이프키 가중치로 접는다 — 트랜스폼도 시간도 모른다(EditMode 대상).
+    /// 시선 방향을 셰이프키 가중치로 접는다 — 트랜스폼도 시간도 모른다(EditMode 대상).
     /// 방향은 전부 **머리 본 로컬**이다.
     ///
-    /// **왜 두 눈을 평균하는가**(2026-09-13 실측): 팩 셰이프키는 좌우 49정점을 **거울 대칭**으로
-    /// 민다(lookIn이 왼눈 x −18.5 · 오른눈 x +18.5). 그래서 「왼눈은 앞, 오른눈은 뒤」 같은
-    /// 비대칭 시선은 **표현할 방법이 없다.** 한쪽 눈에 맞추면 반대쪽 눈이 틀린 곳을 보므로,
-    /// 표현 가능한 대칭 성분만 남기는 평균이 유일하게 옳다. 버려지는 비대칭 성분이 곧
-    /// 이 방식이 구 방식에 비해 못 하는 것이다
-    /// (설계: docs/superpowers/specs/2026-09-13-eye-blendshape-design.md §2).
+    /// **수평은 눈마다 따로 민다**(2026-09-13). 처음엔 팩 키 <c>eyes.lookIn</c>/<c>lookOut</c>이 두 눈을
+    /// 거울 대칭으로 묶어 움직여서 **두 눈의 편차를 평균**할 수밖에 없었다 — 그러면 「옆 목표를 쫓는」
+    /// 비대칭 시선이 사라진다. 인게임에서 재 보니 조준 yaw +75도에서 **눈마다 49.3도씩** 어긋났고,
+    /// 사람의 조준은 카메라 정면이라 이 각도는 흔했다. 그래서 그 키를 좌우로 쪼갠 파생 메시를 굽고
+    /// (<c>EyeSplitMeshBaker</c>) 여기서는 눈마다 제 편차를 그대로 넣는다.
+    ///
+    /// **수직은 여전히 공통이다.** <c>eyes.lookUp</c>/<c>lookDown</c>은 두 눈을 **같은 쪽**으로 움직여
+    /// 원래 맞았다(실측 z +44.3 둘 다). 위아래를 눈마다 다르게 보는 일은 드물어 쪼개지 않았다.
     /// </summary>
     public static class EyeBlendShapeLogic
     {
@@ -52,8 +62,7 @@ namespace CTC.Runtime.Player
         /// **쥐와 고양이가 같은 지점(≈1.47)에서** 넘어간다.
         ///
         /// 최소가 1.44인데 140을 쓰는 이유는 **여유**다 — 뒤집힘까지 0.07밖에 안 남고,
-        /// 얻는 것은 두께 1%p뿐이다. LOD를 갈아 끼우거나 팩이 갱신되면 이 값을 다시 재라
-        /// (`scratchpad/blink_overdrive.py`가 그 자다).
+        /// 얻는 것은 두께 1%p뿐이다. LOD를 갈아 끼우거나 팩이 갱신되면 이 값을 다시 재라.
         /// </summary>
         public const float BLINK_FULL_WEIGHT = 140f;
 
@@ -70,16 +79,19 @@ namespace CTC.Runtime.Player
             // right가 fwd와 직교하지 않을 수 있다 — up을 얻은 뒤 직교하게 다시 세운다.
             right = Safe(Vector3.Cross(up, fwd), right);
 
-            float h = 0.5f * (InwardDeg(_restR, _gazeR, fwd, right, up)
-                            + InwardDeg(_restL, _gazeL, fwd, right, up)) / max;
+            // 수평: 눈마다 제 편차 그대로(+가 안쪽).
+            float hR = Mathf.Clamp(InwardDeg(_restR, _gazeR, fwd, right, up) / max, -1f, 1f);
+            float hL = Mathf.Clamp(InwardDeg(_restL, _gazeL, fwd, right, up) / max, -1f, 1f);
+            // 수직: 두 눈 공통 키라 평균한다.
             float v = 0.5f * (ElevationDeg(_gazeR, up) - ElevationDeg(_restR, up)
                             + ElevationDeg(_gazeL, up) - ElevationDeg(_restL, up)) / max;
-            h = Mathf.Clamp(h, -1f, 1f);
             v = Mathf.Clamp(v, -1f, 1f);
 
             return new EyeShapeWeights(
-                Mathf.Max(0f, h) * 100f,
-                Mathf.Max(0f, -h) * 100f,
+                Mathf.Max(0f, hR) * 100f,
+                Mathf.Max(0f, -hR) * 100f,
+                Mathf.Max(0f, hL) * 100f,
+                Mathf.Max(0f, -hL) * 100f,
                 Mathf.Max(0f, v) * 100f,
                 Mathf.Max(0f, -v) * 100f,
                 Mathf.Clamp01(_cover) * BLINK_FULL_WEIGHT);
