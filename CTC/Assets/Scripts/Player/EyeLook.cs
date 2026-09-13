@@ -9,11 +9,16 @@ namespace CTC.Runtime.Player
     /// <summary>
     /// 눈동자가 보는 곳을 따라간다(R.E.P.O. 참고) — 몸이 안 움직여도 캐릭터가 살아 보이게.
     ///
-    /// **왜 얹는가**: 팩 모델(Quirky Pets)의 눈은 본도 아니고 텍스처도 아니다.
-    /// 8×8 팔레트를 UV로 찍은 **스킨드 메시의 한 덩어리**라 돌릴 트랜스폼이 없다(2026-09-08 실측).
-    /// 그래서 흰자 구·눈동자 구·눈꺼풀 구를 **머리 본 아래에 새로 얹고** 로컬로만 굴린다.
-    /// 셋 다 모델과 **같은 머티리얼**을 쓰고 팔레트 텍셀만 골라 찍으므로 새 머티리얼·셰이더가 없다
-    /// (색이 M_Cat_URP·M_Mouse_URP의 틴트를 그대로 따라온다).
+    /// **팩 메시의 셰이프키를 민다**(2026-09-13). 2026-09-08부터 09-13까지는 흰자·눈동자·눈꺼풀
+    /// **구 세 개를 머리 본에 얹는** 방식이었다. 그 전제는 「팩 메시는 눈동자를 못 움직인다」였는데
+    /// **틀렸다** — 팩 메시에 눈 셰이프키가 30개 있고 `Mouse_LOD0~3`·`Cat_LOD0` 전부 갖고 있다.
+    /// 얹은 구는 옆에서 보면 머리에서 떨어져 솟았고, CSV 손잡이 다섯이 그걸 누르려고 있었다.
+    /// A/B 검수(2026-09-13)에서 셰이프키가 선택됐고 구 경로는 이 커밋에서 지웠다.
+    ///
+    /// **못 하게 된 것이 하나 있다**: 팩 셰이프키는 두 눈을 거울 대칭으로 묶어 움직여서
+    /// 「왼눈은 앞, 오른눈은 뒤」 같은 **비대칭 시선**이 안 된다. 그래서 두 눈의 편차를 평균해
+    /// 표현 가능한 성분만 쓴다(<see cref="EyeBlendShapeLogic"/>). 계산은 여전히 눈마다 따로 한다 —
+    /// 눈마다 다른 한계(안쪽이 더 간다)를 먹인 뒤에 평균해야 옳다.
     ///
     /// **조준 방향은 복제된다**(2026-09-10). 예전엔 통신 0이었는데 — 남의 몸은 그 몸의 정면을
     /// 보게 해 놨더니 눈이 쉬는 방향도 결국 머리 정면이라 <c>ClampGaze(정면, 정면) = 정면</c>,
@@ -31,24 +36,10 @@ namespace CTC.Runtime.Player
     /// </summary>
     public class EyeLook : MonoBehaviour
     {
-        // 팔레트 텍셀 중심(8×8, 2×2 블록) — 두 종이 같은 자리를 쓴다.
-        private static readonly Vector2 UV_WHITE = new Vector2(0.5625f, 0.375f);
-        private static readonly Vector2 UV_DARK = new Vector2(0.8125f, 0.375f);
-        private static readonly Vector2 UV_SKIN = new Vector2(0.3125f, 0.75f);
-
-        private const float BLINK_SHRINK = 0.95f;    // 감았을 때 흰자가 줄어드는 비율
-        private const float LID_FLATTEN = 0.5f;      // 눈꺼풀은 눈 축으로 납작하게 — 구면 혹처럼 튀어나오면 안 된다
-
-        /// <summary>
-        /// 셰이프키로 굴린다(기본). **A/B 검수용 임시 손잡이다** — CSV에 안 내린다(밸런스가 아니다).
-        /// 검수가 끝나면 이 필드와 진 쪽 경로를 같이 지운다
-        /// (설계: docs/superpowers/specs/2026-09-13-eye-blendshape-design.md §5).
-        /// </summary>
-        [SerializeField] private bool m_UseBlendShapes = true;
-
         [SerializeField] private string m_HeadBoneName = "head";
 
-        [Tooltip("오른눈 중심 — 머리 본 로컬. 왼눈은 x를 뒤집는다.")]
+        [Tooltip("오른눈 중심 — 머리 본 로컬. 왼눈은 x를 뒤집는다. 이제 그리는 데는 안 쓰고 " +
+                 "**근접 촬영의 초점**으로만 쓴다(DevEyeWorldRight).")]
         [SerializeField] private Vector3 m_EyeCenterLocal = new Vector3(0.00132f, 0.00100f, 0.00034f);
 
         [Tooltip("오른눈이 쉴 때 보는 방향 — 머리 본 로컬. 왼눈은 x를 뒤집는다.")]
@@ -58,37 +49,15 @@ namespace CTC.Runtime.Player
                  "리그가 종마다 달라 굽는다(고양이 +z · 쥐 +y). 0이면 두 눈의 대칭축으로 물러선다.")]
         [SerializeField] private Vector3 m_HeadForwardLocal = new Vector3(0f, 0f, 1f);
 
-        [Tooltip("얹는 흰자 반지름(기준) — 팩 눈동자를 덮되 흰 테두리 안에 든다. CSV 배율이 곱해진다.")]
-        [SerializeField] private float m_ScleraRadiusLocal = 0.00055f;
-
-        [Tooltip("눈꺼풀 반지름 — 감았을 때 흰 테두리까지 덮는다.")]
-        [SerializeField] private float m_LidRadiusLocal = 0.00090f;
-
-        private static Mesh s_ScleraMesh;
-        private static Mesh s_PupilMesh;
-        private static Mesh s_LidMesh;
-
         private Transform m_Head;
         private NetworkObject m_NetObject;
         private GazeAim m_Aim;
-
-        private Transform m_EyeR, m_EyeL, m_PupilR, m_PupilL, m_LidR, m_LidL;
-        private Renderer m_LidRendererR, m_LidRendererL;
-        private Renderer m_EyeRendererR, m_EyeRendererL, m_PupilRendererR, m_PupilRendererL;
 
         private Vector3 m_RestR, m_RestL;     // 머리 본 로컬
         private Vector3 m_GazePivot;          // 두 눈이 함께 도는 기준축(머리 본 로컬)
         private Vector3 m_GazeR, m_GazeL;
 
-        private float m_ScleraRadius;         // 기준 반경 × CSV 배율
-        private float m_LidRadius;
-        private float m_PupilRatio;           // 흰자 반지름 대비 눈동자 구 반지름
-        private float m_PupilDistance;        // 흰자 중심에서 눈동자 중심까지(흰자 단위)
-        private float m_Flatten;              // 눈 축 방향 눌림(1이면 완전한 구)
-        private float m_Inset;                // 눈 축 안쪽으로 미는 양(흰자 반지름 단위)
         private float m_PastCenterDeg;        // 안쪽 눈이 정면을 지나칠 수 있는 각(CSV)
-        private Quaternion m_EyeRotR, m_EyeRotL;      // 로컬 +z = 눈 축
-        private Quaternion m_EyeRotInvR, m_EyeRotInvL;
         private float m_MaxAngleDeg;      // 바깥·위아래 한계(쉬는 방향 기준)
         private float m_InwardMaxDeg;     // 안쪽 한계 — 쉬는 각도 + CSV의 «정면을 지나치는 각»
         private float m_SwingMaxDeg;      // 공유 회전의 한계 = 둘 중 큰 쪽
@@ -98,10 +67,10 @@ namespace CTC.Runtime.Player
         private float m_BlinkSeconds;
         private float m_BlinkTimer;           // 다음 깜빡임까지 남은 시간
         private float m_BlinkElapsed = -1f;   // 음수면 안 깜빡이는 중
-        private bool m_LidVisible;
         private bool m_Ready;
 
-        private EyeBlendShapes m_Shapes;   // 셰이프키 모드일 때만 붙는다
+        /// <summary>가중치를 렌더러에 넣는 곳 — 못 붙으면 null이고 이 컴포넌트는 아무것도 안 한다.</summary>
+        private EyeBlendShapes m_Shapes;
 
         /// <summary>
         /// 쏠 때 감는 시간표의 위상(<see cref="ShotBlinkLogic"/>) — **발사 순간이 0**이라
@@ -120,8 +89,7 @@ namespace CTC.Runtime.Player
             ReadTuning();
             m_BlinkTimer = EyeLookLogic.NextBlinkDelay(m_BlinkMin, m_BlinkMax, Random.value);
 
-            if (m_UseBlendShapes) BuildBlendShapeMode();
-            else Build();
+            Build();
         }
 
         /// <summary>
@@ -138,18 +106,9 @@ namespace CTC.Runtime.Player
             m_BlinkMax = balance.EyeBlinkMaxSeconds;
             m_BlinkSeconds = balance.EyeBlinkSeconds;
 
-            // 크기는 **인상을 바꾸는 손잡이**다(2026-09-08). 팩 캐릭터의 매력이 큰 검은 눈이라
-            // 눈동자를 너무 작게 잡으면 얼굴이 달라진다 — 플레이 거리에서 보고 CSV로 맞춘다.
-            m_ScleraRadius = m_ScleraRadiusLocal * Mathf.Max(0.05f, balance.EyeScleraScale);
-            m_LidRadius = Mathf.Max(m_LidRadiusLocal, m_ScleraRadius * 1.2f);
-            m_PupilRatio = Mathf.Clamp(balance.EyePupilRatio, 0.05f, 0.95f);
-            m_PupilDistance = Mathf.Clamp01(balance.EyePupilOffsetRatio);
-            // 팩 눈은 **납작한 원판**이라 완전한 구를 얹으면 얼굴 실루엣 밖으로 공처럼 솟는다
-            // (2026-09-08 사용자 피드백). 옆에서 봐야 보이는 종류의 문제다.
-            // 눈 축으로만 눌러 돔으로 만들면 정면 실루엣(=덮어야 하는 크기)은 그대로라
-            // 팩 눈동자가 밑에서 비치지 않으면서 옆에서도 안 솟는다.
-            m_Flatten = Mathf.Clamp(balance.EyeFlatten, 0.1f, 1f);
-            m_Inset = Mathf.Clamp(balance.EyeInsetRatio, 0f, 0.6f);
+            // **크기 손잡이 다섯은 2026-09-13에 사라졌다**(EyeScleraScale · EyePupilRatio ·
+            // EyePupilOffsetRatio · EyeFlatten · EyeInsetRatio). 전부 얹은 구가 얼굴에서
+            // 솟지 않게 누르던 값이라, 메시 자체를 미는 방식에서는 누를 것이 없다.
             m_PastCenterDeg = Mathf.Max(0f, balance.EyeInwardPastCenterDeg);
         }
 
@@ -160,10 +119,7 @@ namespace CTC.Runtime.Player
             m_SwingMaxDeg = Mathf.Max(m_MaxAngleDeg, m_InwardMaxDeg);
         }
 
-        /// <summary>
-        /// 두 모드가 **함께 쓰는** 준비 — 머리 본·쉬는 방향·회전 한계.
-        /// 여기까지는 구를 얹든 셰이프키를 밀든 똑같이 필요하다.
-        /// </summary>
+        /// <summary>머리 본·쉬는 방향·회전 한계 — 시선 계산이 시작되기 전에 있어야 하는 것들.</summary>
         private bool SetupDirections()
         {
             m_Head = FindDeep(transform, m_HeadBoneName);
@@ -183,10 +139,10 @@ namespace CTC.Runtime.Player
         }
 
         /// <summary>
-        /// 셰이프키 모드 — **새 오브젝트를 하나도 안 만든다.** 팩 메시가 이미 가진
+        /// **새 오브젝트를 하나도 안 만든다.** 팩 메시가 이미 가진
         /// eyes.look* / eyes.blink를 밀 뿐이다.
         /// </summary>
-        private void BuildBlendShapeMode()
+        private void Build()
         {
             if (!SetupDirections()) return;
 
@@ -202,149 +158,6 @@ namespace CTC.Runtime.Player
 
             Apply();
             m_Ready = true;
-        }
-
-        private void Build()
-        {
-            if (!SetupDirections()) return;
-
-            SkinnedMeshRenderer skin = GetComponentInChildren<SkinnedMeshRenderer>(true);
-            if (skin == null || skin.sharedMaterial == null)
-            {
-                Debug.LogWarning("[EyeLook] 모델 머티리얼을 못 찾았다 — 눈을 얹지 않는다");
-                return;
-            }
-
-            Material mat = skin.sharedMaterial;
-            GameObject sample = skin.gameObject;
-
-            EnsureMeshes();
-
-            m_EyeRotR = Quaternion.LookRotation(m_RestR);
-            m_EyeRotL = Quaternion.LookRotation(m_RestL);
-            m_EyeRotInvR = Quaternion.Inverse(m_EyeRotR);
-            m_EyeRotInvL = Quaternion.Inverse(m_EyeRotL);
-
-            // 눈 축 안쪽으로 밀어 더 파묻는다 — 덮는 넓이(가로)는 그대로다.
-            Vector3 centerR = m_EyeCenterLocal - m_RestR * (m_ScleraRadius * m_Inset);
-            Vector3 centerL = EyeLookLogic.Mirror(centerR);
-
-            m_EyeR = MakePart("EyeR", s_ScleraMesh, mat, sample, centerR, m_ScleraRadius, out m_EyeRendererR);
-            m_EyeL = MakePart("EyeL", s_ScleraMesh, mat, sample, centerL, m_ScleraRadius, out m_EyeRendererL);
-            m_EyeR.localRotation = m_EyeRotR;
-            m_EyeL.localRotation = m_EyeRotL;
-
-            m_PupilR = MakeChild("PupilR", s_PupilMesh, mat, sample, m_EyeR, out m_PupilRendererR);
-            m_PupilL = MakeChild("PupilL", s_PupilMesh, mat, sample, m_EyeL, out m_PupilRendererL);
-
-            m_LidR = MakePart("LidR", s_LidMesh, mat, sample, centerR, m_LidRadius, out m_LidRendererR);
-            m_LidL = MakePart("LidL", s_LidMesh, mat, sample, centerL, m_LidRadius, out m_LidRendererL);
-            // 눈 축을 로컬 +z로 두면 z만 눌러 렌즈 모양이 된다 — 감았을 때 눈두덩처럼 보인다.
-            m_LidR.localRotation = Quaternion.LookRotation(m_RestR);
-            m_LidL.localRotation = Quaternion.LookRotation(m_RestL);
-            m_LidRendererR.enabled = false;
-            m_LidRendererL.enabled = false;
-
-            Apply();
-            m_Ready = true;
-        }
-
-        private Transform MakePart(string _name, Mesh _mesh, Material _mat, GameObject _sample,
-            Vector3 _localPos, float _radius, out Renderer _renderer)
-        {
-            var go = new GameObject(_name);
-            go.layer = _sample.layer;
-            go.tag = _sample.tag;
-            go.transform.SetParent(m_Head, false);
-            go.transform.localPosition = _localPos;
-            go.transform.localRotation = Quaternion.identity;
-            go.transform.localScale = Vector3.one * _radius;
-
-            go.AddComponent<MeshFilter>().sharedMesh = _mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = _mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            _renderer = mr;
-            return go.transform;
-        }
-
-        private Transform MakeChild(string _name, Mesh _mesh, Material _mat, GameObject _sample,
-            Transform _parent, out Renderer _renderer)
-        {
-            var go = new GameObject(_name);
-            go.layer = _sample.layer;
-            go.tag = _sample.tag;
-            go.transform.SetParent(_parent, false);
-            go.transform.localScale = Vector3.one * m_PupilRatio;
-
-            go.AddComponent<MeshFilter>().sharedMesh = _mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = _mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            _renderer = mr;
-            return go.transform;
-        }
-
-        /// <summary>플레이 종료 시 정적 메시가 파괴되므로 매번 널을 본다(규칙 9).</summary>
-        private static void EnsureMeshes()
-        {
-            if (s_ScleraMesh == null) s_ScleraMesh = BuildSphere("EyeSclera", UV_WHITE);
-            if (s_PupilMesh == null) s_PupilMesh = BuildSphere("EyePupil", UV_DARK);
-            if (s_LidMesh == null) s_LidMesh = BuildSphere("EyeLid", UV_SKIN);
-        }
-
-        /// <summary>반지름 1 구. UV는 팔레트 텍셀 하나로 고정한다 — 색을 그 텍셀이 정한다.</summary>
-        private static Mesh BuildSphere(string _name, Vector2 _uv)
-        {
-            const int STACKS = 10;
-            const int SLICES = 14;
-
-            int vertCount = (STACKS + 1) * (SLICES + 1);
-            var verts = new Vector3[vertCount];
-            var norms = new Vector3[vertCount];
-            var uvs = new Vector2[vertCount];
-
-            for (int y = 0; y <= STACKS; y++)
-            {
-                float v = (float)y / STACKS;
-                float phi = v * Mathf.PI;
-                for (int x = 0; x <= SLICES; x++)
-                {
-                    float u = (float)x / SLICES;
-                    float theta = u * Mathf.PI * 2f;
-                    var p = new Vector3(
-                        Mathf.Sin(phi) * Mathf.Cos(theta),
-                        Mathf.Cos(phi),
-                        Mathf.Sin(phi) * Mathf.Sin(theta));
-                    int i = y * (SLICES + 1) + x;
-                    verts[i] = p;
-                    norms[i] = p;
-                    uvs[i] = _uv;
-                }
-            }
-
-            var tris = new int[STACKS * SLICES * 6];
-            int t = 0;
-            for (int y = 0; y < STACKS; y++)
-            {
-                for (int x = 0; x < SLICES; x++)
-                {
-                    int a = y * (SLICES + 1) + x;
-                    int b = a + SLICES + 1;
-                    // 감는 방향을 뒤집으면 구가 안팎이 뒤집혀 **에러 없이** 사라진다
-                    // (2026-09-08 실측: 흰자는 머리에 가려 안 보이고 눈동자만 새까맣게 나왔다).
-                    tris[t++] = a; tris[t++] = a + 1; tris[t++] = b;
-                    tris[t++] = a + 1; tris[t++] = b + 1; tris[t++] = b;
-                }
-            }
-
-            var mesh = new Mesh { name = _name };
-            mesh.SetVertices(verts);
-            mesh.SetNormals(norms);
-            mesh.SetUVs(0, uvs);
-            mesh.SetTriangles(tris, 0);
-            mesh.RecalculateBounds();
-            return mesh;
         }
 
         // 애니메이터가 머리 본을 굴린 뒤에 얹어야 한 프레임 늦지 않는다.
@@ -454,15 +267,14 @@ namespace CTC.Runtime.Player
 
         /// <summary>
         /// 꺼질 때는 **반드시 눈을 뜬 상태로 되돌린다.** 감는 도중에 꺼지면
-        /// <c>LateUpdate</c>가 멈춰 눈꺼풀이 그 스케일 그대로 굳는다 — 다시 켜도 감긴 채다.
+        /// <c>LateUpdate</c>가 멈춰 blink 가중치가 그 값 그대로 굳는다 — 다시 켜도 감긴 채다.
         /// </summary>
         private void OnDisable()
         {
             CancelShotBlink();
             m_ShotPhase = float.PositiveInfinity;
 
-            // 파괴 중이면 얹어 둔 구가 이미 사라졌을 수 있다 — Unity 객체는 `!= null`로만 본다(규칙 9).
-            if (m_Ready && m_EyeR != null && m_LidR != null) Apply();
+            if (m_Ready) Apply();
         }
 
         /// <summary>
@@ -483,39 +295,10 @@ namespace CTC.Runtime.Player
 
         private void Apply()
         {
-            if (m_Shapes != null)
-            {
-                m_Shapes.Apply(EyeBlendShapeLogic.Weights(
-                    m_RestR, m_RestL, m_GazeR, m_GazeL, m_GazePivot, m_MaxAngleDeg, CurrentCover()));
-                return;
-            }
+            if (m_Shapes == null) return;
 
-            float cover = CurrentCover();
-
-            // 가로(x·y)는 그대로 두고 눈 축(z)만 눌러 돔으로 만든다 — 부모의 비균등 스케일이
-            // 눈동자까지 같이 눌러 주므로 눈동자도 표면을 따라 붙는다.
-            float eye = m_ScleraRadius * (1f - BLINK_SHRINK * cover);
-            var eyeScale = new Vector3(eye, eye, eye * m_Flatten);
-            m_EyeR.localScale = eyeScale;
-            m_EyeL.localScale = eyeScale;
-
-            // 시선은 머리 로컬이고 흰자는 눈 축으로 돌려 놨다 — 눈 로컬로 옮겨야 자리가 맞는다.
-            m_PupilR.localPosition = (m_EyeRotInvR * m_GazeR) * m_PupilDistance;
-            m_PupilL.localPosition = (m_EyeRotInvL * m_GazeL) * m_PupilDistance;
-
-            // 눈꺼풀은 흰자보다 덜 눌려야 감았을 때 흰자가 안 비친다.
-            float lid = m_LidRadius * cover;
-            var lidScale = new Vector3(lid, lid, lid * Mathf.Max(LID_FLATTEN, m_Flatten));
-            m_LidR.localScale = lidScale;
-            m_LidL.localScale = lidScale;
-
-            bool visible = cover > 0.01f;
-            if (visible != m_LidVisible)
-            {
-                m_LidVisible = visible;
-                m_LidRendererR.enabled = visible;
-                m_LidRendererL.enabled = visible;
-            }
+            m_Shapes.Apply(EyeBlendShapeLogic.Weights(
+                m_RestR, m_RestL, m_GazeR, m_GazeL, m_GazePivot, m_MaxAngleDeg, CurrentCover()));
         }
 
         /// <summary>
@@ -538,73 +321,6 @@ namespace CTC.Runtime.Player
                 if (found != null) return found;
             }
             return null;
-        }
-
-        /// <summary>QA 전용 — 오른눈 눈동자의 월드 위치(실제로 움직이는지 재는 유일한 근거).</summary>
-        public Vector3 DevPupilWorldRight()
-        {
-            return m_PupilR != null ? m_PupilR.position : Vector3.zero;
-        }
-
-        /// <summary>
-        /// QA 전용 — 얹은 눈을 껐다 켠다. **"전/후"를 같은 거리·같은 각도로 나란히 찍는 유일한 방법**이다
-        /// (컴포넌트만 끄면 이미 만들어 둔 구가 그대로 남는다).
-        /// </summary>
-        public void DevSetVisible(bool _on)
-        {
-            if (m_EyeRendererR != null) m_EyeRendererR.enabled = _on;
-            if (m_EyeRendererL != null) m_EyeRendererL.enabled = _on;
-            if (m_PupilRendererR != null) m_PupilRendererR.enabled = _on;
-            if (m_PupilRendererL != null) m_PupilRendererL.enabled = _on;
-            if (!_on)
-            {
-                if (m_LidRendererR != null) m_LidRendererR.enabled = false;
-                if (m_LidRendererL != null) m_LidRendererL.enabled = false;
-                m_LidVisible = false;
-            }
-            enabled = _on;   // 꺼진 동안엔 눈꺼풀이 다시 켜지지 않게 LateUpdate도 멈춘다
-        }
-
-        /// <summary>
-        /// QA 전용 — 구 방식 ↔ 셰이프키 방식을 런타임에 바꾼다. **A/B를 같은 몸·같은 카메라로
-        /// 찍는 유일한 방법**이다(몸을 둘 세우면 조명·각도가 미세하게 갈린다).
-        ///
-        /// **바꾸면 시선이 쉬는 방향으로 돌아간다**(<see cref="SetupDirections"/>가 다시 잡는다).
-        /// 시간을 멈춰 두고(`Time.timeScale = 0`) 찍으면 <c>Follow</c>가 한 발짝도 못 가서
-        /// 그대로 머문다 — 2026-09-13에 이걸 모르고 찍어 **시선이 다른 두 장**을 나란히 놓았다.
-        /// A/B는 양쪽 다 바꾼 뒤에 찍어 같은 시선으로 맞춘다.
-        /// </summary>
-        public void DevSetEyeMode(bool _useBlendShapes)
-        {
-            if (_useBlendShapes == m_UseBlendShapes && m_Ready) return;
-            m_UseBlendShapes = _useBlendShapes;
-
-            if (m_Shapes != null)
-            {
-                m_Shapes.ClearWeights();
-                m_Shapes = null;
-            }
-            DestroySpheres();
-
-            m_Ready = false;
-            enabled = true;
-            if (m_UseBlendShapes) BuildBlendShapeMode();
-            else Build();
-        }
-
-        /// <summary>얹은 구를 지운다 — 컴포넌트만 꺼도 구는 그대로 남는다.</summary>
-        private void DestroySpheres()
-        {
-            // 눈동자는 흰자의 자식이라 흰자를 지우면 같이 간다.
-            Transform[] parts = { m_EyeR, m_EyeL, m_LidR, m_LidL };
-            foreach (Transform t in parts)
-            {
-                if (t != null) Destroy(t.gameObject);
-            }
-            m_EyeR = m_EyeL = m_PupilR = m_PupilL = m_LidR = m_LidL = null;
-            m_EyeRendererR = m_EyeRendererL = m_PupilRendererR = m_PupilRendererL = null;
-            m_LidRendererR = m_LidRendererL = null;
-            m_LidVisible = false;
         }
 
         /// <summary>
@@ -647,10 +363,14 @@ namespace CTC.Runtime.Player
                    LocalControlLogic.Mine(m_NetObject.IsOwner, m_NetObject.IsPlayerObject);
         }
 
-        /// <summary>QA 전용 — 오른눈 흰자의 월드 위치(고정 시점 근접 촬영의 초점).</summary>
+        /// <summary>
+        /// QA 전용 — 오른눈의 월드 위치(고정 시점 근접 촬영의 **초점**).
+        /// 얹은 구가 사라졌으므로(2026-09-13) 프리팹에 구운 머리 로컬 좌표로 직접 푼다 —
+        /// 그리는 데는 안 쓰지만 「눈을 화면 가운데 두는」 데는 여전히 이 값이 원본이다.
+        /// </summary>
         public Vector3 DevEyeWorldRight()
         {
-            return m_EyeR != null ? m_EyeR.position : transform.position;
+            return m_Head != null ? m_Head.TransformPoint(m_EyeCenterLocal) : transform.position;
         }
 
         /// <summary>QA 전용 — 머리 본 로컬 시선(오른눈).</summary>
@@ -659,19 +379,22 @@ namespace CTC.Runtime.Player
             return m_GazeR;
         }
 
-        /// <summary>
-        /// QA 전용 — **두 눈동자가 같은 쪽을 보는지는 둘을 같이 재야 안다**(2026-09-10).
-        /// 오른눈만 재던 훅으로는 좌우가 갈리는 것을 못 잡았다.
-        /// </summary>
-        public Vector3 DevPupilWorldLeft()
-        {
-            return m_PupilL != null ? m_PupilL.position : Vector3.zero;
-        }
-
-        /// <summary>QA 전용 — 왼눈 흰자의 월드 위치.</summary>
+        /// <summary>QA 전용 — 왼눈의 월드 위치(<see cref="DevEyeWorldRight"/>의 거울).</summary>
         public Vector3 DevEyeWorldLeft()
         {
-            return m_EyeL != null ? m_EyeL.position : transform.position;
+            return m_Head != null
+                ? m_Head.TransformPoint(EyeLookLogic.Mirror(m_EyeCenterLocal))
+                : transform.position;
+        }
+
+        /// <summary>
+        /// QA 전용 — **실제로 렌더러에 들어간** 셰이프키 가중치. 눈이 진짜 움직이는지 재는
+        /// 유일한 근거다(예전엔 눈동자 구의 월드 위치가 그 자리였다).
+        /// 계산값이 아니라 되읽은 값이라, 배선이 끊기면 여기서 0으로 드러난다.
+        /// </summary>
+        public string DevEyeWeights()
+        {
+            return m_Shapes != null ? m_Shapes.DevWeights().ToString() : "(셰이프키 없음)";
         }
 
         /// <summary>QA 전용 — 머리 본 로컬 시선(왼눈).</summary>
@@ -707,7 +430,9 @@ namespace CTC.Runtime.Player
         ///
         /// 개발용 조절기 창이 부르는 단 하나의 진입점이다. 창은 <c>BalanceInfo</c>를 덮어쓰고
         /// 씬에 서 있는 몸마다 이걸 부른다 — 다시 플레이하거나 씬을 굽지 않아도 된다.
-        /// 매 프레임 쓰는 값뿐 아니라 **얹을 때 한 번만 쓰던 것**(눈 파묻힘·눈동자 크기)도 같이 고친다.
+        ///
+        /// **「얹을 때 한 번만 쓰던 것」을 다시 잡는 구간이 2026-09-13에 사라졌다** —
+        /// 구를 안 만드니 한 번만 쓰는 값 자체가 없다. 이제 전부 매 프레임 값이다.
         /// </summary>
         public void DevReloadTuning()
         {
@@ -715,17 +440,6 @@ namespace CTC.Runtime.Player
 
             ReadTuning();
             ReadLimits();
-
-            // 얹을 때 한 번만 반영하던 것들 — 다시 안 잡으면 슬라이더가 안 먹는 것처럼 보인다.
-            Vector3 centerR = m_EyeCenterLocal - m_RestR * (m_ScleraRadius * m_Inset);
-            Vector3 centerL = EyeLookLogic.Mirror(centerR);
-            m_EyeR.localPosition = centerR;
-            m_EyeL.localPosition = centerL;
-            m_LidR.localPosition = centerR;
-            m_LidL.localPosition = centerL;
-            m_PupilR.localScale = Vector3.one * m_PupilRatio;
-            m_PupilL.localScale = Vector3.one * m_PupilRatio;
-
             Apply();
         }
 #endif

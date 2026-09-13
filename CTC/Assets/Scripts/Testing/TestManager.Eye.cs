@@ -10,18 +10,10 @@ namespace CTC.Runtime.Testing
 {
     public partial class TestManager
     {
-        /// <summary>구 방식(0) ↔ 셰이프키 방식(1). A/B를 같은 카메라로 찍기 위한 것이다.</summary>
-        public void TestSetEyeMode(int _useBlendShapes)
-        {
-            EyeLook[] all = FindObjectsByType<EyeLook>(
-                FindObjectsInactive.Include, FindObjectsSortMode.None);
-            foreach (EyeLook eye in all)
-            {
-                eye.DevSetEyeMode(_useBlendShapes != 0);
-            }
-        }
+        // TestSetEyeMode는 2026-09-13에 지웠다 — 구 방식과 셰이프키 방식을 오가는 A/B 손잡이였고,
+        // 검수가 끝나 셰이프키로 정해지면서 **바꿀 상대가 없어졌다**.
 
-        /// <summary>"in,out,up,down,blink" — 쉼표로 붙인 다섯 값. 셰이프키 모드가 아니면 빈 문자열.</summary>
+        /// <summary>"in,out,up,down,blink" — 쉼표로 붙인 다섯 값. 셰이프키가 없으면 빈 문자열.</summary>
         public string TestGetEyeShapeWeights()
         {
             // FindFirstObjectByType는 6000.5에서 폐기 경고가 난다 — 순서가 필요 없으니 Any로 찾는다.

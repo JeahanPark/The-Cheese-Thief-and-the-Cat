@@ -310,11 +310,12 @@ namespace CTC.Runtime.Testing
             if (eyes == null) return "none";
 
             Vector3 g = eyes.DevGazeRight();
-            Vector3 p = eyes.DevPupilWorldRight();
+            // 눈동자 구가 사라져(2026-09-13) 「실제로 움직였나」의 근거는 셰이프키 가중치다.
+            string w = eyes.DevEyeWeights();
             Vector3 f = Camera.main != null ? Camera.main.transform.forward : Vector3.zero;
             var aim = me.GetComponent<CTC.Runtime.Player.GazeAim>();
             Vector2 a = aim != null ? aim.DevAngles : Vector2.zero;
-            return $"gaze={g.x:F3},{g.y:F3},{g.z:F3}|pupil={p.x:F3},{p.y:F3},{p.z:F3}" +
+            return $"gaze={g.x:F3},{g.y:F3},{g.z:F3}|weights={w}" +
                    $"|camFwd={f.x:F3},{f.y:F3},{f.z:F3}|bodyFwd={me.transform.forward.x:F3},{me.transform.forward.z:F3}" +
                    $"|aim={eyes.DevAimSource()}" +
                    $"|packed={(aim != null ? aim.DevPacked : (short)0)}|yaw={a.x:F2}|pitch={a.y:F2}";
@@ -336,12 +337,12 @@ namespace CTC.Runtime.Testing
             if (eyes == null) return "no EyeLook";
 
             Vector3 g = eyes.DevGazeRight();
-            Vector3 p = eyes.DevPupilWorldRight();
+            string w = eyes.DevEyeWeights();
             Vector2 a = aim != null ? aim.DevAngles : Vector2.zero;
             var tag = body.GetComponent<RoleTag>();
             return $"role={(tag != null ? tag.Role.ToString() : "None")}" +
                    $"|packed={(aim != null ? aim.DevPacked : (short)0)}|yaw={a.x:F2}|pitch={a.y:F2}" +
-                   $"|gaze={g.x:F3},{g.y:F3},{g.z:F3}|pupil={p.x:F4},{p.y:F4},{p.z:F4}" +
+                   $"|gaze={g.x:F3},{g.y:F3},{g.z:F3}|weights={w}" +
                    $"|aim={eyes.DevAimSource()}|mine={eyes.DevMine()}";
         }
 
@@ -377,15 +378,10 @@ namespace CTC.Runtime.Testing
             var eyes = body.GetComponent<CTC.Runtime.Player.EyeLook>();
             if (eyes == null) return "no EyeLook";
 
-            Transform t = body.transform;
-            Vector3 offR = t.InverseTransformVector(eyes.DevPupilWorldRight() - eyes.DevEyeWorldRight());
-            Vector3 offL = t.InverseTransformVector(eyes.DevPupilWorldLeft() - eyes.DevEyeWorldLeft());
-            float scale = Mathf.Max(1e-9f, offR.magnitude);
-            Vector3 nr = offR.normalized;
-            Vector3 nl = offL.normalized;
-            return $"offR={offR.x / scale:F4},{offR.y / scale:F4},{offR.z / scale:F4}" +
-                   $"|offL={offL.x / scale:F4},{offL.y / scale:F4},{offL.z / scale:F4}" +
-                   $"|dot={Vector3.Dot(nr, nl):F4}" +
+            // **눈동자 구가 사라졌다**(2026-09-13 셰이프키 전환). 「실제로 움직였나」의 근거는
+            // 이제 렌더러에서 되읽은 셰이프키 가중치다 — 계산값이 아니라 들어간 값이다.
+            // 시선(gazeR·gazeL)은 그대로 둔다: 두 눈이 **다른 쪽을 보는지**는 여전히 여기서만 보인다.
+            return $"weights={eyes.DevEyeWeights()}" +
                    $"|gazeR={eyes.DevGazeRight().x:F3},{eyes.DevGazeRight().y:F3},{eyes.DevGazeRight().z:F3}" +
                    $"|gazeL={eyes.DevGazeLeft().x:F3},{eyes.DevGazeLeft().y:F3},{eyes.DevGazeLeft().z:F3}";
         }
@@ -461,21 +457,9 @@ namespace CTC.Runtime.Testing
             return best;
         }
 
-        /// <summary>QA: 얹은 눈을 감춘다 — 「전」 그림을 같은 거리·같은 각도로 찍으려고.</summary>
-        public void TestHideEyes() => SetEyesVisible(false);
-
-        /// <summary>QA: 감췄던 눈을 되돌린다.</summary>
-        public void TestShowEyes() => SetEyesVisible(true);
-
-        private void SetEyesVisible(bool _on)
-        {
-            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
-            Unity.Netcode.NetworkObject me =
-                nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
-            var eyes = me != null ? me.GetComponent<CTC.Runtime.Player.EyeLook>() : null;
-            if (eyes == null) { GameDebug.LogWarning("[TestManager] EyeLook 없음"); return; }
-            eyes.DevSetVisible(_on);
-        }
+        // TestHideEyes / TestShowEyes는 2026-09-13에 지웠다 — 얹은 구를 껐다 켜는 훅이었는데
+        // 셰이프키로 갈아타면서 **끌 것이 없어졌다**(눈이 곧 모델 메시다).
+        // 「전/후」를 찍으려면 눈을 감추는 게 아니라 가중치를 0으로 두면 된다.
 
         /// <summary>QA: 로컬 몸의 눈을 지금 감게 한다 — 깜빡임은 랜덤 주기라 기다리면 못 잡는다.</summary>
         public void TestBlinkEyes()

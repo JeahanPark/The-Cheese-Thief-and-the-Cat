@@ -6,12 +6,15 @@ using UnityEngine;
 namespace CTC.Editor
 {
     /// <summary>
-    /// 눈(EyeLook)의 자리·크기를 프리팹에 굽는다 — 종마다 다르고 **모델 지오메트리**라
+    /// 눈(EyeLook)의 **자리와 방향**을 프리팹에 굽는다 — 종마다 다르고 **모델 지오메트리**라
     /// 밸런스 CSV가 아니라 여기가 원본이다.
     ///
     /// 값의 출처는 `Tools/CTC/Dev/Probe Eye Geometry`가 실제 메시를 잰 결과다
-    /// (팔레트 색으로 눈 덩어리를 묶어 **머리 본 로컬** 중심·법선·반경을 뽑는다).
+    /// (팔레트 색으로 눈 덩어리를 묶어 **머리 본 로컬** 중심·법선을 뽑는다).
     /// 모델을 갈아 끼우면 그 도구를 다시 돌려 여기 숫자를 바꾼다.
+    ///
+    /// **반경(크기)은 2026-09-13에 빠졌다** — 얹는 구가 사라져 구울 크기가 없다.
+    /// 중심은 남는다: 그리는 데는 안 쓰지만 근접 촬영의 초점이고, 축은 쉬는 시선이다.
     ///
     /// 씬 생성기(PlayerPrefabFactory)와 메뉴가 **같은 함수**를 부른다 —
     /// 프리팹을 다시 굽든 손으로 고치든 값이 갈리지 않게.
@@ -30,15 +33,11 @@ namespace CTC.Editor
             {
                 so.FindProperty("m_EyeCenterLocal").vector3Value = new Vector3(0.00106f, 0.00179f, 0.00109f);
                 so.FindProperty("m_EyeAxisLocal").vector3Value = new Vector3(0.500f, 0.476f, 0.724f);
-                so.FindProperty("m_ScleraRadiusLocal").floatValue = 0.00045f;
-                so.FindProperty("m_LidRadiusLocal").floatValue = 0.00075f;
             }
             else
             {
                 so.FindProperty("m_EyeCenterLocal").vector3Value = new Vector3(0.00132f, 0.00100f, 0.00034f);
                 so.FindProperty("m_EyeAxisLocal").vector3Value = new Vector3(0.892f, 0.396f, 0.216f);
-                so.FindProperty("m_ScleraRadiusLocal").floatValue = 0.00055f;
-                so.FindProperty("m_LidRadiusLocal").floatValue = 0.00090f;
             }
             BakeHeadForward(so, _eyes.transform);
             so.ApplyModifiedPropertiesWithoutUndo();

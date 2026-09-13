@@ -58,16 +58,10 @@ namespace CTC.Editor
                      "여기가 0이어도 안쪽 눈은 63°를 간다. 인중을 넘겨 보고 싶으면 올려라."),
             new Knob("EyeFollowSpeed", "따라가는 속도", 1f, 40f,
                      "지수 감쇠 계수. 크면 딱딱 붙고 작으면 흐물흐물 따라온다."),
-            new Knob("EyePupilRatio", "눈동자 크기(흰자 대비)", 0.05f, 0.95f,
-                     "팩 캐릭터의 매력이 큰 검은 눈이다 — 작게 잡으면 얼굴이 달라진다."),
-            new Knob("EyePupilOffsetRatio", "눈동자 이동 거리(흰자 대비)", 0f, 0.9f,
-                     "흰자 중심에서 눈동자 중심까지. 크면 눈동자가 가장자리까지 간다."),
-            new Knob("EyeFlatten", "흰자 눌림(1이면 완전한 구)", 0.1f, 1f,
-                     "눈 축으로만 누른다. 1에 가까우면 옆에서 공처럼 솟는다."),
-            new Knob("EyeScleraScale", "흰자 크기 배율", 0.3f, 2.5f,
-                     "팩이 그려 둔 눈동자를 덮어야 한다 — 작으면 밑이 비친다."),
-            new Knob("EyeInsetRatio", "눈 파묻는 정도", 0f, 0.6f,
-                     "눈 축 안쪽으로 미는 양. 덮는 가로 넓이는 안 변한다."),
+            // 크기 손잡이 다섯(EyePupilRatio·EyePupilOffsetRatio·EyeFlatten·EyeScleraScale·
+            // EyeInsetRatio)은 2026-09-13에 사라졌다 — 전부 **얹은 구가 얼굴에서 솟지 않게**
+            // 누르던 값이라, 메시 자체를 미는 셰이프키 방식에서는 누를 것이 없다.
+            // 눈 크기·모양은 이제 팩이 그린 그대로이고 코드가 정하지 않는다.
             new Knob("EyeBlinkSeconds", "깜빡임 길이(초)", 0f, 0.6f, "0이면 안 깜빡인다."),
             new Knob("EyeBlinkMinSeconds", "깜빡임 간격 최소(초)", 0f, 15f, ""),
             new Knob("EyeBlinkMaxSeconds", "깜빡임 간격 최대(초)", 0f, 20f, ""),

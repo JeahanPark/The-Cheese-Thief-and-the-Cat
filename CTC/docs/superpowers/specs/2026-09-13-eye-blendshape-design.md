@@ -1,7 +1,7 @@
 # 쥐·고양이 눈 — 얹은 구를 걷어내고 팩 메시의 셰이프키로 간다
 
 **날짜**: 2026-09-13
-**상태**: 설계 (검토 대기)
+**상태**: **완료** — A/B 검수에서 셰이프키(A)가 선택됐고 구 경로는 지웠다(2026-09-13)
 
 ## 1. 전제가 틀렸다
 
@@ -136,6 +136,16 @@ GazeAim(복제된 조준) ──> EyeLook: ClampGaze·Follow·StepBlink (그대�
 | `SkinnedMeshRenderer`가 없다 | `EyeBlendShapes`가 스스로 `enabled = false`. **경고 로그 1회** — 조용히 죽지 않는다 |
 | 셰이프키 이름이 하나라도 없다 | 같음. 팩을 갈아 끼웠을 때 **에러 없이 눈이 굳는 것**을 막는 유일한 장치다 |
 | 모드가 구 쪽 | `EyeBlendShapes`는 아무것도 안 한다(가중치를 0으로 두고 빠진다) |
+
+## 5-1. 검수 결과 (2026-09-13)
+
+**셰이프키(A)로 정해졌다.** 같은 쥐·같은 카메라·같은 시선(쉬는 상태)으로 찍은 두 장에서 834픽셀이 달라졌고 그 전부가 눈이다 — 구 쪽은 흰자 구의 테두리가 머리에서 떨어져 솟았다.
+
+지운 것: `EyeLook`의 구 생성·`MakePart`·`MakeChild`·`EnsureMeshes`·`BuildSphere`와 `m_UseBlendShapes`/`DevSetEyeMode`/`DevSetVisible`/`DevPupilWorld*`, CSV 다섯 칸(`EyeScleraScale`·`EyePupilRatio`·`EyePupilOffsetRatio`·`EyeFlatten`·`EyeInsetRatio`), `EyeAnchorBaker`의 반경 굽기, `CharmTunerWindow`의 크기 슬라이더 다섯, `TestSetEyeMode`·`TestShowEyes`·`TestHideEyes`.
+
+**「옆 목표를 쫓는 비대칭 시선」 칸은 끝내 못 찍었다** — 봇의 시선을 원하는 각도에 못박는 훅(`GazeAim.DevForce`)까지 갔다가 사용자가 먼저 A를 골랐다. 표현이 불가능한 것은 수학적으로 확정이지만(거울 대칭), **그 부재가 눈에 띄는지는 안 쟀다.** 인게임에서 거슬리면 여기로 돌아온다.
+
+---
 
 ## 5. 종료 조건 — A/B를 눈으로 본다
 

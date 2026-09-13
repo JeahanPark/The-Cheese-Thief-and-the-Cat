@@ -91,17 +91,12 @@ namespace CTC.Runtime.Info
         public float EyeBlinkMinSeconds;
         public float EyeBlinkMaxSeconds;
         public float EyeBlinkSeconds;
-        public float EyeScleraScale;
-        public float EyePupilRatio;
-        public float EyePupilOffsetRatio;
         public float EarTurnMaxDeg;
         public float EarPerkDeg;
         public float EarPerkDelaySeconds;
         public float EarPerkRiseSeconds;
         public float EarPerkFallSeconds;
         public float EarFollowSpeed;
-        public float EyeFlatten;
-        public float EyeInsetRatio;
         public int CatAdvanceMischief;
         public int SoldOutCount;
         public float EyeInwardPastCenterDeg;
