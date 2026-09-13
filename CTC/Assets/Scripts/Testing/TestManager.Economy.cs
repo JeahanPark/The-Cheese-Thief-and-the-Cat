@@ -51,21 +51,21 @@ namespace CTC.Runtime.Testing
         // 서버가 거절한다. 시간 결핍을 건너뛰고 구매만 보려면 `TestWarpToNearestShop`을 먼저 부른다.
 
         /// <summary>로컬 플레이어 구매 — QA용 파라미터리스 래퍼.</summary>
-        public void TestBuySlingshot() => BuyLocal(TechId.Gun);
+        public string TestBuySlingshot() => BuyLocal(TechId.Gun);
 
         /// <summary>두 번째 Gun 구매 = Lv2(기관총). 새총을 먼저 사 둬야 한다.</summary>
-        public void TestBuyMachineGun()
+        public string TestBuyMachineGun()
         {
             // Lv1이 없으면 이 호출은 기관총이 아니라 **새총**을 산다 — 조용히 어긋나면 QA가 오진한다
             TechSlots slots = LocalComponent<TechSlots>();
             if (slots != null && slots.LevelOf(TechId.Gun) == 0)
                 GameDebug.LogWarning("[TestManager] TestBuyMachineGun — 새총(Lv1)이 없다. 이번 구매는 Lv1이 된다");
-            BuyLocal(TechId.Gun);
+            return BuyLocal(TechId.Gun);
         }
 
-        public void TestBuyDash() => BuyLocal(TechId.Dash);
+        public string TestBuyDash() => BuyLocal(TechId.Dash);
 
-        public void TestBuyPepperShot() => BuyLocal(TechId.Pepper);   // 후추 탄(빌드 심화 v1)
+        public string TestBuyPepperShot() => BuyLocal(TechId.Pepper);   // 후추 탄(빌드 심화 v1)
 
         /// <summary>
         /// 옛 훅은 "요새가 선다"였다 — 테크 v3에서 구매(설치권)와 설치가 갈렸으므로 둘 다 한다.
@@ -80,9 +80,9 @@ namespace CTC.Runtime.Testing
             BuyThenPlaceAsync(TechId.Fortress, null, destroyCancellationToken).Forget();
         }
 
-        public void TestBuyCatAttack() => BuyLocal(TechId.CatClaw);
+        public string TestBuyCatAttack() => BuyLocal(TechId.CatClaw);
 
-        public void TestBuyCatSpeed() => BuyLocal(TechId.CatStomp);
+        public string TestBuyCatSpeed() => BuyLocal(TechId.CatStomp);
 
         /// <summary>
         /// 위치 지정 설치(핫바 고스트 확정과 같은 경로) — 서버 거리·겹침 검증 QA용. 창고만 조준 설치다.
@@ -472,15 +472,42 @@ namespace CTC.Runtime.Testing
             }
         }
 
-        private static void BuyLocal(TechId _techId)
+        /// <summary>
+        /// 로컬 플레이어 구매 — **판정을 글자로 돌려준다**(2026-09-13).
+        ///
+        /// 예전에는 <c>shop.Buy()</c>를 쏘고 「요청」만 찍고 끝이었다. 서버가 거절해도
+        /// (상점 밖·치즈 부족·최대 레벨·오늘 품절) 아무 데도 안 남았고, 게다가
+        /// <c>GameDebug</c>는 <c>[Conditional("DEVELOPMENT_BUILD")]</c>이라 **에디터에서는
+        /// 그 로그조차 안 찍힌다** — 「조용히 아무 일도 안 했다」와 「샀다」가 구분이 안 됐다.
+        ///
+        /// <see cref="ShopController.CanBuyNow"/>가 그 답을 이미 갖고 있었다. **행동은 안 바꾼다** —
+        /// 로컬 판정이 거절이어도 RPC는 그대로 쏜다(로컬 뷰가 뒤처졌을 때 서버가 허용할 수 있고,
+        /// 여기서 끊으면 QA가 서버 판정을 못 본다). 바뀐 것은 **알려 준다**는 것뿐이다.
+        ///
+        /// 산 결과까지 보려면 `TestGetTechLevel(clientId, techId)`로 **레벨을 전후로 읽는다** —
+        /// 구매는 RPC라 이 함수가 돌아오는 시점엔 아직 반영이 안 돼 있다.
+        /// </summary>
+        /// <returns>"before=N|local=판정" — local이 None이 아니면 서버도 거절할 공산이 크다.</returns>
+        private static string BuyLocal(TechId _techId)
         {
             var nm = Unity.Netcode.NetworkManager.Singleton;
             var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
             var shop = local != null ? local.GetComponent<ShopController>() : null;
-            if (shop == null) { GameDebug.LogWarning("[TestManager] ShopController 없음"); return; }
+            if (shop == null) return "no ShopController";
+
+            var slots = local.GetComponent<TechSlots>();
+            int before = slots != null ? slots.LevelOf(_techId) : -1;
+            TechDeny deny = shop.CanBuyNow(_techId);
+
             shop.Buy(_techId);
-            GameDebug.Log($"[TestManager] BuyLocal({_techId}) 요청");
+            return $"before={before}|local={deny}";
         }
+
+        // 여기에 `TestGetTechLevel(string)`을 만들려다 지웠다(2026-09-13) —
+        // `TestManager.Tech.cs`에 **이미 `TestGetTechLevel(long, string)`이 있다.**
+        // 같은 이름의 오버로드를 만들면 `InvokeBridge`가 **리플렉션으로 이름만 보고 고르므로**
+        // 어느 쪽이 불릴지 모른다. 조용히 엉뚱한 것이 불리는 부류의 사고다.
+        // 구매 전후 레벨은 그 기존 훅에 clientId를 주어 읽는다.
     }
 }
 #endif

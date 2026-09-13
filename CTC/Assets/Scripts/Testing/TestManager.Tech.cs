@@ -153,21 +153,39 @@ namespace CTC.Runtime.Testing
         /// **로컬 플레이어에만 듣는다.** Buy는 `RequireOwnership` 소유자 RPC라 남의 몸에서 부르면
         /// NGO가 보내기 전에 버린다. 클론을 움직이려면 `MultiplayerQaProbe`의 `TestMp*` 커맨드를 쓴다.
         /// </summary>
-        public void TestBuyTech(long _clientId, string _techId)
+        public string TestBuyTech(long _clientId, string _techId)
         {
             GameObject p = FindPlayerGo(_clientId);
             ShopController shop = p != null ? p.GetComponent<ShopController>() : null;
-            if (shop == null) { GameDebug.LogWarning($"[TestManager] TestBuyTech — {_clientId} ShopController 없음"); return; }
-            if (!shop.IsOwner) GameDebug.LogWarning($"[TestManager] TestBuyTech — {_clientId}는 내 소유가 아니다(소유자 RPC라 무시된다)");
-            if (System.Enum.TryParse(_techId, out TechId id)) shop.Buy(id);
+            if (shop == null) return $"no ShopController({_clientId})";
+            // 소유자 RPC라 남의 몸에서 부르면 서버가 버린다 — 조용히 버려지는 대신 그렇다고 말한다.
+            if (!shop.IsOwner) return $"notOwner({_clientId}) — 소유자 RPC라 무시된다";
+            if (!System.Enum.TryParse(_techId, out TechId id)) return $"unknown tech '{_techId}'";
+
+            TechSlots slots = p.GetComponent<TechSlots>();
+            int before = slots != null ? slots.LevelOf(id) : -1;
+            TechDeny deny = shop.CanBuyNow(id);
+            shop.Buy(id);
+            return $"before={before}|local={deny}";
         }
 
-        /// <summary>로컬 플레이어 구매 — 소유자 RPC 제약이 없는 쪽. clientId를 모르는 스크립트가 쓴다.</summary>
-        public void TestBuyTechLocal(string _techId)
+        /// <summary>
+        /// 로컬 플레이어 구매 — 소유자 RPC 제약이 없는 쪽. clientId를 모르는 스크립트가 쓴다.
+        ///
+        /// **판정을 글자로 돌려준다**(2026-09-13). 예전엔 <c>Enum.TryParse</c>가 실패하면
+        /// 오타 난 테크 이름이 **아무 말 없이 지나갔고**, 서버 거절도 안 남았다.
+        /// </summary>
+        public string TestBuyTechLocal(string _techId)
         {
             ShopController shop = LocalComponent<ShopController>();
-            if (shop == null) { GameDebug.LogWarning("[TestManager] TestBuyTechLocal — ShopController 없음"); return; }
-            if (System.Enum.TryParse(_techId, out TechId id)) shop.Buy(id);
+            if (shop == null) return "no ShopController";
+            if (!System.Enum.TryParse(_techId, out TechId id)) return $"unknown tech '{_techId}'";
+
+            TechSlots slots = LocalComponent<TechSlots>();
+            int before = slots != null ? slots.LevelOf(id) : -1;
+            TechDeny deny = shop.CanBuyNow(id);
+            shop.Buy(id);
+            return $"before={before}|local={deny}";
         }
 
         // ===== 사람 손 경로 (2026-09-09 감사 G-1·G-2·C-01) =====
