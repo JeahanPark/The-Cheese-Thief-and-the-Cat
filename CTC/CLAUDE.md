@@ -134,6 +134,9 @@
 | 13 | **`LoadAllAssetsAtPath`로 FBX 클립 이름 훑기** | 유니티 내부의 **`__preview__` 복제 클립**까지 딸려 오는데, 그쪽은 임포터가 매핑한 이름이 아니라 **FBX 원본 테이크 이름**(`__preview__Rig\|Walk`)을 달고 있다. 이름으로 검사하면 실제와 다른 것을 본다 | 이름이 `__preview__`로 시작하는 것과 `HideFlags.HideInHierarchy`인 것을 **걸러낸다**. 이름을 정확히 아는 경우엔 `ClipParityProbe.FindClip`처럼 완전 일치로 찾으면 안 걸린다 |
 | 14 | **`PreviewRenderUtility`에서 스킨드 메시 연속 렌더** | 한 동기 루프 안에서 `Render()`를 여러 번 불러도 `SkinnedMeshRenderer`가 **다시 스키닝되지 않는다**(`updateWhenOffscreen`을 켜도). 본은 실제로 움직이는데 **프레임이 전부 바이트까지 같게** 나온다 | 프레임마다 `BakeMesh`로 정적 메시에 구워 그린다(`Assets/Scripts/Editor/ClipPreviewRender.cs`가 그렇게 한다) |
 | 15 | **블렌더 `-P` 스크립트에서 `SystemExit`가 아닌 예외** | 트레이스백은 찍히는데 블렌더가 **종료 코드 0**으로 끝난다. FBX 경로 오타도 저장 실패도 자동화 입장에선 **성공**이다 | `main()`을 감싸 일반 예외를 `SystemExit`로 올린다(`tools/blender/*.py`가 그렇게 한다). 그리고 **출력이 아니라 `echo $?`로 판정한다** |
+| 16 | **`u_editor_asset(refresh)` 직후에 테스트 메뉴 실행** | refresh가 성공을 돌려줘도 컴파일이 **아직 큐에 있을 수 있다.** 그러면 테스트는 **직전 어셈블리**를 돌고, 새로 쓴 테스트가 실행조차 안 됐는데 「통과」로 보인다(2026-09-13에 849를 내 코드의 결과로 착각했다) | 통과 **수가 늘었는지**를 같이 본다. 컴파일이 끝난 뒤인지 확인하려면 `Logs/Editor.log`에서 리로드 완료 줄을 본다 |
+| 17 | **리플렉션 QA 훅의 이름 중복** | `InvokeBridge`는 **이름만 보고** 메서드를 고른다. 같은 이름의 오버로드를 만들면 어느 쪽이 불릴지 모른다 — 컴파일은 통과한다(2026-09-13에 `TestGetTechLevel`로 그럴 뻔했다) | 훅을 새로 만들기 전에 `grep -rn "TestXxx" Assets/Scripts/Testing/`으로 **이미 있는지 본다** |
+| 18 | **MCP 브리지가 컴파일마다 죽는다** | 도메인 리로드 뒤 `McpBridge`가 다시 안 켜진다. 에디터는 멀쩡한데(`Responding`·에러 0) MCP가 전부 타임아웃한다. 파이프가 **남아 있는 경우도** 있어 존재 여부로는 판정이 안 된다 | `Logs/Editor.log`의 `McpBridge` 마지막 줄이 「중지됨」이면 이 상태다. 포커스 → 재컴파일 강제 → 그래도 안 되면 **에디터 재시작**(2026-09-13에 두 번 다 재시작으로만 풀렸다). **컴파일이 필요한 편집은 모아서 한 번에** 하는 것이 가장 아낀다 |
 
 애니메이션·이펙트를 다룰 때 추가로 겪은 것:
 - **커브·마스크 경로는 Animator 기준**이다. Animator가 자식(`Model`)에 있으면 그 접두를 뺀다. 틀려도 에러가 없다.
@@ -168,6 +171,20 @@
 `takeName: Rig|…` 매핑(블렌더가 테이크 이름을 `{오브젝트}|{액션}`으로 강제해서다).
 **메타가 새로 생성되면 조용히 되돌아간다.** `RoundTrippedClip_IsNamedWalk_NotRigPipeWalk`가
 그때 빨개지라고 있는 것이다.
+
+**바닥 판정은 뼈가 아니라 메시로 한다**(2026-09-12~13에 두 번 물렸다). 발 메시는 발목뼈 끝보다
+**37mm 더 아래**까지 있고 꼬리 메시는 뼈보다 **19mm 굵다** — 뼈 좌표로는 여유가 있어 보이는 자리가
+실제로는 잠긴다. 기준선은 팩 자신이 정해 준다: `Walk` −9.1 · `Bounce` −8.7 · `Run` −4.7 mm.
+자작 클립은 `Shoot` +0.4 · `Dash` −0.7이다.
+
+**각도는 눈대중으로 잡지 말고 풀어라.** 그런데 **단조롭지 않을 수 있다** — `Dash`의 앞발은
+0도 −21mm / 20도 −30mm(최악) / 60도 +4.6mm라, 최저점이 가슴↔앞발을 옮겨 다녀 이분법이
+「해 없음」을 뱉었다. **훑어 보고서야 알았다**(`scratchpad/sweep.py` 부류).
+
+자작 클립 셋: `Shoot`·`ShootDraw`(2026-09-12) · `Dash`(2026-09-13).
+원본은 `tools/blender/clips/*.py`이고 각도마다 왜 그 값인지가 주석에 있다.
+새 클립을 `AnimationStateLogic.MouseOnly`에 넣었으면 **`Tools/CTC/Dev/Bake Mouse Gun`을 돌려야**
+AC_Mouse에 상태가 생긴다 — 안 돌리면 `CrossFadeInFixedTime`이 에러 없이 아무 일도 안 한다.
 
 설계·계획: `docs/superpowers/specs/2026-09-12-blender-animation-pipeline-design.md`
 

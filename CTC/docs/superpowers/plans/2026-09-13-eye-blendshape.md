@@ -1,5 +1,15 @@
 # 눈 셰이프키 전환 구현 계획
 
+> **[완료 · 2026-09-13] 이 문서는 실행 기록이다 — 지금 코드와 다르다.**
+> 과제 1~6을 다 돌린 뒤 A/B 검수에서 **셰이프키가 선택됐고 구 경로를 지웠다.**
+> 그래서 아래에 적힌 `m_UseBlendShapes`·`DevSetEyeMode`·`BuildBlendShapeMode`·
+> `TestSetEyeMode`는 **더 이상 없다**(A/B용 임시 손잡이였다). 그 뒤에 감김 가중치도
+> 100 → 140으로 올렸다(`BLINK_FULL_WEIGHT`).
+>
+> 지금 상태와 왜 그런지는 `docs/superpowers/specs/2026-09-13-eye-blendshape-design.md`를 봐라.
+> 여기 코드를 복사해 쓰지 마라.
+
+
 > **에이전트용:** 필수 하위 스킬 — superpowers:subagent-driven-development(권장) 또는
 > superpowers:executing-plans로 과제 단위로 구현한다. 단계는 체크박스(`- [ ]`)다.
 
