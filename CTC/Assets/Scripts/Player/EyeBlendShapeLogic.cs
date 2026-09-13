@@ -41,6 +41,22 @@ namespace CTC.Runtime.Player
     /// </summary>
     public static class EyeBlendShapeLogic
     {
+        /// <summary>
+        /// 완전히 감았을 때 <c>eyes.blink</c>에 주는 가중치 — **100이 아니라 140이다**(2026-09-13 실측).
+        ///
+        /// 팩 키를 100%까지만 밀면 동공 두께가 **31%나 남아** 「감았다」가 아니라 「실눈」으로 읽힌다.
+        /// 셰이프키는 선형이라 1.0을 넘겨도 외삽되고 유니티도 100 넘는 가중치를 받는다.
+        /// 두께를 재 보니:
+        ///     1.00 → 31%   1.40 → 9%   1.44 → 8%(최소)   1.48 → **면이 뒤집힌다**
+        /// 뒤집힘은 기본 자세에서 위에 있던 정점이 아래로 내려가는 것이고(노멀 반전),
+        /// **쥐와 고양이가 같은 지점(≈1.47)에서** 넘어간다.
+        ///
+        /// 최소가 1.44인데 140을 쓰는 이유는 **여유**다 — 뒤집힘까지 0.07밖에 안 남고,
+        /// 얻는 것은 두께 1%p뿐이다. LOD를 갈아 끼우거나 팩이 갱신되면 이 값을 다시 재라
+        /// (`scratchpad/blink_overdrive.py`가 그 자다).
+        /// </summary>
+        public const float BLINK_FULL_WEIGHT = 140f;
+
         public static EyeShapeWeights Weights(Vector3 _restR, Vector3 _restL,
                                               Vector3 _gazeR, Vector3 _gazeL,
                                               Vector3 _pivot, float _maxAngleDeg, float _cover)
@@ -66,7 +82,7 @@ namespace CTC.Runtime.Player
                 Mathf.Max(0f, -h) * 100f,
                 Mathf.Max(0f, v) * 100f,
                 Mathf.Max(0f, -v) * 100f,
-                Mathf.Clamp01(_cover) * 100f);
+                Mathf.Clamp01(_cover) * BLINK_FULL_WEIGHT);
         }
 
         private static Vector3 Safe(Vector3 _v, Vector3 _fallback)

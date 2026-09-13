@@ -143,7 +143,29 @@ GazeAim(복제된 조준) ──> EyeLook: ClampGaze·Follow·StepBlink (그대�
 
 지운 것: `EyeLook`의 구 생성·`MakePart`·`MakeChild`·`EnsureMeshes`·`BuildSphere`와 `m_UseBlendShapes`/`DevSetEyeMode`/`DevSetVisible`/`DevPupilWorld*`, CSV 다섯 칸(`EyeScleraScale`·`EyePupilRatio`·`EyePupilOffsetRatio`·`EyeFlatten`·`EyeInsetRatio`), `EyeAnchorBaker`의 반경 굽기, `CharmTunerWindow`의 크기 슬라이더 다섯, `TestSetEyeMode`·`TestShowEyes`·`TestHideEyes`.
 
-**「옆 목표를 쫓는 비대칭 시선」 칸은 끝내 못 찍었다** — 봇의 시선을 원하는 각도에 못박는 훅(`GazeAim.DevForce`)까지 갔다가 사용자가 먼저 A를 골랐다. 표현이 불가능한 것은 수학적으로 확정이지만(거울 대칭), **그 부재가 눈에 띄는지는 안 쟀다.** 인게임에서 거슬리면 여기로 돌아온다.
+### 「옆 목표」 손실의 크기 — 인게임 실측 (2026-09-13)
+
+`GazeAim.DevForce`로 봇 쥐의 조준을 몸 기준 **yaw +75도**에 못박고 두 눈의 시선과
+렌더러 가중치를 같이 읽었다(쥐 한계: 바깥 30도 · 안쪽 83.5도).
+
+| | 오른눈 | 왼눈 |
+|---|---|---|
+| 구 방식(실측) | **−29.7도**(바깥) | **+69.0도**(안쪽) |
+| 셰이프키 | +19.7도 | +19.7도 |
+| 어긋남 | **49.3도** | 49.3도 |
+
+계산이 인게임 가중치를 재현한다(계산 in=66 vs 실측 65) — 숫자를 믿을 수 있다.
+
+**이 각도가 실제로 나오는가**: 사람의 조준은 **카메라 정면**이고 몸은 이동 방향으로
+천천히 돈다(`GazeAim.SourceDirection`). 둘은 서로 독립이라 **「달리면서 옆·뒤를 살핀다」**
+에서 75도는 예외가 아니라 흔한 값이다 — 숨바꼭질에서 핵심 동작이기도 하다.
+봇으로는 이 분포를 못 잰다(봇의 조준은 제 속도 방향이라 몸과 거의 안 벌어진다).
+
+**남은 선택지**(전부 이 설계 밖):
+1. 그대로 둔다 — 옆을 살필 때 두 눈이 모이는 것으로 보인다
+2. 그 구간만 구를 되살린다 — 두 방식이 공존해 복잡해진다
+3. **한쪽 눈만 움직이는 셰이프키를 블렌더로 저작한다**(`lookIn.L`/`lookIn.R`) —
+   파이프라인이 이미 있으므로 가능하지만 팩 메시 에셋을 고치는 일이다
 
 ---
 

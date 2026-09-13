@@ -99,12 +99,31 @@ namespace CTC.Tests
             }
         }
 
+        /// <summary>
+        /// 감김은 **100이 아니라 140까지** 간다 — 팩 키를 100%로 두면 두께가 31% 남아
+        /// 「실눈」으로 읽힌다(2026-09-13 실측). 140에서 9%이고, 148이면 면이 뒤집힌다.
+        /// </summary>
         [Test]
-        public void Blink_FollowsCover()
+        public void Blink_FollowsCover_UpToOverdrivenFull()
         {
+            float full = EyeBlendShapeLogic.BLINK_FULL_WEIGHT;
             Assert.AreEqual(0f, At(REST_R, REST_L, 0f).Blink, 0.01f);
-            Assert.AreEqual(50f, At(REST_R, REST_L, 0.5f).Blink, 0.01f);
-            Assert.AreEqual(100f, At(REST_R, REST_L, 1f).Blink, 0.01f);
+            Assert.AreEqual(full * 0.5f, At(REST_R, REST_L, 0.5f).Blink, 0.01f);
+            Assert.AreEqual(full, At(REST_R, REST_L, 1f).Blink, 0.01f);
+        }
+
+        /// <summary>
+        /// **뒤집힘 문턱을 넘지 않는다.** 쥐·고양이 둘 다 가중치 1.48에서 눈 메시의 위아래가
+        /// 교차해 노멀이 뒤집힌다 — 그 밑에 머물러야 한다는 것이 이 상수의 존재 이유다.
+        /// 여기가 빨개지면 <c>blink_overdrive.py</c>로 다시 재고 나서 값을 옮겨라.
+        /// </summary>
+        [Test]
+        public void BlinkFullWeight_StaysBelowTheNormalFlipThreshold()
+        {
+            Assert.Greater(EyeBlendShapeLogic.BLINK_FULL_WEIGHT, 100f,
+                "100이면 두께가 31% 남아 실눈으로 보인다");
+            Assert.Less(EyeBlendShapeLogic.BLINK_FULL_WEIGHT, 147f,
+                "147 위는 눈 메시가 뒤집힌다(2026-09-13 쥐·고양이 실측)");
         }
 
         [Test]
@@ -117,12 +136,16 @@ namespace CTC.Tests
                     Vector3 gazeR = Quaternion.AngleAxis(i * 6f, Vector3.up) * REST_R;
                     Vector3 gazeL = Quaternion.AngleAxis(j * 6f, Vector3.up) * REST_L;
                     EyeShapeWeights w = At(gazeR, gazeL, 3f);   // cover도 범위 밖으로 준다
-                    float[] all = { w.LookIn, w.LookOut, w.LookUp, w.LookDown, w.Blink };
-                    foreach (float v in all)
+                    // 방향 넷은 0~100이고 **감김만 140까지** 간다 — 둘을 같은 상한으로 묶으면
+                    // 감김의 외삽을 막거나 방향의 초과를 놓친다.
+                    float[] dirs = { w.LookIn, w.LookOut, w.LookUp, w.LookDown };
+                    foreach (float v in dirs)
                     {
                         Assert.GreaterOrEqual(v, 0f);
                         Assert.LessOrEqual(v, 100f);
                     }
+                    Assert.GreaterOrEqual(w.Blink, 0f);
+                    Assert.LessOrEqual(w.Blink, EyeBlendShapeLogic.BLINK_FULL_WEIGHT);
                 }
             }
         }
