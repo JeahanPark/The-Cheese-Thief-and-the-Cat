@@ -104,6 +104,9 @@ namespace CTC.Editor
                 var eyes = root.GetComponent<EyeLook>();
                 if (eyes == null) eyes = root.AddComponent<EyeLook>();
                 Apply(eyes, _role);
+                // 표정(2026-09-13) — 씬을 다시 굽지 않고 기존 프리팹에 붙이는 길이 이 메뉴뿐이라 여기서 같이 챙긴다.
+                // PlayerPrefabFactory도 같은 것을 붙인다(다시 구울 때).
+                if (root.GetComponent<FaceExpression>() == null) root.AddComponent<FaceExpression>();
                 PrefabUtility.SaveAsPrefabAsset(root, _path);
                 Debug.Log($"[EyeAnchorBaker] 구움: {_path} ({_role})");
             }

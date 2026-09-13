@@ -149,13 +149,28 @@ def parse_clip(_path: str) -> dict:
     if not isinstance(poses, dict) or not poses:
         raise ClipReviewError(f"{_path}의 POSES가 비어 있거나 dict가 아니다: {type(poses).__name__}")
 
+    # 키는 `(프레임, X)` 또는 `(프레임, X, Z)`다(2026-09-13 Fortress가 앞발을 옆으로 벌리려고
+    # Z축을 처음 썼다). Z가 한 번이라도 나오면 그 뼈는 **행을 하나 더** 세운다 —
+    # X 행에 섞어 적으면 「앞발 +20」이 벌림 80도를 숨긴 채 보인다.
     bones: dict[str, dict[int, float]] = {}
     for bone, keys in poses.items():
+        x_row: dict[int, float] = {}
+        z_row: dict[int, float] = {}
+        uses_z = False
         try:
-            bones[str(bone)] = {int(f): float(v) for f, v in keys}
+            for key in keys:
+                if len(key) not in (2, 3):
+                    raise ValueError(f"길이 {len(key)}")
+                f = int(key[0])
+                x_row[f] = float(key[1])
+                z_row[f] = float(key[2]) if len(key) == 3 else 0.0
+                uses_z = uses_z or len(key) == 3
         except (TypeError, ValueError) as e:
             raise ClipReviewError(
-                f"{_path}의 '{bone}' 키 목록이 (프레임, 각도) 쌍이 아니다: {e}") from e
+                f"{_path}의 '{bone}' 키 목록이 (프레임, X[, Z]) 튜플이 아니다: {e}") from e
+        bones[str(bone)] = x_row
+        if uses_z:
+            bones[f"{bone} (벌림 Z)"] = z_row
 
     # **프레임 열은 합집합이다.** Shoot과 ShootDraw가 서로 다른 프레임에 키를 찍는 것처럼
     # (ShootDraw만 4프레임을 쓴다) 한 클립 안에서도 뼈마다 달라질 수 있다. 어느 뼈 하나가

@@ -141,6 +141,10 @@ namespace CTC.Editor
                 // 굽는 값이 없다: 본 이름은 두 종이 같고, 각도·유지·속도는 BalanceInfo.csv에서 직접 읽는다.
                 root.AddComponent<EarPerk>();
 
+                // 원샷 동작에 표정을 딸린다(2026-09-13) — 팩 컨트롤러의 Shapekey 레이어를 쓴다.
+                // 무엇을 켜는지·왜 대부분을 기각했는지는 FaceExpressionLogic 머리말(정보 설계).
+                root.AddComponent<FaceExpression>();
+
                 // 발소리 — 3D 한 걸음씩(거리 감쇠). FootstepPlayer가 이동 거리 누적으로 박자를 낸다(2026-08-17).
                 // 한 걸음 클립 3종은 예전 루프(sfx_*_footstep.ogg)에서 잘라낸 것 — 보폭은 그 루프의 박자
                 // (쥐 3.4걸음/s · 고양이 2.5걸음/s)를 기준 이속에서 그대로 재현하는 값이다.
@@ -184,6 +188,10 @@ namespace CTC.Editor
                 // 거울 대칭으로 묶어 「옆 목표를 쫓는 시선」이 안 된다. **여기서 굽는 이유**: 씬 재생성이
                 // 매번 프리팹을 새로 굽기 때문에 메뉴로 한 번 물린 메시는 다음 재생성에서 사라진다.
                 EyeSplitMeshBaker.Apply(model);
+
+                // 쥐 뒷다리에 무릎(2026-09-13) — 파생 메시가 선 **뒤**라야 가중치를 나눌 메시가 있다.
+                // 파생 메시를 새로 구우면 가중치가 팩 원본으로 돌아가므로 매번 같이 부른다.
+                if (_role == RoleId.Mouse) KneeRigBaker.Apply(model);
 
                 // 쥐 앞발에 총을 물린다(2026-09-12) — 모델이 선 뒤라야 본이 있다.
                 // **꺼진 채로** 달리고, 쏠 때만 MouseGunVisual이 켠다. 자리·회전은 실측값이라

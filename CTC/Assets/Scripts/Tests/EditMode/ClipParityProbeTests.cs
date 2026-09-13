@@ -236,7 +236,7 @@ namespace CTC.Tests
             ParityReport report = ClipParityLogic.Compare(
                 ClipParityProbe.SampleClip(packWalk, ClipParityProbe.SAMPLE_COUNT),
                 ClipParityProbe.SampleClip(roundTripWalk, ClipParityProbe.SAMPLE_COUNT),
-                ClipParityProbe.EPSILON);
+                ClipParityProbe.EPSILON, ClipParityProbe.INTENTIONAL_BONES);
 
             Assert.IsTrue(report.IsIdentical, report.ToText());
         }

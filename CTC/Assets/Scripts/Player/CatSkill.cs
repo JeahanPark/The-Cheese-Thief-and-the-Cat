@@ -26,6 +26,11 @@ namespace CTC.Runtime.Player
         private readonly NetworkVariable<double> m_ActiveUntil = new NetworkVariable<double>();
 
         private CatClass m_Class;
+        private PlayerAnimationDriver m_AnimationDriver; // 쓸 때마다 찾지 않는다
+
+        // 전직 스킬 동작(자작, 2026-09-13) — 예전엔 몸이 아무것도 안 했다. 켜졌다를 알리는 한 번짜리.
+        // 전직마다 클립이 다르다(AnimationStateLogic.CatSkillFor).
+        private const float SKILL_ANIM_SECONDS = 0.5f;
 
         /// <summary>지금 스킬이 켜져 있는가(전원 읽기 — 쥐 화면 효과가 이걸 본다).</summary>
         public bool Active => m_Active.Value;
@@ -51,6 +56,7 @@ namespace CTC.Runtime.Player
         private void Awake()
         {
             m_Class = GetComponent<CatClass>();
+            m_AnimationDriver = GetComponent<PlayerAnimationDriver>();
         }
 
         private void Update()
@@ -112,6 +118,14 @@ namespace CTC.Runtime.Player
             // 위치가 실린 3D 소리다 — "어디서 켜졌나"까지 알려 줘야 도망칠 방향이 생긴다.
             Audio.SfxPlayer.PlayAt(Audio.SfxId.CatSkill, transform.position, 1f,
                 Info.InfoManager.Instance.Balance.CatSkillSoundMeters);
+
+            // 소리와 같은 이유로 모션도 전 클라다(CatFrenzy.FrenzyFxRpc와 같은 규칙).
+            // **전직마다 동작이 다르다**(2026-09-13 사용자 결정) — 전직은 복제값(CatClass)이라 받는 쪽이 제 화면에서 고른다.
+            string clip = m_Class != null ? AnimationStateLogic.CatSkillFor(m_Class.Value) : null;
+            if (m_AnimationDriver != null && clip != null)
+            {
+                m_AnimationDriver.PlayOneShot(clip, SKILL_ANIM_SECONDS);
+            }
         }
     }
 }

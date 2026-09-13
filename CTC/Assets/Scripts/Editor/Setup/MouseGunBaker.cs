@@ -1,6 +1,5 @@
 using CTC.Runtime.Player;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
 
 namespace CTC.Editor
@@ -19,11 +18,6 @@ namespace CTC.Editor
     {
         private const string MOUSE_PREFAB = "Assets/Prefabs/PlayerMouse.prefab";
         private const string GUN_PREFAB = "Assets/Prefabs/Props/MouseGun.prefab";
-
-        private const string MOUSE_CONTROLLER =
-            "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/AC_Mouse.controller";
-
-        private const string CLIPS_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
 
         /// <summary>든 총을 매다는 본. 클립이 이 본에 총을 들려 놓고 짜여 있다.</summary>
         public const string GUN_BONE = "leg.F.R";
@@ -239,53 +233,8 @@ namespace CTC.Editor
         /// </summary>
         private static void AddMouseOnlyStates()
         {
-            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(MOUSE_CONTROLLER);
-            if (controller == null)
-            {
-                Debug.LogError($"[MouseGunBaker] 컨트롤러 없음: {MOUSE_CONTROLLER}");
-                return;
-            }
-
-            AnimatorStateMachine machine = null;
-            foreach (AnimatorControllerLayer layer in controller.layers)
-            {
-                if (layer.name != "Base Layer") continue;
-                machine = layer.stateMachine;
-                break;
-            }
-            if (machine == null) machine = controller.layers[0].stateMachine;
-
-            foreach (string name in AnimationStateLogic.MouseOnly)
-            {
-                AnimationClip clip = ClipParityProbe.FindClip(CLIPS_FBX, name);
-                if (clip == null)
-                {
-                    Debug.LogError($"[MouseGunBaker] 클립을 못 찾았다: {CLIPS_FBX} :: {name}");
-                    continue;
-                }
-
-                AnimatorState state = FindState(machine, name);
-                if (state == null)
-                {
-                    state = machine.AddState(name);
-                    Debug.Log($"[MouseGunBaker] 상태 추가(쥐 전용): AC_Mouse :: {name}");
-                }
-
-                state.motion = clip;
-                // 팩의 다른 상태들과 같게 — 이 컨트롤러는 파라미터 없이 CrossFade만 쓴다.
-                state.writeDefaultValues = true;
-            }
-
-            EditorUtility.SetDirty(controller);
-        }
-
-        private static AnimatorState FindState(AnimatorStateMachine _machine, string _name)
-        {
-            foreach (ChildAnimatorState child in _machine.states)
-            {
-                if (child.state != null && child.state.name == _name) return child.state;
-            }
-            return null;
+            // 2026-09-13 고양이 자작 클립이 생기면서 RoleClipStates로 뽑았다 — 쥐·고양이가 같은 함수를 쓴다.
+            RoleClipStates.AddMouse();
         }
 
         private static Transform FindDeep(Transform _root, string _name)

@@ -288,6 +288,8 @@ namespace CTC.Editor
                 try
                 {
                     Apply(root);
+                    // 파생 메시를 새로 구우면 무릎 가중치가 팩 원본으로 돌아간다 — 쥐는 무릎을 다시 넣는다(2026-09-13).
+                    if (path == KneeRigBaker.MOUSE_PREFAB) KneeRigBaker.Apply(root);
                     PrefabUtility.SaveAsPrefabAsset(root, path);
                 }
                 finally

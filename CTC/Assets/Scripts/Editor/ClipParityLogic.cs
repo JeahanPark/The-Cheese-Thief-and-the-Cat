@@ -27,6 +27,12 @@ namespace CTC.Editor
         public List<string> ExtraInB { get; } = new List<string>();
         public List<string> ValueMismatches { get; } = new List<string>();
 
+        /// <summary>
+        /// B에만 있지만 **일부러 더한 뼈**의 커브(2026-09-13 무릎 <c>shin.B.*</c>). 쉬는 자세에 가만히 있으면
+        /// 판정을 깨지 않는다 — 움직이면 <see cref="ValueMismatches"/>로 간다(무릎을 안 쓰는 클립이 무릎을 굽힌 것).
+        /// </summary>
+        public List<string> IntentionalExtras { get; } = new List<string>();
+
         /// <summary>같은 리스트 안에서 키가 두 번 이상 나온 경우. 채취(추출) 쪽이 잘못됐다는 신호다.</summary>
         public List<string> DuplicateKeys { get; } = new List<string>();
 
@@ -54,6 +60,7 @@ namespace CTC.Editor
             Section(sb, "중복 키(채취가 잘못됐다)", DuplicateKeys);
             Section(sb, "A에만 있음(사라진 뼈·프로퍼티)", MissingInB);
             Section(sb, "B에만 있음(늘어난 뼈·말단 본)", ExtraInB);
+            Section(sb, "일부러 더한 뼈(가만히 있음 — 판정에 안 넣는다)", IntentionalExtras);
             Section(sb, "값 어긋남", ValueMismatches);
             sb.AppendLine(IsIdentical ? "판정: 같다" : "판정: 다르다");
             return sb.ToString();
@@ -77,8 +84,30 @@ namespace CTC.Editor
     /// </summary>
     public static class ClipParityLogic
     {
+        /// <summary>`Rig/root/body/leg.B.L/shin.B.L:m_LocalRotation.x` → `shin.B.L`.</summary>
+        public static string BoneOf(string _key)
+        {
+            int colon = _key.IndexOf(':');
+            string path = colon >= 0 ? _key.Substring(0, colon) : _key;
+            int slash = path.LastIndexOf('/');
+            return slash >= 0 ? path.Substring(slash + 1) : path;
+        }
+
+        private static bool IsConstant(float[] _values, float _epsilon)
+        {
+            for (int i = 1; i < _values.Length; i++)
+            {
+                if (_values[i] == _values[0]) continue;
+                float d = _values[i] - _values[0];
+                if (d < 0f) d = -d;
+                if (!(d <= _epsilon)) return false;
+            }
+            return true;
+        }
+
         public static ParityReport Compare(
-            IReadOnlyList<CurveSample> _a, IReadOnlyList<CurveSample> _b, float _epsilon)
+            IReadOnlyList<CurveSample> _a, IReadOnlyList<CurveSample> _b, float _epsilon,
+            ICollection<string> _intentionalBones = null)
         {
             var report = new ParityReport();
 
@@ -92,9 +121,16 @@ namespace CTC.Editor
                 if (!byKeyB.ContainsKey(key)) report.MissingInB.Add(key);
             }
 
-            foreach (string key in byKeyB.Keys)
+            foreach (KeyValuePair<string, float[]> kv in byKeyB)
             {
-                if (!byKeyA.ContainsKey(key)) report.ExtraInB.Add(key);
+                if (byKeyA.ContainsKey(kv.Key)) continue;
+                if (_intentionalBones != null && _intentionalBones.Contains(BoneOf(kv.Key)))
+                {
+                    if (IsConstant(kv.Value, _epsilon)) report.IntentionalExtras.Add(kv.Key);
+                    else report.ValueMismatches.Add($"{kv.Key}: 일부러 더한 뼈가 이 클립에서 움직인다");
+                    continue;
+                }
+                report.ExtraInB.Add(kv.Key);
             }
 
             foreach (KeyValuePair<string, float[]> kv in byKeyA)

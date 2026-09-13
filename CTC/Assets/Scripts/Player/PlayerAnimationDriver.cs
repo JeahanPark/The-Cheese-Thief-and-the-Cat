@@ -61,7 +61,14 @@ namespace CTC.Runtime.Player
             _oneShotUntil = Time.time + _seconds;
             _currentState = _state;
             _animator.CrossFadeInFixedTime(_state, m_CrossFadeSeconds);
+            OneShotStarted?.Invoke(_state, _seconds);
         }
+
+        /// <summary>
+        /// 원샷이 걸린 순간(상태 이름, 지속 초). 몸 동작에 딸린 연출(<see cref="FaceExpression"/>)이 듣는다 —
+        /// 원샷을 부르는 곳이 여섯 군데라 거기마다 표정을 따로 부르면 하나를 꼭 빠뜨린다.
+        /// </summary>
+        public event System.Action<string, float> OneShotStarted;
 
         /// <summary>
         /// **애니메이터가 지금 실제로 들어가 있는 상태**의 이름(전이 중이면 목적지). Animator가

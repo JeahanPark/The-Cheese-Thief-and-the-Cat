@@ -142,6 +142,49 @@ namespace CTC.Tests
                 "147 위는 눈 메시가 뒤집힌다(2026-09-13 쥐·고양이 실측)");
         }
 
+        // ===== 쏠 때 질끈(eyes.squint, > <) — 2026-09-13 =====
+
+        [Test]
+        public void Squint_ZeroByDefault_FullAtOne()
+        {
+            Assert.AreEqual(0f, At(REST_R, REST_L).Squint, 0.001f, "안 쏘는데 쐐기가 들어오면 기본 얼굴이 바뀐다");
+            EyeShapeWeights w = EyeBlendShapeLogic.Weights(REST_R, REST_L, REST_R, REST_L, PIVOT, MAX, 0f, 1f);
+            Assert.AreEqual(EyeBlendShapeLogic.SQUINT_FULL_WEIGHT, w.Squint, 0.001f);
+        }
+
+        /// <summary>
+        /// 쐐기가 다 들어오면 **시선·깜빡임 키가 0이어야 한다** — 같이 밀면 선이 토막 나고(lookOut)
+        /// 덩어리로 뭉개진다(blink 140). 렌더로 확인한 것을 여기서 붙든다.
+        /// </summary>
+        [Test]
+        public void FullSquint_SilencesGazeAndBlink()
+        {
+            Vector3 gazeR = Quaternion.AngleAxis(+MAX, Vector3.up) * REST_R;
+            Vector3 gazeL = Quaternion.AngleAxis(-MAX, Vector3.up) * Quaternion.AngleAxis(MAX, Vector3.right) * REST_L;
+            EyeShapeWeights w = EyeBlendShapeLogic.Weights(REST_R, REST_L, gazeR, gazeL, PIVOT, MAX, 1f, 1f);
+            float[] rest = { w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down, w.Blink };
+            foreach (float v in rest) Assert.AreEqual(0f, v, 0.001f);
+        }
+
+        [Test]
+        public void HalfSquint_HalvesTheRest()
+        {
+            Vector3 gazeR = Quaternion.AngleAxis(+MAX, Vector3.up) * REST_R;
+            Vector3 gazeL = Quaternion.AngleAxis(-MAX, Vector3.up) * REST_L;
+            EyeShapeWeights full = EyeBlendShapeLogic.Weights(REST_R, REST_L, gazeR, gazeL, PIVOT, MAX, 1f, 0f);
+            EyeShapeWeights half = EyeBlendShapeLogic.Weights(REST_R, REST_L, gazeR, gazeL, PIVOT, MAX, 1f, 0.5f);
+            Assert.AreEqual(full.OutR * 0.5f, half.OutR, 0.5f);
+            Assert.AreEqual(full.Blink * 0.5f, half.Blink, 0.5f);
+            Assert.AreEqual(50f, half.Squint, 0.001f);
+        }
+
+        [Test]
+        public void Squint_ClampedToUnityRange()
+        {
+            Assert.AreEqual(100f, EyeBlendShapeLogic.Weights(REST_R, REST_L, REST_R, REST_L, PIVOT, MAX, 0f, 3f).Squint, 0.001f);
+            Assert.AreEqual(0f, EyeBlendShapeLogic.Weights(REST_R, REST_L, REST_R, REST_L, PIVOT, MAX, 0f, -2f).Squint, 0.001f);
+        }
+
         [Test]
         public void Weights_AlwaysWithinUnityRange()
         {

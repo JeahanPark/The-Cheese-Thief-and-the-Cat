@@ -150,6 +150,13 @@
 리그는 **Generic**이라 유니티가 뼈를 **트랜스폼 경로 문자열**로 찾는다(`Rig/root/body/head/ear.L`).
 리타깃이 없어서 이름이 한 글자만 어긋나도 **에러 없이 그 커브가 죽는다.**
 
+**쥐 뒷다리에는 팩에 없는 무릎이 있다**(2026-09-13, `shin.B.L/R` — 뼈 13개).
+블렌더는 `tools/blender/add_knees.py`(한 번만 — 두 번 돌리면 스스로 거절), 유니티는
+`Tools/CTC/Dev/Bake Mouse Knees`가 프리팹에 트랜스폼 둘을 세우고 **파생 메시**(`Mesh_*_EyeSplit`)의
+가중치를 나눈다. 가중치 공식은 양쪽이 같다(`KneeWeightLogic` ↔ `shin_share`, 무릎 0.617).
+**`Bake Eye Split Meshes`를 돌리면 가중치가 팩 원본으로 돌아가므로 무릎도 같이 다시 굽는다**(메뉴가 알아서 부른다).
+클립 자(`Probe Clip Parity`)는 무릎 커브를 「일부러 더한 뼈」로 따로 센다 — 무릎을 안 쓰는 클립에서 **움직이면** 「다르다」가 된다.
+
 | | |
 |---|---|
 | 도구 | Blender **5.2.1 LTS**. 버전을 올리면 **먼저 파이썬 API를 재라** — `bpy.ops.export_scene.fbx.get_rna_type()` |
@@ -182,7 +189,11 @@
 0도 −21mm / 20도 −30mm(최악) / 60도 +4.6mm라, 최저점이 가슴↔앞발을 옮겨 다녀 이분법이
 「해 없음」을 뱉었다. **훑어 보고서야 알았다**(`scratchpad/sweep.py` 부류).
 
-자작 클립 셋: `Shoot`·`ShootDraw`(2026-09-12) · `Dash`(2026-09-13).
+자작 클립 — 쥐 여섯: `Shoot`·`ShootDraw`(2026-09-12) · `Dash`·`Sticky`·`Fortress`·`Warehouse`(2026-09-13) · **고양이 다섯: `Frenzy` + 전직 스킬 넷 `CatSkillFire/Wind/Light/Dark`**(2026-09-13, `art/blender/cat.blend` → `CTC_Cat_Clips.fbx`, 전직마다 동작이 다르다 — 사용자 결정).
+쥐·고양이의 모든 액티브가 전용 동작을 갖는다(덮치기는 팩 `Attack`이 맞아서 유지).
+**고양이 리그는 쥐와 뼈 이름이 같고 크기가 약 2배이며, 귀의 부호만 반대다**(+가 앞으로 접힘) — `cat_frenzy.py` 머리말.
+고양이 전용 상태는 `Tools/CTC/Dev/Bake Cat Clip States`로 AC_Cat에 넣는다(쥐는 `Bake Mouse Gun` — 둘 다 `RoleClipStates`).
+바닥 관통은 `tools/blender/measure_clip.py`로 **1/4프레임 간격** 메시 기준으로 잰다 — 정수 프레임만 보면 키 사이 처짐을 놓친다(Fortress 6.5에서 −12.8mm).
 원본은 `tools/blender/clips/*.py`이고 각도마다 왜 그 값인지가 주석에 있다.
 새 클립을 `AnimationStateLogic.MouseOnly`에 넣었으면 **`Tools/CTC/Dev/Bake Mouse Gun`을 돌려야**
 AC_Mouse에 상태가 생긴다 — 안 돌리면 `CrossFadeInFixedTime`이 에러 없이 아무 일도 안 한다.

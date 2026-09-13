@@ -17,6 +17,9 @@ namespace CTC.Editor
     /// </summary>
     public static class ClipParityProbe
     {
+        /// <summary>팩에 없고 일부러 더한 뼈 — 무릎(2026-09-13, <c>tools/blender/add_knees.py</c>).</summary>
+        public static readonly string[] INTENTIONAL_BONES = { "shin.B.L", "shin.B.R" };
+
         private const string PACK_MOUSE_FBX =
             "Assets/Quirky Series/Ultimate Pack Vol.1/Mega Pack Vol.1/Pets Vol.1/Animations/Mouse_Animations.fbx";
 
@@ -116,7 +119,8 @@ namespace CTC.Editor
             CurveSample[] packSamples = SampleClip(packWalk, SAMPLE_COUNT);
             CurveSample[] madeSamples = SampleClip(madeWalk, SAMPLE_COUNT);
 
-            ParityReport report = ClipParityLogic.Compare(packSamples, madeSamples, EPSILON);
+            // 무릎(shin.B.*)은 팩에 없는 뼈를 일부러 더한 것이다(2026-09-13) — Walk에서 가만히 있으면 같다고 본다.
+            ParityReport report = ClipParityLogic.Compare(packSamples, madeSamples, EPSILON, INTENTIONAL_BONES);
             CompareClipSettings(packWalk, madeWalk, report);
 
             string text =

@@ -27,8 +27,9 @@ namespace CTC.Runtime.Player
         private readonly NetworkVariable<double> m_ReadyAt = new NetworkVariable<double>();
         private readonly NetworkVariable<double> m_ActiveUntil = new NetworkVariable<double>();
 
-        // 광분 한 바퀴(팩 Spin) — 지속(10초)이 아니라 "켜졌다"를 알리는 한 번짜리다.
-        private const float SPIN_ANIM_SECONDS = 0.6f;
+        // 광분 발동 동작(자작 Frenzy, 2026-09-13 — 팩 Spin은 발레 회전이었다). 지속(10초)이 아니라
+        // "켜졌다"를 알리는 한 번짜리다 — 10초 내내 자세를 유지하면 「아직 광분 중」이 없던 정보가 된다.
+        private const float FRENZY_ANIM_SECONDS = 0.6f;
 
         private TechSlots m_Slots;
         private PlayerAnimationDriver m_AnimationDriver; // 켤 때마다 찾지 않는다
@@ -125,7 +126,7 @@ namespace CTC.Runtime.Player
             // 알아야 흩어질 수 있다. 애니메이터 상태는 복제되지 않으므로 이 Rpc가 유일한 길이다.
             if (m_AnimationDriver != null)
             {
-                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Spin, SPIN_ANIM_SECONDS);
+                m_AnimationDriver.PlayOneShot(AnimationStateLogic.Frenzy, FRENZY_ANIM_SECONDS);
             }
         }
     }

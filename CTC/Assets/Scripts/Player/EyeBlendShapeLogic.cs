@@ -3,7 +3,7 @@ using UnityEngine;
 namespace CTC.Runtime.Player
 {
     /// <summary>
-    /// 셰이프키 가중치 — 수평은 **눈마다** 넷, 수직은 두 눈 공통 둘, 감김 하나(유니티 규약 0~100, 감김만 140까지).
+    /// 셰이프키 가중치 — 수평은 **눈마다** 넷, 수직은 두 눈 공통 둘, 감김 하나, 질끈 하나(유니티 규약 0~100, 감김만 140까지).
     /// </summary>
     public readonly struct EyeShapeWeights
     {
@@ -14,9 +14,10 @@ namespace CTC.Runtime.Player
         public readonly float Up;
         public readonly float Down;
         public readonly float Blink;
+        public readonly float Squint;
 
         public EyeShapeWeights(float _inR, float _outR, float _inL, float _outL,
-                               float _up, float _down, float _blink)
+                               float _up, float _down, float _blink, float _squint = 0f)
         {
             InR = _inR;
             OutR = _outR;
@@ -25,14 +26,15 @@ namespace CTC.Runtime.Player
             Up = _up;
             Down = _down;
             Blink = _blink;
+            Squint = _squint;
         }
 
         /// <summary>QA가 값을 **눈으로 읽을 수 있게** — 구조체 기본 ToString은 타입 이름만 준다.</summary>
         public override string ToString()
         {
             return string.Format(
-                "R(in={0:0.##} out={1:0.##}) L(in={2:0.##} out={3:0.##}) up={4:0.##} down={5:0.##} blink={6:0.##}",
-                InR, OutR, InL, OutL, Up, Down, Blink);
+                "R(in={0:0.##} out={1:0.##}) L(in={2:0.##} out={3:0.##}) up={4:0.##} down={5:0.##} blink={6:0.##} squint={7:0.##}",
+                InR, OutR, InL, OutL, Up, Down, Blink, Squint);
         }
     }
 
@@ -66,9 +68,23 @@ namespace CTC.Runtime.Player
         /// </summary>
         public const float BLINK_FULL_WEIGHT = 140f;
 
+        /// <summary>
+        /// 쏠 때 질끈 감는 눈 — 팩 키 <c>eyes.squint</c>를 쓴다(2026-09-13).
+        ///
+        /// 「질끈 감는 쐐기(&gt; &lt;)는 팩에 없다」고 적어 뒀었는데 **틀렸다** — 셰이프키 30개를 렌더로
+        /// 하나씩 보니 <c>eyes.squint</c>가 정확히 그 모양이었다(앞선 조사는 동공 **두께**만 재서 모양을 못 봤다).
+        /// 그래서 사격 감기는 <c>eyes.blink</c> 140이 아니라 이 키로 간다. 평상 깜빡임은 그대로 blink다.
+        ///
+        /// **질끈 감는 동안 시선·감김 키를 그만큼 뺀다.** 쐐기는 동공 자리에 새로 그린 선이라, lookOut을
+        /// 같이 밀면 선이 토막 나고 blink 140을 같이 밀면 덩어리로 뭉개진다(렌더 확인).
+        /// 가중치 s(0~1)만큼 쐐기가 들어오고 나머지가 (1-s)로 물러나 — 중간 프레임도 안 깨진다.
+        /// </summary>
+        public const float SQUINT_FULL_WEIGHT = 100f;
+
         public static EyeShapeWeights Weights(Vector3 _restR, Vector3 _restL,
                                               Vector3 _gazeR, Vector3 _gazeL,
-                                              Vector3 _pivot, float _maxAngleDeg, float _cover)
+                                              Vector3 _pivot, float _maxAngleDeg, float _cover,
+                                              float _squint = 0f)
         {
             float max = Mathf.Max(1f, _maxAngleDeg);
 
@@ -87,14 +103,18 @@ namespace CTC.Runtime.Player
                             + ElevationDeg(_gazeL, up) - ElevationDeg(_restL, up)) / max;
             v = Mathf.Clamp(v, -1f, 1f);
 
+            float s = Mathf.Clamp01(_squint);
+            float keep = 1f - s;   // 쐐기가 들어오는 만큼 나머지가 물러난다(SQUINT_FULL_WEIGHT 참조)
+
             return new EyeShapeWeights(
-                Mathf.Max(0f, hR) * 100f,
-                Mathf.Max(0f, -hR) * 100f,
-                Mathf.Max(0f, hL) * 100f,
-                Mathf.Max(0f, -hL) * 100f,
-                Mathf.Max(0f, v) * 100f,
-                Mathf.Max(0f, -v) * 100f,
-                Mathf.Clamp01(_cover) * BLINK_FULL_WEIGHT);
+                Mathf.Max(0f, hR) * 100f * keep,
+                Mathf.Max(0f, -hR) * 100f * keep,
+                Mathf.Max(0f, hL) * 100f * keep,
+                Mathf.Max(0f, -hL) * 100f * keep,
+                Mathf.Max(0f, v) * 100f * keep,
+                Mathf.Max(0f, -v) * 100f * keep,
+                Mathf.Clamp01(_cover) * BLINK_FULL_WEIGHT * keep,
+                s * SQUINT_FULL_WEIGHT);
         }
 
         private static Vector3 Safe(Vector3 _v, Vector3 _fallback)

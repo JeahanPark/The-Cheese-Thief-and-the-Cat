@@ -287,18 +287,27 @@ namespace CTC.Runtime.Player
         /// </summary>
         private float CurrentCover()
         {
-            float idle = m_BlinkElapsed >= 0f
+            return Mathf.Max(IdleCover(), ShotBlinkLogic.Cover(m_ShotPhase));
+        }
+
+        /// <summary>평상 깜빡임만 — <c>eyes.blink</c>로 간다.</summary>
+        private float IdleCover()
+        {
+            return m_BlinkElapsed >= 0f
                 ? EyeLookLogic.BlinkCover(m_BlinkElapsed, m_BlinkSeconds)
                 : 0f;
-            return Mathf.Max(idle, ShotBlinkLogic.Cover(m_ShotPhase));
         }
 
         private void Apply()
         {
             if (m_Shapes == null) return;
 
+            // 감는 양은 둘로 갈린다(2026-09-13): 평상 깜빡임은 blink, 쏠 때 감기는 **질끈(squint, > <)**.
+            // 「더 감은 쪽이 이긴다」는 그대로다 — 쐐기가 들어오는 만큼 blink가 물러난다(EyeBlendShapeLogic).
+            // QA가 읽는 CurrentCover()는 여전히 둘의 max라 「얼마나 감았나」의 뜻이 안 바뀐다.
             m_Shapes.Apply(EyeBlendShapeLogic.Weights(
-                m_RestR, m_RestL, m_GazeR, m_GazeL, m_GazePivot, m_MaxAngleDeg, CurrentCover()));
+                m_RestR, m_RestL, m_GazeR, m_GazeL, m_GazePivot, m_MaxAngleDeg,
+                IdleCover(), ShotBlinkLogic.Cover(m_ShotPhase)));
         }
 
         /// <summary>

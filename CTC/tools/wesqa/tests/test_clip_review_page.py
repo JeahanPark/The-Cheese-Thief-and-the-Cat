@@ -116,6 +116,18 @@ def test_parse_clip_with_malformed_pose_pairs_fails(tmp_path):
         parse_clip(path)
 
 
+def test_parse_clip_splits_splay_axis_into_its_own_row(tmp_path):
+    """(프레임, X, Z) 키는 X 행과 벌림 Z 행으로 갈린다 — 한 행에 섞으면 벌림이 숨는다."""
+    path = _write(tmp_path, "splay.py",
+                  'NAME = "Splay"\nFRAME_START = 1\nFRAME_END = 3\n'
+                  'POSES = {"leg.F.L": [(1, 0.0, 0.0), (2, 20.0, 80.0), (3, 0.0, 0.0)],'
+                  ' "body": [(1, 0.0), (3, 0.0)]}\n')
+    clip = parse_clip(path)
+    assert clip["bones"]["leg.F.L"] == {1: 0.0, 2: 20.0, 3: 0.0}
+    assert clip["bones"]["leg.F.L (벌림 Z)"] == {1: 0.0, 2: 80.0, 3: 0.0}
+    assert "body (벌림 Z)" not in clip["bones"]
+
+
 def test_top_level_bpy_import_is_detected_and_refused(tmp_path):
     """`import bpy`가 최상단에 있으면 importlib이 못 읽는다 — 시도하기 전에 잡아야
     ModuleNotFoundError 대신 고칠 방법이 적힌 메시지가 나온다."""

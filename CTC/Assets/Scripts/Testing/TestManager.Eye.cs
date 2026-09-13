@@ -14,7 +14,8 @@ namespace CTC.Runtime.Testing
         // 검수가 끝나 셰이프키로 정해지면서 **바꿀 상대가 없어졌다**.
 
         /// <summary>
-        /// "inR,outR,inL,outL,up,down,blink" — 쉼표로 붙인 일곱 값. 셰이프키가 없으면 빈 문자열.
+        /// "inR,outR,inL,outL,up,down,blink,squint" — 쉼표로 붙인 여덟 값. 셰이프키가 없으면 빈 문자열.
+        /// squint(쏠 때 질끈 감기)는 2026-09-13에 끝에 붙였다 — 앞 일곱 자리는 그대로라 기존 호출이 안 깨진다.
         /// 수평이 눈마다 둘씩인 것은 2026-09-13부터다(좌우로 쪼갠 키) — 그 전엔 다섯 값이었다.
         /// </summary>
         public string TestGetEyeShapeWeights()
@@ -24,8 +25,8 @@ namespace CTC.Runtime.Testing
             if (shapes == null) return string.Empty;
 
             EyeShapeWeights w = shapes.DevWeights();
-            return string.Format("{0:0.##},{1:0.##},{2:0.##},{3:0.##},{4:0.##},{5:0.##},{6:0.##}",
-                w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down, w.Blink);
+            return string.Format("{0:0.##},{1:0.##},{2:0.##},{3:0.##},{4:0.##},{5:0.##},{6:0.##},{7:0.##}",
+                w.InR, w.OutR, w.InL, w.OutL, w.Up, w.Down, w.Blink, w.Squint);
         }
     }
 }

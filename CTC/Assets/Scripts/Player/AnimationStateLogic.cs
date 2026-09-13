@@ -17,9 +17,9 @@ namespace CTC.Runtime.Player
         // 이름이 틀리면 CrossFadeInFixedTime은 **에러 없이 조용히 아무 일도 안 한다** —
         // 그래서 문자열을 호출부에 흘리지 않고 여기 모아 EditMode가 철자를 묶어 둔다.
         public const string Roll = "Roll";       // 팩 원본 앞구르기 — **대시에서는 더 이상 안 쓴다**(Dash 참조)
-        public const string Bounce = "Bounce";   // 끈끈이 — 발밑에 내려찍기
-        public const string Jump = "Jump";       // 요새 — 뛰어올랐다 내려오며 벽이 선다
-        public const string Spin = "Spin";       // 광분 — 한 바퀴
+        public const string Bounce = "Bounce";   // 팩 원본 반복 뜀 — **끈끈이에서는 더 이상 안 쓴다**(Sticky 참조)
+        public const string Jump = "Jump";       // 팩 원본 도약 — **요새에서는 더 이상 안 쓴다**(Fortress 참조)
+        public const string Spin = "Spin";       // 팩 원본 발레 회전 — **광분에서는 더 이상 안 쓴다**(Frenzy 참조)
         public const string Clicked = "Clicked"; // 구매 — 짧은 끄덕임
         public const string Eat = "Eat";         // 채굴 — 갉아먹기(반복)
 
@@ -42,6 +42,51 @@ namespace CTC.Runtime.Player
         public const string Dash = "Dash";
 
         /// <summary>
+        /// 쥐 끈끈이·요새(2026-09-13) — **AC_Mouse에만** 있다. 둘 다 쥐 테크다.
+        ///
+        /// 예전엔 팩의 <see cref="Bounce"/>·<see cref="Jump"/>을 빌렸는데 둘 다 **루트째 뜬다** —
+        /// Bounce는 공중 363mm에서 시작하는 반복 뜀, Jump는 395mm 도약이라 CharacterController는
+        /// 바닥인데 몸만 허공에 떴다. 새 클립은 루트를 안 건드린다
+        /// (원본: <c>tools/blender/clips/sticky.py</c> · <c>fortress.py</c>).
+        /// </summary>
+        public const string Sticky = "Sticky";     // 앞발로 버티고 뒷발로 뒤로 걷어찬다
+        public const string Fortress = "Fortress"; // 일어서 앞발을 양옆으로 벌렸다가 네 발로 쾅
+
+        /// <summary>
+        /// 쥐 창고 설치(2026-09-13) — **AC_Mouse에만** 있다. 예전엔 설치할 때 몸이 아무것도 안 했다.
+        /// 앞발로 앞쪽 바닥을 번갈아 토닥인다. 창고·숨은 창고가 **같은 클립**이다(종류를 몸으로 흘리지 않는다).
+        /// 원본: <c>tools/blender/clips/warehouse.py</c>.
+        /// </summary>
+        public const string Warehouse = "Warehouse";
+
+        /// <summary>
+        /// 고양이 광분·전직 스킬(2026-09-13) — **AC_Cat에만** 있다(원본: <c>art/blender/cat.blend</c> ·
+        /// <c>tools/blender/clips/cat_frenzy.py</c>·<c>cat_skill.py</c> → <c>CTC_Cat_Clips.fbx</c>).
+        /// 광분은 팩 <see cref="Spin"/>(한 발로 서서 발레처럼 한 바퀴)을 걷어낸 것이고, 전직 스킬은 예전엔 몸이 아무것도 안 했다.
+        /// </summary>
+        public const string Frenzy = "Frenzy";     // 낮게 버티며 꼬리 곧추세우고 하악
+
+        // 전직 스킬 — **전직마다 동작이 다르다**(2026-09-13 사용자 결정). 스킬 효과가 서로 달라 동작도 그 효과를 말한다.
+        // 처음엔 넷이 한 클립(CatSkill)이었다. 원본: tools/blender/clips/cat_skill_*.py
+        public const string CatSkillFire = "CatSkillFire";   // 불(덮치기 피해) — 일어서 두 앞발로 내려친다
+        public const string CatSkillWind = "CatSkillWind";   // 바람(이속) — 앞뒤로 길게 늘여 발진
+        public const string CatSkillLight = "CatSkillLight"; // 빛(벽 너머 감지) — 앞발 하나 들고 꼬리 세워 살핀다
+        public const string CatSkillDark = "CatSkillDark";   // 어둠(쥐 화면 암전) — 머리 묻고 꼬리 말아 웅크린다
+
+        /// <summary>전직 → 스킬 동작. 전직이 없으면 <c>null</c>(스킬 자체가 안 나간다).</summary>
+        public static string CatSkillFor(CatClassId _class)
+        {
+            switch (_class)
+            {
+                case CatClassId.Fire: return CatSkillFire;
+                case CatClassId.Wind: return CatSkillWind;
+                case CatClassId.Light: return CatSkillLight;
+                case CatClassId.Dark: return CatSkillDark;
+                default: return null;
+            }
+        }
+
+        /// <summary>
         /// 이 게임이 이름으로 부르는 상태 전부. `Animator`가 주는 것은 이름이 아니라 해시라서,
         /// 「지금 무엇이 도는가」를 글자로 되돌리려면 후보 목록이 있어야 한다
         /// (<see cref="PlayerAnimationDriver.PlayingState"/>).
@@ -51,24 +96,33 @@ namespace CTC.Runtime.Player
         public static readonly string[] All =
         {
             Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
-            Shoot, ShootDraw, Dash,
+            Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, Frenzy,
+            CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark,
         };
 
         /// <summary>
         /// **AC_Mouse에만** 있는 상태. 고양이 컨트롤러에 이 이름이 생기면 그건 실수다 —
         /// 고양이는 총을 쏘지 않는다. EditMode가 양쪽을 이 목록으로 갈라 검사한다.
         /// </summary>
-        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash };
+        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse };
 
-        /// <summary>두 컨트롤러가 **둘 다** 가져야 하는 상태 — <see cref="All"/>에서 쥐 전용을 뺀 것.</summary>
-        public static readonly string[] Shared = Except(All, MouseOnly);
+        /// <summary>**AC_Cat에만** 있는 상태(2026-09-13). 쥐 컨트롤러에 생기면 실수다.</summary>
+        public static readonly string[] CatOnly = { Frenzy, CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark };
 
-        private static string[] Except(string[] _all, string[] _remove)
+        /// <summary>두 컨트롤러가 **둘 다** 가져야 하는 상태 — <see cref="All"/>에서 쥐 전용·고양이 전용을 뺀 것.</summary>
+        public static readonly string[] Shared = Except(All, MouseOnly, CatOnly);
+
+        private static string[] Except(string[] _all, params string[][] _remove)
         {
             var kept = new System.Collections.Generic.List<string>();
             foreach (string s in _all)
             {
-                if (System.Array.IndexOf(_remove, s) < 0) kept.Add(s);
+                bool removed = false;
+                foreach (string[] list in _remove)
+                {
+                    if (System.Array.IndexOf(list, s) >= 0) { removed = true; break; }
+                }
+                if (!removed) kept.Add(s);
             }
             return kept.ToArray();
         }

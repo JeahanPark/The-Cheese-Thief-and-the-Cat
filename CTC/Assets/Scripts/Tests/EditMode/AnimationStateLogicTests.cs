@@ -59,6 +59,23 @@ namespace CTC.Tests
             Assert.AreEqual("Eat", AnimationStateLogic.Eat);
         }
 
+        /// <summary>
+        /// 쥐 액티브의 자작 클립 철자(2026-09-13). 컨트롤러에 있는지는 <c>MouseOnly</c> 목록으로
+        /// <c>MouseGunVisualLogicTests</c>가 이미 본다 — 여기서는 **호출부가 쓰는 글자**만 못 박는다.
+        /// </summary>
+        [Test]
+        public void MouseActiveClipNames_AreSelfMade()
+        {
+            Assert.AreEqual("Dash", AnimationStateLogic.Dash);
+            Assert.AreEqual("Sticky", AnimationStateLogic.Sticky);
+            Assert.AreEqual("Fortress", AnimationStateLogic.Fortress);
+            Assert.AreEqual("Warehouse", AnimationStateLogic.Warehouse);
+            CollectionAssert.IsSubsetOf(
+                new[] { AnimationStateLogic.Dash, AnimationStateLogic.Sticky, AnimationStateLogic.Fortress, AnimationStateLogic.Warehouse },
+                AnimationStateLogic.MouseOnly,
+                "쥐 액티브 클립이 MouseOnly에서 빠지면 Bake Mouse Gun이 AC_Mouse에 상태를 안 만든다");
+        }
+
         [Test]
         public void OneShotStates_ExistInMouseController()
         {
@@ -121,10 +138,12 @@ namespace CTC.Tests
             var expected = new List<string>();
             foreach (string s in AnimationStateLogic.All)
             {
-                if (System.Array.IndexOf(AnimationStateLogic.MouseOnly, s) < 0) expected.Add(s);
+                if (System.Array.IndexOf(AnimationStateLogic.MouseOnly, s) < 0
+                    && System.Array.IndexOf(AnimationStateLogic.CatOnly, s) < 0) expected.Add(s);
             }
 
             Assert.IsNotEmpty(AnimationStateLogic.MouseOnly, "쥐 전용이 비었다 — 분리가 무의미해졌다");
+            Assert.IsNotEmpty(AnimationStateLogic.CatOnly, "고양이 전용이 비었다 — 분리가 무의미해졌다");
             CollectionAssert.AreEqual(expected, AnimationStateLogic.Shared);
         }
 
@@ -142,6 +161,38 @@ namespace CTC.Tests
         public void MouseOnly_StatesAreAbsentFromCatController()
         {
             AssertStatesAbsent("AC_Cat.controller", AnimationStateLogic.MouseOnly);
+        }
+
+        /// <summary>고양이 전용(광분·전직 스킬, 2026-09-13)은 AC_Cat에 **있고** AC_Mouse에는 **없어야** 한다.</summary>
+        [Test]
+        public void CatOnly_ExistInCat_AbsentFromMouse()
+        {
+            AssertStatesExist("AC_Cat.controller", AnimationStateLogic.CatOnly);
+            AssertStatesAbsent("AC_Mouse.controller", AnimationStateLogic.CatOnly);
+            // 전직별로 갈라지기 전의 한 클립(CatSkill)이 남으면 클립 없는 빈 상태가 된다.
+            AssertStatesAbsent("AC_Cat.controller", new[] { "CatSkill" });
+        }
+
+        /// <summary>전직마다 **다른** 스킬 동작이고, 전부 고양이 전용 목록에 있다(2026-09-13).</summary>
+        [Test]
+        public void CatSkillFor_EachClassHasItsOwnCatOnlyClip()
+        {
+            var seen = new HashSet<string>();
+            foreach (CatClassId c in new[] { CatClassId.Fire, CatClassId.Wind, CatClassId.Light, CatClassId.Dark })
+            {
+                string clip = AnimationStateLogic.CatSkillFor(c);
+                Assert.IsNotNull(clip, c.ToString());
+                Assert.IsTrue(seen.Add(clip), $"{c}가 다른 전직과 같은 동작 '{clip}'을 쓴다");
+                CollectionAssert.Contains(AnimationStateLogic.CatOnly, clip, $"{clip}이 CatOnly에 없다 — AC_Cat에 상태가 안 생긴다");
+            }
+            Assert.IsNull(AnimationStateLogic.CatSkillFor(CatClassId.None));
+        }
+
+        [Test]
+        public void MouseAndCatOnly_DoNotOverlap()
+        {
+            foreach (string s in AnimationStateLogic.CatOnly)
+                CollectionAssert.DoesNotContain(AnimationStateLogic.MouseOnly, s);
         }
 
         private static void AssertStatesExist(string _controllerFile)
@@ -164,7 +215,7 @@ namespace CTC.Tests
                 foreach (string line in lines)
                 {
                     Assert.AreNotEqual("m_Name: " + state, line.Trim(),
-                        $"{_controllerFile}에 쥐 전용 '{state}'가 들어갔다 — 고양이 몫이 아니다");
+                        $"{_controllerFile}에 '{state}'가 들어갔다 — 이 컨트롤러 몫이 아니다(쥐 전용·고양이 전용이 섞였다)");
                 }
             }
         }

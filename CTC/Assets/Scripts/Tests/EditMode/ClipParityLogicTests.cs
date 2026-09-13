@@ -145,5 +145,41 @@ namespace CTC.Tests
                 "설정(길이·프레임레이트·반복)이 틀어져도 커브값만 같으면 '같다'로 남으면 안 된다");
             StringAssert.Contains("길이: 0.41667 vs 0.83333", r.ToText());
         }
+
+        // ===== 일부러 더한 뼈(무릎, 2026-09-13) =====
+
+        [Test]
+        public void IntentionalBone_Still_DoesNotBreakIdentity()
+        {
+            var a = new[] { S("Rig/root/body/leg.B.L:x", 0f, 1f) };
+            var b = new[] { S("Rig/root/body/leg.B.L:x", 0f, 1f), S("Rig/root/body/leg.B.L/shin.B.L:x", 0.3f, 0.3f) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f, new[] { "shin.B.L" });
+
+            Assert.IsTrue(r.IsIdentical, r.ToText());
+            CollectionAssert.AreEqual(new[] { "Rig/root/body/leg.B.L/shin.B.L:x" }, r.IntentionalExtras);
+        }
+
+        [Test]
+        public void IntentionalBone_Moving_IsAMismatch()
+        {
+            var a = new[] { S("Rig/root/body/leg.B.L:x", 0f, 1f) };
+            var b = new[] { S("Rig/root/body/leg.B.L:x", 0f, 1f), S("Rig/root/body/leg.B.L/shin.B.L:x", 0f, 0.5f) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f, new[] { "shin.B.L" });
+
+            Assert.IsFalse(r.IsIdentical, "무릎을 안 쓰는 클립에서 무릎이 굽었는데 같다고 한다");
+        }
+
+        [Test]
+        public void UnlistedExtraBone_StillBreaksIdentity()
+        {
+            var a = new[] { S("Rig/root:x", 0f) };
+            var b = new[] { S("Rig/root:x", 0f), S("Rig/root/ear.L_end:x", 0f) };
+
+            ParityReport r = ClipParityLogic.Compare(a, b, 1e-3f, new[] { "shin.B.L" });
+
+            Assert.IsFalse(r.IsIdentical, "말단 본(Add Leaf Bones)이 허용 목록 덕에 숨으면 안 된다");
+        }
     }
 }

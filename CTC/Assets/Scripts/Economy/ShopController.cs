@@ -24,10 +24,11 @@ namespace CTC.Runtime.Economy
         /// <summary>설치물을 놓을 수 있는 최대 거리(서버 검증) — 고스트 클램프보다 넉넉히.</summary>
         public static float MAX_PLACE_DISTANCE => Balance.PlaceMaxDistanceMeters;
 
-        // 동작이 보이는 시간(테크 v3 계획 2b Task 5) — 팩에 이미 있던 클립을 원샷으로 쓴다.
+        // 동작이 보이는 시간(테크 v3 계획 2b Task 5). 구매는 팩 클립, 설치 둘은 자작 클립(2026-09-13).
         private const float BUY_ANIM_SECONDS = 0.35f;      // Clicked — 짧은 끄덕임
-        private const float FORTRESS_ANIM_SECONDS = 0.5f;  // Jump — 뛰어올랐다 내려오며 벽이 선다
-        private const float STICKY_ANIM_SECONDS = 0.5f;    // Bounce — 발밑에 내려찍는다
+        private const float FORTRESS_ANIM_SECONDS = 0.5f;  // Fortress — 일어서 팔 벌렸다가 네 발로 쾅
+        private const float STICKY_ANIM_SECONDS = 0.5f;    // Sticky — 뒷발로 뒤로 걷어찬다
+        private const float WAREHOUSE_ANIM_SECONDS = 0.5f; // Warehouse — 앞발로 바닥을 토닥토닥
 
         private TechSlots m_Slots;
         private RoleTag m_Tag;
@@ -278,6 +279,8 @@ namespace CTC.Runtime.Economy
 
             go.GetComponent<NetworkObject>().Spawn(true);
             BindWarehouseOwner(go);
+            // 세운 쥐가 앞발로 바닥을 토닥인다(2026-09-13) — 창고·숨은 창고 같은 동작. 건물이 이미 보이는 사건이라 새 정보가 없다.
+            WarehouseFxRpc();
             ResultRpc(true);
         }
 
@@ -412,10 +415,14 @@ namespace CTC.Runtime.Economy
         /// `UseRpc`는 서버 전용이라 여기서 한 번 더 전 클라로 펴 준다.
         /// </summary>
         [Rpc(SendTo.Everyone)]
-        private void FortressFxRpc() => PlayOneShot(Player.AnimationStateLogic.Jump, FORTRESS_ANIM_SECONDS);
+        private void FortressFxRpc() => PlayOneShot(Player.AnimationStateLogic.Fortress, FORTRESS_ANIM_SECONDS);
 
         [Rpc(SendTo.Everyone)]
-        private void StickyFxRpc() => PlayOneShot(Player.AnimationStateLogic.Bounce, STICKY_ANIM_SECONDS);
+        private void StickyFxRpc() => PlayOneShot(Player.AnimationStateLogic.Sticky, STICKY_ANIM_SECONDS);
+
+        /// <summary>창고 설치 동작(2026-09-13) — 창고·숨은 창고 공통. 예전엔 몸이 아무것도 안 했다.</summary>
+        [Rpc(SendTo.Everyone)]
+        private void WarehouseFxRpc() => PlayOneShot(Player.AnimationStateLogic.Warehouse, WAREHOUSE_ANIM_SECONDS);
 
         private void PlayOneShot(string _state, float _seconds)
         {

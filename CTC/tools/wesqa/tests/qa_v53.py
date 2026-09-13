@@ -6,8 +6,8 @@
 
 ## 왜 이 스위트가 따로 있는가
 
-테크 v3 계획 2b가 원샷 여섯(대시 Roll · 끈끈이 Bounce · 요새 Jump · 광분 Spin ·
-구매 Clicked · 채굴 Eat)을 붙였는데, **자동 검사는 「컨트롤러에 그 이름이 있다」까지만**
+테크 v3 계획 2b가 원샷 여섯(대시 · 끈끈이 · 요새 · 광분 Spin · 구매 Clicked · 채굴 Eat)을
+붙였는데(대시·끈끈이·요새는 2026-09-13부터 자작 클립 Dash·Sticky·Fortress), **자동 검사는 「컨트롤러에 그 이름이 있다」까지만**
 봤다(EditMode `AnimationStateLogicTests`). `CrossFadeInFixedTime`은 없는 상태 이름을 받아도
 에러도 경고도 안 낸다 — 배선이 끊겨도 화면에서 아무 일이 안 일어날 뿐이다.
 2026-09-09 감사 B-04·C-23이 이걸 P0로 올렸고, `qa_v48` ⑦이 SKIP으로 남아 있던 이유다.
@@ -44,10 +44,17 @@ from wesqa import WesPoco
 
 RESULTS = []
 EXTRA = []
-EXPECTED = 10      # ⓪ 전제 + ①~⑥ 원샷 6종 + ⑦ 무음 + ⑧ 대조 + ⑨ 틱
+EXPECTED = 12      # ⓪ 전제 + ①~⑥ 원샷 6종 + ⑦ 무음 + ⑧ 대조 + ⑨ 틱 + ⑩ 창고 설치 + ⑪ 전직 스킬
 
 # 기대하는 애니메이터 상태 이름 — **여기 글자가 곧 계약이다**(훅에서 되읽지 않는다).
-ROLL, BOUNCE, JUMP, SPIN, CLICKED, EAT = "Roll", "Bounce", "Jump", "Spin", "Clicked", "Eat"
+# 대시·요새·끈끈이는 2026-09-13에 팩 클립(Roll·Jump·Bounce)을 걷고 자작 클립으로 바꿨다.
+# **옛 이름이 그대로 남아 있으면 이 스위트가 빨개진다** — 그게 이 글자들이 지키는 것이다.
+# 광분은 2026-09-13에 팩 Spin(발레 회전)을 걷고 자작 Frenzy로, 전직 스킬은 동작이 없다가 CatSkill이 생겼다.
+DASH, FORTRESS, STICKY, FRENZY, CLICKED, EAT = "Dash", "Fortress", "Sticky", "Frenzy", "Clicked", "Eat"
+CAT_SKILL_FIRE = "CatSkillFire"   # 전직마다 다른 동작(2026-09-13) — 여기서는 불로 전직한다
+WAREHOUSE = "Warehouse"   # 창고 설치(2026-09-13) — 숨은 창고도 같은 클립이어야 한다
+# 원샷에 딸린 표정(2026-09-13, FaceExpressionLogic) — 같은 이유로 글자를 여기 적는다.
+FACE_EXCITED, FACE_RABID, FACE_HAPPY = "Eyes_Excited", "Eyes_Rabid", "Eyes_Happy"
 
 
 def check(name, ok, detail="", case=None):
@@ -155,21 +162,39 @@ def main():
     frenzy_slot = buy_slot(host, host, c, "CatFrenzy")
     time.sleep(0.6)
     seen_buy = host.invoke("TestGetAnimObserved", _clientId=c) or ""
-    check("① 구매 — 산 순간 Clicked가 실제로 돈다",
-          frenzy_slot >= 0 and CLICKED in seen_buy.split(","),
-          "관측=[%s] (기대 %s 포함)" % (seen_buy, CLICKED), case="B-04 C-23")
+    face_buy = host.invoke("TestGetFaceObserved", _clientId=c) or ""
+    check("① 구매 — 산 순간 Clicked가 실제로 돌고 얼굴이 Excited가 된다",
+          frenzy_slot >= 0 and CLICKED in seen_buy.split(",") and FACE_EXCITED in face_buy.split(","),
+          "관측=[%s] 표정=[%s] (기대 %s · %s)" % (seen_buy, face_buy, CLICKED, FACE_EXCITED), case="B-04 C-23")
 
     # 광분은 **Space(액티브 전용 키)**로 켠다 — 숫자키는 고양이에게 늘 「키운다」다(P0-1).
     host.invoke("TestResetAnimObserved", _clientId=c)
     used = bool(host.invoke("TestPressActiveKey"))
     time.sleep(1.2)
     seen_spin = host.invoke("TestGetAnimObserved", _clientId=c) or ""
+    face_spin = host.invoke("TestGetFaceObserved", _clientId=c) or ""
     active = bool(host.invoke("TestGetCatFrenzyActive", _clientId=c))
-    check("② 광분 — Space로 켜지고 Spin이 실제로 돈다",
-          used and active and SPIN in seen_spin.split(","),
-          "눌림=%s 켜짐=%s 관측=[%s] (기대 %s 포함)" % (used, active, seen_spin, SPIN), case="B-04 C-23")
+    check("② 광분 — Space로 켜지고 Frenzy가 실제로 돌고 얼굴이 Rabid가 된다",
+          used and active and FRENZY in seen_spin.split(",") and FACE_RABID in face_spin.split(","),
+          "눌림=%s 켜짐=%s 관측=[%s] 표정=[%s] (기대 %s · %s)"
+          % (used, active, seen_spin, face_spin, FRENZY, FACE_RABID), case="B-04 C-23")
 
-    # ================= 클론 쥐 m1 — 대시 Roll · 요새 Jump · 끈끈이 Bounce =================
+    # 전직 스킬(Q) — 문턱만큼 벌고 불로 전직한 뒤 **사람 키 경로**로 쓴다(qa_v42와 같은 훅).
+    host.invoke("TestGrantAdvanceMischief")
+    time.sleep(1.0)
+    host.invoke("TestChooseCatClass", _id="Fire")
+    time.sleep(1.2)
+    host.invoke("TestResetAnimObserved", _clientId=c)
+    skill_pressed = bool(host.invoke("TestPressSkillKey"))
+    time.sleep(1.2)
+    seen_skill = host.invoke("TestGetAnimObserved", _clientId=c) or ""
+    cls = host.invoke("TestGetCatClass")
+    check("⑪ 전직 스킬 — 불로 전직해 Q를 쓰면 CatSkillFire가 실제로 돈다",
+          skill_pressed and CAT_SKILL_FIRE in seen_skill.split(","),
+          "전직=%s 눌림=%s 관측=[%s] (기대 %s 포함)" % (cls, skill_pressed, seen_skill, CAT_SKILL_FIRE),
+          case="B-04 C-23")
+
+    # ================= 클론 쥐 m1 — 대시 Dash · 요새 Fortress · 끈끈이 Sticky =================
 
     in_shop = warp_to_shop(host, m1)
     slots = {}
@@ -185,16 +210,16 @@ def main():
     out_of_shop = not bool(host.invoke("TestIsInShop", _clientId=m1))
 
     pressed, seen = press_and_watch(host, m1i, m1, slots["Dash"])
-    check("③ 대시 — 숫자키로 쓰면 Roll이 실제로 돈다",
-          out_of_shop and pressed and ROLL in seen.split(","),
-          "상점밖=%s 눌림=%s 관측=[%s] (기대 %s 포함)" % (out_of_shop, pressed, seen, ROLL), case="B-04 C-23")
+    check("③ 대시 — 숫자키로 쓰면 Dash가 실제로 돈다",
+          out_of_shop and pressed and DASH in seen.split(","),
+          "상점밖=%s 눌림=%s 관측=[%s] (기대 %s 포함)" % (out_of_shop, pressed, seen, DASH), case="B-04 C-23")
 
     time.sleep(2.0)
     pressed, seen = press_and_watch(host, m1i, m1, slots["Fortress"], settle=1.5)
     forts = host.invoke("TestGetFortressPos")
-    check("④ 요새 — 숫자키로 세우면 Jump가 실제로 돈다",
-          pressed and JUMP in seen.split(","),
-          "눌림=%s 관측=[%s] 요새=%s (기대 %s 포함)" % (pressed, seen, forts, JUMP), case="B-04 C-23")
+    check("④ 요새 — 숫자키로 세우면 Fortress가 실제로 돈다",
+          pressed and FORTRESS in seen.split(","),
+          "눌림=%s 관측=[%s] 요새=%s (기대 %s 포함)" % (pressed, seen, forts, FORTRESS), case="B-04 C-23")
 
     # 요새 안에 서 있으면 끈끈이가 InsideFortress로 거절된다 — 먼저 물러난다.
     m1i.invoke("TestTeleportLocalPlayer", _x=sx + 16.0, _z=sz + 16.0)
@@ -203,10 +228,10 @@ def main():
     pressed, seen = press_and_watch(host, m1i, m1, slots["Sticky"], settle=1.5)
     patches_after = host.invoke("TestGetStickyPatchCount")
     deny = host.invoke("TestGetUseDeny", _clientId=m1, _techId="Sticky")
-    check("⑤ 끈끈이 — 숫자키로 깔면 Bounce가 실제로 돈다",
-          pressed and BOUNCE in seen.split(","),
+    check("⑤ 끈끈이 — 숫자키로 깔면 Sticky가 실제로 돈다",
+          pressed and STICKY in seen.split(","),
           "눌림=%s 관측=[%s] 장판 %s->%s 사유=%s (기대 %s 포함)"
-          % (pressed, seen, patches_before, patches_after, deny, BOUNCE), case="B-04 C-23")
+          % (pressed, seen, patches_before, patches_after, deny, STICKY), case="B-04 C-23")
 
     # ================= 클론 쥐 m2 — 채굴 Eat =================
 
@@ -215,10 +240,12 @@ def main():
     host.invoke("TestResetAnimObserved", _clientId=m2)
     time.sleep(2.5)                                   # 채굴 원샷은 0.8초마다 다시 걸린다
     seen_eat = host.invoke("TestGetAnimObserved", _clientId=m2) or ""
+    face_eat = host.invoke("TestGetFaceObserved", _clientId=m2) or ""
     earner = host.invoke("TestGetCheeseEarnerNear", _x=sx, _z=sz)
-    check("⑥ 채굴 — 지점에 서 있으면 Eat이 실제로 돈다",
-          EAT in seen_eat.split(","),
-          "선점자=%s 관측=[%s] (기대 %s 포함)" % (earner, seen_eat, EAT), case="B-04 C-23")
+    check("⑥ 채굴 — 지점에 서 있으면 Eat이 실제로 돌고 얼굴이 Happy가 된다",
+          EAT in seen_eat.split(",") and FACE_HAPPY in face_eat.split(","),
+          "선점자=%s 관측=[%s] 표정=[%s] (기대 %s · %s)" % (earner, seen_eat, face_eat, EAT, FACE_HAPPY),
+          case="B-04 C-23")
 
     # ================= 숨은 창고 Lv3 무음 (qa_v47 ⑦-b SKIP 해소) =================
     #
@@ -233,7 +260,12 @@ def main():
 
     m2i.invoke("TestTeleportLocalPlayer", _x=sx - 6.0, _z=sz - 6.0)
     time.sleep(1.5)
+    host.invoke("TestResetAnimObserved", _clientId=m2)
     silent_count = try_place(m2i, host, m2, sx - 6.0, sz - 6.0)
+    seen_place = host.invoke("TestGetAnimObserved", _clientId=m2) or ""
+    check("⑩ 창고 설치 — 세우면 Warehouse가 실제로 돈다(숨은 창고도 같은 동작)",
+          silent_count >= 1 and WAREHOUSE in seen_place.split(","),
+          "창고=%s개 관측=[%s] (기대 %s 포함)" % (silent_count, seen_place, WAREHOUSE), case="B-04 C-23")
 
     ticks_before = host.invoke("TestGetWarehouseTicks")
     quiet_sfx, quiet_dump = sfx_window(host, 6.0)

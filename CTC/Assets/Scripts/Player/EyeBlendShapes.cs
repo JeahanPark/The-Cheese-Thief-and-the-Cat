@@ -27,12 +27,12 @@ namespace CTC.Runtime.Player
         private static readonly string[] SHAPE_NAMES =
         {
             "eyes.lookIn.R", "eyes.lookOut.R", "eyes.lookIn.L", "eyes.lookOut.L",
-            "eyes.lookUp", "eyes.lookDown", "eyes.blink",
+            "eyes.lookUp", "eyes.lookDown", "eyes.blink", "eyes.squint",
         };
 
-        private const int IN_R = 0, OUT_R = 1, IN_L = 2, OUT_L = 3, UP = 4, DOWN = 5, BLINK = 6;
+        private const int IN_R = 0, OUT_R = 1, IN_L = 2, OUT_L = 3, UP = 4, DOWN = 5, BLINK = 6, SQUINT = 7;
 
-        /// <summary>굴릴 렌더러 하나와 그 메시에서 푼 인덱스 일곱.</summary>
+        /// <summary>굴릴 렌더러 하나와 그 메시에서 푼 인덱스 여덟.</summary>
         private struct Target
         {
             public SkinnedMeshRenderer Skin;
@@ -110,6 +110,7 @@ namespace CTC.Runtime.Player
                 skin.SetBlendShapeWeight(index[UP], _weights.Up);
                 skin.SetBlendShapeWeight(index[DOWN], _weights.Down);
                 skin.SetBlendShapeWeight(index[BLINK], _weights.Blink);
+                skin.SetBlendShapeWeight(index[SQUINT], _weights.Squint);
             }
         }
 
@@ -139,7 +140,8 @@ namespace CTC.Runtime.Player
                 skin.GetBlendShapeWeight(index[OUT_L]),
                 skin.GetBlendShapeWeight(index[UP]),
                 skin.GetBlendShapeWeight(index[DOWN]),
-                skin.GetBlendShapeWeight(index[BLINK]));
+                skin.GetBlendShapeWeight(index[BLINK]),
+                skin.GetBlendShapeWeight(index[SQUINT]));
         }
     }
 }

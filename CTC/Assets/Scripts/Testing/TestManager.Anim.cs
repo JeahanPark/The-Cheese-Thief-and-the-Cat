@@ -1,7 +1,7 @@
 // TestManager의 일부 — **애니메이터가 실제로 무엇을 돌리고 있는가** (2026-09-09 감사 B-04·C-23).
 //
 // 이 프로젝트의 QA에서 세 번째로 되풀이된 병이 "Model만 보고 몸을 안 본다"였다.
-// 원샷 6종(대시 Roll · 끈끈이 Bounce · 요새 Jump · 광분 Spin · 구매 Clicked · 채굴 Eat)은
+// 원샷(대시 Dash · 끈끈이 Sticky · 요새 Fortress · 창고 Warehouse · 광분 Frenzy · 전직 CatSkill · 구매 Clicked · 채굴 Eat)은
 // 지금까지 **컨트롤러에 이름이 있다**까지만 검사했다 — 이름이 맞아도 배선이 끊기면 아무 일도
 // 안 일어나고, `CrossFadeInFixedTime`은 그때 에러도 경고도 안 낸다.
 //
@@ -68,6 +68,8 @@ namespace CTC.Runtime.Testing
                 return false;
             }
             d.ClearObservedStates();
+            FaceExpression face = d.GetComponent<FaceExpression>();
+            if (face != null) face.DevClearObservedFaces();
             return true;
         }
 
@@ -81,6 +83,36 @@ namespace CTC.Runtime.Testing
             if (d == null) return "NoDriver";
             IReadOnlyList<string> seen = d.ObservedStates;
             return string.Join(",", seen);
+        }
+
+        /// <summary>
+        /// QA: 그 몸의 **표정 레이어가 실제로 들어갔던** 표정들(쉼표 구분, 연속 중복은 접힘) — 2026-09-13.
+        /// <see cref="TestResetAnimObserved"/>가 같이 지운다. 표정 컴포넌트가 없으면 "NoFace".
+        /// </summary>
+        public string TestGetFaceObserved(long _clientId)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            FaceExpression f = p != null ? p.GetComponent<FaceExpression>() : null;
+            if (f == null) return "NoFace";
+            return string.Join(",", f.DevObservedFaces);
+        }
+
+        /// <summary>
+        /// QA: 그 몸의 뼈 하나의 **지금** 로컬 회전 "x,y,z"(오일러, 도) — 2026-09-13 무릎 검증용.
+        /// 애니메이터가 새로 넣은 뼈(<c>shin.B.L</c>)를 실제로 굴리는지는 이걸로만 안다 — 경로가 어긋나면
+        /// 에러 없이 쉬는 값에 머문다. 가만히 있을 때와 쏠 때를 견준다. 뼈를 못 찾으면 "NoBone".
+        /// </summary>
+        public string TestGetBoneLocalEuler(long _clientId, string _bone)
+        {
+            GameObject p = FindPlayerGo(_clientId);
+            if (p == null) return "NoPlayer";
+            foreach (Transform t in p.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name != _bone) continue;
+                Vector3 e = t.localEulerAngles;
+                return $"{e.x:0.#},{e.y:0.#},{e.z:0.#}";
+            }
+            return "NoBone";
         }
 
         /// <summary>QA: 리셋 이후 그 상태가 한 번이라도 실제로 걸렸는가.</summary>
