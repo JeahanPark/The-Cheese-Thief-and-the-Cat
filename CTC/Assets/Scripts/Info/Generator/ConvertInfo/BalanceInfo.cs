@@ -100,6 +100,10 @@ namespace CTC.Runtime.Info
         public int CatAdvanceMischief;
         public int SoldOutCount;
         public float EyeInwardPastCenterDeg;
+        public int GangClubDamage;
+        public float GangClubRange;
+        public float GangClubArcDegrees;
+        public float GangClubCooldown;
     }
 
     public partial class InfoManager

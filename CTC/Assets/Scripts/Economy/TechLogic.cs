@@ -56,7 +56,8 @@ namespace CTC.Runtime.Economy
     }
 
     // **뒤에만 추가한다** — 값이 직렬화되진 않지만 QA 문자열(wesqa)이 이름에 붙어 있다.
-    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop, SoldOut }
+    /// <remarks><c>GangNoGun</c>(2026-09-14) — 깡패판의 깡패 편은 총을 못 쓰니 총·후추 탄도 못 산다. 새 값은 **맨 뒤에** 붙인다(정수 값 유지).</remarks>
+    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop, SoldOut, GangNoGun }
 
     /// <summary>
     /// "쓰기"가 막힌 이유 (2026-09-07). 전에는 <c>CanUse</c>가 bool이라 View가 TechId로 이유를 추측했다 —
@@ -259,6 +260,12 @@ namespace CTC.Runtime.Economy
         /// </summary>
         public static bool NeedsActiveKey(RoleId _role, TechId _id) => !NeedsShopSpot(_role) && IsActive(_id);
 
+        /// <summary>
+        /// 총에 붙는 테크인가 — 총 티어(<see cref="TechId.Gun"/>)와 총알에 붙는 후추 탄(<see cref="TechId.Pepper"/>).
+        /// 깡패판의 깡패 편은 공격 버튼이 몽둥이라 이 둘은 사 봐야 치즈만 사라진다 → 막는다(2026-09-14 사용자 결정).
+        /// </summary>
+        public static bool IsGunTech(TechId _id) => _id == TechId.Gun || _id == TechId.Pepper;
+
         /// <summary>거절 사유 → 토스트 문구. 재화 이름은 역할별, 칸 수는 CanBuy에 준 값과 같아야 한다(단일 출처).</summary>
         public static string DenyText(TechDeny _deny, RoleId _role, int _short, int _slotCap)
         {
@@ -270,6 +277,7 @@ namespace CTC.Runtime.Economy
                 case TechDeny.NotInShop: return "상점에서만 살 수 있다";
                 case TechDeny.WrongRole: return "이 역할은 못 산다";
                 case TechDeny.SoldOut: return "오늘은 품절";
+                case TechDeny.GangNoGun: return "깡패는 총을 못 쓴다 — 몽둥이뿐";
                 default: return "살 수 없다";
             }
         }

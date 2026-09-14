@@ -34,6 +34,7 @@ namespace CTC.Runtime.Economy
         private RoleTag m_Tag;
         private CheeseWallet m_Wallet;
         private Player.PlayerAnimationDriver m_AnimationDriver; // 쓸 때마다 찾지 않는다
+        private MousePopgun m_Gun;                              // 깡패판 총 테크 잠금 판정용(고양이엔 없다)
 
         // 오늘의 품절 캐시 — 시드 하나로 정해지므로 **시드가 바뀔 때만** 다시 뽑는다(규칙 3, 폴링 금지).
         // 구독이 아니라 시드를 키로 쓴 메모다: `MatchRandom.Current`가 아직 없는 순간(로비)에 구독을
@@ -127,6 +128,12 @@ namespace CTC.Runtime.Economy
         public TechDeny CanBuyNow(TechId _id)
         {
             if (m_Slots == null || m_Tag == null || m_Wallet == null) return TechDeny.Unknown;
+            // 깡패판의 깡패 편 — 총을 못 쓰니 총 테크도 못 산다. 조건의 원본은 몽둥이 판정 하나(MousePopgun.ClubActive)다.
+            if (TechLogic.IsGunTech(_id))
+            {
+                if (m_Gun == null) m_Gun = GetComponent<MousePopgun>();
+                if (m_Gun != null && m_Gun.ClubActive) return TechDeny.GangNoGun;
+            }
             if (TechLogic.NeedsShopSpot(m_Tag.Role) && !Map.ShopSpot.AnyContains(transform.position))
                 return TechDeny.NotInShop;
             // 서버 BuyRpc도 이 함수를 지난다 — 품절 판정의 권위는 그대로 서버에 있다.
@@ -404,6 +411,7 @@ namespace CTC.Runtime.Economy
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.ShopBuy, _at, 1f, Balance.ShopBuySoundMeters);
             PlayOneShot(Player.AnimationStateLogic.Clicked, BUY_ANIM_SECONDS);
+            Fx.FxPlayer.PlayAt(Fx.FxId.BuyCoins, transform.position + Vector3.up * 0.6f);
         }
 
         /// <summary>
@@ -419,6 +427,7 @@ namespace CTC.Runtime.Economy
 
         [Rpc(SendTo.Everyone)]
         private void StickyFxRpc() => PlayOneShot(Player.AnimationStateLogic.Sticky, STICKY_ANIM_SECONDS);
+        // 끈끈이 튀김은 장판이 서는 자리(StickyPatch.OnNetworkSpawn)에서 터진다 — 설치하는 몸이 아니라.
 
         /// <summary>창고 설치 동작(2026-09-13) — 창고·숨은 창고 공통. 예전엔 몸이 아무것도 안 했다.</summary>
         [Rpc(SendTo.Everyone)]

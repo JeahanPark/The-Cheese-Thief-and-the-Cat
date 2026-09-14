@@ -142,6 +142,15 @@ namespace CTC.Runtime.Testing
                 return false;
             }
             variable.Value = MatchPhase.Gang;
+
+            // 시계도 정상 진입(ServerTryEnterGangPhase)처럼 채운다. 0으로 두면 다음 판정 틱에 **시간 초과로 판이 끝나**
+            // 결과 패널이 화면을 덮는다(2026-09-14 깡패 모습 촬영에서 물렸다). 시간 초과를 재는 쪽은 TestBurnPhaseClock을 부른다.
+            var clock = typeof(PhaseDirector).GetField(
+                "m_Remaining", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (clock != null && clock.GetValue(phase) is Unity.Netcode.NetworkVariable<float> remaining)
+                remaining.Value = MouseJobLogic.GangPhaseSeconds;
+            else
+                GameDebug.LogError("[TestManager] PhaseDirector.m_Remaining 이름·타입이 바뀌었다 — 강제 2단계 시계가 0이다");
             return true;
         }
 

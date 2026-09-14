@@ -25,8 +25,20 @@ namespace CTC.Editor
         private const int FPS = 24; // 클립 프레임레이트와 맞춘다.
         private const int UPSCALE = 2; // 768px 렌더를 그대로 두면 GIF가 작게 보인다 — 최근접 확대.
 
+        /// <summary>깡패 쥐 클립 — 몽둥이·모자·화난 눈을 입혀 찍는다(<see cref="ClipPreviewRender.RenderGangClipFramesForGif"/>).</summary>
+        private static readonly string[] GANG_CLIP_NAMES =
+        {
+            Runtime.Player.AnimationStateLogic.BipedIdle, Runtime.Player.AnimationStateLogic.BipedWalk,
+            Runtime.Player.AnimationStateLogic.BipedRun, Runtime.Player.AnimationStateLogic.ClubSwing,
+        };
+
         [MenuItem("Tools/CTC/Dev/클립 GIF 내보내기")]
-        public static void Export()
+        public static void Export() => ExportClips(CLIP_NAMES, ClipPreviewRender.RenderClipFramesForGif);
+
+        [MenuItem("Tools/CTC/Dev/깡패 쥐 클립 GIF 내보내기")]
+        public static void ExportGang() => ExportClips(GANG_CLIP_NAMES, ClipPreviewRender.RenderGangClipFramesForGif);
+
+        private static void ExportClips(string[] _clipNames, System.Func<string, List<string>> _render)
         {
             string pythonExe = FindPython();
             if (pythonExe == null)
@@ -48,7 +60,7 @@ namespace CTC.Editor
                 return;
             }
 
-            foreach (string clipName in CLIP_NAMES)
+            foreach (string clipName in _clipNames)
             {
                 // **먼저 지운다**: 같은 클립·같은 태그로 예전에 구운 프레임이 임시 폴더에
                 // 남아 있으면(다른 길이의 클립이었을 때 등) 이번 세트와 섞여 인덱스가
@@ -60,7 +72,7 @@ namespace CTC.Editor
                     File.Delete(stale);
                 }
 
-                List<string> framePaths = ClipPreviewRender.RenderClipFramesForGif(clipName);
+                List<string> framePaths = _render(clipName);
                 if (framePaths == null || framePaths.Count == 0)
                 {
                     Debug.LogError($"[ClipGifExport] {clipName} 프레임 렌더에 실패해 GIF를 생략한다");

@@ -60,6 +60,16 @@ namespace CTC.Runtime.Player
         public const string Warehouse = "Warehouse";
 
         /// <summary>
+        /// 깡패 쥐(2026-09-14) — **AC_Mouse에만** 있다. 2페이즈에서 깡패 편이 되면 두 발로 서서 걷고 몽둥이로 친다
+        /// (설계 docs/superpowers/specs/2026-09-14-gang-mouse-look-design.md). 원본: <c>tools/blender/clips/biped_*.py</c>·<c>club_swing.py</c>.
+        /// 이동 셋은 <see cref="FromSpeed"/>가 두 발 모드일 때 고른다.
+        /// </summary>
+        public const string BipedIdle = "BipedIdle";
+        public const string BipedWalk = "BipedWalk";
+        public const string BipedRun = "BipedRun";
+        public const string ClubSwing = "ClubSwing";
+
+        /// <summary>
         /// 고양이 광분·전직 스킬(2026-09-13) — **AC_Cat에만** 있다(원본: <c>art/blender/cat.blend</c> ·
         /// <c>tools/blender/clips/cat_frenzy.py</c>·<c>cat_skill.py</c> → <c>CTC_Cat_Clips.fbx</c>).
         /// 광분은 팩 <see cref="Spin"/>(한 발로 서서 발레처럼 한 바퀴)을 걷어낸 것이고, 전직 스킬은 예전엔 몸이 아무것도 안 했다.
@@ -98,13 +108,14 @@ namespace CTC.Runtime.Player
             Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
             Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, Frenzy,
             CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark,
+            BipedIdle, BipedWalk, BipedRun, ClubSwing,
         };
 
         /// <summary>
         /// **AC_Mouse에만** 있는 상태. 고양이 컨트롤러에 이 이름이 생기면 그건 실수다 —
         /// 고양이는 총을 쏘지 않는다. EditMode가 양쪽을 이 목록으로 갈라 검사한다.
         /// </summary>
-        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse };
+        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, BipedIdle, BipedWalk, BipedRun, ClubSwing };
 
         /// <summary>**AC_Cat에만** 있는 상태(2026-09-13). 쥐 컨트롤러에 생기면 실수다.</summary>
         public static readonly string[] CatOnly = { Frenzy, CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark };
@@ -127,11 +138,11 @@ namespace CTC.Runtime.Player
             return kept.ToArray();
         }
 
-        public static string FromSpeed(float _speed, float _walkThreshold, float _runThreshold)
+        public static string FromSpeed(float _speed, float _walkThreshold, float _runThreshold, bool _biped = false)
         {
-            if (_speed >= _runThreshold) return Run;
-            if (_speed >= _walkThreshold) return Walk;
-            return Idle;
+            if (_speed >= _runThreshold) return _biped ? BipedRun : Run;
+            if (_speed >= _walkThreshold) return _biped ? BipedWalk : Walk;
+            return _biped ? BipedIdle : Idle;
         }
     }
 }

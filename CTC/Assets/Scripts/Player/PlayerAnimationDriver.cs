@@ -20,6 +20,22 @@ namespace CTC.Runtime.Player
         private float _smoothedSpeed;
         private string _currentState = "";
         private float _oneShotUntil;
+        private bool m_Biped;
+
+        /// <summary>
+        /// 두 발 이동(깡패 쥐, 2026-09-14) — 켜면 이동 상태가 Biped* 셋으로 바뀐다. 원샷은 그대로.
+        /// 바꾸는 순간 다음 프레임에 새 이름으로 다시 크로스페이드되게 요청 이름을 비운다.
+        /// </summary>
+        public bool Biped
+        {
+            get => m_Biped;
+            set
+            {
+                if (m_Biped == value) return;
+                m_Biped = value;
+                _currentState = "";
+            }
+        }
 
         private void Start()
         {
@@ -44,7 +60,7 @@ namespace CTC.Runtime.Player
             Observe();
 #endif
 
-            string state = AnimationStateLogic.FromSpeed(_smoothedSpeed, m_WalkThreshold, m_RunThreshold);
+            string state = AnimationStateLogic.FromSpeed(_smoothedSpeed, m_WalkThreshold, m_RunThreshold, m_Biped);
             if (Time.time < _oneShotUntil || state == _currentState) return;
 
             _currentState = state;

@@ -46,6 +46,9 @@ namespace CTC.Editor
         /// </summary>
         private const string GUN_PREFAB = "Assets/Prefabs/Props/MouseGun.prefab";
 
+        /// <summary>깡패 모습 렌더용 — 무릎 뼈와 몽둥이·모자가 구워진 게임 프리팹.</summary>
+        private const string PLAYER_MOUSE_PREFAB = "Assets/Prefabs/PlayerMouse.prefab";
+
         private const int RESOLUTION = 768;
 
         /// <summary>클립 길이를 이 비율들로 나눠 잰다 — 시작·중간·끝을 고루 본다.</summary>
@@ -136,6 +139,34 @@ namespace CTC.Editor
         }
 
         /// <summary>
+        /// 깡패 쥐 클립(BipedIdle·BipedWalk·BipedRun·ClubSwing)용 — <see cref="RenderClipFramesForGif"/>와 같은 렌더 경로에
+        /// **게임의 깡패 모습**(몽둥이·모자·살짝 화난 눈)을 얹는다(2026-09-14).
+        ///
+        /// 팩 프리팹이 아니라 <c>PlayerMouse.prefab</c>의 <c>Model</c>을 쓴다 — 두 발 클립은 **무릎(`shin.B`)을 굽히는데**
+        /// 팩 프리팹엔 그 뼈가 없어 다리가 곧게 나온다. 소품 둘도 거기에만 구워져 있다(<see cref="GangPropBaker"/>).
+        /// </summary>
+        public static List<string> RenderGangClipFramesForGif(string _clipName)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PLAYER_MOUSE_PREFAB);
+            if (prefab == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] 프리팹을 못 찾았다: {PLAYER_MOUSE_PREFAB}");
+                return null;
+            }
+
+            AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, _clipName);
+            if (clip == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] {_clipName} 클립을 못 찾았다: {ROUNDTRIP_FBX}");
+                return null;
+            }
+
+            List<string> paths = RenderClip(prefab, clip, "gif", DenseNormalizedTimes(clip), null, true);
+            Debug.Log($"[ClipPreviewRender] 깡패 GIF용 {_clipName} {paths.Count}장 렌더 완료");
+            return paths;
+        }
+
+        /// <summary>
         /// 클립 길이·프레임레이트로부터 **블렌더 프레임 1장 1장**에 해당하는 정규화 시간을
         /// 만든다. <see cref="SHOOT_NORMALIZED_TIMES"/>처럼 손으로 박은 표본이 아니라 클립
         /// 자체 길이를 재서 만들므로 다른 클립에도 그대로 쓸 수 있다 — GIF는 몇 프레임을
@@ -192,9 +223,13 @@ namespace CTC.Editor
         /// 같은 포즈를 알파만 바꿔 가며 찍어 페이드가 실제로 보이는지 눈으로 확인하는 용도
         /// (<see cref="RenderFade"/>). 널이면 알파를 건드리지 않는다 — 기존 클립 렌더 그대로다.
         /// </param>
+        /// <param name="_gang">
+        /// 참이면 <paramref name="_prefab"/>은 <c>PlayerMouse</c>이고, 그 <c>Model</c>만 떼어 몽둥이·모자를 켜고
+        /// 화난 눈을 준 채 찍는다(<see cref="RenderGangClipFramesForGif"/>). 총은 붙이지 않는다 — 깡패는 총을 못 쓴다.
+        /// </param>
         private static List<string> RenderClip(
             GameObject _prefab, AnimationClip _clip, string _tag, float[] _normalizedTimes,
-            float[] _gunAlphas = null)
+            float[] _gunAlphas = null, bool _gang = false)
         {
             var writtenPaths = new List<string>();
             PreviewRenderUtility preview = null;
@@ -208,22 +243,31 @@ namespace CTC.Editor
             Renderer heldGun = null;
             Renderer holsteredGun = null;
             Material gunMat = null;
+            var gangMats = new List<Material>();
 
             try
             {
                 preview = new PreviewRenderUtility();
 
-                instance = UnityEngine.Object.Instantiate(_prefab);
+                instance = _gang ? InstantiateModelOnly(_prefab) : UnityEngine.Object.Instantiate(_prefab);
+                if (instance == null) return writtenPaths;
                 preview.AddSingleGO(instance);
 
-                // 총을 앞발에 물린다. 본의 자식이라 SampleAnimation이 본을 돌리면 그대로 따라간다 —
-                // 스킨드 메시와 달리 정적 MeshRenderer는 다시 스키닝할 게 없어 BakeMesh가 필요 없다.
-                heldGun = AttachGun(instance, MouseGunBaker.GUN_BONE, "MouseGun",
-                    MouseGunBaker.HeldPosition, MouseGunBaker.HeldEuler);
-                holsteredGun = AttachGun(instance, MouseGunBaker.HOLSTER_BONE, "MouseGunHolstered",
-                    MouseGunBaker.HolsterPosition, MouseGunBaker.HolsterEuler);
+                if (_gang)
+                {
+                    DressGang(instance, gangMats);
+                }
+                else
+                {
+                    // 총을 앞발에 물린다. 본의 자식이라 SampleAnimation이 본을 돌리면 그대로 따라간다 —
+                    // 스킨드 메시와 달리 정적 MeshRenderer는 다시 스키닝할 게 없어 BakeMesh가 필요 없다.
+                    heldGun = AttachGun(instance, MouseGunBaker.GUN_BONE, "MouseGun",
+                        MouseGunBaker.HeldPosition, MouseGunBaker.HeldEuler);
+                    holsteredGun = AttachGun(instance, MouseGunBaker.HOLSTER_BONE, "MouseGunHolstered",
+                        MouseGunBaker.HolsterPosition, MouseGunBaker.HolsterEuler);
 
-                gunMat = RepaintGunForPreview(new[] { heldGun, holsteredGun }, instance);
+                    gunMat = RepaintGunForPreview(new[] { heldGun, holsteredGun }, instance);
+                }
 
                 // LOD0으로 고정 — 카메라 거리 계산에 따라 다른 LOD가 뽑히면 비교가 안 맞는다.
                 var lodGroup = instance.GetComponentInChildren<LODGroup>();
@@ -360,11 +404,98 @@ namespace CTC.Editor
                 // 머티리얼은 오브젝트와 따로 남는다 — 코드로 만든 건 코드로 지운다.
                 if (groundMat != null) UnityEngine.Object.DestroyImmediate(groundMat);
                 if (gunMat != null) UnityEngine.Object.DestroyImmediate(gunMat);
+                foreach (Material m in gangMats)
+                {
+                    if (m != null) UnityEngine.Object.DestroyImmediate(m);
+                }
                 if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
                 preview?.Cleanup();
             }
 
             return writtenPaths;
+        }
+
+        /// <summary>
+        /// 게임 프리팹에서 <c>Model</c>(Animator가 있는 곳 — 클립 커브 경로의 기준)만 떼어 온다.
+        /// 루트의 네트워크·게임 컴포넌트는 미리보기에 필요 없고, 루트째 샘플하면 커브가 한 단 어긋나 아무 일도 안 한다(함정 3).
+        /// </summary>
+        private static GameObject InstantiateModelOnly(GameObject _prefab)
+        {
+            GameObject full = UnityEngine.Object.Instantiate(_prefab);
+            Transform model = full.transform.Find("Model");
+            if (model == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] '{_prefab.name}'에 Model 자식이 없다");
+                UnityEngine.Object.DestroyImmediate(full);
+                return null;
+            }
+            model.SetParent(null, false);
+            model.localPosition = Vector3.zero;
+            model.localRotation = Quaternion.identity;
+            UnityEngine.Object.DestroyImmediate(full);
+            return model.gameObject;
+        }
+
+        /// <summary>
+        /// 깡패 모습을 입힌다 — 게임의 <see cref="GangLook"/>·<see cref="GangAngryFace"/>가 켜는 것과 **같은 것**을.
+        /// <list type="bullet">
+        /// <item>몽둥이·모자를 켠다(프리팹엔 꺼진 채 구워져 있다). 이름은 <see cref="GangLook.CLUB_NAME"/>·<see cref="GangLook.HAT_NAME"/>이 원본.</item>
+        /// <item>총은 전부 끈다 — 깡패판에선 총을 못 쓴다.</item>
+        /// <item>눈: <c>eyes.rabid</c> <see cref="GangAngryFace.RABID_WEIGHT"/> + <c>eyes.annoyed</c> 나머지. BakeMesh가 이 가중치를 그대로 굽는다.</item>
+        /// </list>
+        /// 소품 머티리얼(URP/Lit)은 이 오프스크린 씬에서 마젠타로 나오므로 총과 같은 처방(<c>Sprites/Default</c> + 진짜 색)으로 다시 칠한다.
+        /// </summary>
+        private static void DressGang(GameObject _instance, List<Material> _createdMats)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            foreach (Transform t in _instance.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("MouseGun"))
+                {
+                    t.gameObject.SetActive(false);
+                    continue;
+                }
+                if (t.name != GangLook.CLUB_NAME && t.name != GangLook.HAT_NAME) continue;
+
+                t.gameObject.SetActive(true);
+                var r = t.GetComponent<Renderer>();
+                if (r == null || shader == null) continue;
+
+                Color color = Color.gray;
+                Material real = r.sharedMaterial;
+                if (real != null && real.HasProperty("_BaseColor")) color = real.GetColor("_BaseColor");
+                else if (real != null && real.HasProperty("_Color")) color = real.GetColor("_Color");
+
+                var mat = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+                r.sharedMaterial = mat;
+                _createdMats.Add(mat);
+            }
+            if (shader == null) Debug.LogWarning("[ClipPreviewRender] Sprites/Default가 없다 — 소품이 마젠타로 나올 수 있다");
+
+            // 몸 머티리얼은 **팩 프리팹의 것**을 빌린다. 게임 프리팹이 쓰는 `M_Mouse_URP`는 이 오프스크린 씬에서
+            // 몸도 바닥판도 통째로 마젠타로 나왔다(2026-09-14 실측). 팩 머티리얼은 이 도구가 원래 그리던 것이라 확실하다.
+            Material[] packMats = null;
+            var pack = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_PREFAB);
+            var packSkin = pack != null ? pack.GetComponentInChildren<SkinnedMeshRenderer>(true) : null;
+            if (packSkin != null) packMats = packSkin.sharedMaterials;
+
+            foreach (SkinnedMeshRenderer smr in _instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh == null) continue;
+                if (packMats != null && packMats.Length > 0)
+                {
+                    var mats = new Material[smr.sharedMaterials.Length];
+                    for (int i = 0; i < mats.Length; i++) mats[i] = packMats[Mathf.Min(i, packMats.Length - 1)];
+                    smr.sharedMaterials = mats;
+                }
+
+                int rabid = smr.sharedMesh.GetBlendShapeIndex("eyes.rabid");
+                int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
+                if (rabid >= 0) smr.SetBlendShapeWeight(rabid, GangAngryFace.RABID_WEIGHT);
+                if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, 100f - GangAngryFace.RABID_WEIGHT);
+            }
         }
 
         /// <summary>
@@ -568,6 +699,15 @@ namespace CTC.Editor
                 // 정적 메시라 Renderer.bounds가 매 샘플 정확히 갱신된다(스킨드와 달리).
                 if (seeded && _heldGun != null) bounds.Encapsulate(_heldGun.bounds);
                 if (seeded && _holsteredGun != null) bounds.Encapsulate(_holsteredGun.bounds);
+
+                // 깡패 소품도 같은 이유 — 머리 위 모자·치켜든 몽둥이가 틀 밖으로 잘리지 않게(꺼져 있으면 안 잡힌다).
+                if (seeded)
+                {
+                    foreach (MeshRenderer prop in _instance.GetComponentsInChildren<MeshRenderer>())
+                    {
+                        if (prop.name == GangLook.CLUB_NAME || prop.name == GangLook.HAT_NAME) bounds.Encapsulate(prop.bounds);
+                    }
+                }
             }
 
             if (!seeded)

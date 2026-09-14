@@ -197,6 +197,8 @@ namespace CTC.Editor
                 // **꺼진 채로** 달리고, 쏠 때만 MouseGunVisual이 켠다. 자리·회전은 실측값이라
                 // 메뉴(Tools/CTC/Dev/Bake Mouse Gun)와 **같은 함수**를 부른다 — 값이 갈리지 않게.
                 if (_role == RoleId.Mouse) MouseGunBaker.Attach(root);
+                // 깡패 소품(2026-09-14) — 총 다음에 단다(몽둥이가 총과 같은 자리를 쓴다)
+                if (_role == RoleId.Mouse) GangPropBaker.Attach(root);
 
                 // 카메라 Deoccluder IgnoreTag용 — 히트한 '콜라이더의 GO' 태그를 비교하므로
                 // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다

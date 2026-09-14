@@ -57,7 +57,24 @@ namespace CTC.Runtime.Combat
         /// 봇 전용 — 지금 무기의 사거리(m). 티어를 타므로 총을 사면 늘어난다.
         /// 봇이 "안 맞을 거리에선 안 쏜다"를 판단하려면 사람이 보는 것과 같은 값을 봐야 한다.
         /// </summary>
-        public float BotRange => ShopLogic.WeaponStatsForTier(m_Tier.Value).Range;
+        public float BotRange => ClubActive ? Info.InfoManager.Instance.Balance.GangClubRange : ShopLogic.WeaponStatsForTier(m_Tier.Value).Range;
+
+        private Match.MouseJob m_Job;
+        private Match.PhaseDirector m_Phase;
+
+        /// <summary>
+        /// 깡패 몽둥이가 총을 대신하는가(2026-09-14) — 2페이즈 + 깡패 편. 판정은 <see cref="Match.GangLookLogic.Active"/>.
+        /// 같은 버튼·같은 Rpc(<see cref="FireRpc"/>)를 타므로 봇도 그대로 몽둥이를 쓴다.
+        /// </summary>
+        public bool ClubActive
+        {
+            get
+            {
+                if (m_Job == null) m_Job = GetComponent<Match.MouseJob>();
+                if (m_Phase == null) m_Phase = FindAnyObjectByType<Match.PhaseDirector>();
+                return m_Job != null && m_Phase != null && Match.GangLookLogic.Active(m_Job.Value, m_Phase.Phase);
+            }
+        }
 
         /// <summary>
         /// 봇 전용 — 지금 쏠 수 있나. 서버가 <see cref="FireRpc"/>에서 같은 판정을 다시 하지만,
@@ -68,8 +85,9 @@ namespace CTC.Runtime.Combat
         {
             if (NetworkManager == null) return false;
 
-            WeaponStats stats = ShopLogic.WeaponStatsForTier(m_Tier.Value);
-            return CombatLogic.IsCooldownReady(m_LastUseTime, NetworkManager.ServerTime.Time, stats.CooldownSeconds);
+            float cooldown = ClubActive ? Info.InfoManager.Instance.Balance.GangClubCooldown
+                : ShopLogic.WeaponStatsForTier(m_Tier.Value).CooldownSeconds;
+            return CombatLogic.IsCooldownReady(m_LastUseTime, NetworkManager.ServerTime.Time, cooldown);
         }
 
         /// <summary>
@@ -107,6 +125,12 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Server, RequireOwnership = true)]
         private void FireRpc(Vector3 _direction)
         {
+            if (ClubActive)
+            {
+                ServerClub(_direction);
+                return;
+            }
+
             WeaponStats stats = ShopLogic.WeaponStatsForTier(m_Tier.Value);
 
             double now = NetworkManager.ServerTime.Time;
@@ -167,6 +191,72 @@ namespace CTC.Runtime.Combat
             TracerRpc(origin, end);
         }
 
+        // ===== 깡패 몽둥이(2026-09-14) =====
+
+        private const float CLUB_ANIM_SECONDS = 0.5f;   // ClubSwing 12프레임(0.46초) — 짧게 잡으면 휘두르다 걷기로 튄다
+
+        // 몸 앞 부채꼴 안의 **모든** 표적을 한 번씩 친다(CatPounce와 같은 규칙). 깡패 편끼리는 안 친다.
+        private void ServerClub(Vector3 _direction)
+        {
+            var balance = Info.InfoManager.Instance.Balance;
+            double now = NetworkManager.ServerTime.Time;
+            if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, balance.GangClubCooldown)) return;
+            m_LastUseTime = now;
+
+            Vector3 forward = _direction.sqrMagnitude > 1e-4f ? _direction : transform.forward;
+            Match.MouseJobId myJob = m_Job != null ? m_Job.Value : Match.MouseJobId.None;
+            int hits = 0;
+
+            foreach (Collider col in Physics.OverlapSphere(transform.position, balance.GangClubRange + 0.5f))
+            {
+                Health target = col.GetComponentInParent<Health>();
+                if (target == null || target.IsDead || target.transform.root == transform.root) continue;
+                if (!Match.GangLookLogic.InArc(transform.position, forward, target.transform.position,
+                        balance.GangClubRange, balance.GangClubArcDegrees)) continue;
+
+                RoleTag tag = target.GetComponent<RoleTag>();
+                bool isPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
+                bool isMapLoot = target.GetComponent<Map.Alcove>() != null || target.GetComponent<Map.LootBox>() != null;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, isPlayer, isMapLoot)) continue;
+
+                var targetJob = target.GetComponent<Match.MouseJob>();
+                if (targetJob != null && !Match.GangLookLogic.CanClub(myJob, targetJob.Value)) continue;
+
+                // 한 몸에 콜라이더가 여럿이면 두 번 맞는다 — 이번 휘두르기에서 이미 친 몸은 건너뛴다.
+                if (s_ClubHitThisSwing.Contains(target)) continue;
+                s_ClubHitThisSwing.Add(target);
+
+                target.TakeDamage(balance.GangClubDamage);
+                hits++;
+            }
+            s_ClubHitThisSwing.Clear();
+
+            ClubSwingRpc(transform.position + forward * 1.0f, hits > 0);
+        }
+
+        private static readonly System.Collections.Generic.HashSet<Health> s_ClubHitThisSwing =
+            new System.Collections.Generic.HashSet<Health>();
+
+        [Rpc(SendTo.Everyone)]
+        private void ClubSwingRpc(Vector3 _front, bool _hit)
+        {
+            Audio.SfxPlayer.PlayAt(Audio.SfxId.PounceSwing, transform.position);   // 휘두르는 소리 — 덮치기와 같은 뜻(근접 공격)
+
+            Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
+            if (driver != null) driver.PlayOneShot(Player.AnimationStateLogic.ClubSwing, CLUB_ANIM_SECONDS);
+
+            // 내려치는 순간(0.25초) 앞에 먼지·별 — 맞았든 아니든 "쾅"은 보인다. 맞았으면 별이 하나 더 크다.
+            ClubImpactAsync(_front, _hit).Forget();
+        }
+
+        private async Cysharp.Threading.Tasks.UniTaskVoid ClubImpactAsync(Vector3 _front, bool _hit)
+        {
+            await Cysharp.Threading.Tasks.UniTask.Delay(250, cancellationToken: destroyCancellationToken)
+                .SuppressCancellationThrow();
+            if (this == null) return;
+            Fx.FxPlayer.PlayAt(Fx.FxId.ClubSmash, _front, transform.rotation, _hit ? 1.3f : 1f);
+        }
+
         // 발사 모션 지속 — 이동 애니메이션 잠금 시간.
         // 이름을 바꿨다(2026-09-12): 이제 트는 것은 Attack이 아니라 Shoot/ShootDraw다.
         // 두 클립 다 10프레임 @24fps = 0.417초라 그 길이에 맞춘다 — 짧게 잡으면 뽑는
@@ -182,6 +272,12 @@ namespace CTC.Runtime.Combat
             Audio.SfxId fireSfx = m_Tier.Value >= 2 ? Audio.SfxId.MachinegunFire
                 : m_Tier.Value == 1 ? Audio.SfxId.SlingshotFire : Audio.SfxId.PopgunFire;
             Audio.SfxPlayer.PlayAt(fireSfx, _start);
+
+            // 총구 섬광·탄착(2026-09-14 기술 이펙트) — 궤적선과 같은 자리, 같은 순간.
+            Vector3 dir = _end - _start;
+            Quaternion aim = dir.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(dir) : transform.rotation;
+            Fx.FxPlayer.PlayAt(Fx.FxId.MuzzleFlash, _start, aim);
+            Fx.FxPlayer.PlayAt(Fx.FxId.BulletImpact, _end, aim);
 
             // 총을 손에 띄우고(없었으면 이제 뽑는다) **직전 상태**를 돌려받는다.
             // 이미 들고 있었으면 반동만, 아니면 뽑기부터 — 기관총 테크가 5배 빨라서

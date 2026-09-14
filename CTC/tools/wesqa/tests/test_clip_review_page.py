@@ -290,7 +290,13 @@ def test_the_real_clip_files_still_parse():
         assert clip["bones"], name
         assert clip["frames"][0] == clip["frame_start"], name
         assert clip["frames"][-1] == clip["frame_end"], name
+        # 깡패 두 발 클립(2026-09-14)은 **선 자세에서 시작해 선 자세로 끝난다** — 쉬는 자세가 네 발(0)이 아니다.
+        # 이 넷은 0 대신 「첫 프레임 = 끝 프레임」(루프 이음매·원샷 복귀)을 계약으로 본다.
+        posed = name.startswith("biped_") or name == "club_swing.py"
         for bone, keys in clip["bones"].items():
+            if posed:
+                assert keys[clip["frame_start"]] == keys[clip["frame_end"]],                     "%s %s 첫·끝 프레임이 안 맞물린다(루프가 튄다)" % (name, bone)
+                continue
             assert keys[clip["frame_start"]] == 0.0, "%s %s 첫 프레임이 0이 아니다" % (name, bone)
             assert keys[clip["frame_end"]] == 0.0, "%s %s 끝 프레임이 0이 아니다" % (name, bone)
     assert found >= 2, "클립 원본을 %d개만 찾았다" % found
