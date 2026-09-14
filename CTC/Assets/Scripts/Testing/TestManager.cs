@@ -95,20 +95,60 @@ namespace CTC.Runtime.Testing
             UnityEngine.SceneManagement.SceneManager.LoadScene(_sceneName);
         }
 
-        /// <summary>인트로 → 로비. 빌드 E2E QA용(2026-08-31) — 버튼과 같은 사(私)경로를 SendMessage로 탄다.</summary>
+        /// <summary>
+        /// 메인 → 서버 목록(Lobby). 빌드 E2E QA용(2026-08-31). 2026-09-14부터 메인에 「게임 시작」이 없다 —
+        /// 「공개 게임 → 서버 목록」과 같은 곳으로 간다(선택 팝업은 사람용이라 건너뛴다).
+        /// </summary>
         public void TestIntroStart()
         {
-            var intro = FindAnyObjectByType<Intro.IntroController>();
-            if (intro == null) { GameDebug.LogError("[TestManager] IntroController 없음"); return; }
-            intro.SendMessage("OnClickStart");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
         }
 
-        /// <summary>로비 → 방 만들기(대기실). 빌드 E2E QA용 — 방장 NGO 호스트가 선다.</summary>
+        /// <summary>
+        /// 서버 목록 → 공개 방 만들기(대기실). 빌드 E2E QA용 — 방장 NGO 호스트가 선다.
+        /// 이름 팝업은 사람용이라 건너뛰고 <see cref="Lobby.FrontDoor.SessionStarter"/>를 바로 부른다.
+        /// </summary>
         public void TestCreateRoom()
         {
-            var browser = FindAnyObjectByType<Lobby.Browser.LobbyBrowserController>();
-            if (browser == null) { GameDebug.LogError("[TestManager] LobbyBrowserController 없음"); return; }
-            browser.SendMessage("OnClickCreate");
+            var starter = FindAnyObjectByType<Lobby.FrontDoor.SessionStarter>();
+            if (starter == null) { GameDebug.LogError("[TestManager] SessionStarter 없음"); return; }
+            starter.HostPublic("QA 방");
+        }
+
+        /// <summary>
+        /// 메인·서버 목록에서 **비밀번호 방**을 연다(2026-09-14) — 팝업 없이 같은 절차. 빈 값이면 비밀번호 없음.
+        /// 스팀이 없으면 로컬 호스트다(관문은 같다).
+        /// </summary>
+        public void TestFrontDoorHost(string _password)
+        {
+            var starter = FindAnyObjectByType<Lobby.FrontDoor.SessionStarter>();
+            if (starter == null) { GameDebug.LogError("[TestManager] SessionStarter 없음"); return; }
+            starter.DevHostFriends(_password);
+        }
+
+        /// <summary>
+        /// 로컬 호스트에 **이 비밀번호로 한 번** 참가를 시도한다(재시도·팝업 없음). 결과는
+        /// <see cref="TestGetGateState"/>의 reject로 읽는다.
+        /// </summary>
+        public void TestFrontDoorJoin(string _password)
+        {
+            var starter = FindAnyObjectByType<Lobby.FrontDoor.SessionStarter>();
+            if (starter == null) { GameDebug.LogError("[TestManager] SessionStarter 없음"); return; }
+            starter.DevJoinLocalOnce(_password);
+        }
+
+        /// <summary>관문 상태 한 줄 — accepting·비밀번호 유무·마지막 거절 사유·접속 상태.</summary>
+        public string TestGetGateState()
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            return $"accepting={Networking.ConnectionGate.Accepting} " +
+                   $"hostPw={Networking.ConnectionGate.HostHasPassword} " +
+                   $"reject={Networking.ConnectionGate.LastRejectReason} " +
+                   $"approval={(nm != null && nm.NetworkConfig.ConnectionApproval)} " +
+                   $"listening={(nm != null && nm.IsListening)} " +
+                   $"connected={(nm != null && nm.IsConnectedClient)} " +
+                   $"server={(nm != null && nm.IsServer)} " +
+                   $"clients={(nm != null && nm.IsServer ? nm.ConnectedClientsIds.Count : -1)}";
         }
 
         /// <summary>대기실 봇 수 지정 — 방장(서버)만. 남은 자리를 넘으면 서버가 깎는다.</summary>

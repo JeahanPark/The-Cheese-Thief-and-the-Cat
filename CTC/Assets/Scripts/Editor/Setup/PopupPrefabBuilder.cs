@@ -24,6 +24,8 @@ namespace CTC.Editor
         {
             EnsureFolder();
             BuildOptionsPopupPrefab();
+            BuildTextInputPopupPrefab();   // 2026-09-14 대기실 앞단
+            BuildMessagePopupPrefab();
             AssetDatabase.SaveAssets();
             Debug.Log("[PopupPrefab] 완료 — 팝업 프리팹 + Addressables 등록");
         }

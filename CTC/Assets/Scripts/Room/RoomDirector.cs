@@ -53,6 +53,11 @@ namespace CTC.Runtime.Room
             }
 
             m_Subscription = m_Session.ViewChanged.Subscribe(_ => SyncBodies());
+
+            // 대기실이 섰다 — 이제 들어와도 된다(2026-09-14, R.E.P.O. `LobbyMenuOpen`과 같은 자리).
+            // 방을 만든 순간이 아니라 여기서 여는 이유: 씬이 넘어가는 사이에 들어온 사람은 빈 화면을 본다.
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsServer) Networking.ConnectionGate.SetAccepting(true);
         }
 
         private void OnDestroy()
@@ -87,6 +92,8 @@ namespace CTC.Runtime.Room
 
             if (!m_Session.ServerBeginStart(cat)) return;
 
+            // 시작했다 — 문을 닫는다. 대기실로 돌아오면 Start가 다시 연다.
+            Networking.ConnectionGate.SetAccepting(false);
             Handoff(members, cat);
             GameDebug.Log($"[Room] 고양이 추첨 → client={cat} (후보 {pool.Count}명, 봇 {m_Session.BotCount})");
 
@@ -110,6 +117,7 @@ namespace CTC.Runtime.Room
             ulong cat = CatDrawLogic.Pick(pool, MatchHandoff.PreviousCat, 0, nm.LocalClientId);
             if (!m_Session.ServerBeginStart(cat)) return;
 
+            Networking.ConnectionGate.SetAccepting(false);
             Handoff(members, cat);
             m_Handing = true;
             LoadGameScene().Forget();

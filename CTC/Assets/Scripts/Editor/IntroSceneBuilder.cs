@@ -59,7 +59,7 @@ namespace CTC.Editor
         private const float MENU_LEFT = 96f;
         private const float MENU_W = 430f;
         private const float MENU_H = 64f;
-        private const float MENU_TOP_Y = 430f;
+        private const float MENU_TOP_Y = 500f;   // 줄이 다섯이 되며 올렸다(2026-09-14) — 실패 패널(y 168)과 안 겹치게
         private const float MENU_GAP = 70f;
 
         [MenuItem("Tools/CTC/Setup Intro Scene")]
@@ -79,7 +79,13 @@ namespace CTC.Editor
             BuildCamera();
 
             IntroDirector director = new GameObject("IntroDirector").AddComponent<IntroDirector>();
-            BuildCanvas(director);
+
+            // 2026-09-14 R.E.P.O.식 앞단 — 메인에서 바로 방을 열고 들어가므로 네트워크가 여기서 선다.
+            // NetworkRoot는 이미 NetworkManager가 있으면(대기실에서 돌아옴) 아무 일도 안 한다.
+            LobbySceneBuilder.BuildNetworkRoot();
+            var starter = new GameObject("SessionStarter").AddComponent<CTC.Runtime.Lobby.FrontDoor.SessionStarter>();
+
+            BuildCanvas(director, starter);
 
             // 배경음(2026-09-01) — 앞단 세 화면이 무음이었다. 인게임과 같은 비율(0.35)로 깐다.
             SceneBgmBuilder.Attach(SceneBgmBuilder.LOBBY_BGM);
@@ -602,7 +608,7 @@ namespace CTC.Editor
 
         // ── UI ───────────────────────────────────────────────────────────
 
-        private static void BuildCanvas(IntroDirector _director)
+        private static void BuildCanvas(IntroDirector _director, CTC.Runtime.Lobby.FrontDoor.SessionStarter _starter)
         {
             var canvasGo = new GameObject("IntroCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGo.GetComponent<Canvas>();
@@ -651,13 +657,19 @@ namespace CTC.Editor
 
             // ── 메인 메뉴 (좌하단 세로 목록) ──
             // 커서가 올라간 줄에만 왼쪽 강조 막대와 뒤쪽 띠가 켜진다.
-            Button startButton = MakeMenuItem(root, "MenuStart", "게임 시작", MENU_TOP_Y, out IntroMenuItem startItem);
-            Button optionsButton = MakeMenuItem(root, "MenuOptions", "설정", MENU_TOP_Y - MENU_GAP, out IntroMenuItem optionsItem);
-            Button quitButton = MakeMenuItem(root, "MenuQuit", "종료", MENU_TOP_Y - MENU_GAP * 2f, out IntroMenuItem quitItem);
+            // 2026-09-14: 「게임 시작」이 R.E.P.O.식 셋으로 갈렸다(방 만들기·공개 게임·친구 방 참가).
+            Button hostButton = MakeMenuItem(root, "MenuHost", "방 만들기", MENU_TOP_Y, out IntroMenuItem hostItem);
+            Button publicButton = MakeMenuItem(root, "MenuPublic", "공개 게임", MENU_TOP_Y - MENU_GAP, out IntroMenuItem publicItem);
+            Button friendButton = MakeMenuItem(root, "MenuFriend", "친구 방 참가", MENU_TOP_Y - MENU_GAP * 2f, out IntroMenuItem friendItem);
+            Button optionsButton = MakeMenuItem(root, "MenuOptions", "설정", MENU_TOP_Y - MENU_GAP * 3f, out IntroMenuItem optionsItem);
+            Button quitButton = MakeMenuItem(root, "MenuQuit", "종료", MENU_TOP_Y - MENU_GAP * 4f, out IntroMenuItem quitItem);
 
-            // 설정 창은 아직 인게임 캔버스에만 있다 — 씬 독립이 되기 전까지 잠가 둔다.
-            // 에디터에서 굽는 값이라 SerializedObject로 넣어야 플레이까지 남는다.
-            // 설정 잠금 해제(2026-09-01) — 인게임과 같은 OptionsPopup을 이 씬에도 세운다.
+            // 연결 중 표시 — 메뉴 바로 위. 접속 절차가 도는 동안만 켜진다.
+            TMP_Text connecting = MakeText(root, "ConnectingLabel", "연결 중…", 24, FontStyles.Bold,
+                new Vector2(0f, 0f), new Vector2(MENU_LEFT + 210f, MENU_TOP_Y + 62f), new Vector2(420f, 36f));
+            connecting.alignment = TextAlignmentOptions.Left;
+            connecting.color = ACCENT;
+            connecting.gameObject.SetActive(false);
 
             // ── 실패 패널 (메뉴 아래) ──
             RectTransform errorRect = MakePanel(root, "ErrorPanel", new Color(0.235f, 0.086f, 0.078f, 0.88f),
@@ -691,7 +703,13 @@ namespace CTC.Editor
             var view = canvasGo.AddComponent<IntroView>();
             var viewSo = new SerializedObject(view);
             viewSo.FindProperty("m_Director").objectReferenceValue = _director;
-            viewSo.FindProperty("m_StartItem").objectReferenceValue = startItem;
+            SerializedProperty items = viewSo.FindProperty("m_ActionItems");
+            items.arraySize = 3;
+            items.GetArrayElementAtIndex(0).objectReferenceValue = hostItem;
+            items.GetArrayElementAtIndex(1).objectReferenceValue = publicItem;
+            items.GetArrayElementAtIndex(2).objectReferenceValue = friendItem;
+            viewSo.FindProperty("m_Starter").objectReferenceValue = _starter;
+            viewSo.FindProperty("m_ConnectingLabel").objectReferenceValue = connecting.gameObject;
             viewSo.FindProperty("m_ErrorPanel").objectReferenceValue = errorRect.gameObject;
             viewSo.FindProperty("m_ErrorText").objectReferenceValue = errorText;
             viewSo.ApplyModifiedPropertiesWithoutUndo();
@@ -707,7 +725,10 @@ namespace CTC.Editor
             var controller = canvasGo.AddComponent<IntroController>();
             var ctrlSo = new SerializedObject(controller);
             ctrlSo.FindProperty("m_Director").objectReferenceValue = _director;
-            ctrlSo.FindProperty("m_StartButton").objectReferenceValue = startButton;
+            ctrlSo.FindProperty("m_Starter").objectReferenceValue = _starter;
+            ctrlSo.FindProperty("m_HostButton").objectReferenceValue = hostButton;
+            ctrlSo.FindProperty("m_PublicButton").objectReferenceValue = publicButton;
+            ctrlSo.FindProperty("m_FriendButton").objectReferenceValue = friendButton;
             ctrlSo.FindProperty("m_RetryButton").objectReferenceValue = retryButton;
             ctrlSo.FindProperty("m_QuitButton").objectReferenceValue = quitButton;
             ctrlSo.FindProperty("m_OptionsButton").objectReferenceValue = optionsButton;

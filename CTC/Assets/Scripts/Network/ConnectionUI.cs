@@ -1,4 +1,5 @@
-﻿using SteamLobby = Steamworks.Data.Lobby;
+﻿using Cysharp.Threading.Tasks;
+using SteamLobby = Steamworks.Data.Lobby;
 using Steamworks.Data;
 using Unity.Netcode;
 using UnityEngine;
@@ -105,18 +106,23 @@ namespace CTC.Runtime.Networking
             GUILayout.Label("― Steam 매칭 ―");
             GUILayout.Label("방 이름");
             m_RoomName = GUILayout.TextField(m_RoomName, 24);
-            if (GUILayout.Button("방 만들기 (공개)")) m_Steam.CreateLobby(m_RoomName, true);
-            if (GUILayout.Button("방 만들기 (친구만)")) m_Steam.CreateLobby(m_RoomName, false);
+            if (GUILayout.Button("방 만들기 (공개)")) m_Steam.CreateLobby(m_RoomName, true, "").Forget();
+            if (GUILayout.Button("방 만들기 (친구만)")) m_Steam.CreateLobby(m_RoomName, false, "").Forget();
 
             GUILayout.Space(4f);
             if (GUILayout.Button("방 목록 새로고침"))
             {
-                m_Steam.RefreshLobbies(_lobbies => m_Lobbies = BuildEntries(_lobbies));
+                RefreshAsync().Forget();
             }
             foreach (LobbyEntry entry in m_Lobbies)
             {
-                if (GUILayout.Button(entry.Label)) m_Steam.JoinLobby(entry.Lobby);
+                if (GUILayout.Button(entry.Label)) m_Steam.JoinLobby(entry.Lobby).Forget();
             }
+        }
+
+        private async Cysharp.Threading.Tasks.UniTask RefreshAsync()
+        {
+            m_Lobbies = BuildEntries(await m_Steam.RefreshLobbies());
         }
 
         /// <summary>목록을 받은 **그 순간에** 라벨을 굳힌다 — 그리는 동안은 스팀을 안 부른다.</summary>

@@ -55,6 +55,15 @@ namespace CTC.Runtime.Networking
 
                 nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsConnectedClient) return;
+
+                // 비밀번호로 거절됐으면(2026-09-14) 빈 비밀번호로 두드려 봐야 계속 거절이다 — 여기서 멈춘다.
+                // **잠김(CLOSED)은 멈추지 않는다**: 호스트가 대기실 씬을 여는 몇 초 동안은 문이 닫혀 있어서,
+                // 그때 한 번 거절됐다고 멈추면 클론이 영영 안 붙는다(qa_v56 ②에서 잡힘).
+                if (ConnectionGateLogic.AsksPassword(ConnectionGate.LastRejectReason))
+                {
+                    Debug.Log($"[MppmAutoConnect] 관문 거절({ConnectionGate.LastRejectReason}) — 자동 접속을 멈춘다");
+                    return;
+                }
             }
         }
 

@@ -14,8 +14,13 @@ namespace CTC.Runtime.Intro
     {
         [SerializeField] private IntroDirector m_Director;
 
-        /// <summary>"게임 시작" 줄 — 준비가 안 끝나면 잠가 둔다.</summary>
-        [SerializeField] private IntroMenuItem m_StartItem;
+        /// <summary>
+        /// 접속으로 이어지는 줄들(방 만들기·공개 게임·친구 방 참가) — 준비가 안 끝났거나 연결 중이면 잠근다.
+        /// 2026-09-14 전엔 「게임 시작」 한 줄이었다.
+        /// </summary>
+        [SerializeField] private IntroMenuItem[] m_ActionItems;
+        [SerializeField] private Lobby.FrontDoor.SessionStarter m_Starter;
+        [SerializeField] private GameObject m_ConnectingLabel;
         [SerializeField] private GameObject m_ErrorPanel;
         [SerializeField] private TMP_Text m_ErrorText;
 
@@ -28,6 +33,7 @@ namespace CTC.Runtime.Intro
             }
 
             m_Director.Changed.Subscribe(_ => Render()).AddTo(this);
+            if (m_Starter != null) m_Starter.Connecting.Subscribe(_ => Render()).AddTo(this);
             Render();
         }
 
@@ -38,7 +44,15 @@ namespace CTC.Runtime.Intro
             bool fatal = m_Director.HasFatalFailure;
             bool canStart = m_Director.CanStart;
 
-            if (m_StartItem != null) m_StartItem.Locked = !canStart;
+            bool connecting = m_Starter != null && m_Starter.Connecting.CurrentValue;
+            if (m_ActionItems != null)
+            {
+                foreach (IntroMenuItem item in m_ActionItems)
+                {
+                    if (item != null) item.Locked = !canStart || connecting;
+                }
+            }
+            if (m_ConnectingLabel != null) m_ConnectingLabel.SetActive(connecting);
 
             if (m_ErrorPanel != null) m_ErrorPanel.SetActive(fatal);
 

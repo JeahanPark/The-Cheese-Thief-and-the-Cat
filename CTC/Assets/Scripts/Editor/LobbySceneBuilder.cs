@@ -11,7 +11,10 @@ using UnityEngine.UI;
 namespace CTC.Editor
 {
     /// <summary>
-    /// 로비(방 목록) 씬을 굽는다 — Tools > CTC > Setup Lobby Scene.
+    /// 로비(서버 목록) 씬을 굽는다 — Tools > CTC > Setup Lobby Scene.
+    ///
+    /// 2026-09-14 R.E.P.O.식 앞단: 메인의 「공개 게임 → 서버 목록」이 오는 화면이 됐다.
+    /// 한 페이지 8줄 · 검색칸 · 이전/다음 · 「새로 만들기」(이름 팝업 → 공개 방) · 뒤로 = 메인.
     ///
     /// 3D가 없다. 인트로의 어두운 톤만 이어받은 평면 화면이라 카메라와 캔버스뿐이다.
     /// 배치는 시안대로 **좌: 목록 / 우: 고른 방 상세 / 하단: 방 만들기**.
@@ -37,7 +40,7 @@ namespace CTC.Editor
         // 배경 그림의 주인공(램프·치즈 더미)이 화면 **오른쪽 위**에 있다. UI를 상단에만 몰면
         // 상세 패널이 램프를 가리고, 목록 아래로 그림이 반쯤 드러나 경계가 어정쩡해진다.
         // 그래서 목록을 좌측 **세로로 길게** 깔아 그 절반을 채우고, 상세는 램프를 피해 **아래**에 둔다.
-        private const int ROW_SLOTS = 9;
+        private const int ROW_SLOTS = ServerListLogic.PAGE_SIZE;
         private const float ROW_H = 76f;
         private const float ROW_GAP = 8f;
         private const float LIST_LEFT = 96f;
@@ -57,8 +60,9 @@ namespace CTC.Editor
 
             var browserGo = new GameObject("LobbyBrowser");
             LobbyBrowser browser = browserGo.AddComponent<LobbyBrowser>();
+            var starter = new GameObject("SessionStarter").AddComponent<CTC.Runtime.Lobby.FrontDoor.SessionStarter>();
 
-            BuildCanvas(browser);
+            BuildCanvas(browser, starter);
 
             // 배경음(2026-09-01) — 앞단 세 화면이 무음이었다. 인게임과 같은 비율(0.35)로 깐다.
             SceneBgmBuilder.Attach(SceneBgmBuilder.LOBBY_BGM);
@@ -92,7 +96,7 @@ namespace CTC.Editor
         /// 있었다 — 그래서 로비의 버튼이 스팀을 못 찾아 아무 일도 안 했다(2026-08-30).
         /// 여기서 한 번 세우면 NGO가 `DontDestroyOnLoad`를 걸어 대기실·인게임까지 그대로 탄다.
         /// </summary>
-        private static void BuildNetworkRoot()
+        internal static void BuildNetworkRoot()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(NETWORK_ROOT_PATH);
             if (prefab == null)
@@ -120,7 +124,7 @@ namespace CTC.Editor
             go.AddComponent<AudioListener>();
         }
 
-        private static void BuildCanvas(LobbyBrowser _browser)
+        private static void BuildCanvas(LobbyBrowser _browser, CTC.Runtime.Lobby.FrontDoor.SessionStarter _starter)
         {
             var canvasGo = new GameObject("LobbyCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGo.GetComponent<Canvas>();
@@ -140,12 +144,17 @@ namespace CTC.Editor
                     typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
             }
 
-            RectTransform root = canvasGo.GetComponent<RectTransform>();
+            RectTransform canvasRect = canvasGo.GetComponent<RectTransform>();
+            BuildBackdrop(canvasRect);
 
-            BuildBackdrop(root);
+            // 접속 중엔 이 화면의 입력을 통째로 잠근다. 팝업(PopupRoot)은 캔버스에 따로 붙어 이 그룹 밖이다.
+            var inputGroup = new GameObject("InputGroup", typeof(RectTransform), typeof(CanvasGroup));
+            var root = (RectTransform)inputGroup.transform;
+            root.SetParent(canvasRect, false);
+            Stretch(root);
 
             // ── 머리 ──
-            TMP_Text title = Text(root, "Title", "방 목록", 40, FontStyles.Bold,
+            TMP_Text title = Text(root, "Title", "서버 목록", 40, FontStyles.Bold,
                 new Vector2(0f, 1f), new Vector2(LIST_LEFT + 120f, -104f), new Vector2(260f, 56f));
             title.alignment = TextAlignmentOptions.Left;
             title.color = TEXT_ON;
@@ -157,6 +166,9 @@ namespace CTC.Editor
 
             Button refresh = TextButton(root, "RefreshButton", "새로고침",
                 new Vector2(0f, 1f), new Vector2(LIST_LEFT + LIST_W - 90f, -110f), new Vector2(160f, 52f), false);
+
+            TMP_InputField search = SearchInput(root, new Vector2(0f, 1f),
+                new Vector2(LIST_LEFT + 640f, -110f), new Vector2(340f, 52f));
 
             Button back = TextButton(root, "BackButton", "뒤로",
                 new Vector2(1f, 1f), new Vector2(-120f, -110f), new Vector2(130f, 52f), false);
@@ -173,6 +185,16 @@ namespace CTC.Editor
                 float y = -(LIST_TOP + i * (ROW_H + ROW_GAP));
                 rows[i] = Row(root, $"Row{i + 1}", y);
             }
+
+            // ── 페이지 ──
+            float pageY = -(LIST_TOP + ROW_SLOTS * (ROW_H + ROW_GAP) + 18f);
+            Button prev = TextButton(root, "PrevButton", "이전",
+                new Vector2(0f, 1f), new Vector2(LIST_LEFT + LIST_W * 0.5f - 150f, pageY), new Vector2(120f, 48f), false);
+            TMP_Text pageLabel = Text(root, "PageLabel", "1 / 1", 22, FontStyles.Bold,
+                new Vector2(0f, 1f), new Vector2(LIST_LEFT + LIST_W * 0.5f, pageY), new Vector2(140f, 48f));
+            pageLabel.color = TEXT_ON;
+            Button next = TextButton(root, "NextButton", "다음",
+                new Vector2(0f, 1f), new Vector2(LIST_LEFT + LIST_W * 0.5f + 150f, pageY), new Vector2(120f, 48f), false);
 
             TMP_Text empty = Text(root, "EmptyLabel", "열린 방이 없습니다.", 24, FontStyles.Normal,
                 new Vector2(0f, 1f), new Vector2(LIST_LEFT + LIST_W * 0.5f, -(LIST_TOP + 120f)), new Vector2(LIST_W, 60f));
@@ -204,7 +226,12 @@ namespace CTC.Editor
             detail.gameObject.SetActive(false);
 
             // ── 하단 ──
-            Button create = TextButton(root, "CreateButton", "방 만들기",
+            TMP_Text connecting = Text(canvasRect, "ConnectingLabel", "연결 중…", 26, FontStyles.Bold,
+                new Vector2(0f, 0f), new Vector2(LIST_LEFT + 460f, 96f), new Vector2(260f, 60f));
+            connecting.color = ACCENT;
+            connecting.gameObject.SetActive(false);
+
+            Button create = TextButton(root, "CreateButton", "새로 만들기",
                 new Vector2(0f, 0f), new Vector2(LIST_LEFT + 150f, 96f), new Vector2(300f, 78f), true);
 
             TMP_Text version = Text(root, "Version", "v0.9.2-dev", 18, FontStyles.Normal,
@@ -226,6 +253,12 @@ namespace CTC.Editor
             viewSo.FindProperty("m_DetailHost").objectReferenceValue = dHost;
             viewSo.FindProperty("m_DetailCount").objectReferenceValue = dCount;
             viewSo.FindProperty("m_JoinButton").objectReferenceValue = join.gameObject;
+            viewSo.FindProperty("m_PageLabel").objectReferenceValue = pageLabel;
+            viewSo.FindProperty("m_PrevButton").objectReferenceValue = prev.gameObject;
+            viewSo.FindProperty("m_NextButton").objectReferenceValue = next.gameObject;
+            viewSo.FindProperty("m_Starter").objectReferenceValue = _starter;
+            viewSo.FindProperty("m_InputGroup").objectReferenceValue = inputGroup.GetComponent<CanvasGroup>();
+            viewSo.FindProperty("m_ConnectingLabel").objectReferenceValue = connecting.gameObject;
             viewSo.ApplyModifiedPropertiesWithoutUndo();
 
             var controller = canvasGo.AddComponent<LobbyBrowserController>();
@@ -235,6 +268,11 @@ namespace CTC.Editor
             ctrlSo.FindProperty("m_JoinButton").objectReferenceValue = join;
             ctrlSo.FindProperty("m_CreateButton").objectReferenceValue = create;
             ctrlSo.FindProperty("m_BackButton").objectReferenceValue = back;
+            ctrlSo.FindProperty("m_Starter").objectReferenceValue = _starter;
+            ctrlSo.FindProperty("m_PrevButton").objectReferenceValue = prev;
+            ctrlSo.FindProperty("m_NextButton").objectReferenceValue = next;
+            ctrlSo.FindProperty("m_SearchInput").objectReferenceValue = search;
+            ctrlSo.FindProperty("m_BackSceneName").stringValue = "Intro";
             ctrlSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -273,6 +311,49 @@ namespace CTC.Editor
             var veil = veilGo.GetComponent<Image>();
             veil.raycastTarget = false;
             veil.color = new Color(0.008f, 0.012f, 0.020f, 0.45f);
+        }
+
+        /// <summary>검색칸 — 치는 대로 걸러진다(R.E.P.O.는 창을 따로 띄우지만 한 줄이면 충분하다).</summary>
+        private static TMP_InputField SearchInput(Transform _parent, Vector2 _anchor, Vector2 _pos, Vector2 _size)
+        {
+            RectTransform rect = Panel(_parent, "SearchInput", new Color(0.055f, 0.075f, 0.110f, 0.82f), _anchor, _pos, _size);
+            var outline = rect.gameObject.AddComponent<Outline>();
+            outline.effectColor = LINE;
+            outline.effectDistance = new Vector2(1f, -1f);
+
+            var area = new GameObject("Text Area", typeof(RectTransform));
+            area.transform.SetParent(rect, false);
+            var areaRt = (RectTransform)area.transform;
+            Stretch(areaRt);
+            areaRt.offsetMin = new Vector2(16f, 4f);
+            areaRt.offsetMax = new Vector2(-16f, -4f);
+            area.AddComponent<RectMask2D>();
+
+            var textGo = new GameObject("Text", typeof(RectTransform));
+            textGo.transform.SetParent(areaRt, false);
+            Stretch((RectTransform)textGo.transform);
+            var text = textGo.AddComponent<TextMeshProUGUI>();
+            text.fontSize = 22f;
+            text.alignment = TextAlignmentOptions.Left;
+            text.color = TEXT_ON;
+
+            var phGo = new GameObject("Placeholder", typeof(RectTransform));
+            phGo.transform.SetParent(areaRt, false);
+            Stretch((RectTransform)phGo.transform);
+            var placeholder = phGo.AddComponent<TextMeshProUGUI>();
+            placeholder.text = "방 이름·방장 검색";
+            placeholder.fontSize = 22f;
+            placeholder.alignment = TextAlignmentOptions.Left;
+            placeholder.color = TEXT_DIM;
+
+            var field = rect.gameObject.AddComponent<TMP_InputField>();
+            field.textViewport = areaRt;
+            field.textComponent = text;
+            field.placeholder = placeholder;
+            field.lineType = TMP_InputField.LineType.SingleLine;
+            field.characterLimit = 30;
+            field.targetGraphic = rect.GetComponent<Image>();
+            return field;
         }
 
         private static void Stretch(RectTransform _rect)

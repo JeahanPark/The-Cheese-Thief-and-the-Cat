@@ -70,6 +70,17 @@ namespace CTC.Runtime.Networking
             }
         }
 
+        /// <summary>
+        /// 이 PC에 로컬 호스트가 떠 있는 것 같은가 — 빠른 참가의 스팀 없는 대체 경로가 "참가냐 생성이냐"를 고른다.
+        /// 포트 파일의 포트가 **사용 중**이면 그렇다고 본다. 누수 소켓이 거짓 양성을 낼 수 있으니
+        /// 부르는 쪽이 접속 시간 제한으로 되받는다(개발 전용 경로라 그걸로 충분하다).
+        /// </summary>
+        public static bool IsLocalHostLikelyUp()
+        {
+            if (!File.Exists(PortFilePath)) return false;
+            return !IsPortFree((ushort)ReadHostPort());
+        }
+
         /// <summary>클라이언트용: 호스트가 기록한 포트를 트랜스포트에 적용한다.</summary>
         public static void ApplyHostPortToTransport(NetworkManager _nm)
         {

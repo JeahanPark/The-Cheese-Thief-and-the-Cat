@@ -1377,7 +1377,7 @@ MonoBehaviour:
   - {fileID: 240815476}
   - {fileID: 209629999}
   - {fileID: 1196415309}
-  m_LobbySceneName: Lobby
+  m_LobbySceneName: Intro
 --- !u!114 &328137423
 MonoBehaviour:
   m_ObjectHideFlags: 0

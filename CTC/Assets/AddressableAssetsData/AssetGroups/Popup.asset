@@ -15,6 +15,18 @@ MonoBehaviour:
   m_GroupName: Popup
   m_GUID: 4dc0978ac2e489947a0137db8b029a21
   m_SerializeEntries:
+  - m_GUID: 2085e9e05af786144b90506ef476dd24
+    m_Address: MessagePopup
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Popup
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 38cc2819c2a43ba45842340e6b92d7f6
+    m_Address: TextInputPopup
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Popup
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b5ae6173df3471e4992092f72193a0f5
     m_Address: OptionsPopup
     m_ReadOnly: 0

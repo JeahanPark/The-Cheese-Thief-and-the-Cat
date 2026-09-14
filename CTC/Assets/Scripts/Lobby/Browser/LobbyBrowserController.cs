@@ -1,6 +1,9 @@
 using CTC.Runtime.Core;
-using CTC.Runtime.Networking;
+using CTC.Runtime.Lobby.FrontDoor;
+using CTC.Runtime.UI.Popup;
+using Cysharp.Threading.Tasks;
 using R3;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -8,27 +11,34 @@ using UnityEngine.UI;
 namespace CTC.Runtime.Lobby.Browser
 {
     /// <summary>
-    /// 로비 화면의 입력만 받는다(CTC 규칙 5). 버튼은 R3 구독, 핸들러 이름은 OnClick~(규칙 2·4).
+    /// 서버 목록 화면의 입력만 받는다(CTC 규칙 5). 버튼은 R3 구독, 핸들러 이름은 OnClick~(규칙 2·4).
     ///
     /// 방을 만들거나 참여하면 접속만 시작한다 — **대기실로 넘기는 것은 <see cref="RoomEntry"/>다.**
     /// 씬을 여기서 직접 열면 NGO가 모르는 로드가 되어 대기실의 in-scene NetworkObject가 안 선다
     /// (실측: 화면은 뜨는데 참가자가 0명이었다).
-    /// 스팀 경로는 방장/참여자가 붙은 뒤 <see cref="SteamLobbyManager"/>가 알아서 NGO를 띄운다.
+    ///
+    /// 2026-09-14: 접속 절차는 <see cref="SessionStarter"/>가 맡는다. 「새로 만들기」는 이름을 받아 **공개 방**을 연다(R.E.P.O.).
     /// </summary>
     public class LobbyBrowserController : MonoBehaviour
     {
         [SerializeField] private LobbyBrowser m_Browser;
+        [SerializeField] private SessionStarter m_Starter;
 
         [Header("버튼")]
         [SerializeField] private Button m_RefreshButton;
         [SerializeField] private Button m_JoinButton;
         [SerializeField] private Button m_CreateButton;
         [SerializeField] private Button m_BackButton;
+        [SerializeField] private Button m_PrevButton;
+        [SerializeField] private Button m_NextButton;
+        [SerializeField] private TMP_InputField m_SearchInput;
 
         [Header("씬")]
         [SerializeField] private string m_BackSceneName = "Intro";
 
         private bool m_Leaving;
+
+        private bool Locked => m_Leaving || (m_Starter != null && m_Starter.Connecting.CurrentValue);
 
         private void Awake()
         {
@@ -43,6 +53,15 @@ namespace CTC.Runtime.Lobby.Browser
 
             if (m_BackButton != null)
                 m_BackButton.OnClickAsObservable().Subscribe(_ => OnClickBack()).AddTo(this);
+
+            if (m_PrevButton != null)
+                m_PrevButton.OnClickAsObservable().Subscribe(_ => OnClickPage(-1)).AddTo(this);
+
+            if (m_NextButton != null)
+                m_NextButton.OnClickAsObservable().Subscribe(_ => OnClickPage(1)).AddTo(this);
+
+            if (m_SearchInput != null)
+                m_SearchInput.onValueChanged.AsObservable().Subscribe(OnSearchChanged).AddTo(this);
         }
 
         private void OnClickRefresh()
@@ -50,9 +69,19 @@ namespace CTC.Runtime.Lobby.Browser
             if (m_Browser != null) m_Browser.Refresh();
         }
 
+        private void OnClickPage(int _delta)
+        {
+            if (m_Browser != null) m_Browser.TurnPage(_delta);
+        }
+
+        private void OnSearchChanged(string _query)
+        {
+            if (m_Browser != null) m_Browser.SetSearch(_query);
+        }
+
         private void OnClickJoin()
         {
-            if (m_Leaving || m_Browser == null || !m_Browser.HasSelection) return;
+            if (Locked || m_Browser == null || m_Starter == null || !m_Browser.HasSelection) return;
 
             LobbyRoomInfo room = m_Browser.Selected;
             if (room.IsFull)
@@ -62,23 +91,35 @@ namespace CTC.Runtime.Lobby.Browser
             }
 
             GameDebug.Log($"[Lobby] 참여: {room.Name}");
-            if (m_Browser.Join(room)) m_Leaving = true;   // 붙는 중 — 버튼 연타를 막는다
+            m_Starter.JoinListed(m_Browser.SelectedLobby);
         }
 
         private void OnClickCreate()
         {
-            if (m_Leaving || m_Browser == null) return;
+            if (Locked || m_Starter == null) return;
+            CreateAsync().Forget();
+        }
 
-            string owner = SteamBootstrap.Ready ? SafeSteamName() : "";
-            string name = SteamLobbyLogic.DefaultRoomName(owner);
+        private async UniTaskVoid CreateAsync()
+        {
+            PopupManager popups = PopupManager.Instance;
+            TextInputPopup popup = popups != null ? popups.Open<TextInputPopup>() : null;
+            if (popup == null) return;
 
-            GameDebug.Log($"[Lobby] 방 만들기: {name}");
-            if (m_Browser.Create(name, true)) m_Leaving = true;
+            string owner = Networking.SteamBootstrap.Ready ? SafeSteamName() : "";
+            popup.Setup(TextInputPopup.Mode.RoomName, "새 공개 방", "목록에 보일 방 이름을 정해 주세요.",
+                Networking.SteamLobbyLogic.DefaultRoomName(owner));
+
+            string name = await popup.Result;
+            if (name == null || this == null) return;
+
+            GameDebug.Log($"[Lobby] 공개 방 만들기: {name}");
+            m_Starter.HostPublic(name);
         }
 
         private void OnClickBack()
         {
-            if (m_Leaving) return;
+            if (Locked) return;
             if (string.IsNullOrEmpty(m_BackSceneName)) return;
 
             m_Leaving = true;

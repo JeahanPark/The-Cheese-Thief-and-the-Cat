@@ -29,8 +29,9 @@ namespace CTC.Runtime.Room
         /// <summary>맵 버튼 — 배열 순서가 곧 맵 인덱스다(<see cref="RoomMapCatalog"/>와 같은 순서).</summary>
         [SerializeField] private Button[] m_MapButtons;
 
+        /// <summary>나가기·끊김이 돌아가는 곳 — 2026-09-14부터 메인(Intro)이다(R.E.P.O.는 메인 메뉴로 돌아간다).</summary>
         [Header("씬")]
-        [SerializeField] private string m_LobbySceneName = "Lobby";
+        [SerializeField] private string m_LobbySceneName = "Intro";
 
         private bool m_Leaving;
 
@@ -119,7 +120,12 @@ namespace CTC.Runtime.Room
             if (nm == null || m_Leaving) return;
             if (nm.IsServer || nm.LocalClientId != _clientId) return;
 
-            GameDebug.LogWarning("[Room] 연결이 끊겼다 — 로비로 되돌린다");
+            GameDebug.LogWarning("[Room] 연결이 끊겼다 — 메인으로 되돌린다");
+            // 대기실 캔버스는 곧 사라진다 — 사유는 메인이 서면 띄운다.
+            string reason = nm.DisconnectReason;
+            Lobby.FrontDoor.FrontDoorNotice.Schedule("연결 끊김",
+                string.IsNullOrEmpty(reason) ? "방과의 연결이 끊겼습니다. 방장이 방을 닫았을 수 있습니다."
+                                             : ConnectionGateLogic.MessageOf(reason));
             m_Leaving = true;
             Shutdown();
             SceneManager.LoadScene(m_LobbySceneName);
