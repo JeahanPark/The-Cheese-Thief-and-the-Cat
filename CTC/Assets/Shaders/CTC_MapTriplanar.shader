@@ -86,7 +86,11 @@ Shader "CTC/MapTriplanar"
                 lighting += mainLight.color
                     * (saturate(dot(n, mainLight.direction)) * mainLight.shadowAttenuation);
 
-                #if defined(_ADDITIONAL_LIGHTS)   // 앰버 빛웅덩이(포인트 라이트)가 여기로 들어온다
+                // 앰버 빛웅덩이(포인트 라이트)가 여기로 들어온다.
+                // **Forward+에선 _ADDITIONAL_LIGHTS 키워드가 안 켜진다**(클러스터 키워드만 켜진다) — 이 조건이
+                // _ADDITIONAL_LIGHTS 하나뿐이라 PC 렌더러에서 바닥·벽이 점광원을 통째로 못 받았다.
+                // 궤짝(URP Lit)만 따뜻하고 바닥은 캄캄했던 이유(2026-09-14 분위기 패스에서 잡힘).
+                #if defined(_ADDITIONAL_LIGHTS) || defined(_CLUSTER_LIGHT_LOOP) || defined(_FORWARD_PLUS)
                 // LIGHT_LOOP 매크로는 Forward+에선 클러스터를, Forward에선 단순 루프를 편다.
                 // 매크로가 inputData를 이름으로 참조하므로 두 필드는 반드시 채운다.
                 InputData inputData = (InputData)0;

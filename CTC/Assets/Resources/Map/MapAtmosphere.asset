@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db26582f2a0a5c348ab55f7967e09640, type: 3}
+  m_Name: MapAtmosphere
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Map.MapAtmosphereProfile
+  m_LampPrefab: {fileID: 4898499997807068012, guid: 04caa6a5cbadb304797aaf8a0eef1c8e, type: 3}
+  m_MoonShaftPrefab: {fileID: 8856082820808281763, guid: 492509211c5d1e24cb5ba2d2e4d1ff55, type: 3}
+  m_NightSkybox: {fileID: 2100000, guid: 7118bdd27f0d42d4a92a5539cde0f0ca, type: 2}
+  m_PostProfile: {fileID: 11400000, guid: 284da7341b877cd47943d37da1470bf3, type: 2}
+  m_LampLightIntensity: 14
+  m_LampHeight: 4.2
+  m_MoonIntensity: 0.7
+  m_Ambient: {r: 0.15, g: 0.17, b: 0.23, a: 1}
+  m_FlickerOneIn: 3

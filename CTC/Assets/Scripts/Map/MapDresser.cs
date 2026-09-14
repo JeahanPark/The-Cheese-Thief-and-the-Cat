@@ -63,6 +63,9 @@ namespace CTC.Runtime.Map
             MapLayout layout = m_Builder != null ? m_Builder.CurrentLayout : null;
             if (layout == null) return;
 
+            // 밤 하늘·후보정(2026-09-14) — 밤(안개 켠 본 게임)일 때만, 이미 있으면 그대로.
+            MapAtmosphere.ApplyScene();
+
             // 창고 평면도(2026-09-07)는 빛 자리를 직접 든다 — "3방 중 1" 규칙을 안 쓴다
             if (layout.HandPlaced)
             {
@@ -78,6 +81,8 @@ namespace CTC.Runtime.Map
                     lt.intensity = lp.Moon ? 3.5f : 5.5f;
                     lt.range = lp.Radius;
                     lt.shadows = LightShadows.None;
+                    // 광원이 눈에 보이게 — 전등(갓·전구·빛줄기·먼지) 또는 달빛 기둥(2026-09-14)
+                    MapAtmosphere.DecorateLight(lt, lp.Moon, lp.Radius, PositionSeed(lp.Pos.x, lp.Pos.y, _seed));
                 }
                 return;
             }
@@ -97,7 +102,14 @@ namespace CTC.Runtime.Map
                 light.intensity = 5.5f;   // 2.2는 바닥이 미지근했다 — 웅덩이는 한눈에 읽혀야 위험이다
                 light.range = 12f;
                 light.shadows = LightShadows.None;   // 웅덩이 수십 개 — 그림자는 달빛 하나면 된다
+                MapAtmosphere.DecorateLight(light, false, light.range, PositionSeed(room.Center.x, room.Center.y, _seed));
             }
+        }
+
+        /// <summary>위치가 곧 신원 — 인스턴스 ID는 클라이언트마다 달라 전등마다 깜빡임이 어긋난다.</summary>
+        private static int PositionSeed(float _x, float _z, int _seed)
+        {
+            return Mathf.RoundToInt(_x * 7f + _z * 13f) * 31 + _seed;
         }
 
         /// <summary>
