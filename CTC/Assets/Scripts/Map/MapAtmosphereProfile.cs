@@ -31,6 +31,14 @@ namespace CTC.Runtime.Map
         [Header("깜빡임 — 전등 몇 개 중 하나꼴")]
         [SerializeField] private int m_FlickerOneIn = 3;
 
+        [Header("천장(2026-09-14) — 판·들보 머티리얼과 들보에 매다는 식료품. 비면 천장을 안 짓는다")]
+        [SerializeField] private Material m_CeilingDeckMaterial;
+        [SerializeField] private Material m_CeilingBeamMaterial;
+        [SerializeField] private Material m_CeilingWindowMaterial;   // 닫힌 채광창 유리(달빛 칸)
+        [SerializeField] private GameObject[] m_HangingPrefabs;
+        [SerializeField] private Mesh m_HangCordMesh;          // 전등 줄과 같은 메시(피벗 위, 아래로 3m)
+        [SerializeField] private Material m_HangCordMaterial;
+
         public GameObject LampPrefab => m_LampPrefab;
         public GameObject MoonShaftPrefab => m_MoonShaftPrefab;
         public Material NightSkybox => m_NightSkybox;
@@ -40,5 +48,11 @@ namespace CTC.Runtime.Map
         public int FlickerOneIn => m_FlickerOneIn;
         public float MoonIntensity => m_MoonIntensity;
         public Color Ambient => m_Ambient;
+        public Material CeilingDeckMaterial => m_CeilingDeckMaterial;
+        public Material CeilingBeamMaterial => m_CeilingBeamMaterial;
+        public Material CeilingWindowMaterial => m_CeilingWindowMaterial;
+        public GameObject[] HangingPrefabs => m_HangingPrefabs;
+        public Mesh HangCordMesh => m_HangCordMesh;
+        public Material HangCordMaterial => m_HangCordMaterial;
     }
 }

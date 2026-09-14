@@ -38,6 +38,9 @@ namespace CTC.Runtime.Map
 
         public static bool IsNight => RenderSettings.fog;
 
+        /// <summary>프로필(없으면 null) — 천장(<see cref="MapCeiling"/>)처럼 같은 재료 한 벌을 쓰는 곳이 읽는다.</summary>
+        public static MapAtmosphereProfile LoadedProfile => Profile;
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {

@@ -10,6 +10,7 @@ Shader "CTC/MapTriplanar"
         _TileMeters("Meters per tile", Float) = 1.0
         _SkirtMeters("Skirt height (0 = off)", Float) = 0.0
         _SkirtColor("Skirt tint", Color) = (0.45,0.36,0.28,1)
+        _FillLight("Fill light (0 = off)", Color) = (0,0,0,0)
     }
     SubShader
     {
@@ -39,6 +40,7 @@ Shader "CTC/MapTriplanar"
                 float _TileMeters;
                 float _SkirtMeters;
                 float4 _SkirtColor;
+                float4 _FillLight;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
@@ -103,6 +105,10 @@ Shader "CTC/MapTriplanar"
                         * l.distanceAttenuation * l.shadowAttenuation);
                 LIGHT_LOOP_END
                 #endif
+
+                // 채움광 — 천장(2026-09-14)처럼 **빛이 거의 안 닿는 면**이 밤에 완전히 꺼지지 않게 한 겹 얹는다.
+                // 밤 환경광(SH)은 아래를 향한 면에 거의 0이라 천장 판·들보가 새까만 구멍으로 보였다. 기본 0이라 바닥·벽은 그대로다.
+                lighting += _FillLight.rgb;
 
                 half3 color = MixFog(albedo * lighting, i.fogFactor);
                 return half4(color, 1);

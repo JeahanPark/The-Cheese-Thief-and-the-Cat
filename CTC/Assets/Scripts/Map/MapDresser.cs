@@ -67,11 +67,16 @@ namespace CTC.Runtime.Map
             MapAtmosphere.ApplyScene();
 
             // 창고 평면도(2026-09-07)는 빛 자리를 직접 든다 — "3방 중 1" 규칙을 안 쓴다
+            // 천장(2026-09-14)이 전등·채광창 자리를 알아야 한다 — 빛을 놓으면서 모은다.
+            var lamps = new List<Vector2>();
+            var moons = new List<Vector2>();
+
             if (layout.HandPlaced)
             {
                 for (int i = 0; i < layout.Lights.Count; i++)
                 {
                     LightPlacement lp = layout.Lights[i];
+                    (lp.Moon ? moons : lamps).Add(lp.Pos);
                     var lgo = new GameObject("LightPool_" + i);
                     lgo.transform.SetParent(_parent, false);
                     lgo.transform.position = new Vector3(lp.Pos.x, lp.Moon ? 6f : 3.5f, lp.Pos.y);
@@ -84,6 +89,7 @@ namespace CTC.Runtime.Map
                     // 광원이 눈에 보이게 — 전등(갓·전구·빛줄기·먼지) 또는 달빛 기둥(2026-09-14)
                     MapAtmosphere.DecorateLight(lt, lp.Moon, lp.Radius, PositionSeed(lp.Pos.x, lp.Pos.y, _seed));
                 }
+                MapCeiling.Build(_parent, layout.HalfExtent, _seed, lamps, moons);
                 return;
             }
 
@@ -92,6 +98,7 @@ namespace CTC.Runtime.Map
                 if (MapDressLogic.Pick(i, 3, _seed + 3) != 0) continue;
 
                 RoomRect room = layout.Rooms[i];
+                lamps.Add(room.Center);
                 var go = new GameObject($"LightPool_{i}");
                 go.transform.SetParent(_parent, false);
                 go.transform.position = new Vector3(room.Center.x, 3.5f, room.Center.y);
@@ -104,6 +111,7 @@ namespace CTC.Runtime.Map
                 light.shadows = LightShadows.None;   // 웅덩이 수십 개 — 그림자는 달빛 하나면 된다
                 MapAtmosphere.DecorateLight(light, false, light.range, PositionSeed(room.Center.x, room.Center.y, _seed));
             }
+            MapCeiling.Build(_parent, layout.HalfExtent, _seed, lamps, moons);
         }
 
         /// <summary>위치가 곧 신원 — 인스턴스 ID는 클라이언트마다 달라 전등마다 깜빡임이 어긋난다.</summary>

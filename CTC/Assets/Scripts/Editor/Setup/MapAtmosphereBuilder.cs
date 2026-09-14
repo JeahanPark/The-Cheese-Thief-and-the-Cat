@@ -81,6 +81,9 @@ namespace CTC.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log($"[MapAtmosphere] 완료 → {profilePath}");
+
+            // 천장 재료도 같은 프로필에 들어간다 — 분위기만 다시 구우면 천장 칸이 비지 않게 이어서 굽는다.
+            MapCeilingBuilder.Build();
         }
 
         // ── 프리팹 ─────────────────────────────────────────────

@@ -163,6 +163,9 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
 - 색·밝기는 플레이 중 `%TEMP%/ctc-atmo.json` + `Tools/CTC/Dev/Map Atmosphere 수치 적용`으로 맞춘다. 확정값은 `MapAtmosphereBuilder` 상수로 옮긴다(재생성하면 덮인다).
 - **맵 셰이더에 점광원 루프를 쓸 땐 `_ADDITIONAL_LIGHTS`만 보지 마라** — PC 렌더러는 Forward+라 그 키워드가 안 켜진다(`_CLUSTER_LIGHT_LOOP`/`_FORWARD_PLUS`도 본다). `CTC_MapTriplanar`가 이걸로 빛웅덩이를 통째로 못 받고 있었다.
 - 셰이더를 고친 직후 스크린샷이 하늘색이면 **비동기 셰이더 컴파일 자리표시**다 — 한 번 더 찍는다.
+- **천장**(2026-09-14): `MapCeiling`이 6m 나무 판·들보·장선·둘레 판벽·닫힌 채광창·매달린 식료품을 짓는다(재료 `Tools/CTC/Map/Build Ceiling`, 자리 `MapCeilingLogic`). **콜라이더 없음 · 그림자 안 드리움** — 달빛(방향광)이 판에 막히면 맵이 꺼멓다. **천장에 구멍은 없다**(사용자: 뚫린 것보다 덮는 게 중요) — 달빛 자리 칸은 판 밑에 닫힌 채광창(푸른 Unlit 유리 + 창살).
+  카메라 최고 높이 ≈4m(거리 3 · 피치 75°) 아래로 내려오는 천장 소품을 만들지 마라(`MapCeilingLogic.ITEM_MAX_HEIGHT` 테스트).
+  아래를 향한 면은 밤 환경광이 0이라 새까맣다 — `CTC/MapTriplanar._FillLight`로 채운다(기본 0).
 
 ### 기술 이펙트 (2026-09-14)
 

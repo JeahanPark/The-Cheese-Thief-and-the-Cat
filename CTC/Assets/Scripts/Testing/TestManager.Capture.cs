@@ -121,6 +121,54 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: **아무 자리·방향에서** 게임 화면처럼(후보정 포함) 찍는다(2026-09-14 천장 검수).
+        /// 게임 카메라는 몸 뒤 3m에 묶여 있어 천장 채광창처럼 위에 있는 것을 정면으로 못 잡는다.
+        /// 몸·카메라는 건드리지 않는다 — 임시 카메라를 세워 한 장 찍고 지운다.
+        /// </summary>
+        public string TestCaptureFreeView(string _path, float _x, float _y, float _z, float _yaw, float _pitch, float _fov)
+        {
+            var camGo = new GameObject("QaFreeCam");
+            const int W = 1600, H = 900;
+            try
+            {
+                _path = _path.Trim().Trim('"').Replace('\\', '/');
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.transform.SetPositionAndRotation(new Vector3(_x, _y, _z), Quaternion.Euler(_pitch, _yaw, 0f));
+                cam.fieldOfView = _fov > 1f ? _fov : 60f;
+                cam.nearClipPlane = 0.05f;
+                cam.farClipPlane = 300f;
+                var data = UnityEngine.Rendering.Universal.CameraExtensions.GetUniversalAdditionalCameraData(cam);
+                if (data != null) data.renderPostProcessing = true;
+
+                var rt = new RenderTexture(W, H, 24, RenderTextureFormat.ARGB32);
+                cam.targetTexture = rt;
+                cam.Render();
+
+                RenderTexture prev = RenderTexture.active;
+                RenderTexture.active = rt;
+                var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+                tex.ReadPixels(new Rect(0, 0, W, H), 0, 0);
+                tex.Apply();
+                RenderTexture.active = prev;
+
+                File.WriteAllBytes(_path, tex.EncodeToPNG());
+                cam.targetTexture = null;
+                Destroy(tex);
+                rt.Release();
+                Destroy(rt);
+            }
+            catch (System.Exception ex)
+            {
+                return "ERR path=[" + _path + "] " + ex.Message;
+            }
+            finally
+            {
+                Destroy(camGo);
+            }
+            return "ok";
+        }
+
+        /// <summary>
         /// QA: **두 눈을 한 프레임에** 크게 찍는다(2026-09-10).
         ///
         /// <see cref="TestCaptureEyeShot"/>은 오른눈 하나를 옆에서 본다 — 「두 눈동자가 같은 쪽을
