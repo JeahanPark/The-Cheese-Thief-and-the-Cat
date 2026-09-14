@@ -40,6 +40,7 @@ namespace CTC.Runtime.Match
             if (m_Job.Value != MouseJobId.Gang) return;          // 깡패만 쓴다
 
             if (UiFocus.BlocksGameplay) return;
+            if (Player.GangTransformLock.Locked(this)) return;   // 깡패 변신 중
             if (Cursor.lockState != CursorLockMode.Locked) return;
 
             Keyboard kb = Keyboard.current;
@@ -55,6 +56,7 @@ namespace CTC.Runtime.Match
         private void RecruitRpc()
         {
             if (m_Job.Value != MouseJobId.Gang) return;
+            if (Player.GangTransformLock.Locked(this)) return;
 
             MouseJob nearest = FindNearestRecruitable();
             if (nearest == null) return;

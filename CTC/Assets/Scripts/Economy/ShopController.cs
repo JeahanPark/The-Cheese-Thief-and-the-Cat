@@ -150,6 +150,7 @@ namespace CTC.Runtime.Economy
         public UseDeny CanUse(TechId _id)
         {
             if (m_Slots == null || m_Wallet == null) return UseDeny.Unavailable;
+            if (Player.GangTransformLock.Locked(this)) return UseDeny.Unavailable;   // 깡패 변신 중 — 서버 UseRpc도 여기를 지난다
             if (!TechLogic.IsActive(_id)) return UseDeny.NotActive;
             if (m_Slots.LevelOf(_id) == 0) return UseDeny.NotOwned;
 

@@ -293,7 +293,16 @@ def test_the_real_clip_files_still_parse():
         # 깡패 두 발 클립(2026-09-14)은 **선 자세에서 시작해 선 자세로 끝난다** — 쉬는 자세가 네 발(0)이 아니다.
         # 이 넷은 0 대신 「첫 프레임 = 끝 프레임」(루프 이음매·원샷 복귀)을 계약으로 본다.
         posed = name.startswith("biped_") or name == "club_swing.py"
+        # 변신(gang_transform)은 **네 발(0)에서 시작해 BipedIdle 첫 자세로 끝난다** — 원샷이 끝나면 두 발 서기로 튀지 않고 잇는다.
+        transform = name == "gang_transform.py"
+        idle = parse_clip(os.path.join(REAL_CLIPS, "biped_idle.py")) if transform else None
         for bone, keys in clip["bones"].items():
+            if transform:
+                assert keys[clip["frame_start"]] == 0.0, "%s %s 첫 프레임이 네 발(0)이 아니다" % (name, bone)
+                if bone in idle["bones"]:
+                    assert keys[clip["frame_end"]] == idle["bones"][bone][idle["frame_start"]], \
+                        "%s %s 끝 프레임이 BipedIdle 첫 자세와 안 맞물린다" % (name, bone)
+                continue
             if posed:
                 assert keys[clip["frame_start"]] == keys[clip["frame_end"]],                     "%s %s 첫·끝 프레임이 안 맞물린다(루프가 튄다)" % (name, bone)
                 continue

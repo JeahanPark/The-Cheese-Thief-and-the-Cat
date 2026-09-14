@@ -40,6 +40,7 @@ namespace CTC.Runtime.Player
 
         private CharacterController m_Controller;
         private Sneak m_Sneak;      // 고양이·쥐 공통(2026-08-10 쥐로 확장)
+        private GangLookVisual m_GangVisual;   // 깡패 변신 중 이동 잠금(없으면 고양이)
         private TechSlots m_TechSlots;  // Awake에서 한 번 — 속도 식은 매 프레임 돈다
         private float m_VerticalVelocity;
         private Vector3 m_DevMoveInput; // QA 전용 자동 이동 방향(월드, 정규화)
@@ -95,6 +96,7 @@ namespace CTC.Runtime.Player
         {
             m_Controller = GetComponent<CharacterController>();
             m_Sneak = GetComponent<Sneak>();
+            m_GangVisual = GetComponent<GangLookVisual>();
             m_TechSlots = GetComponent<TechSlots>();
         }
 
@@ -159,6 +161,9 @@ namespace CTC.Runtime.Player
             // QA 자동 이동이 걸려 있으면 그 방향이 우선 — 지오메트리 통행 검수는
             // 텔레포트가 아니라 실제로 걸어봐야만 알 수 있다(벽을 통과하지 않으므로)
             if (m_DevMoveInput.sqrMagnitude > 0.0001f) dir = m_DevMoveInput;
+
+            // 깡패 변신 중에는 서서 변신만 한다 — 입력(사람·봇·QA 전부)을 0으로. 중력은 계속 먹는다.
+            if (GangTransformLock.Locked(m_GangVisual)) dir = Vector3.zero;
 
             // 중력 — 접지 중엔 살짝 눌러 붙이고, 공중에선 가속 낙하
             if (m_Controller.isGrounded && m_VerticalVelocity < 0f) m_VerticalVelocity = -1f;

@@ -6,7 +6,8 @@ using UnityEngine;
 namespace CTC.Runtime.Player
 {
     /// <summary>
-    /// 깡패 쥐 모습(2026-09-14) — 2페이즈에 깡패 편이면 **두 발 이동 · 몽둥이 · 모자 · 살짝 화난 눈**을 켠다. 그것만 한다(규칙 7).
+    /// 깡패 쥐 모습(2026-09-14) — 2페이즈에 깡패 편이면 **두 발 이동 · 몽둥이 · 모자 · 화난 눈썹**을 켠다. 켤지만 정한다(규칙 7) —
+    /// 보여 주기·변신 연출은 <see cref="GangLookVisual"/>.
     /// 설계: docs/superpowers/specs/2026-09-14-gang-mouse-look-design.md
     ///
     /// **통신 0.** 복제값 둘(<see cref="MouseJob.JobChanged"/> · <see cref="PhaseDirector.PhaseChanged"/>)을 전 클라가 각자 구독한다 —
@@ -18,16 +19,20 @@ namespace CTC.Runtime.Player
     {
         public const string CLUB_NAME = "GangClub";
         public const string HAT_NAME = "GangHat";
+        /// <summary>화난 눈썹 둘 — <c>GangBrow.L</c>·<c>GangBrow.R</c>(2026-09-14).</summary>
+        public const string BROW_PREFIX = "GangBrow.";
 
         private MouseJob m_Job;
         private PlayerAnimationDriver m_Driver;
-        private GangAngryFace m_Face;
-        private GameObject m_Club;
-        private GameObject m_Hat;
+        private GangLookVisual m_Visual;
 
         private MouseJobId m_CurrentJob;
         private MatchPhase m_CurrentPhase;
         private bool m_Active;
+
+        // 페이즈 구독이 **현재 값을 한 번 흘린 뒤**부터가 「지금 막 바뀐」 변화다. 그 전의 값(구독 순간의 현재 값·늦은 입장)은
+        // 이미 그런 상태였던 것이라 변신 연출을 틀지 않는다 — 판 중간에 들어온 사람 화면에서 남의 쥐들이 일제히 변신하면 거짓말이다.
+        private bool m_PhaseBound;
 
         public bool Active => m_Active;
 
@@ -35,13 +40,8 @@ namespace CTC.Runtime.Player
         {
             m_Job = GetComponent<MouseJob>();
             m_Driver = GetComponent<PlayerAnimationDriver>();
-            m_Face = GetComponent<GangAngryFace>();
-            foreach (Transform t in GetComponentsInChildren<Transform>(true))
-            {
-                if (t.name == CLUB_NAME) m_Club = t.gameObject;
-                else if (t.name == HAT_NAME) m_Hat = t.gameObject;
-            }
-            Apply(false);
+            m_Visual = GetComponent<GangLookVisual>();
+            if (m_Driver != null) m_Driver.Biped = false;   // 소품은 GangLookVisual이 제 Awake에서 숨긴다(Awake 순서를 믿지 않는다)
         }
 
         private void Start()
@@ -65,20 +65,21 @@ namespace CTC.Runtime.Player
                 if (cancelled) return;
             }
             phase.PhaseChanged.Subscribe(_phase => { m_CurrentPhase = _phase; Refresh(); }).AddTo(this);
+            m_PhaseBound = true;
         }
 
         private void Refresh()
         {
-            Apply(GangLookLogic.Active(m_CurrentJob, m_CurrentPhase));
-        }
+            bool active = GangLookLogic.Active(m_CurrentJob, m_CurrentPhase);
+            if (active == m_Active) return;
 
-        private void Apply(bool _active)
-        {
-            m_Active = _active;
-            if (m_Driver != null) m_Driver.Biped = _active;
-            if (m_Club != null) m_Club.SetActive(_active);
-            if (m_Hat != null) m_Hat.SetActive(_active);
-            if (m_Face != null) m_Face.enabled = _active;
+            m_Active = active;
+            if (m_Driver != null) m_Driver.Biped = active;
+            if (m_Visual == null) return;
+
+            // 깡패판이 **지금 막** 열렸다 → 변신(2026-09-14 사용자 요청). 이미 그 상태였거나 꺼질 때는 바로.
+            if (active && m_PhaseBound) m_Visual.PlayTransform();
+            else m_Visual.ShowInstant(active);
         }
     }
 }

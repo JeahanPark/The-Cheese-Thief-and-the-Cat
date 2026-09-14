@@ -21,11 +21,12 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
-EXPECTED = 7     # ⓪ 전제 + ① 표만으로는 안 바뀐다 + ② 2페이즈에 켜진다(남의 화면) + ③ 휘두르기 모션·이펙트 + ④ 근접 피해 + ⑤ 총알 아님 + ⑥ 총 테크 구매 잠금
+EXPECTED = 8     # ⓪ 전제 + ① 표만으로는 안 바뀐다 + ② 2페이즈에 켜진다(남의 화면) + ③ 휘두르기 모션·이펙트 + ④ 근접 피해 + ⑤ 총알 아님 + ⑥ 총 테크 구매 잠금 + ⑦ 변신 중 잠금
 
 BIPED_IDLE, CLUB_SWING, CLUB_SMASH, MUZZLE = "BipedIdle", "ClubSwing", "ClubSmash", "MuzzleFlash"
 CLUB_DAMAGE = 18   # BalanceInfo.GangClubDamage — 글자가 계약이다
 GANG_NO_GUN = "GangNoGun"   # TechDeny.GangNoGun
+GANG_TRANSFORM = "GangTransform"
 
 
 def check(name, ok, detail=""):
@@ -69,17 +70,42 @@ def main():
     time.sleep(1.5)
     l1, raw1 = look(observer, me)
     check("① 깡패표만 쥔 상태(1페이즈)에선 모습이 그대로다 — 누가 쥐었는지 안 드러난다",
-          l1.get("active") == "False" and l1.get("club") == "False" and l1.get("hat") == "False",
+          l1.get("active") == "False" and l1.get("club") == "False" and l1.get("hat") == "False" and l1.get("brows") == "0",
           "관측=%s · 호스트 직업=%s" % (raw1, host.invoke("TestGetMouseJob")))
 
     # ---------- ② 2페이즈 ----------
+    # 깡패판이 **지금 막** 열리면 변신(GangTransform, 2초)이 먼저 돈다 — 도중엔 소품이 반쯤 떠 있으므로 끝난 뒤에 잰다.
+    # ⑦ 변신 중 잠금을 같은 창에서 잰다 — 고양이 1m 옆에 세워 두고, 변신이 도는 동안 걷기·휘두르기를 시도한다.
+    cat_id = [i for i, r in zip((me, a.invoke("TestGetLocalClientId"), b.invoke("TestGetLocalClientId")), roles) if r == "Cat"][0]
+    cx, cz = [float(v) for v in host.invoke("TestGetPlayerPos", _clientId=cat_id).split(",")]
+    host.invoke("TestTeleportLocalPlayer", _x=cx + 1.0, _z=cz)
+    time.sleep(0.8)
+
+    observer.invoke("TestResetAnimObserved", _clientId=me)
     forced = bool(host.invoke("TestForceGangPhase"))
+    time.sleep(0.3)
+    hp_lock_before = host.invoke("TestGetHpOf", _clientId=cat_id)
+    pos_before = host.invoke("TestGetPlayerPos", _clientId=me)
+    host.invoke("TestShootAtCat")
+    host.invoke("TestWalkDirection", _x=0.0, _z=1.0, _seconds=0.8)
+    time.sleep(0.5)
+    mid, raw_mid = look(observer, me)
+    time.sleep(0.5)
+    pos_after = host.invoke("TestGetPlayerPos", _clientId=me)
+    hp_lock_after = host.invoke("TestGetHpOf", _clientId=cat_id)
+    moved = sum((float(p) - float(q)) ** 2 for p, q in zip(pos_before.split(","), pos_after.split(","))) ** 0.5
+    check("⑦ 변신 중에는 못 걷고 못 친다 — 위치·고양이 HP가 그대로다",
+          mid.get("transforming") == "True" and moved < 0.05 and hp_lock_before == hp_lock_after,
+          "이동 %.3fm · 고양이 HP %s→%s · 도중=%s" % (moved, hp_lock_before, hp_lock_after, raw_mid))
     time.sleep(2.0)
     l2, raw2 = look(observer, me)
-    check("② 2페이즈가 열리면 남의 화면에서 두 발·몽둥이·모자·살짝 화난 눈이 켜진다",
-          forced and l2.get("active") == "True" and l2.get("biped") == "True" and l2.get("club") == "True"
-          and l2.get("hat") == "True" and l2.get("state") == BIPED_IDLE and l2.get("rabid") == "55",
-          "강제=%s · 페이즈=%s · 관측=%s" % (forced, host.invoke("TestGetPhase"), raw2))
+    seen2 = observer.invoke("TestGetAnimObserved", _clientId=me) or ""
+    check("② 2페이즈가 열리면 남의 화면에서 변신한 뒤 두 발·몽둥이·모자·화난 눈썹이 켜진다",
+          forced and GANG_TRANSFORM in seen2.split(",") and mid.get("transforming") == "True"
+          and l2.get("transforming") == "False" and l2.get("clubA") == "1" and l2.get("hatA") == "1"
+          and l2.get("active") == "True" and l2.get("biped") == "True" and l2.get("club") == "True"
+          and l2.get("hat") == "True" and l2.get("brows") == "2" and l2.get("state") == BIPED_IDLE and l2.get("rabid") == "55",
+          "강제=%s · 동작=[%s] · 도중=%s · 끝=%s" % (forced, seen2, raw_mid, raw2))
 
     # ---------- ⑥ 총 테크 구매 잠금 ----------
     # 깡패판의 깡패 편은 총을 못 쓴다 → 총·후추 탄도 못 산다(2026-09-14 사용자 결정). 서버 판정(BuyRpc)도 같은 CanBuyNow를 지나므로

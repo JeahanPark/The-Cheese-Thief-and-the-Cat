@@ -37,6 +37,18 @@ namespace CTC.Editor
         private const float CROWN_HEIGHT_RATIO = 0.55f;
         private const float HAT_LIFT_RATIO = 0.10f;   // 챙 밑면을 두 귀 뿌리보다 위에 — 두피 속에 묻히지 않게
 
+        // 화난 눈썹(2026-09-14 사용자 스케치). 비율은 눈 반지름 기준.
+        private const string BROW_MESH = PropAssets.PROP_FOLDER + "/Mesh_GangBrow.asset";
+        private const string BROW_MAT = "Assets/Materials/Props/M_GangBrow.mat";
+        private static readonly Color BROW_COLOR = new Color(0.07f, 0.06f, 0.07f);
+        private const string EYE_REGION_SHAPE = "eyes.shrink";
+        private const float BROW_TILT_DEGREES = 18f;   // 코 쪽 끝이 내려가는 각 — 스케치의 기울기
+        private const float BROW_FACE_TURN = 0.45f;    // 눈썹 판을 눈 법선에서 얼굴 앞쪽으로 돌리는 비율
+        private const float BROW_LENGTH_RATIO = 1.05f; // 반길이 = 눈 반지름 × 이것
+        private const float BROW_THICK_RATIO = 0.34f;  // 0.26은 멀리서 실선으로만 읽혔다
+        private const float BROW_LIFT_RATIO = 0.95f;   // 눈 윗단(반지름 1.0)에 살짝 걸친다 — 누르는 느낌
+        private const float BROW_OUT_RATIO = 0.30f;    // 얼굴 밖으로 — 판을 돌리면 코 쪽 끝이 머리 속으로 들어가므로 넉넉히
+
         // 모자를 얹는 기준 자세 — 깡패일 때만 보이는 소품이라 두 발 서기 자세에서 잰다.
         private const string BIPED_CLIPS_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
         private const string BIPED_POSE_CLIP = "BipedIdle";
@@ -69,6 +81,8 @@ namespace CTC.Editor
 
             Mesh club = BuildClubMesh();
             Material clubMat = SdfMesher.SaveMaterial(CLUB_MAT, "M_GangClub", CLUB_COLOR, 0.25f);
+            // 변신 때 알파로 나타난다(GangLookVisual) — URP/Lit은 불투명이면 알파를 조용히 무시하므로 반투명으로 굽는다(총과 같다).
+            GunMeshBuilder.MakeTransparent(clubMat);
 
             Transform paw = MouseGunBaker.FindBone(_root.transform, MouseGunBaker.GUN_BONE);
             if (paw == null)
@@ -83,6 +97,7 @@ namespace CTC.Editor
             AttachHat(_root);
 
             if (_root.GetComponent<GangAngryFace>() == null) _root.AddComponent<GangAngryFace>();
+            if (_root.GetComponent<GangLookVisual>() == null) _root.AddComponent<GangLookVisual>();
             if (_root.GetComponent<GangLook>() == null) _root.AddComponent<GangLook>();
         }
 
@@ -126,6 +141,7 @@ namespace CTC.Editor
 
                 Mesh hat = BuildHatMesh(width);
                 Material hatMat = SdfMesher.SaveMaterial(HAT_MAT, "M_GangHat", HAT_COLOR, 0.35f);
+                GunMeshBuilder.MakeTransparent(hatMat);
                 GameObject hatGo = Replace(head, GangLook.HAT_NAME, hat, hatMat);
 
                 // 월드에서 자리를 잡고 머리에 붙인다 — 뼈의 스케일(100)·축은 SetParent(worldPositionStays)가 되받는다.
@@ -139,6 +155,9 @@ namespace CTC.Editor
                 hatGo.SetActive(false);
 
                 Debug.Log($"[GangPropBaker] 모자: 머리 폭 {width * 1000f:0}mm · 꼭대기 {top} · 위 {up} · 자세 {(pose != null ? BIPED_POSE_CLIP : "쉬는 자세")}");
+
+                // 눈썹도 같은 자세에서 잰다 — 눈 자리는 스키닝된 메시에서만 나온다.
+                AttachBrows(_root.transform, head, skin, up);
             }
             finally
             {
@@ -150,6 +169,117 @@ namespace CTC.Editor
                     s.t.localScale = s.s;
                 }
             }
+        }
+
+        /// <summary>
+        /// 화난 눈썹 둘(2026-09-14 사용자 스케치 — 콧등 쪽 끝이 내려간 사선 막대가 눈 윗단을 누른다).
+        /// 팩에 「화남」 셰이프키가 없어서 소품으로 만든다. 머리 뼈 자식이라 고개를 따라가고, 모자처럼 꺼진 채 굽는다.
+        ///
+        /// 눈 자리는 **셰이프키 `eyes.shrink`가 움직이는 정점**이다 — 흰자·눈동자 전부가 줄어드는 키라 눈 영역을 정확히 짚는다.
+        /// 좌우는 바인드 공간 x 부호로 가르고, 월드 좌표는 **머리 뼈 행렬 × 바인드포즈**로 직접 스키닝한다(BakeMesh는 샘플한 자세를 안 따랐다).
+        /// 눈이 보는 쪽은 눈 정점 법선의 평균이다.
+        /// </summary>
+        private static void AttachBrows(Transform _root, Transform _head, SkinnedMeshRenderer _skin, Vector3 _up)
+        {
+            Mesh shared = _skin.sharedMesh;
+            int shrink = shared.GetBlendShapeIndex(EYE_REGION_SHAPE);
+            if (shrink < 0)
+            {
+                Debug.LogError($"[GangPropBaker] '{EYE_REGION_SHAPE}' 셰이프키가 없다 — 눈썹을 못 단다");
+                return;
+            }
+
+            int count = shared.vertexCount;
+            var deltas = new Vector3[count];
+            shared.GetBlendShapeFrameVertices(shrink, shared.GetBlendShapeFrameCount(shrink) - 1, deltas, null, null);
+            Vector3[] bind = shared.vertices;
+            Vector3[] bindNormals = shared.normals;
+
+            // 눈 정점은 머리 뼈에 100% 붙어 있다 → **머리 뼈 행렬 × 바인드포즈**가 곧 스키닝 결과다.
+            // BakeMesh로 재 봤더니 막 샘플한 두 발 자세가 아니라 **쉬는 자세의 눈 자리**를 줘서(에디터 프리팹 씬에선 스키닝이 안 돈다 —
+            // CLAUDE.md 「본을 코드로 돌려도 에디터에선 다시 스키닝되지 않는다」), 눈썹이 눈 가장자리에 세로로 섰다(2026-09-14).
+            int headIndex = System.Array.IndexOf(_skin.bones, _head);
+            if (headIndex < 0 || headIndex >= shared.bindposes.Length)
+            {
+                Debug.LogError("[GangPropBaker] 스킨 뼈 목록에 head가 없다 — 눈썹을 못 단다");
+                return;
+            }
+            Matrix4x4 headSkin = _head.localToWorldMatrix * shared.bindposes[headIndex];
+
+            Material browMat = SdfMesher.SaveMaterial(BROW_MAT, "M_GangBrow", BROW_COLOR, 0.2f);
+            foreach (int side in new[] { -1, 1 })
+            {
+                var eye = new List<Vector3>();
+                Vector3 normalSum = Vector3.zero;
+                for (int i = 0; i < count; i++)
+                {
+                    if (deltas[i].sqrMagnitude < 1e-12f || Mathf.Sign(bind[i].x) != side) continue;
+                    eye.Add(headSkin.MultiplyPoint3x4(bind[i]));
+                    if (bindNormals.Length == count) normalSum += headSkin.MultiplyVector(bindNormals[i]).normalized;
+                }
+                string name = side < 0 ? GangLook.BROW_PREFIX + "R" : GangLook.BROW_PREFIX + "L";
+                if (eye.Count < 8)
+                {
+                    Debug.LogError($"[GangPropBaker] {name}: 눈 정점이 {eye.Count}개뿐이다 — 건너뛴다");
+                    continue;
+                }
+
+                Vector3 center = Vector3.zero;
+                foreach (Vector3 p in eye) center += p;
+                center /= eye.Count;
+
+                // 눈이 보는 쪽 = 눈 정점 법선의 평균. 「머리 뼈 → 눈」으로 잡았더니 뼈가 목 뒤(169mm)에 있어 앞쪽을 가리켰고,
+                // 그 평면에 코 방향을 투영하니 막대가 거의 세로로 서서 눈을 가로질렀다(2026-09-14 인게임 촬영).
+                Vector3 normal = normalSum.sqrMagnitude > 1e-6f ? normalSum.normalized : (center - _head.position).normalized;
+                // 눈썹 판은 **눈 표면이 아니라 얼굴 앞쪽으로 반쯤 돌린 면**에 둔다. 쥐 눈은 옆을 보고 있어서, 눈 표면에 그대로 누이면
+                // 앞·앞옆에서 막대가 세로로 곧추서 보였다(2026-09-14 인게임 촬영). 앞으로 돌리면 정면에서 「\ /」로 읽힌다.
+                normal = (normal * (1f - BROW_FACE_TURN) + _root.forward * BROW_FACE_TURN).normalized;
+                Vector3 alongUp = Vector3.ProjectOnPlane(_up, normal).normalized;              // 눈썹 판 위 방향
+                Vector3 toNose = Vector3.ProjectOnPlane(_root.forward, normal).normalized;     // 눈썹 판에서 코(얼굴 가운데) 쪽
+                float radius = 0f;
+                foreach (Vector3 p in eye) radius = Mathf.Max(radius, Vector3.Dot(p - center, alongUp));
+
+                // 코 쪽 끝이 내려간다 — 막대 축을 코 방향에서 아래로 BROW_TILT만큼 돌린다.
+                float tilt = BROW_TILT_DEGREES * Mathf.Deg2Rad;
+                Vector3 axis = (toNose * Mathf.Cos(tilt) - alongUp * Mathf.Sin(tilt)).normalized;
+
+                Mesh brow = BuildBrowMesh(radius);
+                GameObject go = Replace(_head, name, brow, browMat);
+                go.transform.SetParent(null, true);
+                go.transform.position = center + alongUp * (radius * BROW_LIFT_RATIO) + normal * (radius * BROW_OUT_RATIO);
+                go.transform.rotation = Quaternion.LookRotation(axis, normal);   // 메시: +Z가 막대 길이, +Y가 얼굴 밖
+                go.transform.localScale = Vector3.one;
+                go.transform.SetParent(_head, true);
+                go.SetActive(false);
+
+                Debug.Log($"[GangPropBaker] {name}: 눈 정점 {eye.Count} · 반지름 {radius * 1000f:0}mm · 법선 {normal} · 코쪽 {toNose} · 축 {axis}");
+            }
+        }
+
+        /// <summary>눈썹 막대 — 길이 +Z(눈 지름보다 약간 길게), 두께(보이는 굵기) X, 얼굴 밖 두께 Y. 코 쪽(+Z) 끝을 조금 굵게.</summary>
+        private static Mesh BuildBrowMesh(float _eyeRadius)
+        {
+            float half = _eyeRadius * BROW_LENGTH_RATIO;
+            float thick = _eyeRadius * BROW_THICK_RATIO;
+            float depth = thick * 0.6f;
+            string path = BROW_MESH;
+            System.Func<Vector3, float> field = _p =>
+            {
+                // 코 쪽으로 갈수록 굵어지는 둥근 막대 — 두 구를 부드럽게 잇는다
+                float t = Mathf.Clamp01((_p.z + half) / (2f * half));
+                float r = Mathf.Lerp(thick * 0.35f, thick * 0.55f, t);
+                Vector3 onAxis = new Vector3(0f, 0f, Mathf.Clamp(_p.z, -half, half));
+                Vector3 q = _p - onAxis;
+                // 얼굴 밖(Y) 쪽을 납작하게 — Y를 늘려 재고, 늘린 만큼 거리를 되줄인다(보수적인 근사 거리).
+                float squash = thick / depth;
+                return (new Vector3(q.x, q.y * squash, q.z).magnitude - r) / squash;
+            };
+            float pad = thick;
+            Mesh built = SdfMesher.Build("Mesh_GangBrow", field, new Vector3(-pad, -pad, -half - pad), new Vector3(pad, pad, half + pad),
+                Mathf.Max(0.0015f, thick * 0.12f), 4, 0.5f, 2);
+            Mesh mesh = SdfMesher.SaveMesh(built, path);
+            SdfMesher.Commit(path);
+            return mesh;
         }
 
         /// <summary>

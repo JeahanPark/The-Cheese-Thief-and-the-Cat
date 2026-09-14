@@ -30,6 +30,7 @@ namespace CTC.Editor
         {
             Runtime.Player.AnimationStateLogic.BipedIdle, Runtime.Player.AnimationStateLogic.BipedWalk,
             Runtime.Player.AnimationStateLogic.BipedRun, Runtime.Player.AnimationStateLogic.ClubSwing,
+            Runtime.Player.AnimationStateLogic.GangTransform,
         };
 
         [MenuItem("Tools/CTC/Dev/클립 GIF 내보내기")]

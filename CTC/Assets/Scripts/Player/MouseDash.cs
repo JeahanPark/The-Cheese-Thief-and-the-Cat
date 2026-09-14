@@ -11,7 +11,7 @@ namespace CTC.Runtime.Player
     /// 이동은 소유자 권위(ClientNetworkTransform)라 CC.Move로 로컬 실행만 하면 동기화된다.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-    public class MouseDash : NetworkBehaviour
+    public class MouseDash : NetworkBehaviour, ICompletableAction
     {
         // 밸런스 원본은 BalanceInfo.csv — 재컴파일 없이 다음 플레이에 반영된다.
         private static Info.BalanceInfo Balance => Info.InfoManager.Instance.Balance;
@@ -107,6 +107,20 @@ namespace CTC.Runtime.Player
         }
 
         /// <summary>
+        /// 깡패 변신이 대시 도중에 끼어들었다 — **남은 거리를 한 번에 가고** 끝낸다(사용자 결정: 하던 행동은 성공시키고 변신).
+        /// 몸을 옮기는 쪽(소유자·봇의 서버)에서만 의미가 있다 — 남의 화면에선 ClientNetworkTransform이 결과를 받아 온다.
+        /// </summary>
+        public void CompleteNow()
+        {
+            if (m_DashRemainingSeconds <= 0f) return;
+            if (LocalControl.Drives(this) && m_Controller != null && m_Controller.enabled)
+            {
+                m_Controller.Move(m_DashDirection * (DASH_DISTANCE / DASH_DURATION_SECONDS) * m_DashRemainingSeconds);
+            }
+            m_DashRemainingSeconds = 0f;
+        }
+
+        /// <summary>
         /// 봇·QA 전용 — 사람의 Space와 같은 입구. 쿨다운·소유 규칙이 전부 같아야
         /// 봇으로 잰 밸런스가 뜻을 갖는다(봇이 사람보다 자주 대시하면 그건 봇의 화력이다).
         /// </summary>
@@ -115,6 +129,7 @@ namespace CTC.Runtime.Player
         private void TryDash()
         {
             if (!IsOwner) return;
+            if (GangTransformLock.Locked(this)) return;   // 깡패 변신 중에는 못 쓴다
             if (m_DashRemainingSeconds > 0f) return;
             if (!m_Owned.Value) return;
             if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, CooldownSeconds)) return;

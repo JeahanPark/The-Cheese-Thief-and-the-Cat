@@ -5,62 +5,45 @@
 
 ────────────────────────────────────────────────────────────────────────────
 부호(dash.py·fortress.py 머리말과 같다):
-  body - 뒤로 젖힘 · head + 코 내림 · leg.F + 앞발 앞·위로 · leg.B + 뒷발 앞으로 · shin.B - 무릎 굽힘
+  body - 뒤로 젖힘 · head + 코 내림 · leg.F + 앞발 앞·위로(- 뒤로) · leg.B + 뒷발 앞으로 · shin.B - 무릎 굽힘
   tail - 위·뒤로 · (X, Z) 키는 X를 먼저 돌리고 Z로 벌린다. 오른발은 Z 부호가 반대(바깥이 -)
 ────────────────────────────────────────────────────────────────────────────
-
-**뒷다리 값은 풀었다**(2026-09-14, 발 메시 최저점 기준 — scratchpad bipedsolve.py). 발의 앞뒤 위치 y는 **-가 앞**이다.
-첫 시안은 body -32였는데 렌더에서 **"쪼그려 앉은 쥐"**로 읽혔다. -55는 두 발로 선 그림이 됐지만
-**엉덩이 메시가 바닥을 -23mm 뚫었다**(발을 딛게 두면 엉덩이가 내려앉는다 — 꼬리를 아무리 들어도 body가 남는다).
--48이 두 조건의 타협점이다: 선 그림이 읽히고 엉덩이는 -17mm(팩 Walk 기준선 -9.1보다 깊다 — 알고 둔다).
-
-    body -48  딛기(z 1.5mm)                 들기(z 30mm)                   높이 들기(z 50mm)
-              thigh 20 → shin  -8.1 y -84   thigh 30 → shin  -8.2 y -99   thigh 35 → shin  -4.9 y -107
-              thigh 25 → shin -20.2 y -78   thigh 35 → shin -19.5 y -94   thigh 40 → shin -15.7 y -103
-              thigh 30 → shin -33.9 y -68   thigh 40 → shin -31.6 y -86   thigh 45 → shin -26.9 y  -97
-              thigh 35 → shin -51.4 y -51   thigh 45 → shin -44.8 y -76   thigh 50 → shin -38.7 y  -89
-    body -54  thigh 25 → shin -28.9 (들어 올리기)      body -40  thigh 25 → shin -10.9 (내려치기 쏠림)
-
-딛는 구간 thigh 20(앞) → 35(뒤) — 보폭 약 33 mm. tail.01은 -100이면 꼬리가 바닥에서 떨어진다(-80은 -17mm 잠김).
+**2차 자세(2026-09-14)** — `_biped.py` 머리말. 뒷다리 허벅지 각 = 몸 각(다리가 세로로 선다) + 걸음 흔들기,
+몸 높이는 root 들어올림으로 **딛은 발에 맞춰 푼다**(손으로 적지 않는다). 1차(몸 -48 · 허벅지 +25)는 다리가 배 앞으로 뻗어
+「앉은 쥐」로 보였고 엉덩이가 바닥을 -17mm 뚫었다(사용자: 다리 위치 자세가 이상해).
 """
-from math import radians
-
 NAME = "BipedIdle"
 
 FRAME_START = 1
 FRAME_END = 25
 
+BODY = -42.0
+
 POSES = {
-    "body":     [(1, -48.0), (25, -48.0)],
-    "leg.B.L":  [(1, 25.0), (25, 25.0)],
-    "leg.B.R":  [(1, 25.0), (25, 25.0)],
-    "shin.B.L": [(1, -20.2), (25, -20.2)],
-    "shin.B.R": [(1, -20.2), (25, -20.2)],
-    # 코를 덜 내려(+34) 턱을 든다 — 내려다보는 깡패.
-    "head":     [(1, 28.0, 0.0), (7, 27.0, 5.0), (13, 28.0, 0.0), (19, 27.0, -5.0), (25, 28.0, 0.0)],
+    "body":     [(1, BODY), (25, BODY)],
+    "leg.B.L":  [(1, BODY), (25, BODY)],
+    "leg.B.R":  [(1, BODY), (25, BODY)],
+    "shin.B.L": [(1, 0.0), (25, 0.0)],
+    "shin.B.R": [(1, 0.0), (25, 0.0)],
+    # 코를 덜 내려(+25) 턱을 든다 — 내려다보는 깡패.
+    "head":     [(1, 25.0, 0.0), (7, 24.0, 5.0), (13, 25.0, 0.0), (19, 24.0, -5.0), (25, 25.0, 0.0)],
     "leg.F.L":  [(1, 12.0, 20.0), (13, 16.0, 16.0), (25, 12.0, 20.0)],
-    "leg.F.R":  [(1, 44.0, -30.0), (10, 58.0, -30.0), (12, 40.0, -30.0), (14, 44.0, -30.0),
-                 (22, 56.0, -30.0), (24, 40.0, -30.0), (25, 44.0, -30.0)],
-    "tail.01":  [(1, -100.0, -6.0), (13, -100.0, 6.0), (25, -100.0, -6.0)],
-    "tail.02":  [(1, -20.0, 6.0), (7, -22.0, 0.0), (13, -20.0, -6.0), (19, -22.0, 0.0), (25, -20.0, 6.0)],
+    # 오른 앞발(몽둥이): 허리 옆에 든다. 어깨 앞(44)은 **앞발이 눈 원판을 뚫었다**(2026-09-14 사용자 지적). 톡톡은 +12.
+    "leg.F.R":  [(1, 10.0, -45.0), (10, 22.0, -45.0), (12, 6.0, -45.0), (14, 10.0, -45.0),
+                 (22, 20.0, -45.0), (24, 6.0, -45.0), (25, 10.0, -45.0)],
+    # 꼬리: 몸이 들려서 -60이면 바닥에 뒤로 눕는다 — 세 번째 다리처럼 받친다.
+    "tail.01":  [(1, -60.0, -6.0), (13, -60.0, 6.0), (25, -60.0, -6.0)],
+    "tail.02":  [(1, -10.0, 6.0), (7, -12.0, 0.0), (13, -10.0, -6.0), (19, -12.0, 0.0), (25, -10.0, 6.0)],
     "ear.L":    [(1, 0.0), (12, 6.0), (13, -4.0), (25, 0.0)],
     "ear.R":    [(1, 0.0), (12, 6.0), (13, -4.0), (25, 0.0)],
 }
 
 
 def build(_armature_object):
-    """fortress.py와 같다 — `(프레임, X)` 또는 `(프레임, X, Z)` · Qz @ Qx."""
-    import bpy
-    from mathutils import Quaternion
-
-    for bone_name in POSES:
-        if _armature_object.pose.bones.get(bone_name) is None:
-            raise SystemExit(f"포즈 본 '{bone_name}'이 없다 - 리그가 바뀌었다")
-    for bone_name, frames in POSES.items():
-        bone = _armature_object.pose.bones[bone_name]
-        for key in frames:
-            frame, x_deg = key[0], key[1]
-            z_deg = key[2] if len(key) > 2 else 0.0
-            bpy.context.scene.frame_set(frame)
-            bone.rotation_quaternion = Quaternion((0.0, 0.0, 1.0), radians(z_deg)) @ Quaternion((1.0, 0.0, 0.0), radians(x_deg))
-            bone.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+    """회전 키 → 키 프레임마다 몸 높이(root)를 딛은 발에 맞춰 푼다(_biped.py)."""
+    import os
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import _biped
+    _biped.key_rotations(_armature_object, POSES)
+    _biped.key_root_lift(_armature_object, _biped.all_key_frames(POSES))

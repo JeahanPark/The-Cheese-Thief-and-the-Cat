@@ -45,6 +45,7 @@ namespace CTC.Runtime.Combat
             if (!Player.LocalControl.Mine(this) || Cursor.lockState != CursorLockMode.Locked) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
+            if (Player.GangTransformLock.Locked(this)) return; // 깡패 변신 중에는 못 친다
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
 
@@ -84,6 +85,7 @@ namespace CTC.Runtime.Combat
         public bool BotCanFire()
         {
             if (NetworkManager == null) return false;
+            if (Player.GangTransformLock.Locked(this)) return false;
 
             float cooldown = ClubActive ? Info.InfoManager.Instance.Balance.GangClubCooldown
                 : ShopLogic.WeaponStatsForTier(m_Tier.Value).CooldownSeconds;
@@ -125,6 +127,9 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Server, RequireOwnership = true)]
         private void FireRpc(Vector3 _direction)
         {
+            // 변신 중(서버가 보는 값) — 날아온 입력은 버린다. 이미 처리된 발은 그대로 성공이다.
+            if (Player.GangTransformLock.Locked(this)) return;
+
             if (ClubActive)
             {
                 ServerClub(_direction);

@@ -17,11 +17,14 @@ namespace CTC.Runtime.Testing
 
             var look = body.GetComponent<Player.GangLook>();
             var driver = body.GetComponent<Player.PlayerAnimationDriver>();
+            var visual = body.GetComponent<Player.GangLookVisual>();
             bool club = false, hat = false;
+            int brows = 0;
             foreach (Transform t in body.GetComponentsInChildren<Transform>(true))
             {
                 if (t.name == Player.GangLook.CLUB_NAME) club = t.gameObject.activeInHierarchy;
                 else if (t.name == Player.GangLook.HAT_NAME) hat = t.gameObject.activeInHierarchy;
+                else if (t.name.StartsWith(Player.GangLook.BROW_PREFIX) && t.gameObject.activeInHierarchy) brows++;
             }
 
             float rabid = -1f;
@@ -35,7 +38,9 @@ namespace CTC.Runtime.Testing
             }
 
             return $"active={(look != null && look.Active)} biped={(driver != null && driver.Biped)} " +
-                   $"club={club} hat={hat} rabid={rabid:0} state={(driver != null ? driver.PlayingState : "")}";
+                   $"club={club} hat={hat} brows={brows} rabid={rabid:0} state={(driver != null ? driver.PlayingState : "")} " +
+                   $"clubA={(visual != null ? visual.ClubAlpha : -1f):0.##} hatA={(visual != null ? visual.HatAlpha : -1f):0.##} " +
+                   $"transforming={(visual != null && visual.Transforming)}";
         }
 
         /// <summary>

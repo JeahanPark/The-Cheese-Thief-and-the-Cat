@@ -329,6 +329,9 @@ namespace CTC.Editor
                 Bounds bounds = BakeAndEncapsulate(
                     _clip, instance, bakedPairs, bakedGos, heldGun, holsteredGun,
                     _normalizedTimes, length, out float floorY);
+                // 깡패(두 발) 판은 바닥을 **모델 원점 = 게임의 땅**에 둔다. 첫 프레임 최저점으로 잡으면 두 발 자세에선
+                // 엉덩이(-17mm)가 최저점이라 바닥이 그만큼 내려가고, 딛은 발이 **떠 보였다**(2026-09-14 사용자 지적 — 인게임은 딛고 있었다).
+                if (_gang) floorY = instance.transform.position.y;
                 Vector3 center = bounds.center;
 
                 // **거의 눈높이의 앞 3/4**로 본다 — 쥐는 +Z를 보고 서 있다.
@@ -364,6 +367,7 @@ namespace CTC.Editor
                     float t = length * _normalizedTimes[i];
                     _clip.SampleAnimation(instance, t);
                     ShowGunsFor(_clip.name, t, heldGun, holsteredGun);
+                    if (_gang) PoseGangPropsFor(_clip.name, t, instance);
 
                     // 페이드 확인용 — 게임과 **같은 방식**으로 알파를 준다(프로퍼티 블록, 머티리얼 사본 없음).
                     if (_gunAlphas != null) SetGunAlpha(heldGun, holsteredGun, _gunAlphas[i]);
@@ -439,7 +443,7 @@ namespace CTC.Editor
         /// <summary>
         /// 깡패 모습을 입힌다 — 게임의 <see cref="GangLook"/>·<see cref="GangAngryFace"/>가 켜는 것과 **같은 것**을.
         /// <list type="bullet">
-        /// <item>몽둥이·모자를 켠다(프리팹엔 꺼진 채 구워져 있다). 이름은 <see cref="GangLook.CLUB_NAME"/>·<see cref="GangLook.HAT_NAME"/>이 원본.</item>
+        /// <item>몽둥이·모자·눈썹을 켠다(프리팹엔 꺼진 채 구워져 있다). 이름은 <see cref="GangLook.CLUB_NAME"/>·<see cref="GangLook.HAT_NAME"/>이 원본.</item>
         /// <item>총은 전부 끈다 — 깡패판에선 총을 못 쓴다.</item>
         /// <item>눈: <c>eyes.rabid</c> <see cref="GangAngryFace.RABID_WEIGHT"/> + <c>eyes.annoyed</c> 나머지. BakeMesh가 이 가중치를 그대로 굽는다.</item>
         /// </list>
@@ -455,7 +459,7 @@ namespace CTC.Editor
                     t.gameObject.SetActive(false);
                     continue;
                 }
-                if (t.name != GangLook.CLUB_NAME && t.name != GangLook.HAT_NAME) continue;
+                if (t.name != GangLook.CLUB_NAME && t.name != GangLook.HAT_NAME && !t.name.StartsWith(GangLook.BROW_PREFIX)) continue;
 
                 t.gameObject.SetActive(true);
                 var r = t.GetComponent<Renderer>();
@@ -495,6 +499,46 @@ namespace CTC.Editor
                 int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
                 if (rabid >= 0) smr.SetBlendShapeWeight(rabid, GangAngryFace.RABID_WEIGHT);
                 if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, 100f - GangAngryFace.RABID_WEIGHT);
+            }
+        }
+
+        /// <summary>
+        /// 깡패 소품의 이 프레임 보이기 — 변신 클립이면 **게임과 같은 시간표**(<see cref="GangTransformLogic"/>)로
+        /// 몽둥이·모자 알파와 눈썹·화난 눈을 정한다. 그 밖의 깡패 클립은 전부 또렷하다.
+        /// </summary>
+        private static void PoseGangPropsFor(string _clipName, float _seconds, GameObject _instance)
+        {
+            bool transform = _clipName == AnimationStateLogic.GangTransform;
+            float clubA = transform ? GangTransformLogic.ClubAlpha(_seconds) : 1f;
+            float hatA = transform ? GangTransformLogic.HatAlpha(_seconds) : 1f;
+            bool brows = !transform || GangTransformLogic.BrowsOn(_seconds);
+
+            foreach (Transform t in _instance.GetComponentsInChildren<Transform>(true))
+            {
+                float alpha;
+                if (t.name == GangLook.CLUB_NAME) alpha = clubA;
+                else if (t.name == GangLook.HAT_NAME) alpha = hatA;
+                else if (t.name.StartsWith(GangLook.BROW_PREFIX)) alpha = brows ? 1f : 0f;
+                else continue;
+
+                t.gameObject.SetActive(GunFadeLogic.ShouldRender(alpha));
+                var r = t.GetComponent<Renderer>();
+                Material m = r != null ? r.sharedMaterial : null;   // DressGang이 만든 미리보기 전용 사본이다
+                if (m != null && m.HasProperty("_Color"))
+                {
+                    Color c = m.GetColor("_Color");
+                    c.a = alpha;
+                    m.SetColor("_Color", c);
+                }
+            }
+
+            foreach (SkinnedMeshRenderer smr in _instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh == null) continue;
+                int rabid = smr.sharedMesh.GetBlendShapeIndex("eyes.rabid");
+                int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
+                if (rabid >= 0) smr.SetBlendShapeWeight(rabid, brows ? GangAngryFace.RABID_WEIGHT : 0f);
+                if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, brows ? 100f - GangAngryFace.RABID_WEIGHT : 100f);
             }
         }
 
@@ -705,7 +749,7 @@ namespace CTC.Editor
                 {
                     foreach (MeshRenderer prop in _instance.GetComponentsInChildren<MeshRenderer>())
                     {
-                        if (prop.name == GangLook.CLUB_NAME || prop.name == GangLook.HAT_NAME) bounds.Encapsulate(prop.bounds);
+                        if (prop.name == GangLook.CLUB_NAME || prop.name == GangLook.HAT_NAME || prop.name.StartsWith(GangLook.BROW_PREFIX)) bounds.Encapsulate(prop.bounds);
                     }
                 }
             }

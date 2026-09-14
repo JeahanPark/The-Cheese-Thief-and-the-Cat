@@ -110,7 +110,7 @@ namespace CTC.Editor
         /// 그래서 표면 타입·블렌드 팩터·ZWrite·렌더 큐·키워드를 다 같이 바꾼다. 하나라도 빠지면
         /// 안 되므로 한 함수에 모아 둔다.
         /// </summary>
-        private static void MakeTransparent(Material _material)
+        internal static void MakeTransparent(Material _material)
         {
             if (_material == null) return;
 

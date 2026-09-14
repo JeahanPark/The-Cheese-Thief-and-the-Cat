@@ -68,6 +68,8 @@ namespace CTC.Runtime.Player
         public const string BipedWalk = "BipedWalk";
         public const string BipedRun = "BipedRun";
         public const string ClubSwing = "ClubSwing";
+        /// <summary>깡패판이 열린 순간 네 발 → 두 발 변신(원샷 2초, 2026-09-14). 시간표는 <see cref="GangTransformLogic"/>.</summary>
+        public const string GangTransform = "GangTransform";
 
         /// <summary>
         /// 고양이 광분·전직 스킬(2026-09-13) — **AC_Cat에만** 있다(원본: <c>art/blender/cat.blend</c> ·
@@ -108,14 +110,14 @@ namespace CTC.Runtime.Player
             Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
             Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, Frenzy,
             CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark,
-            BipedIdle, BipedWalk, BipedRun, ClubSwing,
+            BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform,
         };
 
         /// <summary>
         /// **AC_Mouse에만** 있는 상태. 고양이 컨트롤러에 이 이름이 생기면 그건 실수다 —
         /// 고양이는 총을 쏘지 않는다. EditMode가 양쪽을 이 목록으로 갈라 검사한다.
         /// </summary>
-        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, BipedIdle, BipedWalk, BipedRun, ClubSwing };
+        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform };
 
         /// <summary>**AC_Cat에만** 있는 상태(2026-09-13). 쥐 컨트롤러에 생기면 실수다.</summary>
         public static readonly string[] CatOnly = { Frenzy, CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark };

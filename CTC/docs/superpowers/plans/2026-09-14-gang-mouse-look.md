@@ -26,6 +26,12 @@
 
 ## 5. 검증
 - ☑ EditMode 914 · pytest 187(클립 계약: 두 발 클립은 첫 프레임 = 끝 프레임)
+- ☑ 변신 중 잠금 — 이동·공격·대시·액티브·임명(`GangTransformLock`), 하던 대시는 남은 거리 즉시 적용(`ICompletableAction`) · qa_v58 ⑦ · 8/8
+- ☑ 다리 자세 2차 — 허벅지 = 몸 각(세로) + root 들어올림을 딛은 발에 맞춰 풂(`_biped.py`). 최저점 걷기 -0.3 · 뛰기 -1.5 · 서기 +1.5 · 휘두르기 0.0 mm(1차 -17)
+- ☑ 변신 원샷 `GangTransform`(48프레임) — 네 발 → 벌떡 → 뒷주머니 몽둥이(알파) → 모자(알파) · `GangTransformLogic`·`GangLookVisual` · qa_v58 ② 변신 관측 · EditMode 918
+- ☑ GIF 바닥이 엉덩이에 맞춰져 발이 떠 보이던 문제 — 두 발 판은 모델 원점을 바닥으로
+- ☑ 화난 눈썹 소품 `GangBrow.L/R` (사용자 스케치 — 콧등 쪽 끝이 내려간 사선) · qa_v58 ①② brows 검사
+- ☑ 앞발이 눈을 뚫던 문제 — 두 발 클립 앞발 각도 조정(몽둥이 발 44→10·바깥 -45, 빈 발 걷기 45→26·뛰기 60→30)
 - ☑ 깡패판 총·후추 탄 구매 잠금 `TechDeny.GangNoGun` (사용자 추가 요청)
 - ☑ 클립 GIF 도구 깡패판 — `Tools/CTC/Dev/깡패 쥐 클립 GIF 내보내기` → `docs/design-vault/images/gang/*.gif`
 - ☑ MPPM QA `qa_v58` 7/7(⑥ 구매 잠금 추가) — 1페이즈엔 안 드러남 · 2페이즈 남의 화면에서 켜짐 · 휘두르기+ClubSmash · 총구 섬광 0 · 고양이 HP 1000→982
