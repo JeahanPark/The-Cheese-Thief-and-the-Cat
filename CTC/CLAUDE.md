@@ -145,6 +145,43 @@
 - 본을 코드로 직접 돌려도 **에디터에서는 스킨드 메시가 다시 스키닝되지 않는다.** 클립을 만들어 샘플링해야 반영된다.
 - 씬 뷰 스크린샷(`u_editor_sceneview`)은 갱신이 안 붙어 같은 그림을 반복해 준다. 확인이 필요하면 **임시 카메라로 직접 렌더**한다.
 
+### 대기실 앞단 — R.E.P.O.식 진입과 접속 관문 (2026-09-14)
+
+메인(Intro)에서 **방 만들기(비밀번호 → 친구 전용) · 공개 게임(빠른 참가 / 서버 목록) · 친구 방 참가**로 바로 대기실에 간다.
+Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2026-09-14-frontdoor-repo-style-design.md`
+
+- **모든 접속이 `ConnectionGate`(NGO 승인)를 지난다** — `NetworkManager.OnInstantiated`에서 걸리므로 프리팹을 다시 굽지 않는다.
+  거절 코드 `CLOSED`·`FULL`·`PW_REQUIRED`·`PW_WRONG`. **잠금 기본값은 열림**이라 `Game.unity` 단독(wesqa)은 그대로 붙는다.
+  대기실이 서면 열리고(`RoomDirector.Start`) 시작하면 닫힌다.
+- 접속 절차는 `SessionStarter` 한 곳(Intro·Lobby 공용). QA는 팝업 없이 `TestFrontDoorHost` / `TestFrontDoorJoin` / `TestGetGateState`, 스위트 `qa_v56`.
+- **임시: 에디터에서는 `SessionStarter`가 스팀 경로를 안 탄다**(`#if UNITY_EDITOR` — 사용자 지시). 스팀 클라이언트가 떠 있으면 호스트만 Facepunch로 열려 클론(UTP)이 못 붙었다. 스팀 경로 검증은 개발용 빌드로 하고, 실측이 끝나면 분기를 걷는다. (스팀 클라이언트 자체는 여전히 함정 10 — 유니티 작업 중엔 끈다.)
+
+### 맵 분위기 — 전등·빛줄기·밤 하늘·후보정 (2026-09-14)
+
+- 재료는 `Resources/Map/MapAtmosphere.asset` 한 벌(`Tools/CTC/Map/Build Atmosphere`가 굽는다). 런타임 `MapAtmosphere`를 `MapDresser`가 부른다 — **씬 재생성 없이** 붙는다.
+- **밤 판정은 `RenderSettings.fog`** — BotLab(안개 끔·낮 조명)은 자동으로 빠진다.
+- 색·밝기는 플레이 중 `%TEMP%/ctc-atmo.json` + `Tools/CTC/Dev/Map Atmosphere 수치 적용`으로 맞춘다. 확정값은 `MapAtmosphereBuilder` 상수로 옮긴다(재생성하면 덮인다).
+- **맵 셰이더에 점광원 루프를 쓸 땐 `_ADDITIONAL_LIGHTS`만 보지 마라** — PC 렌더러는 Forward+라 그 키워드가 안 켜진다(`_CLUSTER_LIGHT_LOOP`/`_FORWARD_PLUS`도 본다). `CTC_MapTriplanar`가 이걸로 빛웅덩이를 통째로 못 받고 있었다.
+- 셰이더를 고친 직후 스크린샷이 하늘색이면 **비동기 셰이더 컴파일 자리표시**다 — 한 번 더 찍는다.
+
+### 기술 이펙트 (2026-09-14)
+
+- 입구는 `Fx.FxPlayer.PlayAt(FxId, pos)` 하나(풀 사용). 프리팹 22개는 `Tools/CTC/Fx/Build Skill Effects`가 코드로 굽는 생성물 → `Resources/Fx/FxCatalog`.
+- **이미 전 클라가 도는 `*FxRpc`·`OnNetworkSpawn`에만 붙인다.** 서버 전용 판정 자리에 붙이면 호스트 화면에서만 뜬다.
+- **Rpc 안에서 같은 틱에 바꾼 NetworkVariable을 읽지 마라** — Rpc가 먼저 도착해 옛 값을 읽는다(전직 빛이 안 떴다). 필요한 값은 인자로 넘긴다.
+- §11: **한 번 터지고 끝난다.** 켜져 있는 동안 도는 오라·패시브 이펙트는 정보를 흘려 넣지 않는다.
+- 이펙트는 0.1~0.3초라 MCP 스크린샷 왕복으로는 못 잡는다 — `TestSetTimeScale 0.1` + `TestCaptureGameView`로 찍고, 네트워크 전파는 `qa_v57`(다른 인스턴스에서 `TestGetFxCounts`)로 잰다.
+
+### 깡패 쥐 모습 (2026-09-14)
+
+- 켜지는 조건은 **2페이즈 && 깡패 편**(`GangLookLogic.Active`) — 표를 쥔 순간이 아니다. `GangLook`이 복제값 둘(직업·페이즈)을 각자 구독한다(통신 0).
+- 몽둥이는 **같은 공격 버튼**(`MousePopgun.FireRpc` → `ServerClub`). 수치는 CSV `GangClub*` — 컬럼을 건드리면 **Convert CSV를 먼저** 돌려야 컴파일된다.
+- **깡패판의 깡패는 총을 못 쓴다** — 쏘기는 몽둥이로 바뀌고, 총·후추 탄 구매도 `TechDeny.GangNoGun`으로 막힌다(`ShopController.CanBuyNow`, 조건은 `MousePopgun.ClubActive` 하나). 평소 이동은 두 발(`BipedIdle/Walk/Run`)이다.
+- GIF로 보려면 `Tools/CTC/Dev/깡패 쥐 클립 GIF 내보내기`(몽둥이·모자·화난 눈을 입혀 굽는다).
+- 두 발 클립 `BipedIdle/Walk/Run`·`ClubSwing`은 몸 **−48도**(−32는 웅크린 쥐, −55는 엉덩이가 잠긴다). 원본 `tools/blender/clips/biped_*.py`·`club_swing.py`.
+- 소품은 `Tools/CTC/Dev/Bake Gang Props` — 모자는 **BipedIdle 자세로 뼈를 돌려 놓고** 두 귀 뼈로 잰다. 네 발 쉬는 자세로 얹으면 두 발에서 머리 속으로 눕는다.
+- `TestForceGangPhase`는 시계도 채운다 — 예전엔 0이라 다음 틱에 시간 초과로 판이 끝나 결과 패널이 화면을 덮었다. QA는 `qa_v58`(호스트=쥐, **새 판에서** — 이미 2페이즈인 판이면 ①이 실패한다).
+
 ### 블렌더로 애니메이션 클립 만들기 (2026-09-12)
 
 리그는 **Generic**이라 유니티가 뼈를 **트랜스폼 경로 문자열**로 찾는다(`Rig/root/body/head/ear.L`).
