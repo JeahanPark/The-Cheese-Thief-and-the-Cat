@@ -48,7 +48,7 @@ namespace CTC.Runtime.Player
             if (!CanAdvance) return;
 
             m_Class.Value = _id;
-            AdvanceFxRpc();
+            AdvanceFxRpc(_id);
         }
 
         /// <summary>QA 전용 — 조건을 건너뛰고 전직시킨다(서버).</summary>
@@ -60,9 +60,13 @@ namespace CTC.Runtime.Player
 
         // 전직은 판의 전환점이라 소리로 알린다 — 이 게임에서 큰 사건에는 항상 소리가 붙는다.
         [Rpc(SendTo.Everyone)]
-        private void AdvanceFxRpc()
+        private void AdvanceFxRpc(CatClassId _id)
         {
             Audio.SfxPlayer.PlayUi(Audio.SfxId.CatAdvance);
+            // 전직 빛(2026-09-14) — 고른 전직의 색. **전직을 인자로 받는다**: 같은 틱에 바꾼 복제값(m_Class)보다
+            // 이 Rpc가 먼저 도착해 받는 쪽에서 아직 None이었다 — 빛이 아무 화면에도 안 떴다(qa_v57 ③에서 잡힘).
+            Fx.FxId? fx = Fx.FxCatalogLogic.AdvanceFor(_id);
+            if (fx.HasValue) Fx.FxPlayer.PlayAt(fx.Value, transform.position);
         }
     }
 }

@@ -103,9 +103,9 @@ namespace CTC.Runtime.Economy
             if (range > 0f)
             {
                 Audio.SfxPlayer.PlayAt(Audio.SfxId.WarehouseTick, transform.position, _maxDistance: range);
+                // 입자도 같은 조건이다 — 소리만 끄고 치즈를 뿜으면 "숨은" 창고가 눈으로 들킨다(2026-09-14 감사에서 발견).
+                if (m_ProduceVfx != null) m_ProduceVfx.Play();
             }
-
-            if (m_ProduceVfx != null) m_ProduceVfx.Play();
         }
 
         // 부서지면 설치비 일부를 소유 쥐에게 돌려준다 — "숨은 창고"의 마지막 보험.

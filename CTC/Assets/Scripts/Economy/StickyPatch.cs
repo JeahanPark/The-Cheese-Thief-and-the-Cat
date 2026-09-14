@@ -59,6 +59,8 @@ namespace CTC.Runtime.Economy
             if (IsServer) m_Radius.Value = m_PendingRadius;
             m_Radius.OnValueChanged += OnRadiusChanged;
             ApplyRadiusToQuad(m_Radius.Value);
+            // 끈끈이 튀김(2026-09-14) — 장판이 서는 순간 한 번. 크기는 반경을 따른다(1 m 기준 프리팹).
+            Fx.FxPlayer.PlayAt(Fx.FxId.StickySplat, transform.position, Quaternion.identity, Mathf.Max(0.5f, m_Radius.Value));
             if (IsServer)
             {
                 ServerBuildCatRoster();

@@ -11,6 +11,8 @@ namespace CTC.Runtime.Audio
         public override void OnNetworkSpawn()
         {
             SfxPlayer.PlayAt(m_Sfx, transform.position);
+            // 먼지 링(2026-09-14) — 구조물이 "섰다"는 사건은 이미 보인다. 소리와 같은 자리에서 한 번.
+            Fx.FxPlayer.PlayAt(Fx.FxId.PlaceDust, transform.position);
         }
     }
 }

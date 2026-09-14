@@ -242,6 +242,9 @@ namespace CTC.Runtime.Economy
             if (m_FxDriver == null || Time.time < m_NextEatAnimTime) return;
             m_NextEatAnimTime = Time.time + EAT_ANIM_INTERVAL_SECONDS;
             m_FxDriver.PlayOneShot(Player.AnimationStateLogic.Eat, EAT_ANIM_SECONDS);
+            // 치즈 부스러기(2026-09-14) — 갉는 몸 앞에서.
+            Transform body = m_FxDriver.transform;
+            Fx.FxPlayer.PlayAt(Fx.FxId.EatCrumbs, body.position + body.forward * 0.35f + Vector3.up * 0.25f);
         }
 
         // 열쇠가 clientId가 아니라 NetworkObjectId라 NetUtil.FindPlayerObject를 못 쓴다(위 주석).

@@ -122,6 +122,10 @@ namespace CTC.Runtime.Player
             // 소리와 같은 이유로 모션도 전 클라다(CatFrenzy.FrenzyFxRpc와 같은 규칙).
             // **전직마다 동작이 다르다**(2026-09-13 사용자 결정) — 전직은 복제값(CatClass)이라 받는 쪽이 제 화면에서 고른다.
             string clip = m_Class != null ? AnimationStateLogic.CatSkillFor(m_Class.Value) : null;
+
+            // 발동 한 번만 터진다(2026-09-14) — 켜져 있는 동안 도는 오라는 "아직 켜져 있다"를 흘린다(기획서 §11).
+            Fx.FxId? fx = m_Class != null ? Fx.FxCatalogLogic.SkillFor(m_Class.Value) : null;
+            if (fx.HasValue) Fx.FxPlayer.PlayAt(fx.Value, transform.position);
             if (m_AnimationDriver != null && clip != null)
             {
                 m_AnimationDriver.PlayOneShot(clip, SKILL_ANIM_SECONDS);

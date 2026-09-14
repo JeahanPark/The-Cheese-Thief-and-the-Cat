@@ -125,6 +125,8 @@ namespace CTC.Runtime.Combat
                 if (thorn != null && thorn.Reflect > 0 && dealt > 0)
                 {
                     if (self != null) self.TakeDamage(thorn.Reflect);   // 사망 판정은 Health가 한다
+                    // 가시 불꽃(2026-09-14) — 반사는 서버에서만 판정되므로 여기서 전 클라로 편다.
+                    ThornFxRpc(target.transform.position + Vector3.up * 0.8f);
                 }
 
                 // 반사에 죽었으면 부채꼴의 나머지를 계속 때리지 않는다 — PlayerDeath는 고양이를
@@ -160,9 +162,18 @@ namespace CTC.Runtime.Combat
         private const float ATTACK_ANIM_SECONDS = 0.6f;
 
         [Rpc(SendTo.Everyone)]
+        private void ThornFxRpc(Vector3 _at)
+        {
+            Fx.FxPlayer.PlayAt(Fx.FxId.ThornSpark, _at);
+        }
+
+        [Rpc(SendTo.Everyone)]
         private void AttackAnimRpc()
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.PounceSwing, transform.position);
+            // 할퀴기 궤적(2026-09-14) — 몸 앞, 몸이 보는 방향.
+            Fx.FxPlayer.PlayAt(Fx.FxId.ClawSlash,
+                transform.position + transform.forward * 1.1f + Vector3.up * 0.9f, transform.rotation);
 
             Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
             if (driver != null)

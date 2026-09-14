@@ -132,6 +132,7 @@ namespace CTC.Runtime.Player
         private void DashSfxRpc()
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.MouseDash, transform.position);
+            Fx.FxPlayer.PlayAt(Fx.FxId.DashDust, transform.position, transform.rotation);
 
             if (m_AnimationDriver != null)
             {

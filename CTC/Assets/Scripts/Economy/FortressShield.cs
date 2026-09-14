@@ -108,6 +108,7 @@ namespace CTC.Runtime.Economy
         private void PushSfxRpc(Vector3 _at)
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.FortressPlace, _at);
+            Fx.FxPlayer.PlayAt(Fx.FxId.FortressPush, _at);
         }
     }
 }

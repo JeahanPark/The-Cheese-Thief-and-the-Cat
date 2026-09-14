@@ -60,6 +60,7 @@ namespace CTC.Runtime.Match
             Audio.SfxPlayer.PlayAt(
                 loud ? Audio.SfxId.GangRise : Audio.SfxId.JobPickup, transform.position, 1f,
                 loud ? Info.InfoManager.Instance.Balance.CatSkillSoundMeters : 12f);
+            Fx.FxPlayer.PlayAt(_job == MouseJobId.Hero ? Fx.FxId.HeroBurst : Fx.FxId.GangSmoke, transform.position);
         }
     }
 }

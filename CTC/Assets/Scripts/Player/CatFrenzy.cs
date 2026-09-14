@@ -128,6 +128,7 @@ namespace CTC.Runtime.Player
             {
                 m_AnimationDriver.PlayOneShot(AnimationStateLogic.Frenzy, FRENZY_ANIM_SECONDS);
             }
+            Fx.FxPlayer.PlayAt(Fx.FxId.FrenzyShock, transform.position);   // 한 번만 — 오라는 안 둔다(위와 같은 이유)
         }
     }
 }

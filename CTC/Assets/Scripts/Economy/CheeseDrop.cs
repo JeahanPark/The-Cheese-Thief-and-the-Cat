@@ -58,6 +58,7 @@ namespace CTC.Runtime.Economy
         private void PickupSfxRpc(Vector3 _position)
         {
             Audio.SfxPlayer.PlayAt(Audio.SfxId.CheeseTick, _position);
+            Fx.FxPlayer.PlayAt(Fx.FxId.CheesePickup, _position + Vector3.up * 0.3f);
         }
     }
 }
