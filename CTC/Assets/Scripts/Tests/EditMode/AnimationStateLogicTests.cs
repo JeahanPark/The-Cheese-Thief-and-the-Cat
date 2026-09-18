@@ -77,12 +77,14 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void OneShotStates_ExistInMouseController()
         {
             AssertStatesExist("AC_Mouse.controller");
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void OneShotStates_ExistInCatController()
         {
             AssertStatesExist("AC_Cat.controller");
@@ -122,6 +124,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void Shared_StatesExistInBothControllers()
         {
             AssertStatesExist("AC_Mouse.controller", AnimationStateLogic.Shared);
@@ -158,6 +161,7 @@ namespace CTC.Tests
         /// 총 쏘고 대시하는 상태를 갖게 되는데, 그건 아무 테스트도 안 보고 있었다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void MouseOnly_StatesAreAbsentFromCatController()
         {
             AssertStatesAbsent("AC_Cat.controller", AnimationStateLogic.MouseOnly);
@@ -165,6 +169,7 @@ namespace CTC.Tests
 
         /// <summary>고양이 전용(광분·전직 스킬, 2026-09-13)은 AC_Cat에 **있고** AC_Mouse에는 **없어야** 한다.</summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void CatOnly_ExistInCat_AbsentFromMouse()
         {
             AssertStatesExist("AC_Cat.controller", AnimationStateLogic.CatOnly);
@@ -205,7 +210,7 @@ namespace CTC.Tests
             string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _controllerFile);
             if (!File.Exists(path))
             {
-                Assert.Ignore($"컨트롤러 원본이 없다: {path}");
+                Assert.Fail($"컨트롤러 원본이 없다: {path}");
                 return;
             }
 
@@ -225,7 +230,7 @@ namespace CTC.Tests
             string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _controllerFile);
             if (!File.Exists(path))
             {
-                Assert.Ignore($"컨트롤러 원본이 없다: {path}");
+                Assert.Fail($"컨트롤러 원본이 없다: {path}");
                 return;
             }
 

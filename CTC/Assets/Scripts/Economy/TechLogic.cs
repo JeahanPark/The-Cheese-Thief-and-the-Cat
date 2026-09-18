@@ -227,30 +227,6 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>
-        /// 빈 칸이 넘길 다음 후보. **다른 빈 칸이 이미 보여 주는 것은 건너뛴다** — 두 칸이 같은 테크를
-        /// 가리키면 「고를 게 하나뿐」으로 읽힌다(2026-09-11 신고의 나머지 절반).
-        /// <paramref name="_taken"/>은 이미 <c>% _count</c>로 접힌 인덱스들이다.
-        /// 후보가 빈 칸보다 적어 겹침을 피할 수 없으면 그냥 다음으로 간다.
-        /// </summary>
-        public static int NextCandidateIndex(int _current, int _count, IReadOnlyList<int> _taken)
-        {
-            if (_count <= 0) return 0;
-            for (int step = 1; step <= _count; step++)
-            {
-                int idx = (_current + step) % _count;
-                bool taken = false;
-                for (int i = 0; _taken != null && i < _taken.Count; i++)
-                {
-                    if (_taken[i] != idx) continue;
-                    taken = true;
-                    break;
-                }
-                if (!taken) return idx;
-            }
-            return (_current + 1) % _count;
-        }
-
-        /// <summary>
         /// 이 역할·테크는 **액티브 전용 키로만** 쓸 수 있는가.
         ///
         /// 「밖에서 숫자키 = 쓴다」는 <b>밖이 있는 역할</b>에서만 성립한다. 상점 면제 역할(고양이)은

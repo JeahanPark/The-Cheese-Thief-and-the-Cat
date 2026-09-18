@@ -29,7 +29,10 @@ GANG_NO_GUN = "GangNoGun"   # TechDeny.GangNoGun
 GANG_TRANSFORM = "GangTransform"
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다(qa_v52와 같은 규약).
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
@@ -71,7 +74,7 @@ def main():
     l1, raw1 = look(observer, me)
     check("① 깡패표만 쥔 상태(1페이즈)에선 모습이 그대로다 — 누가 쥐었는지 안 드러난다",
           l1.get("active") == "False" and l1.get("club") == "False" and l1.get("hat") == "False" and l1.get("brows") == "0",
-          "관측=%s · 호스트 직업=%s" % (raw1, host.invoke("TestGetMouseJob")))
+          "관측=%s · 호스트 직업=%s" % (raw1, host.invoke("TestGetMouseJob")), case="B-19")
 
     # ---------- ② 2페이즈 ----------
     # 깡패판이 **지금 막** 열리면 변신(GangTransform, 2초)이 먼저 돈다 — 도중엔 소품이 반쯤 떠 있으므로 끝난 뒤에 잰다.
@@ -96,7 +99,7 @@ def main():
     moved = sum((float(p) - float(q)) ** 2 for p, q in zip(pos_before.split(","), pos_after.split(","))) ** 0.5
     check("⑦ 변신 중에는 못 걷고 못 친다 — 위치·고양이 HP가 그대로다",
           mid.get("transforming") == "True" and moved < 0.05 and hp_lock_before == hp_lock_after,
-          "이동 %.3fm · 고양이 HP %s→%s · 도중=%s" % (moved, hp_lock_before, hp_lock_after, raw_mid))
+          "이동 %.3fm · 고양이 HP %s→%s · 도중=%s" % (moved, hp_lock_before, hp_lock_after, raw_mid), case="B-22")
     time.sleep(2.0)
     l2, raw2 = look(observer, me)
     seen2 = observer.invoke("TestGetAnimObserved", _clientId=me) or ""
@@ -105,7 +108,7 @@ def main():
           and l2.get("transforming") == "False" and l2.get("clubA") == "1" and l2.get("hatA") == "1"
           and l2.get("active") == "True" and l2.get("biped") == "True" and l2.get("club") == "True"
           and l2.get("hat") == "True" and l2.get("brows") == "2" and l2.get("state") == BIPED_IDLE and l2.get("rabid") == "55",
-          "강제=%s · 동작=[%s] · 도중=%s · 끝=%s" % (forced, seen2, raw_mid, raw2))
+          "강제=%s · 동작=[%s] · 도중=%s · 끝=%s" % (forced, seen2, raw_mid, raw2), case="B-19")
 
     # ---------- ⑥ 총 테크 구매 잠금 ----------
     # 깡패판의 깡패 편은 총을 못 쓴다 → 총·후추 탄도 못 산다(2026-09-14 사용자 결정). 서버 판정(BuyRpc)도 같은 CanBuyNow를 지나므로
@@ -119,7 +122,7 @@ def main():
     check("⑥ 깡패판의 깡패는 총·후추 탄을 못 산다(대시는 이 사유로 안 막힌다)",
           "local=" + GANG_NO_GUN in buy_gun and "local=" + GANG_NO_GUN in buy_pepper
           and GANG_NO_GUN not in buy_dash and gun_before == gun_after,
-          "총=%s · 후추=%s · 대시=%s · 총 레벨 %s→%s" % (buy_gun, buy_pepper, buy_dash, gun_before, gun_after))
+          "총=%s · 후추=%s · 대시=%s · 총 레벨 %s→%s" % (buy_gun, buy_pepper, buy_dash, gun_before, gun_after), case="C-31")
 
     # ---------- ③·⑤ 휘두르기 ----------
     observer.invoke("TestResetFxCounts")
@@ -130,8 +133,8 @@ def main():
     fx = counts(observer)
     check("③ 공격 버튼이 몽둥이 휘두르기(ClubSwing)가 되고 남의 화면에 ClubSmash가 뜬다",
           shot and CLUB_SWING in seen.split(",") and fx.get(CLUB_SMASH, 0) >= 1,
-          "발사=%s 관측=[%s] 이펙트=%s" % (shot, seen, fx))
-    check("⑤ 총은 안 쏜다 — 총구 섬광이 0", fx.get(MUZZLE, 0) == 0, "이펙트=%s" % fx)
+          "발사=%s 관측=[%s] 이펙트=%s" % (shot, seen, fx), case="B-20")
+    check("⑤ 총은 안 쏜다 — 총구 섬광이 0", fx.get(MUZZLE, 0) == 0, "이펙트=%s" % fx, case="B-20")
 
     # ---------- ④ 근접 피해 ----------
     # 고양이 1m 앞에 서서 **고양이 쪽으로** 휘두른다(TestShootAtCat — 봇이 겨누는 입구와 같다).
@@ -147,7 +150,7 @@ def main():
     hp_after = host.invoke("TestGetHpOf", _clientId=cat_id)
     check("④ 1m 앞 고양이를 치면 HP가 몽둥이 피해(%d)만큼 준다" % CLUB_DAMAGE,
           hp_before - hp_after == CLUB_DAMAGE,
-          "HP %s → %s (피해 %s)" % (hp_before, hp_after, hp_before - hp_after))
+          "HP %s → %s (피해 %s)" % (hp_before, hp_after, hp_before - hp_after), case="B-21")
     return summary()
 
 

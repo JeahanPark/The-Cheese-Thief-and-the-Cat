@@ -32,6 +32,20 @@ namespace CTC.Runtime.Ai
         /// </summary>
         public static NavGrid Bake(Transform _root, float _halfExtent)
         {
+            NavGrid grid = StampTerrain(_root, _halfExtent);
+
+            // 경계벽 바깥 여백처럼 못 닿는 곳을 먼저 봉인하고 나서 여유 거리를 잰다
+            grid.SealUnreachable();
+            grid.BuildClearance();
+            return grid;
+        }
+
+        /// <summary>
+        /// 봉인·여유 거리 **전** 단계 — 막는 박스만 찍은 격자. `Bake`가 부르고,
+        /// 테스트(감사 D-12)가 「봉인이 한 존을 통째로 지우는가」를 보려고 따로 부른다.
+        /// </summary>
+        public static NavGrid StampTerrain(Transform _root, float _halfExtent)
+        {
             float cell = NavGrid.CELL_SIZE;
             int side = Mathf.CeilToInt(_halfExtent * 2f / cell) + 2;   // 경계벽까지 담기게 한 칸 여유
             var origin = new Vector2(-_halfExtent - cell, -_halfExtent - cell);
@@ -49,10 +63,6 @@ namespace CTC.Runtime.Ai
                     StampBox(grid, box, NavStructureKind.CatBreakable, _terrain: true);
                 }
             }
-
-            // 경계벽 바깥 여백처럼 못 닿는 곳을 먼저 봉인하고 나서 여유 거리를 잰다
-            grid.SealUnreachable();
-            grid.BuildClearance();
             return grid;
         }
 

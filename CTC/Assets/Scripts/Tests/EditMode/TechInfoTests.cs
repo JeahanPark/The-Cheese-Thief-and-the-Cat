@@ -103,6 +103,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void TechInfo_TableIsWellFormed()
         {
             Assert.IsNotEmpty(InfoManager.Instance.Tech);

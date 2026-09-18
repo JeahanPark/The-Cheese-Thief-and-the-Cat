@@ -51,6 +51,16 @@ namespace CTC.Runtime.Audio
         // 쥐 직업(v3.9). 깡패 등장은 판의 전환점이라 멀리 간다 — 다른 쥐가 대비해야 한다.
         JobPickup = 35,
         GangRise = 36,
+        // 소리가 겹치던 두 자리를 가른다(2026-09-15, 감사 C-20·C-21) — 소리만 듣고 무엇이 일어났는지 알아야 한다.
+        /// <summary>창고 설치 — 요새 설치음과 다른 「뽁」(옛 미끼 설치 음원).</summary>
+        WarehousePlace = 37,
+        /// <summary>고양이 광분 — 전직 스킬음과 다른 성난 울부짖음(`tools/audio/synth_cat_frenzy.py`).</summary>
+        CatFrenzy = 38,
+        /// <summary>
+        /// 고양이의 구매음 — 음원은 <see cref="ShopBuy"/>와 같다. **번호만 가른다**: 봇 청각은 소리 종류로
+        /// 누가 냈는지를 가르는데, 한 번호를 둘이 쓰면 고양이 봇이 제 구매음을 쫓아간다(C-22).
+        /// </summary>
+        CatShopBuy = 39,
     }
 
     /// <summary>

@@ -131,7 +131,7 @@ namespace CTC.Runtime.Map
             var bounds = new Bounds(Vector3.zero, new Vector3(span, 20f, span));
 
             m_NavMesh = UnityEngine.AI.NavMeshBuilder.BuildNavMeshData(
-                settings, CollectSources(), bounds, Vector3.zero, Quaternion.identity);
+                settings, CollectSources(m_Root != null ? m_Root.transform : null), bounds, Vector3.zero, Quaternion.identity);
             m_NavMeshInstance = UnityEngine.AI.NavMesh.AddNavMeshData(m_NavMesh);
         }
 
@@ -151,14 +151,16 @@ namespace CTC.Runtime.Map
         /// `NavMeshBuilder.CollectSources`를 쓰지 않는다 — 마크업으로 걸러도, 받은 목록을 직접
         /// 걸러도 결과가 **한 톨도 안 바뀌었다**(콜라이더가 어느 오브젝트 것인지 안 알려준다).
         /// 이 맵은 우리가 박스로 지었으니 그 박스를 그대로 넘기면 된다.
+        ///
+        /// 정적·공개인 이유는 테스트뿐이다(감사 D-10) — `_root`는 지어진 맵 루트(`BuiltRoot`).
         /// </summary>
-        private List<UnityEngine.AI.NavMeshBuildSource> CollectSources()
+        public static List<UnityEngine.AI.NavMeshBuildSource> CollectSources(Transform _root)
         {
             const int NOT_WALKABLE_AREA = 1;
             var sources = new List<UnityEngine.AI.NavMeshBuildSource>();
-            if (m_Root == null) return sources;
+            if (_root == null) return sources;
 
-            foreach (BoxCollider box in m_Root.GetComponentsInChildren<BoxCollider>(true))
+            foreach (BoxCollider box in _root.GetComponentsInChildren<BoxCollider>(true))
             {
                 if (box.isTrigger) continue;   // ① 판정 영역은 지형이 아니다
 

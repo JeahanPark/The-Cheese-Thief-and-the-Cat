@@ -6,9 +6,6 @@ namespace CTC.Runtime.Core
         /// <summary>채팅이 열려 있으면 보낸다 — 열려 있는 입력창이 언제나 우선.</summary>
         SubmitChat,
 
-        /// <summary>상점 안에서 살 후보가 있으면 확정 구매.</summary>
-        ConfirmBuy,
-
         /// <summary>그 외에는 채팅을 연다.</summary>
         OpenChat,
     }
@@ -20,14 +17,14 @@ namespace CTC.Runtime.Core
     /// `UiFocus.IsTyping`은 `EventSystem.currentSelectedGameObject`를 보는데 TMP의
     /// `ActivateInputField()`는 LateUpdate에나 선택을 넣는다 — 그 프레임 Update에서는
     /// `BlocksGameplay`가 아직 false다. 그래서 Enter 한 번이 **채팅을 열면서 동시에 구매**했다.
+    ///
+    /// **확정 구매는 2026-09-19에 상점 팝업으로 갔다** — Enter가 겸하던 일이 사라져 갈래가 둘뿐이다.
     /// </summary>
     public static class EnterRouteLogic
     {
-        public static EnterRoute Route(bool _chatOpen, bool _hotbarCanConfirm)
+        public static EnterRoute Route(bool _chatOpen)
         {
-            if (_chatOpen) return EnterRoute.SubmitChat;
-            if (_hotbarCanConfirm) return EnterRoute.ConfirmBuy;
-            return EnterRoute.OpenChat;
+            return _chatOpen ? EnterRoute.SubmitChat : EnterRoute.OpenChat;
         }
     }
 }

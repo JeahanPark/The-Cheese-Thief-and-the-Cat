@@ -72,9 +72,9 @@ namespace CTC.Runtime.Match
         /// </summary>
         public static MatchResult EvaluateGangPhase(int _gangAlive, int _otherAlive, bool _timeUp)
         {
-            if (_gangAlive <= 0) return MatchResult.MouseWin;   // 보스 팀 전멸 — 나머지 쥐가 이긴다
+            if (_gangAlive <= 0) return MatchResult.MiceBeatGang;   // 보스 팀 전멸 — 나머지 쥐가 이긴다
             if (_otherAlive <= 0) return MatchResult.GangWin;
-            return _timeUp ? MatchResult.MouseWin : MatchResult.None;
+            return _timeUp ? MatchResult.MiceBeatGang : MatchResult.None;
         }
     }
 }

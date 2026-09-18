@@ -27,6 +27,9 @@ namespace CTC.Runtime.UI
         /// <summary>버튼·슬롯·타일 바탕. 패널 위에 한 겹 뜬다.</summary>
         public static readonly Color Slot = new Color(0.055f, 0.075f, 0.110f, 0.82f);
 
+        /// <summary>지금은 못 고르는 칸 — 살 수 있는 칸(<see cref="Slot"/>)보다 어둡고 탁하다(상점 팝업).</summary>
+        public static readonly Color SlotDim = new Color(0.035f, 0.045f, 0.063f, 0.82f);
+
         /// <summary>슬라이더 홈처럼 눌린 자리.</summary>
         public static readonly Color Groove = new Color(0.098f, 0.125f, 0.176f, 1f);
 

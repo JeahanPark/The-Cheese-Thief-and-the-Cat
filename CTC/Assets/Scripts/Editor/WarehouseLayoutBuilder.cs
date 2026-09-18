@@ -139,8 +139,68 @@ namespace CTC.Editor
             return (new Vector2(cx, cz) - _center).sqrMagnitude < _radius * _radius;
         }
 
+        /// <summary>에셋에 들어가는 표시 이름 · 권장 쥐 수 — `SetHandPlaced`에 넘기는 값.</summary>
+        public const string DISPLAY_NAME = "창고 (120×120)";
+        public const int RECOMMENDED_MICE_MIN = 6;
+        public const int RECOMMENDED_MICE_MAX = 8;
+
+        /// <summary>맵 반치수(m) — 에셋의 `HalfExtent`와 비교하는 값.</summary>
+        public static float HalfExtent => HALF_EXTENT;
+
+        /// <summary>도면 상수에서 **지금** 나오는 레이아웃 한 벌 — 디스크에 쓰기 전 단계(감사 D-04가 에셋과 대조한다).</summary>
+        public sealed class Generated
+        {
+            public List<PropPlacement> Props { get; }
+            public List<CheesePlacement> Cheese { get; }
+            public List<FortressPlacement> Fortresses { get; }
+            public List<AlcovePlacement> Alcoves { get; }
+            public List<ShopPlacement> Shops { get; }
+            public List<LightPlacement> Lights { get; }
+
+            public Generated(List<PropPlacement> _props, List<CheesePlacement> _cheese, List<FortressPlacement> _fortresses,
+                List<AlcovePlacement> _alcoves, List<ShopPlacement> _shops, List<LightPlacement> _lights)
+            {
+                Props = _props;
+                Cheese = _cheese;
+                Fortresses = _fortresses;
+                Alcoves = _alcoves;
+                Shops = _shops;
+                Lights = _lights;
+            }
+        }
+
         [MenuItem("Tools/CTC/Build Warehouse Layout (창고 평면도 v2)")]
         public static void Build()
+        {
+            Generated generated = Generate();
+            if (generated == null) return;
+
+            List<PropPlacement> props = generated.Props;
+            List<CheesePlacement> cheese = generated.Cheese;
+            List<FortressPlacement> forts = generated.Fortresses;
+            List<AlcovePlacement> alcoves = generated.Alcoves;
+            List<ShopPlacement> shops = generated.Shops;
+            List<LightPlacement> lights = generated.Lights;
+
+            if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Maps")) AssetDatabase.CreateFolder("Assets/Prefabs", "Maps");
+            var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(LayoutPath);
+            if (layout == null)
+            {
+                layout = ScriptableObject.CreateInstance<MapLayout>();
+                AssetDatabase.CreateAsset(layout, LayoutPath);
+            }
+            layout.SetHandPlaced(DISPLAY_NAME, HALF_EXTENT, RECOMMENDED_MICE_MIN, RECOMMENDED_MICE_MAX, props, cheese, forts, alcoves, shops, lights);
+            EditorUtility.SetDirty(layout);
+            AssetDatabase.SaveAssets();
+
+            Debug.Log($"[Warehouse] 저장 — 차단물 {props.Count}(선반 열 {SHELVES.Length}·궤짝 벽 {CRATE_WALLS.Length}·배럴 {BARRELS.Length}·가구 {BLOCKS.Length})" +
+                      $" · 치즈 {cheese.Count} · 요새 {forts.Count} · 벽감 {alcoves.Count} · 상점 {shops.Count} · 빛 {lights.Count} → {LayoutPath}");
+        }
+
+        /// <summary>
+        /// 도면 상수 → 레이아웃 데이터(디스크를 안 건드린다). 검산 위반이 있으면 에러를 찍고 null.
+        /// </summary>
+        public static Generated Generate()
         {
             var props = new List<PropPlacement>();
             foreach ((string id, Vector2 from, Vector2 to, Vector2[] gaps) in SHELVES)
@@ -167,7 +227,7 @@ namespace CTC.Editor
                 bad++;
                 Debug.LogError($"[Warehouse] 경계벽 겹침: {p.Name} @({p.Pos.x},{p.Pos.y}) size({p.Size.x}×{p.Size.y})");
             }
-            if (bad > 0) { Debug.LogError($"[Warehouse] 위반 {bad}건 — 도면을 고쳐라"); return; }
+            if (bad > 0) { Debug.LogError($"[Warehouse] 위반 {bad}건 — 도면을 고쳐라"); return null; }
 
             // 상점 후보 검산 — 원반이 차단물에 물리거나 후보끼리 붙어 있으면 굽지 않는다.
             // 눈대중으로 좌표를 옮기다 원반 절반이 선반 속에 들어가면 **에러가 안 난다**:
@@ -189,7 +249,7 @@ namespace CTC.Editor
                     Debug.LogError($"[Warehouse] 상점 후보 {i}·{j}가 {d:0.#} m — 최소 간격 {SHOP_MIN_GAP} m 미만");
                 }
             }
-            if (shopBad > 0) { Debug.LogError($"[Warehouse] 상점 후보 위반 {shopBad}건 — 좌표를 고쳐라"); return; }
+            if (shopBad > 0) { Debug.LogError($"[Warehouse] 상점 후보 위반 {shopBad}건 — 좌표를 고쳐라"); return null; }
 
             var cheese = new List<CheesePlacement>();
             foreach ((int grade, Vector2 at) in CHEESE) cheese.Add(new CheesePlacement { Pos = at, Grade = grade, Radius = CHEESE_RADIUS });
@@ -215,22 +275,10 @@ namespace CTC.Editor
             if (findings.Count > 0)
             {
                 Debug.LogError($"[Warehouse] 지점 검산 위반 {findings.Count}건 — 좌표를 고쳐라\n{MapPointAudit.Describe(findings)}");
-                return;
+                return null;
             }
 
-            if (!AssetDatabase.IsValidFolder("Assets/Prefabs/Maps")) AssetDatabase.CreateFolder("Assets/Prefabs", "Maps");
-            var layout = AssetDatabase.LoadAssetAtPath<MapLayout>(LayoutPath);
-            if (layout == null)
-            {
-                layout = ScriptableObject.CreateInstance<MapLayout>();
-                AssetDatabase.CreateAsset(layout, LayoutPath);
-            }
-            layout.SetHandPlaced("창고 (120×120)", HALF_EXTENT, 6, 8, props, cheese, forts, alcoves, shops, lights);
-            EditorUtility.SetDirty(layout);
-            AssetDatabase.SaveAssets();
-
-            Debug.Log($"[Warehouse] 저장 — 차단물 {props.Count}(선반 열 {SHELVES.Length}·궤짝 벽 {CRATE_WALLS.Length}·배럴 {BARRELS.Length}·가구 {BLOCKS.Length})" +
-                      $" · 치즈 {cheese.Count} · 요새 {forts.Count} · 벽감 {alcoves.Count} · 상점 {shops.Count} · 빛 {lights.Count} → {LayoutPath}");
+            return new Generated(props, cheese, forts, alcoves, shops, lights);
         }
     }
 }

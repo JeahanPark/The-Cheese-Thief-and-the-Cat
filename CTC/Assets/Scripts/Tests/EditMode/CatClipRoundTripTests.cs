@@ -13,6 +13,7 @@ namespace CTC.Tests
     /// 왕복한 Walk가 팩 Walk와 다르다(스케일·축 사고) · 클립 이름이 <c>Rig|Walk</c>로 샌다(메타 매핑 유실) ·
     /// 고양이 전용 클립이 FBX에 없다(상태가 빈 채로 굽힌다).
     /// </summary>
+    [NUnit.Framework.Category("Asset")]
     public class CatClipRoundTripTests
     {
         private const string PACK_FBX =
@@ -34,7 +35,7 @@ namespace CTC.Tests
         private static void RequireFbx()
         {
             if (AssetDatabase.LoadMainAssetAtPath(RoleClipStates.CAT_CLIPS_FBX) == null)
-                Assert.Ignore($"고양이 왕복 FBX가 없다: {RoleClipStates.CAT_CLIPS_FBX}");
+                Assert.Fail($"고양이 왕복 FBX가 없다: {RoleClipStates.CAT_CLIPS_FBX}");
         }
 
         [Test]

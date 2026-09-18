@@ -28,14 +28,12 @@ namespace CTC.Runtime.Networking
             var transport = _nm.NetworkConfig.NetworkTransport as UnityTransport;
             if (transport == null) return _nm.StartHost();
 
-            for (int i = 0; i < MAX_ATTEMPTS; i++)
+            // **먼저 열어 본다.** 그냥 StartHost로 찔러 보면 실패할 때마다 NGO가 빨간 줄을
+            // 셋 찍는데, 기본 포트 7788은 MPPM 수집기가 늘 물고 있어서 **판을 열 때마다**
+            // 그 에러가 뜬다. 진짜 문제와 구분이 안 되는 노이즈다.
+            for (int i = NextFreeAttempt(0, IsPortFree); i >= 0; i = NextFreeAttempt(i + 1, IsPortFree))
             {
                 ushort port = (ushort)(BASE_PORT + i);
-
-                // **먼저 열어 본다.** 그냥 StartHost로 찔러 보면 실패할 때마다 NGO가 빨간 줄을
-                // 셋 찍는데, 기본 포트 7788은 MPPM 수집기가 늘 물고 있어서 **판을 열 때마다**
-                // 그 에러가 뜬다. 진짜 문제와 구분이 안 되는 노이즈다.
-                if (!IsPortFree(port)) continue;
 
                 transport.SetConnectionData("127.0.0.1", port);
 
@@ -50,6 +48,19 @@ namespace CTC.Runtime.Networking
 
             Debug.LogError($"[HostPortFallback] {BASE_PORT}~{BASE_PORT + MAX_ATTEMPTS - 1} 전부 바인드 실패");
             return false;
+        }
+
+        /// <summary>
+        /// <paramref name="_fromAttempt"/>번째 시도부터 올라가며 **비어 있는 첫 시도 번호**(포트 = BASE_PORT + 번호).
+        /// <see cref="MAX_ATTEMPTS"/> 안에 없으면 -1. 비었는지는 부르는 쪽이 판정한다(순수 — EditMode로 잰다).
+        /// </summary>
+        public static int NextFreeAttempt(int _fromAttempt, System.Func<ushort, bool> _isFree)
+        {
+            for (int i = _fromAttempt < 0 ? 0 : _fromAttempt; i < MAX_ATTEMPTS; i++)
+            {
+                if (_isFree((ushort)(BASE_PORT + i))) return i;
+            }
+            return -1;
         }
 
         // UDP 소켓을 잠깐 열어 본다. 열리면 비어 있는 포트다.
@@ -89,12 +100,17 @@ namespace CTC.Runtime.Networking
             transport.SetConnectionData("127.0.0.1", (ushort)ReadHostPort());
         }
 
-        public static int ReadHostPort()
+        public static int ReadHostPort() => ReadPortFile(PortFilePath);
+
+        private static void WriteHostPort(int _port) => WritePortFile(PortFilePath, _port);
+
+        /// <summary>공유 파일에서 포트를 읽는다. 파일이 없거나 숫자가 아니면 <see cref="BASE_PORT"/>.</summary>
+        public static int ReadPortFile(string _path)
         {
             try
             {
-                if (File.Exists(PortFilePath) &&
-                    int.TryParse(File.ReadAllText(PortFilePath).Trim(), out int port))
+                if (File.Exists(_path) &&
+                    int.TryParse(File.ReadAllText(_path).Trim(), out int port))
                 {
                     return port;
                 }
@@ -103,12 +119,13 @@ namespace CTC.Runtime.Networking
             return BASE_PORT;
         }
 
-        private static void WriteHostPort(int _port)
+        /// <summary>공유 파일에 포트를 쓴다(폴더가 없으면 만든다). 쓰기 실패는 조용히 넘긴다.</summary>
+        public static void WritePortFile(string _path, int _port)
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(PortFilePath));
-                File.WriteAllText(PortFilePath, _port.ToString());
+                Directory.CreateDirectory(Path.GetDirectoryName(_path));
+                File.WriteAllText(_path, _port.ToString());
             }
             catch (IOException) { }
         }

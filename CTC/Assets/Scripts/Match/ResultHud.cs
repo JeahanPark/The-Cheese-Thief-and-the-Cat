@@ -22,8 +22,8 @@ namespace CTC.Runtime.Match
         [SerializeField] private TMP_Text m_Text;
         [SerializeField] private Button m_RestartButton;
 
-        // 시리즈 여부를 보려고 잡는다 — MatchManager와 같은 GO에 동승한다(배선 추가 없음).
-        private MatchSeries m_Series;
+        // 대기실에서 온 판인지 보려고 잡는다 — MatchManager와 같은 GO에 동승한다(배선 추가 없음).
+        private MatchRoomReturn m_RoomReturn;
 
         private void Awake()
         {
@@ -45,7 +45,7 @@ namespace CTC.Runtime.Match
         // 개편 3b(2026-07-31): Update 폴링 → 결과 스트림 구독. 결과는 판당 한 번만 바뀐다.
         private void Start()
         {
-            if (m_Match != null) m_Series = m_Match.GetComponent<MatchSeries>();
+            if (m_Match != null) m_RoomReturn = m_Match.GetComponent<MatchRoomReturn>();
             m_Match.ResultChanged.Subscribe(OnResultChanged).AddTo(this);
         }
 
@@ -66,12 +66,11 @@ namespace CTC.Runtime.Match
 
             m_Text.text = LabelOf(_result);
 
-            // **시리즈 중에는 재시작 버튼을 숨긴다.** 다음 판은 `MatchSeries`가 알아서 여는데
-            // 버튼까지 있으면 사람이 눌러 판이 두 번 초기화된다(2026-09-09 감사 A).
-            // 시리즈가 곧 한 경기라 사람이 누를 자리가 없다는 것이 그 클래스의 전제다.
+            // **대기실에서 온 판에는 재시작 버튼이 없다.** 결과를 보여 준 뒤 `MatchRoomReturn`이
+            // 대기실로 데려가는데, 버튼까지 있으면 사람이 눌러 판이 두 번 초기화된다(2026-09-09 감사 A).
             NetworkManager nm = NetworkManager.Singleton;
-            bool seriesRunning = m_Series != null && m_Series.Active;
-            m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost && !seriesRunning);
+            bool fromRoom = m_RoomReturn != null && m_RoomReturn.Active;
+            m_RestartButton.gameObject.SetActive(nm != null && nm.IsHost && !fromRoom);
         }
 
         /// <summary>
@@ -85,6 +84,8 @@ namespace CTC.Runtime.Match
                 case MatchResult.MouseWin: return "MICE WIN!";
                 case MatchResult.CatWin: return "CAT WINS!";
                 case MatchResult.GangWin: return "GANG WINS!";
+                // 2단계에서 깡패가 아닌 쥐가 이겼다 — 1단계의 쥐 전원 승리와 이긴 사람이 다르다
+                case MatchResult.MiceBeatGang: return "GANG DOWN! MICE WIN";
                 default: return "";
             }
         }

@@ -167,7 +167,7 @@ namespace CTC.Editor
                     AssetDatabase.LoadAssetAtPath<AudioClip>($"Assets/Audio/Movement/{stepPrefix}3.ogg"),
                 });
                 SetFloat(steps, "m_StrideMeters", CTC.Runtime.Audio.FootstepLogic.StrideOf(
-                    info.MoveSpeed, _role == RoleId.Cat ? 2.5f : 3.4f));
+                    info.MoveSpeed, CTC.Runtime.Audio.FootstepLogic.LoopStepsPerSecondOf(_role == RoleId.Cat)));
                 // 잠행은 무음이 아니라 '좁게 들린다'(2026-08-10) — 넓은 맵에서 웅크려 버티기가
                 // 무적이 되는 것을 막는다. 두 반경 다 PlayerInfo에서 굽는다.
                 SetFloat(steps, "m_NormalRange", info.FootstepRangeMeters);

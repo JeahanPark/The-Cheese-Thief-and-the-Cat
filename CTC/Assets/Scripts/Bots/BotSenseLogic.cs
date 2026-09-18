@@ -75,6 +75,7 @@ namespace CTC.Runtime.Bots
                 case Audio.SfxId.MouseDeath:
                 case Audio.SfxId.MouseDash:
                 case Audio.SfxId.FortressPlace:
+                case Audio.SfxId.WarehousePlace:
                 case Audio.SfxId.CheeseTick:
                 case Audio.SfxId.WarehouseTick:
                 case Audio.SfxId.HealTick:
@@ -82,6 +83,9 @@ namespace CTC.Runtime.Bots
                 case Audio.SfxId.AlcoveBreak:
                 case Audio.SfxId.BoxHit:
                 case Audio.SfxId.BoxBreak:
+                // 구매음 12m가 퍼져 고양이가 상점을 지킨다(기획 §3) — 봇 고양이도 이 채널을 써야 계측이 맞다(감사 C-22).
+                // 고양이 자신의 구매음은 번호가 다르다(CatShopBuy) — 제 소리를 쫓지 않는다.
+                case Audio.SfxId.ShopBuy:
                     return true;
                 default:
                     return false;

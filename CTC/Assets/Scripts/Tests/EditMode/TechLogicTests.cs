@@ -407,42 +407,5 @@ namespace CTC.Tests
                 owned.Add(new TechEntry(catalog[i], 1));
             }
         }
-
-        // ===== 넘기기 겹침 (쥐) =====
-
-        [Test]
-        public void NextCandidateIndex_AdvancesWhenNothingIsTaken()
-        {
-            Assert.AreEqual(1, TechLogic.NextCandidateIndex(0, 4, null));
-            Assert.AreEqual(0, TechLogic.NextCandidateIndex(3, 4, new List<int>()), "끝에서 접힌다");
-        }
-
-        [Test]
-        public void NextCandidateIndex_SkipsWhatOtherSlotsAlreadyShow()
-        {
-            // 신고의 나머지 절반 — 넘겼는데 옆 칸과 같은 것이 떴다.
-            // 0에서 넘길 때 1·2를 옆 칸이 이미 보여 주면 3으로 건너뛴다.
-            Assert.AreEqual(3, TechLogic.NextCandidateIndex(0, 5, new List<int> { 1, 2 }));
-        }
-
-        [Test]
-        public void NextCandidateIndex_WrapsPastTakenOnes()
-        {
-            // 끝에서 접힌 뒤에도 건너뛴다 — 3에서 넘기면 0이지만 0이 차 있으면 1.
-            Assert.AreEqual(1, TechLogic.NextCandidateIndex(3, 4, new List<int> { 0 }));
-        }
-
-        [Test]
-        public void NextCandidateIndex_FallsForwardWhenEveryCandidateIsTaken()
-        {
-            // 후보가 빈 칸보다 적으면 겹침을 피할 수 없다 — 그때는 멈추지 말고 그냥 다음으로.
-            Assert.AreEqual(1, TechLogic.NextCandidateIndex(0, 3, new List<int> { 0, 1, 2 }));
-        }
-
-        [Test]
-        public void NextCandidateIndex_ZeroCandidatesIsSafe()
-        {
-            Assert.AreEqual(0, TechLogic.NextCandidateIndex(2, 0, null));
-        }
     }
 }

@@ -28,7 +28,8 @@ namespace CTC.Runtime.Audio
             MatchResult result = m_Match != null && m_Match.IsSpawned ? m_Match.Result : MatchResult.None;
             if (result != m_LastResult && result != MatchResult.None)
             {
-                SfxPlayer.PlayUi(result == MatchResult.MouseWin ? SfxId.MouseWin : SfxId.CatWin);
+                bool miceSide = result == MatchResult.MouseWin || result == MatchResult.MiceBeatGang;
+                SfxPlayer.PlayUi(miceSide ? SfxId.MouseWin : SfxId.CatWin);
             }
             m_LastResult = result;
 

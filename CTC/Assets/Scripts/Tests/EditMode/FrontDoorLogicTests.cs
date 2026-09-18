@@ -10,12 +10,14 @@ namespace CTC.Tests.EditMode
     {
         // ── 관문 ──────────────────────────────────────────────
 
+        [NUnit.Framework.Property("CaseId", "A-23")]
         [Test]
         public void Gate_HostSelf_AlwaysPasses_EvenClosedFullPassworded()
         {
             Assert.IsNull(ConnectionGateLogic.Decide(true, false, 99, 10, "ABC", ""));
         }
 
+        [NUnit.Framework.Property("CaseId", "A-23")]
         [Test]
         public void Gate_Order_ClosedBeforeFullBeforePassword()
         {
@@ -50,6 +52,7 @@ namespace CTC.Tests.EditMode
             Assert.IsFalse(ConnectionGateLogic.AsksPassword(ConnectionGateLogic.FULL));
         }
 
+        [NUnit.Framework.Property("CaseId", "A-23")]
         [Test]
         public void Gate_IsGateCode_OnlyOurCodes_NotTransportText()
         {
@@ -62,6 +65,7 @@ namespace CTC.Tests.EditMode
 
         // ── 비밀번호 ──────────────────────────────────────────
 
+        [NUnit.Framework.Property("CaseId", "A-24")]
         [Test]
         public void Password_Normalize_StripsSpacesUppercasesTruncates()
         {
@@ -71,6 +75,7 @@ namespace CTC.Tests.EditMode
             Assert.IsFalse(LobbyPasswordLogic.HasPassword(" \t"));
         }
 
+        [NUnit.Framework.Property("CaseId", "A-24")]
         [Test]
         public void Password_PayloadRoundTrip_AndGarbageIsSafe()
         {
@@ -82,6 +87,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(LobbyPasswordLogic.MAX_LENGTH, LobbyPasswordLogic.FromPayload(huge).Length);
         }
 
+        [NUnit.Framework.Property("CaseId", "A-24")]
         [Test]
         public void SteamPasswordFlag_OnlyOneMeansYes()
         {
@@ -105,6 +111,7 @@ namespace CTC.Tests.EditMode
             };
         }
 
+        [NUnit.Framework.Property("CaseId", "A-25")]
         [Test]
         public void Filter_AllTermsMustMatch_NameOrHost_CaseInsensitive()
         {
@@ -116,6 +123,7 @@ namespace CTC.Tests.EditMode
             CollectionAssert.IsEmpty(ServerListLogic.Filter(null, "x"));
         }
 
+        [NUnit.Framework.Property("CaseId", "A-25")]
         [Test]
         public void Pages_CountClampStart()
         {
@@ -128,6 +136,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(0, ServerListLogic.PageStart(3, 0));
         }
 
+        [NUnit.Framework.Property("CaseId", "A-25")]
         [Test]
         public void QuickMatch_FullestRoomWithSpace_ElseNone()
         {

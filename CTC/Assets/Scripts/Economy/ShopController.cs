@@ -293,115 +293,130 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>
+        /// 적용 검사·실행의 결과. bool이 아니라 셋인 이유: 「컴포넌트가 없다(배선 누락)」와
+        /// 「이 테크를 switch가 모른다(등록 누락)」를 갈라야 C-10 테스트가 빈 몸으로 두 switch를 훑을 수 있다.
+        /// </summary>
+        public enum ApplyResult { Ok, MissingComponent, Unhandled }
+
+        private bool CanApplyLevel(TechId _id) => CheckApplyLevel(gameObject, _id) == ApplyResult.Ok;
+
+        private bool TryApplyLevel(TechId _id, int _level) => ApplyLevel(gameObject, _id, _level) == ApplyResult.Ok;
+
+        /// <summary>
         /// 이 테크를 실제로 적용할 수 있는가 — 부작용 없는 사전 검사(차감 전에 부른다).
-        /// <see cref="TryApplyLevel"/>과 **같은 목록**을 봐야 한다: 여기서 통과한 게 저기서 실패하면
+        /// <see cref="ApplyLevel"/>과 **같은 목록**을 봐야 한다: 여기서 통과한 게 저기서 실패하면
         /// 치즈만 사라진다.
         /// </summary>
-        private bool CanApplyLevel(TechId _id)
+        public static ApplyResult CheckApplyLevel(GameObject _host, TechId _id)
         {
             switch (_id)
             {
-                case TechId.Gun: return GetComponent<MousePopgun>() != null;
-                case TechId.Pepper: return GetComponent<PepperRounds>() != null;
-                case TechId.Dash: return GetComponent<Player.MouseDash>() != null;
-                case TechId.CheeseShield: return GetComponent<CheeseShield>() != null;
+                case TechId.Gun: return Need<MousePopgun>(_host);
+                case TechId.Pepper: return Need<PepperRounds>(_host);
+                case TechId.Dash: return Need<Player.MouseDash>(_host);
+                case TechId.CheeseShield: return Need<CheeseShield>(_host);
                 case TechId.Fortress:
                 case TechId.Warehouse:
-                    return true;                                                // 설치권만 — 실제 설치는 Use
+                    return ApplyResult.Ok;                                      // 설치권만 — 실제 설치는 Use
                 case TechId.HiddenWarehouse:
-                    return true;                                                // 순수 패시브 — 값은 창고를 세울 때 읽는다
+                    return ApplyResult.Ok;                                      // 순수 패시브 — 값은 창고를 세울 때 읽는다
                 case TechId.BigPouch:
-                    return true;                                                // 순수 패시브 — 값은 채굴할 때 CheeseSpot이 읽는다
-                case TechId.Sticky: return GetComponent<StickyUser>() != null;  // 쿨다운을 들 컴포넌트
+                    return ApplyResult.Ok;                                      // 순수 패시브 — 값은 채굴할 때 CheeseSpot이 읽는다
+                case TechId.Sticky: return Need<StickyUser>(_host);             // 쿨다운을 들 컴포넌트
                 case TechId.FastFeet:
-                    return GetComponent<Player.PlayerMovement>() != null;       // 이속 가산을 더할 몸
-                case TechId.CatClaw: return GetComponent<CatPounce>() != null;
-                case TechId.CatStomp: return GetComponent<Player.PlayerMovement>() != null;
+                    return Need<Player.PlayerMovement>(_host);                  // 이속 가산을 더할 몸
+                case TechId.CatClaw: return Need<CatPounce>(_host);
+                case TechId.CatStomp: return Need<Player.PlayerMovement>(_host);
                 case TechId.CatHide:
-                    return GetComponent<Player.CatHide>() != null;              // 최대 HP를 올릴 컴포넌트
+                    return Need<Player.CatHide>(_host);                         // 최대 HP를 올릴 컴포넌트
                 case TechId.CatHunger:
-                    return true;                                                // 순수 패시브 — 값은 덮칠 때 CatPounce가 읽는다
+                    return ApplyResult.Ok;                                      // 순수 패시브 — 값은 덮칠 때 CatPounce가 읽는다
                 case TechId.CatFrenzy:
-                    return GetComponent<Player.CatFrenzy>() != null;            // 켜짐·쿨을 들 컴포넌트
+                    return Need<Player.CatFrenzy>(_host);                       // 켜짐·쿨을 들 컴포넌트
                 case TechId.CatEar:
-                    return true;                                                // 듣는 쪽 배율이라 몸에 적용할 것이 없다
+                    return ApplyResult.Ok;                                      // 듣는 쪽 배율이라 몸에 적용할 것이 없다
                 default:
                     // CSV 행이 코드보다 먼저 들어온 경우(계획 2 테크). 조용히 돈만 받지 않는다.
                     Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");
-                    return false;
+                    return ApplyResult.Unhandled;
             }
         }
 
+        private static ApplyResult Need<T>(GameObject _host) where T : Component
+        {
+            return _host.GetComponent<T>() != null ? ApplyResult.Ok : ApplyResult.MissingComponent;
+        }
+
         /// <summary>
-        /// 레벨이 오른 순간 기존 컴포넌트에 반영. 계획 2가 신규 테크를 여기에 붙인다.
-        /// 컴포넌트가 없으면 false — 프리팹 배선이 빠진 것이라 조용히 넘기지 않는다.
+        /// 레벨이 오른 순간 기존 컴포넌트에 반영(서버 전용). 계획 2가 신규 테크를 여기에 붙인다.
+        /// 컴포넌트가 없으면 MissingComponent — 프리팹 배선이 빠진 것이라 조용히 넘기지 않는다.
         /// </summary>
-        private bool TryApplyLevel(TechId _id, int _level)
+        public static ApplyResult ApplyLevel(GameObject _host, TechId _id, int _level)
         {
             switch (_id)
             {
                 case TechId.Gun:
-                    MousePopgun gun = GetComponent<MousePopgun>();
-                    if (gun == null) return false;
+                    MousePopgun gun = _host.GetComponent<MousePopgun>();
+                    if (gun == null) return ApplyResult.MissingComponent;
                     gun.ServerSetTier(_level);                                  // Lv1 새총 · Lv2 기관총
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.Pepper:
-                    PepperRounds pepper = GetComponent<PepperRounds>();
-                    if (pepper == null) return false;
+                    PepperRounds pepper = _host.GetComponent<PepperRounds>();
+                    if (pepper == null) return ApplyResult.MissingComponent;
                     pepper.ServerSetOwned();
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.Dash:
-                    Player.MouseDash dash = GetComponent<Player.MouseDash>();
-                    if (dash == null) return false;
+                    Player.MouseDash dash = _host.GetComponent<Player.MouseDash>();
+                    if (dash == null) return ApplyResult.MissingComponent;
                     dash.ServerSetOwned();
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.CheeseShield:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고 CheeseShield가 피격 때 읽는다.
-                    return GetComponent<CheeseShield>() != null;
+                    return Need<CheeseShield>(_host);
                 case TechId.Fortress:
                 case TechId.Warehouse:
-                    return true;                                                // 설치권만 — 실제 설치는 Use
+                    return ApplyResult.Ok;                                      // 설치권만 — 실제 설치는 Use
                 case TechId.HiddenWarehouse:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 창고를 세우는 UseAtRpc가 그때 읽는다.
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.BigPouch:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 채굴하는 CheeseSpot이 그때 읽는다.
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.Sticky:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 장판을 깔 때 반경·감속·쿨을 읽는다.
-                    return GetComponent<StickyUser>() != null;
+                    return Need<StickyUser>(_host);
                 case TechId.FastFeet:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, PlayerMovement가 매 프레임 읽는다.
                     // (강화 스택과 달리 서버에 쌓을 상태가 없다 — 스택이 아니라 레벨이 곧 값이다.)
-                    return GetComponent<Player.PlayerMovement>() != null;
+                    return Need<Player.PlayerMovement>(_host);
                 case TechId.CatClaw:
-                    CatPounce pounce = GetComponent<CatPounce>();
-                    if (pounce == null) return false;
+                    CatPounce pounce = _host.GetComponent<CatPounce>();
+                    if (pounce == null) return ApplyResult.MissingComponent;
                     pounce.ServerAddDamageStack();                              // 레벨 = 스택
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.CatStomp:
-                    Player.PlayerMovement move = GetComponent<Player.PlayerMovement>();
-                    if (move == null) return false;
+                    Player.PlayerMovement move = _host.GetComponent<Player.PlayerMovement>();
+                    if (move == null) return ApplyResult.MissingComponent;
                     move.ServerAddSpeedStack();
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.CatHide:
-                    Player.CatHide hide = GetComponent<Player.CatHide>();
-                    if (hide == null) return false;
+                    Player.CatHide hide = _host.GetComponent<Player.CatHide>();
+                    if (hide == null) return ApplyResult.MissingComponent;
                     hide.ServerApplyLevel(_level);                              // 이미 스폰된 몸의 최대 HP를 올린다
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.CatHunger:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 덮치는 CatPounce가 적립할 때 읽는다.
-                    return true;
+                    return ApplyResult.Ok;
                 case TechId.CatFrenzy:
                     // 반영할 게 없다 — 레벨은 TechSlots가 들고, 켤 때 CatFrenzy가 지속·쿨·배율을 읽는다.
-                    return GetComponent<Player.CatFrenzy>() != null;
+                    return Need<Player.CatFrenzy>(_host);
                 case TechId.CatEar:
                     // 예민한 귀는 듣는 쪽 배율이라 몸에 적용할 것이 없다 —
                     // ListenerRangeBinder가 TechSlots를 보고 세운다.
-                    return true;
+                    return ApplyResult.Ok;
                 default:
                     Core.GameDebug.LogWarning($"[ShopController] ApplyLevel 미구현: {_id}");
-                    return false;
+                    return ApplyResult.Unhandled;
             }
         }
 
@@ -410,7 +425,9 @@ namespace CTC.Runtime.Economy
         [Rpc(SendTo.Everyone)]
         private void BuySoundRpc(Vector3 _at)
         {
-            Audio.SfxPlayer.PlayAt(Audio.SfxId.ShopBuy, _at, 1f, Balance.ShopBuySoundMeters);
+            // 들리는 소리는 같고 번호만 역할로 가른다 — 봇 고양이가 제 구매음을 쫓지 않게(C-22)
+            Audio.SfxId id = m_Tag != null && m_Tag.Role == RoleId.Cat ? Audio.SfxId.CatShopBuy : Audio.SfxId.ShopBuy;
+            Audio.SfxPlayer.PlayAt(id, _at, 1f, Balance.ShopBuySoundMeters);
             PlayOneShot(Player.AnimationStateLogic.Clicked, BUY_ANIM_SECONDS);
             Fx.FxPlayer.PlayAt(Fx.FxId.BuyCoins, transform.position + Vector3.up * 0.6f);
         }

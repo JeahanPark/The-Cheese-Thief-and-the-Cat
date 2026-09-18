@@ -110,6 +110,9 @@ def main():
 
     # ---------- 추격 ----------
     # 고양이를 강아지 근처로 데려간 뒤 거리가 줄어드는지 본다.
+    # 강아지는 1.4초마다 90씩 문다 — 가로지르기 12초 동안 쫓겨 깎인 HP를 채워 두지 않으면
+    # 아래 대기(6초)까지 버티다 죽고, 판이 끝나 물기·덮치기가 전부 0으로 읽힌다(2026-09-14 재현).
+    cat.invoke("TestSetLocalHp", _hp=1000)
     cat.invoke("TestTeleportToDog")
     time.sleep(0.6)
     first = cat.invoke("TestGetDogDistance")
@@ -126,6 +129,9 @@ def main():
     p[2].invoke("TestTeleportLocalPlayer", _x=-12.0, _z=13.5)
     time.sleep(6.0)   # 어그로 해제(DogAggroDropSeconds=4)보다 넉넉히
 
+    alive = cat.invoke("TestSetLocalHp", _hp=1000)
+    if not alive:
+        print("!! 고양이가 물기 전에 이미 죽었다 — 아래 항목은 강아지와 무관하게 실패한다")
     hp_before = cat.invoke("TestGetLocalHp")
     for _ in range(10):
         cat.invoke("TestTeleportToDog")
@@ -139,6 +145,7 @@ def main():
     check("푼 쪽도 예외가 아니다", hp_after < hp_before, "부순 고양이가 물렸다")
 
     # ---------- 장난기 면제 ----------
+    cat.invoke("TestSetLocalHp", _hp=1000)
     fun_before = cat.invoke("TestGetCheese")
     cat.invoke("TestTeleportToDog")
     time.sleep(0.4)

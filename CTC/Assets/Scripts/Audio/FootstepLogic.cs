@@ -45,6 +45,18 @@ namespace CTC.Runtime.Audio
             return acc - _strideMeters;
         }
 
+        /// <summary>고양이 원래 발소리 루프의 박자(초당 걸음 수). 연출 상수 — CSV로 내리지 않는다.</summary>
+        public const float CAT_LOOP_STEPS_PER_SECOND = 2.5f;
+
+        /// <summary>쥐 원래 발소리 루프의 박자(초당 걸음 수).</summary>
+        public const float MOUSE_LOOP_STEPS_PER_SECOND = 3.4f;
+
+        /// <summary>역할별 루프 박자 — 프리팹에 보폭을 굽는 곳(PlayerPrefabFactory)이 이것으로 <see cref="StrideOf"/>를 부른다.</summary>
+        public static float LoopStepsPerSecondOf(bool _isCat)
+        {
+            return _isCat ? CAT_LOOP_STEPS_PER_SECOND : MOUSE_LOOP_STEPS_PER_SECOND;
+        }
+
         /// <summary>보폭(m) — 원래 루프 클립의 박자(초당 걸음 수)를 기준 이속에서 그대로 재현하는 값.</summary>
         public static float StrideOf(float _moveSpeed, float _stepsPerSecond)
         {

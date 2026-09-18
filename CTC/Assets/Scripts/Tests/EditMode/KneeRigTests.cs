@@ -74,7 +74,7 @@ namespace CTC.Tests
         private static GameObject LoadMouse()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_PREFAB);
-            if (prefab == null) Assert.Ignore($"프리팹이 없다: {MOUSE_PREFAB}");
+            if (prefab == null) Assert.Fail($"프리팹이 없다: {MOUSE_PREFAB}");
             return prefab;
         }
 
@@ -90,6 +90,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void MousePrefab_HasShinUnderEachThigh()
         {
             GameObject prefab = LoadMouse();
@@ -107,6 +108,7 @@ namespace CTC.Tests
         /// 쉬는 자세에서 정강이의 (월드←로컬 × 바인드)가 허벅지의 것과 같으면 무릎을 안 굽힌 클립은 정점이 그대로다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void MousePrefab_EveryLod_SkinsShinConsistentlyWithThigh()
         {
             GameObject prefab = LoadMouse();
@@ -153,6 +155,7 @@ namespace CTC.Tests
         /// 클립의 무릎 커브 경로가 **모델의 실제 경로와 글자까지 같아야** 한다(Generic은 경로로 찾는다).
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void KneeClips_CurvePathsMatchModelHierarchy()
         {
             GameObject prefab = LoadMouse();

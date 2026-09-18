@@ -11,8 +11,9 @@
     고양이를 쥔 인스턴스에서 물어야 참이라, 호스트가 고양이여야 한 인스턴스로 다 읽는다.
   · 고양이는 상점 자리에 갈 필요가 없다(`TechLogic.NeedsShopSpot` — 쥐만). 쥐(요새)만 옮긴다.
 
-칸은 5개(TechSlotCap)이고 고양이 테크는 6종이라 **한 몸에 다 못 든다** — 그게 곧 ⑤다.
-  두꺼운 가죽 · 배고픔 · 광분 · 예민한 귀 · 발톱 = 5칸 → 여섯째(발 구르기)는 거절돼야 한다.
+칸 상한은 **역할별**이다(2026-09-11, `TechLogic.SlotCapOf`) — 고양이는 제 테크 수(6)만큼 칸을 갖는다.
+  두꺼운 가죽 · 배고픔 · 광분 · 예민한 귀 · 발톱 = 5칸 → 여섯째(발 구르기)도 **들어가야** 한다(그게 ⑤다).
+  예전 ⑤는 「전역 5칸이라 여섯째 거절」을 쟀는데, 규칙이 바뀐 뒤 갱신이 안 돼 빨갛게 남았다(2026-09-14 전체 QA).
 
 피해 배율(③⑥)은 **쥐가 아니라 요새 벽**으로 잰다. 쥐 HP는 100인데 광분 Lv3 한 방이
 150이라, 쥐로 재면 배율이 아니라 "죽었다"만 보인다. 요새 Lv3은 1200이라 다 견딘다.
@@ -29,7 +30,7 @@ from wesqa import WesPoco
 
 RESULTS = []
 EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
-EXPECTED = 11      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+EXPECTED = 10      # 이 스위트가 선언한 항목 수(⑦은 qa_v53으로 옮김) — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail="", case=None):
@@ -268,7 +269,7 @@ def main():
           ear == 3 and abs(ear_after - 2.0) < 0.01,
           "Lv=%s 배율 %.2f→%.2f (기대 2.0)" % (ear, ear_before, ear_after))
 
-    # ---------- ⑤ 고양이 칸 5 상한 — 여섯째 테크 거절 ----------
+    # ---------- ⑤ 고양이 칸 = 고양이 테크 수(6) — 여섯째까지 들어간다 ----------
     slots_4 = host.invoke("TestGetTechSlotCount", _clientId=c)
     claw = buy_to(host, host, c, "CatClaw", 1)
     slots_5 = host.invoke("TestGetTechSlotCount", _clientId=c)
@@ -280,9 +281,9 @@ def main():
     slots_6 = host.invoke("TestGetTechSlotCount", _clientId=c)
     stomp = host.invoke("TestGetTechLevel", _clientId=c, _techId="CatStomp")
     purse_after = host.invoke("TestGetCheeseOf", _clientId=c)
-    check("⑤ 칸 5 상한 — 여섯째(발 구르기)가 거절되고 장난기도 안 빠진다",
-          slots_5 == 5 and slots_6 == 5 and stomp == 0
-          and purse_before >= stomp_cost and purse_after == purse_before,
+    check("⑤ 고양이 칸은 제 테크 수(6) — 여섯째(발 구르기)도 들어가고 값만큼 장난기가 빠진다",
+          slots_5 == 5 and slots_6 == 6 and stomp == 1
+          and purse_before >= stomp_cost and purse_before - purse_after == stomp_cost,
           "칸 %s→%s→%s · 발 구르기 Lv=%s(값 %s, 지갑 %s→%s)"
           % (slots_4, slots_5, slots_6, stomp, stomp_cost, purse_before, purse_after))
 
@@ -315,10 +316,7 @@ def main():
           "(흡수면 ×2.5 · 곱이면 ×5.0) 대기 쿨=%.1f"
           % (cat_class, both_on, s0, s1, stack_loss, s2, s3, both_loss, both_ratio, cd_wait))
 
-    # ---------- ⑦ 원샷 애니메이션 6종 ----------
-    skip("⑦ 원샷 애니메이션(대시·끈끈이·요새·광분·구매·채굴)",
-         "재는 훅이 없다 — 지금 어떤 상태가 재생 중인지 읽는 훅"
-         "(예: TestGetAnimationState(clientId))이 있어야 자동으로 잴 수 있다. 눈으로 볼 것")
+    # ⑦(원샷 애니메이션 6종)은 여기서 뺐다 — `qa_v53`이 `TestGetAnimObserved`로 실제 재생을 잰다(2026-09-14).
 
     return summary()
 

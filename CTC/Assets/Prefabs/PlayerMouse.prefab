@@ -37,14 +37,14 @@ GameObject:
   - component: {fileID: 7273524695464127916}
   - component: {fileID: -1993819827998674870}
   - component: {fileID: -1286795333664132771}
+  - component: {fileID: 2095274815657242248}
   - component: {fileID: 2977953179673282696}
   - component: {fileID: 316232477143233120}
   - component: {fileID: 6539816911504078304}
   - component: {fileID: 1355259519097982439}
-  - component: {fileID: 2095274815657242248}
   - component: {fileID: 1500024885130085553}
-  - component: {fileID: 3546797721184971502}
   - component: {fileID: 4459669491055031902}
+  - component: {fileID: 3546797721184971502}
   m_Layer: 9
   m_Name: PlayerMouse
   m_TagString: Player
@@ -509,6 +509,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.EarPerk
   m_EarRightBoneName: ear.R
   m_EarLeftBoneName: ear.L
+--- !u!114 &2095274815657242248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89a107a9b3ce9b64ba6c98e11ef4bcda, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.FaceExpression
 --- !u!82 &2977953179673282696
 AudioSource:
   m_ObjectHideFlags: 0
@@ -654,18 +666,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.MouseGunVisual
   m_Gun: {fileID: 2187856976024518786}
   m_HolsteredGun: {fileID: 4310972534057319124}
---- !u!114 &2095274815657242248
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 618008594229528120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 89a107a9b3ce9b64ba6c98e11ef4bcda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.FaceExpression
 --- !u!114 &1500024885130085553
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -678,18 +678,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf294b32b9fcf614191860093bb3414a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GangAngryFace
---- !u!114 &3546797721184971502
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 618008594229528120}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1f8834e7b3f29f4995a8177b51a8679, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GangLook
 --- !u!114 &4459669491055031902
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -702,6 +690,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b9f51a4d5f708284d9bd8e745c9b56d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GangLookVisual
+--- !u!114 &3546797721184971502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 618008594229528120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1f8834e7b3f29f4995a8177b51a8679, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Player.GangLook
 --- !u!1 &917527033793545888
 GameObject:
   m_ObjectHideFlags: 0
@@ -713,7 +713,7 @@ GameObject:
   - component: {fileID: 6179968354563898005}
   m_Layer: 9
   m_Name: shin.B.L
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -834,7 +834,7 @@ GameObject:
   - component: {fileID: 2932691740516495112}
   m_Layer: 9
   m_Name: shin.B.R
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1435,10 +1435,6 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3662480809029463510, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3662480809029463510, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalScale.y
       value: 1
       objectReference: {fileID: 0}
@@ -1473,10 +1469,6 @@ PrefabInstance:
     - target: {fileID: 3662480809029463510, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0.81992275
-      objectReference: {fileID: 0}
-    - target: {fileID: 3962149778551566282, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.00086637016
       objectReference: {fileID: 0}
     - target: {fileID: 3962149778551566282, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1529,10 +1521,6 @@ PrefabInstance:
     - target: {fileID: 4053578781085265676, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalRotation.z
       value: 0.0000003479111
-      objectReference: {fileID: 0}
-    - target: {fileID: 4321700671154851662, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -0.0008663696
       objectReference: {fileID: 0}
     - target: {fileID: 4321700671154851662, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1618,10 +1606,6 @@ PrefabInstance:
       propertyPath: m_LocalRotation.y
       value: 0.8063299
       objectReference: {fileID: 0}
-    - target: {fileID: 6485018853155187822, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0.57454646
-      objectReference: {fileID: 0}
     - target: {fileID: 6539089178235506139, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_Layer
       value: 9
@@ -1647,16 +1631,8 @@ PrefabInstance:
       value: 0.00055314385
       objectReference: {fileID: 0}
     - target: {fileID: 7317551892795966133, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.000924485
-      objectReference: {fileID: 0}
-    - target: {fileID: 7317551892795966133, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.1323149
-      objectReference: {fileID: 0}
-    - target: {fileID: 7317551892795966133, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0.047134273
       objectReference: {fileID: 0}
     - target: {fileID: 7317551892795966133, guid: b78cbd54c6fc6404eac3c4919de1ad38, type: 3}
       propertyPath: m_LocalRotation.y

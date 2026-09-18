@@ -188,12 +188,11 @@ namespace CTC.Editor
             SetRef(cheeseDirector, "m_Lobby", lobby);
             SetRef(cheeseDirector, "m_Match", match);
             SetRef(mapDirector, "m_CheeseDirector", cheeseDirector);
-            // 3판 시리즈(2026-08-30) — 대기실에서 온 판에서만 돈다. 단독 실행은 지금까지 그대로.
-            var series = lobbyGo.AddComponent<MatchSeries>();
-            SetRef(series, "m_Lobby", lobby);
-            SetRef(series, "m_Match", match);
+            // 단판제(2026-09-15) — 대기실에서 온 판은 결과 뒤 대기실로 돌아간다. 단독 실행은 지금까지 그대로.
+            var roomReturn = lobbyGo.AddComponent<MatchRoomReturn>();
+            SetRef(roomReturn, "m_Match", match);
 
-            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector, series, cheeseDirector);
+            if (!_botLab) BuildLobbyCanvas(lobby, match, phaseDirector, cheeseDirector);
 
             // 밸런스 측정용 봇을 **밖에서** 조종하는 매니저(2026-08-11) — 개발 빌드 전용.
             // 봇의 몸에는 아무것도 안 붙는다. 여기서 플레이어 프리팹을 그대로 세우고 손만 움직인다.

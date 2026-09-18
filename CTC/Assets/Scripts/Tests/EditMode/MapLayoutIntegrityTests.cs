@@ -17,6 +17,7 @@ namespace CTC.Tests
     ///
     /// 정식 맵은 손 배치 창고 하나다 — 나머지 셋은 절차 생성이라 `MapValidator` 게이트를 이미 지난다.
     /// </summary>
+    [NUnit.Framework.Category("Asset")]
     public class MapLayoutIntegrityTests
     {
         private const string WAREHOUSE = "Assets/Prefabs/Maps/Layout_Warehouse01.asset";

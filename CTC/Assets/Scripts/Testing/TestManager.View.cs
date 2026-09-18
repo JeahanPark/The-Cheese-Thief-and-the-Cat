@@ -285,6 +285,23 @@ namespace CTC.Runtime.Testing
             return hp != null ? hp.Hp : -1;
         }
 
+        /// <summary>
+        /// QA: 로컬 플레이어 HP를 세운다(**호스트에서만** — 서버가 아니면 false).
+        /// qa_v40이 강아지 옆에 오래 서 있다가 물려 죽어 판이 끝나던 자리(90×1.4초 → 1000이 16초)를
+        /// 단계 사이에 채워 두려고 있다. 판정을 대신하지 않는다 — 물렸는지는 여전히 HP가 줄었는지로 본다.
+        /// </summary>
+        public bool TestSetLocalHp(int _hp)
+        {
+            Unity.Netcode.NetworkManager nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer || nm.SpawnManager == null) return false;
+            Unity.Netcode.NetworkObject me = nm.SpawnManager.GetLocalPlayerObject();
+            if (me == null) return false;
+            Health hp = me.GetComponent<Health>();
+            if (hp == null || hp.IsDead) return false;
+            hp.ServerSetHp(_hp);
+            return true;
+        }
+
         /// <summary>QA: 로컬 플레이어 역할 — "Cat" | "Mouse" | "None"(관전·미시작).</summary>
         public string TestGetRole()
         {

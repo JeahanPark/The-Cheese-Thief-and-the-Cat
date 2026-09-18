@@ -60,6 +60,27 @@ namespace CTC.Tests
                 Assert.AreEqual(a.Rooms[i].Id, b.Rooms[i].Id);
         }
 
+        /// <summary>
+        /// 결정성의 짝(케이스 E-31) — 씨앗이 결과에 안 닿아도 위 테스트는 통과한다.
+        /// 이 풀은 방이 전부 채택되므로 씨앗이 바꾸는 것은 선택 방의 **순서**다.
+        /// </summary>
+        [NUnit.Framework.Property("CaseId", "E-31")]
+        [Test]
+        public void Generate_DifferentSeeds_DifferSomewhere()
+        {
+            var pool = BuildTestPool();
+            string first = RoomOrder(MapGenerator.Generate(pool, 1));
+            bool differs = false;
+            for (int seed = 2; seed <= 40 && !differs; seed++)
+                differs = RoomOrder(MapGenerator.Generate(pool, seed)) != first;
+            Assert.IsTrue(differs, "씨앗을 40개 굴려도 생성 결과가 같다 — 씨앗이 결과에 안 닿는다");
+        }
+
+        private static string RoomOrder(MapGenerator.LayoutResult _layout)
+        {
+            return _layout == null ? "null" : string.Join(",", _layout.Rooms.Select(r => r.Id));
+        }
+
         [Test]
         public void Generate_AlwaysIncludesRequiredRooms()
         {

@@ -130,8 +130,7 @@ namespace CTC.Runtime.Intro
         {
             try
             {
-                var info = Info.InfoManager.Instance;
-                bool ok = info != null && info.Tech != null && info.Tech.Count > 0;
+                bool ok = IntroBootLogic.GameDataLoaded(Info.InfoManager.Instance);
                 Set(_index, ok ? IntroStepState.Done : IntroStepState.Failed,
                     ok ? "표 4종 불러옴" : "CSV를 못 읽었다");
                 return ok;

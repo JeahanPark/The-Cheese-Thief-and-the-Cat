@@ -11,22 +11,22 @@ namespace CTC.Runtime.Core
     /// 그래서 한 컴포넌트가 읽고 **우선순위대로 하나만** 처리한다.
     ///
     /// 1. 설치 배치 중 → 배치 취소 (실수로 판을 나가는 게 제일 큰 사고다)
-    /// 2. 채팅 입력 중 → 채팅 닫기
-    /// 3. 옵션 열림   → 옵션 닫기
-    /// 4. 그 외        → **옵션 열기**
+    /// 2. 상점 팝업 열림 → 상점 닫기 (2026-09-19)
+    /// 3. 채팅 입력 중 → 채팅 닫기
+    /// 4. 옵션 열림   → 옵션 닫기
+    /// 5. 그 외        → **옵션 열기**
     ///
     /// 게임 종료는 더 이상 ESC가 아니다 — 옵션 창의 '게임 종료' 버튼으로 옮겼다.
     /// ESC 한 번에 판이 날아가던 게 2026-08-01 이전 동작이다.
     ///
     /// **Enter도 여기가 단독으로 읽는다**(2026-09-07 — 테크 v3에서 Enter가 확정 구매를 겸하면서).
-    /// 채팅 전송 → 확정 구매 → 채팅 열기 순(<see cref="EnterRouteLogic"/>).
-    /// 상점 안에서 채팅을 열려면 후보가 없거나 칸이 찼을 때, 또는 밖으로 나가서 누른다 —
-    /// 상점에 서 있는 동안 Enter는 "산다"가 우선이다.
+    /// 2026-09-19에 확정 구매가 상점 팝업으로 가면서 Enter는 **채팅뿐**이 됐다(<see cref="EnterRouteLogic"/>).
     /// </summary>
     public class EscapeRouter : MonoBehaviour
     {
         [SerializeField] private Economy.ShopHotbar m_Hotbar;
         [SerializeField] private UI.ChatHud m_Chat;
+        [SerializeField] private UI.ShopPopup m_ShopPopup;
 
         // 인트로는 메뉴에 '설정'이 이미 있다 — ESC가 창을 여는 건 그 화면에서만 어색하다(2026-09-01).
         // 팝업 닫기는 어디서나 그대로 돈다.
@@ -49,8 +49,8 @@ namespace CTC.Runtime.Core
 
         /// <summary>
         /// Enter 한 번 — **사람이 누르는 그 길**. 키를 읽는 곳과 나눈 이유는 QA다
-        /// (<c>ShopHotbar.PressSlot</c>과 같은 규약): 확정 구매를 <c>TryConfirmBuy</c>로 직접
-        /// 부르면 「채팅이 열려 있으면 Enter는 전송이다」라는 갈림길을 통째로 건너뛴다.
+        /// (<c>ShopHotbar.PressSlot</c>과 같은 규약): 채팅 전송을 직접 부르면
+        /// 「채팅이 열려 있으면 Enter는 전송이다」라는 갈림길을 통째로 건너뛴다.
         /// </summary>
         public void PressEnterKey() => HandleEnter();
 
@@ -58,15 +58,11 @@ namespace CTC.Runtime.Core
         private void HandleEnter()
         {
             bool chatOpen = m_Chat != null && m_Chat.IsOpen;
-            bool canConfirm = m_Hotbar != null && m_Hotbar.CanConfirmBuy;
 
-            switch (EnterRouteLogic.Route(chatOpen, canConfirm))
+            switch (EnterRouteLogic.Route(chatOpen))
             {
                 case EnterRoute.SubmitChat:
                     m_Chat.Submit();
-                    break;
-                case EnterRoute.ConfirmBuy:
-                    m_Hotbar.TryConfirmBuy();
                     break;
                 default:
                     if (m_Chat != null) m_Chat.Open();
@@ -79,6 +75,13 @@ namespace CTC.Runtime.Core
             if (m_Hotbar != null && m_Hotbar.IsPlacing)
             {
                 m_Hotbar.CancelPlacementFromEscape();
+                return;
+            }
+
+            // 상점 팝업 — 채팅보다 앞이다. 창이 열려 있는 동안에는 채팅을 못 열므로 겹칠 일이 없다.
+            if (m_ShopPopup != null && m_ShopPopup.IsOpen)
+            {
+                m_ShopPopup.Close();
                 return;
             }
 

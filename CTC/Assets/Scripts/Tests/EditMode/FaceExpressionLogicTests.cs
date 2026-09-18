@@ -62,6 +62,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void UsedFaces_ExistInMouseAndCatControllers()
         {
             AssertStatesExist("AC_Mouse.controller");
@@ -69,6 +70,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void ShapekeyLayer_ExistsInMouseAndCatControllers()
         {
             foreach (string file in new[] { "AC_Mouse.controller", "AC_Cat.controller" })
@@ -96,7 +98,7 @@ namespace CTC.Tests
         private static string[] ReadController(string _file)
         {
             string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _file);
-            if (!File.Exists(path)) Assert.Ignore($"컨트롤러 원본이 없다: {path}");
+            if (!File.Exists(path)) Assert.Fail($"컨트롤러 원본이 없다: {path}");
             return File.ReadAllLines(path);
         }
     }

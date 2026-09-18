@@ -12,6 +12,7 @@ namespace CTC.Tests
     /// 경고 한 줄 찍고 꺼질 뿐이라 **눈이 그냥 굳는다.** 씬 재생성이 매번 프리팹을 새로 굽고
     /// <c>PlayerPrefabFactory</c>가 굽기를 부르는데, 그 한 줄이 빠지면 여기가 빨개진다.
     /// </summary>
+    [NUnit.Framework.Category("Asset")]
     public class EyeSplitMeshTests
     {
         private static readonly string[] PREFABS =
@@ -35,7 +36,7 @@ namespace CTC.Tests
             foreach (string path in PREFABS)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab == null) Assert.Ignore($"프리팹이 없다(씬을 아직 안 구웠다): {path}");
+                if (prefab == null) Assert.Fail($"프리팹이 없다(씬을 아직 안 구웠다): {path}");
 
                 int withEyes = 0;
                 var meshes = new System.Collections.Generic.HashSet<Mesh>();
@@ -71,7 +72,7 @@ namespace CTC.Tests
         {
             var mouse = AssetDatabase.LoadAssetAtPath<GameObject>(PREFABS[0]);
             var cat = AssetDatabase.LoadAssetAtPath<GameObject>(PREFABS[1]);
-            if (mouse == null || cat == null) Assert.Ignore("프리팹이 없다");
+            if (mouse == null || cat == null) Assert.Fail("프리팹이 없다");
 
             var mouseMeshes = new System.Collections.Generic.HashSet<Mesh>();
             foreach (SkinnedMeshRenderer s in mouse.GetComponentsInChildren<SkinnedMeshRenderer>(true))
@@ -98,7 +99,7 @@ namespace CTC.Tests
             foreach (string path in PREFABS)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab == null) Assert.Ignore($"프리팹이 없다: {path}");
+                if (prefab == null) Assert.Fail($"프리팹이 없다: {path}");
 
                 foreach (SkinnedMeshRenderer skin in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                 {
@@ -120,7 +121,7 @@ namespace CTC.Tests
         {
             const long LIMIT_BYTES = 12L * 1024 * 1024;
             string[] guids = AssetDatabase.FindAssets("_EyeSplit t:Mesh", new[] { "Assets/Models/Characters" });
-            if (guids.Length == 0) Assert.Ignore("파생 메시가 아직 없다");
+            if (guids.Length == 0) Assert.Fail("파생 메시가 아직 없다");
 
             long total = 0;
             foreach (string guid in guids)
@@ -141,7 +142,7 @@ namespace CTC.Tests
         public void SplitKeys_SumBackToTheOriginal()
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PREFABS[0]);
-            if (prefab == null) Assert.Ignore("쥐 프리팹이 없다");
+            if (prefab == null) Assert.Fail("쥐 프리팹이 없다");
             Mesh mesh = prefab.GetComponentInChildren<SkinnedMeshRenderer>(true).sharedMesh;
 
             foreach (string source in new[] { "eyes.lookIn", "eyes.lookOut" })

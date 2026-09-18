@@ -88,6 +88,7 @@ namespace CTC.Tests
         // ===== 컨트롤러 =====
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void ShootStates_ExistInMouseController()
         {
             HashSet<string> states = StatesIn("AC_Mouse.controller");
@@ -103,6 +104,7 @@ namespace CTC.Tests
         /// 그건 「고양이도 쏠 수 있다」로 오해될 배선이다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void ShootStates_DoNotExistInCatController()
         {
             HashSet<string> states = StatesIn("AC_Cat.controller");
@@ -123,11 +125,12 @@ namespace CTC.Tests
         /// 대충 훑는 검사는 클립 분리가 실패했어도 "있다"고 대답한다 — 그래서 먼저 걸러 낸다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTripFbx_ContainsBothShootClips()
         {
             if (AssetDatabase.LoadMainAssetAtPath(CLIPS_FBX) == null)
             {
-                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {CLIPS_FBX}");
+                Assert.Fail($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {CLIPS_FBX}");
             }
 
             var names = new List<string>();
@@ -152,11 +155,12 @@ namespace CTC.Tests
         /// 안 쪼갠 것이다 — 그때는 위 검사도 같이 의심해야 한다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTripFbx_ClipNamesAreNotRawTakeNames()
         {
             if (AssetDatabase.LoadMainAssetAtPath(CLIPS_FBX) == null)
             {
-                Assert.Ignore($"왕복 FBX가 없다: {CLIPS_FBX}");
+                Assert.Fail($"왕복 FBX가 없다: {CLIPS_FBX}");
             }
 
             foreach (Object o in AssetDatabase.LoadAllAssetsAtPath(CLIPS_FBX))
@@ -178,6 +182,7 @@ namespace CTC.Tests
         /// 아무것도 빨개지지 않았다 — 그래서 여기서 **개수를 센다.**
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void OnlyOneGunMeshExists_NoPerTierVariants()
         {
             const string PROPS_DIR = "Assets/Models/Props";
@@ -188,7 +193,7 @@ namespace CTC.Tests
 
             string dir = Path.Combine(
                 Application.dataPath, PROPS_DIR.Substring("Assets/".Length));
-            if (!Directory.Exists(dir)) Assert.Ignore($"폴더가 없다: {dir}");
+            if (!Directory.Exists(dir)) Assert.Fail($"폴더가 없다: {dir}");
 
             var found = new List<string>();
             foreach (string path in Directory.GetFiles(dir, "*.asset", SearchOption.AllDirectories))
@@ -208,10 +213,11 @@ namespace CTC.Tests
         /// 프리팹도 하나여야 한다 — 메시를 공유하면서 프리팹만 늘려도 재질·크기로 티어가 샌다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void OnlyOneGunPrefabExists()
         {
             string dir = Path.Combine(Application.dataPath, "Prefabs/Props");
-            if (!Directory.Exists(dir)) Assert.Ignore($"폴더가 없다: {dir}");
+            if (!Directory.Exists(dir)) Assert.Fail($"폴더가 없다: {dir}");
 
             var found = new List<string>();
             foreach (string path in Directory.GetFiles(dir, "*.prefab", SearchOption.AllDirectories))
@@ -233,7 +239,7 @@ namespace CTC.Tests
         private static HashSet<string> StatesIn(string _controllerFile)
         {
             string path = Path.Combine(Application.dataPath, CONTROLLER_DIR, _controllerFile);
-            if (!File.Exists(path)) Assert.Ignore($"컨트롤러 원본이 없다: {path}");
+            if (!File.Exists(path)) Assert.Fail($"컨트롤러 원본이 없다: {path}");
 
             var names = new HashSet<string>();
             foreach (string line in File.ReadAllLines(path))

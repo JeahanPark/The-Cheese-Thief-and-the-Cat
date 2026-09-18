@@ -310,6 +310,7 @@ namespace CTC.Tests
 
         [Test]
         [NUnit.Framework.Property("CaseId", "D-03")]
+        [NUnit.Framework.Category("Asset")]
         public void ContentOrder_OnTheRealWarehouseLayout_KeepsEverything()
         {
             var layout = UnityEditor.AssetDatabase.LoadAssetAtPath<MapLayout>(WAREHOUSE);

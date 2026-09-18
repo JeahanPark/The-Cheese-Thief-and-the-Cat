@@ -102,6 +102,20 @@ namespace CTC.Runtime.Intro
             return -1;
         }
 
+        /// <summary>
+        /// 게임 데이터 단계가 통과인가 — 인트로가 부르는 판정 원본(C-28 테스트가 이 함수를 본다).
+        /// **표 4종이 전부 차야** 통과다(화면 문구가 「표 4종 불러옴」이다). 예전엔 테크 표만 봐서
+        /// 밸런스·플레이어·무기 표가 비어도 게임이 그냥 떴다(감사 C-28).
+        /// </summary>
+        public static bool GameDataLoaded(Info.InfoManager _info)
+        {
+            return _info != null
+                && _info.BalanceInfoList != null && _info.BalanceInfoList.Count > 0
+                && _info.PlayerInfoList != null && _info.PlayerInfoList.Count > 0
+                && _info.TechInfoList != null && _info.TechInfoList.Count > 0
+                && _info.WeaponInfoList != null && _info.WeaponInfoList.Count > 0;
+        }
+
         public static string LabelOf(IntroStepId _step)
         {
             switch (_step)

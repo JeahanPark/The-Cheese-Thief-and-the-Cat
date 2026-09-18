@@ -64,13 +64,15 @@ def skip(name, why):
 def frenzy_slot(host, client_id):
     """광분이 몇 번째 칸인가(0-based, 없으면 -1) — 숫자키를 손으로 세지 않는다.
 
-    칸 순서는 `TechSlots.Owned`의 산 순서다. 광분 하나만 사면 0번이지만,
-    스위트가 순서를 가정하면 앞에 뭘 하나 더 사는 순간 조용히 엉뚱한 칸을 누른다.
+    고양이 핫바는 **고정 6칸**이다(2026-09-11 83873cd) — 칸 순서는 산 순서가 아니라 카탈로그 순서다.
+    예전엔 「산 순서의 0번」을 눌렀는데, 고정 배치에선 0번이 발톱이라 **발톱을 샀고 광분 레벨은 그대로**였다
+    (2026-09-14 전체 QA에서 ④가 빨갛게 드러났다). 화면에 실제로 그린 칸 라벨에서 찾는다.
     """
-    count = host.invoke("TestGetTechSlotCount", _clientId=client_id)
-    if count is None or count < 0:
-        return -1
-    return 0 if host.invoke("TestGetTechLevel", _clientId=client_id, _techId="CatFrenzy") > 0 else -1
+    raw = host.invoke("TestGetHotbarSlots") or ""
+    for i, part in enumerate(raw.split("|")):
+        if "광분" in part.split("#")[0]:
+            return i
+    return -1
 
 
 def pounce_mouse(cat, host, cat_id, target_id, attempts=3):
@@ -177,7 +179,8 @@ def main():
     in_shop = not move_out_of_shops(host, host, c)
     mode_before = host.invoke("TestGetHotbarModeText")
     check("② 고양이 핫바는 상점 자리 밖에서도 구매 모드다",
-          "상점" in mode_before and "숫자키 = 산다" in mode_before and not in_shop,
+          # 고정 6칸(2026-09-11)은 「상점 ·」 머리 없이 「숫자키 = 산다 / 키운다」다 — 쥐의 상점 안 문구와 다르다.
+          "숫자키 = 산다" in mode_before and "쓴다" not in mode_before.split("·")[0] and not in_shop,
           "상점 자리 안=%s · 모드 줄=%r" % (in_shop, mode_before))
 
     # ---------- ③ 광분을 사면 전용 키 안내가 뜬다 ----------

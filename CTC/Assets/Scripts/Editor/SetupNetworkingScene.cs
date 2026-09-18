@@ -156,6 +156,9 @@ namespace CTC.Editor
                 _scale: new Vector3(1f, 0.8f, 1f),
                 _addExtras: _root =>
                 {
+                    // 설치음은 요새와 다르다(C-20) — 고양이가 소리만 듣고 「요새」와 「창고」를 가른다
+                    SetInt(_root.GetComponent<CTC.Runtime.Audio.PlaceSfxOnSpawn>(), "m_Sfx",
+                        (int)CTC.Runtime.Audio.SfxId.WarehousePlace);
                     var production = _root.AddComponent<WarehouseProduction>();
                     SetRef(production, "m_ProduceVfx", CreateProduceVfx(_root));
                     // 판 중에 세워지므로 구운 폴리곤에 없다 — 제 자리를 도려내야

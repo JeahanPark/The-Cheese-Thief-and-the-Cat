@@ -8,6 +8,7 @@ namespace CTC.Tests.EditMode
     /// <summary>깡패 쥐(2026-09-14) — 켜지는 조건 · 몽둥이 부채꼴 · 편 가르기 · 두 발 이동 이름.</summary>
     public class GangLookLogicTests
     {
+        [NUnit.Framework.Property("CaseId", "B-23")]
         [Test]
         public void Active_OnlyGangSideInGangPhase_NotWhenTicketPicked()
         {
@@ -18,6 +19,7 @@ namespace CTC.Tests.EditMode
             Assert.IsFalse(GangLookLogic.Active(MouseJobId.None, MatchPhase.Gang));
         }
 
+        [NUnit.Framework.Property("CaseId", "B-23")]
         [Test]
         public void InArc_RangeAndHalfAngle_ContactAlwaysHits()
         {
@@ -30,6 +32,7 @@ namespace CTC.Tests.EditMode
             Assert.IsTrue(GangLookLogic.InArc(o, f, new Vector3(0f, 5f, 0.1f), 1.8f, 90f), "딱 붙으면 방향·높이 무시");
         }
 
+        [NUnit.Framework.Property("CaseId", "B-23")]
         [Test]
         public void CanClub_GangDoesNotHitGang()
         {
@@ -39,6 +42,7 @@ namespace CTC.Tests.EditMode
             Assert.IsTrue(GangLookLogic.CanClub(MouseJobId.Minion, MouseJobId.Hero));
         }
 
+        [NUnit.Framework.Property("CaseId", "B-23")]
         [Test]
         public void FromSpeed_BipedSwapsLocomotionNames()
         {
@@ -50,6 +54,7 @@ namespace CTC.Tests.EditMode
             CollectionAssert.DoesNotContain(AnimationStateLogic.CatOnly, AnimationStateLogic.BipedWalk);
         }
 
+        [NUnit.Framework.Property("CaseId", "C-32")]
         [Test]
         public void IsGunTech_OnlyGunAndPepper()
         {

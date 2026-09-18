@@ -9,6 +9,7 @@ namespace CTC.Tests.EditMode
     /// <summary>기술 이펙트 표(2026-09-14) — 전직별 이펙트가 서로 다르고, 번호가 카탈로그 안에 있다.</summary>
     public class FxCatalogLogicTests
     {
+        [NUnit.Framework.Property("CaseId", "B-26")]
         [Test]
         public void EveryClass_HasDistinctAdvanceAndSkillFx_NoneHasNothing()
         {
@@ -22,6 +23,7 @@ namespace CTC.Tests.EditMode
             Assert.IsNull(FxCatalogLogic.SkillFor(CatClassId.None));
         }
 
+        [NUnit.Framework.Property("CaseId", "B-26")]
         [Test]
         public void AllIds_FitInCatalog_AndAreUnique()
         {

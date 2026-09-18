@@ -8,6 +8,7 @@ namespace CTC.Tests.EditMode
     {
         private const float EPS = 1e-4f;
 
+        [NUnit.Framework.Property("CaseId", "B-24")]
         [Test]
         public void Order_BrowsThenClubThenHat_AllBeforeEnd()
         {
@@ -16,6 +17,7 @@ namespace CTC.Tests.EditMode
             Assert.Less(GangTransformLogic.HAT_AT + GangTransformLogic.FADE_SECONDS, GangTransformLogic.SECONDS, "모자가 다 차오른 뒤에 끝나야 한다");
         }
 
+        [NUnit.Framework.Property("CaseId", "B-24")]
         [Test]
         public void PropAlpha_ZeroBefore_RampsOverFade_OneAfter()
         {
@@ -27,6 +29,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(0f, GangTransformLogic.HatAlpha(at + GangTransformLogic.FADE_SECONDS), EPS, "몽둥이가 다 나올 때 모자는 아직이다");
         }
 
+        [NUnit.Framework.Property("CaseId", "B-24")]
         [Test]
         public void Brows_OnWhenStandingUp_AndDoneAtEnd()
         {

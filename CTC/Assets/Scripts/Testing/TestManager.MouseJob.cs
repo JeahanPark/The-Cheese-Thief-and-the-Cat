@@ -74,7 +74,7 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
-        /// QA: 매치 결과 — "None"|"MouseWin"|"CatWin"|"GangWin".
+        /// QA: 매치 결과 — "None"|"MouseWin"|"CatWin"|"GangWin"|"MiceBeatGang".
         /// **MatchManager가 없으면 "Missing"**(감사 T9) — `MatchResult.None`은
         /// 「아직 진행 중」이라는 정상값이다.
         /// </summary>
@@ -90,24 +90,21 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
-        /// QA: 3판 시리즈 상태 — "round|catWins|mouseWins|active". 컴포넌트가 없으면 "Missing".
-        ///
-        /// 시리즈는 **판 사이 전이가 전부**인데(봇 재투입·단계 초기화·시작 조건) 그걸 읽는 훅이
-        /// 하나도 없었다 — 2·3판에 봇이 안 서는 것을 아무도 못 봤다(2026-09-09 감사 P0-4).
-        /// 복제되는 NetworkVariable이라 어느 인스턴스에서 물어도 같다.
+        /// QA: 이 판이 대기실에서 왔는가(= 결과 뒤 대기실로 돌아가는 판) — "True"|"False". 컴포넌트가 없으면 "Missing".
+        /// 단판제(2026-09-15)로 3판 시리즈 훅(`TestGetSeries`)을 대신한다.
         /// </summary>
-        public string TestGetSeries()
+        public string TestGetRoomReturn()
         {
-            var series = FindFirstObjectByType<MatchSeries>();
-            if (series == null)
+            var roomReturn = FindFirstObjectByType<MatchRoomReturn>();
+            if (roomReturn == null)
             {
-                GameDebug.LogWarning("[TestManager] MatchSeries 없음 — 시리즈를 못 읽는다");
+                GameDebug.LogWarning("[TestManager] MatchRoomReturn 없음 — 대기실 복귀 여부를 못 읽는다");
                 return MISSING;
             }
-            return $"{series.Round}|{series.CatWins}|{series.MouseWins}|{series.Active}";
+            return roomReturn.Active.ToString();
         }
 
-        /// <summary>QA: 지금 열려 있는 씬 이름 — 시리즈가 대기실로 되돌아갔는지 본다.</summary>
+        /// <summary>QA: 지금 열려 있는 씬 이름 — 판이 끝나고 대기실로 되돌아갔는지 본다.</summary>
         public string TestGetActiveSceneName()
             => UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 

@@ -16,14 +16,13 @@ namespace CTC.Runtime.Economy
     /// <summary>
     /// 하단 상시 핫바 — 테크 v3(2026-09-07). **역할이 둘로 갈린다**(2026-09-11):
     ///
-    /// **넘기기(쥐)** — 테크 10종을 칸 5개로 훑는다. 상점 안: 빈 칸 숫자키 = 후보 넘김, Enter = 확정 구매 /
-    /// 있는 칸 = 다음 레벨. 상점 밖: 있는 칸 숫자키 = 쓴다(요새 즉발·창고 조준·대시). 패시브는 누를 것 없음.
+    /// **보유 전용(쥐)** — 칸 = 산 테크. **숫자키는 언제나 「쓴다」**(요새 즉발·창고 조준·대시).
+    /// 사는 곳은 상점 팝업(E)으로 갔다(2026-09-19) — 10종을 5칸으로 훑던 「후보 넘기기 + Enter 확정」은 사라졌다.
     ///
     /// **고정(고양이)** — 6종에 칸 6개, 카탈로그 순서로 **1키 = 1테크**. 넘기기도 Enter도 없다:
     /// 상점 면제라 늘 구매 모드고 6종 중 다섯이 순수 스탯이라 「고르기」가 값을 못 했다 —
     /// 오히려 두 칸이 같은 테크를 가리키는 사고만 냈다(2026-09-11 신고). 액티브(광분)는 Space가 맡는다.
     /// 커서는 끝까지 잠겨 있다 — 3인칭에서 커서가 곧 시야다.
-    /// Enter는 여기서 읽지 않는다 — `EscapeRouter`가 단독으로 읽고 <see cref="TryConfirmBuy"/>를 부른다(2026-09-07).
     /// View다 — 판정은 ShopController.CanBuyNow/CanUse와 TechLogic이 하고 여기선 보여 주기만 한다.
     /// </summary>
     public class ShopHotbar : MonoBehaviour
@@ -65,8 +64,6 @@ namespace CTC.Runtime.Economy
         private static readonly Color COLOR_EMPTY = UI.UiPalette.WithAlpha(UI.UiPalette.TextDim, 0.5f);
         // 만렙 칸 — 더 살 게 없다. 칸을 지우지는 않는다(핫바가 곧 제 스탯 창이다) 대신 흐리게 물러난다.
         private static readonly Color COLOR_MAXED = UI.UiPalette.WithAlpha(UI.UiPalette.Good, 0.45f);
-        // Enter가 살 칸 — 치즈 노랑을 옅게. 글자가 아니라 바탕이라 라벨 길이에 영향이 없다.
-        private static readonly Color COLOR_SLOT_PICKED = UI.UiPalette.WithAlpha(UI.UiPalette.Accent, 0.22f);
         // 자동 축소 하한 — 이보다 작아지면 읽히지 않는다
         private const float LABEL_MIN_FONT = 13f;
 
@@ -111,12 +108,6 @@ namespace CTC.Runtime.Economy
         private bool m_SoldOutShown;   // 품절 토스트도 매치당 1회
         private CancellationTokenSource m_SoldOutToastCts;
 
-        // 빈 칸마다 "지금 보여 주는 후보" 인덱스 — 같은 숫자키를 반복하면 넘어간다
-        private int[] m_CandidateIndex;
-        // Enter가 확정할 칸. -1이면 「아직 아무 칸도 안 골랐다」 = 맨 왼쪽 빈 칸.
-        private int m_PickSlot = -1;
-        // 겹침을 피할 때 쓰는 임시 목록 — 순수 C# 객체라 매번 새로 만들지 않는다.
-        private readonly List<int> m_TakenScratch = new List<int>();
         private UnityEngine.UI.Image[] m_SlotBgs;
         private Color[] m_SlotBgBase;
 
@@ -140,9 +131,7 @@ namespace CTC.Runtime.Economy
                 Core.GameDebug.LogWarning(
                     $"[ShopHotbar] 슬롯 {slots}칸 < 최대 칸 수 {maxCap} — Setup Networking Scene 재실행");
             }
-            m_CandidateIndex = new int[Mathf.Max(slots, maxCap)];
-
-            // 칸 배경은 「Enter가 살 칸」 표시에 쓴다 — 매번 GetComponent 하지 않게 여기서 잡는다.
+            // 칸 배경 — 지금은 바탕색을 되돌릴 일만 있다(「Enter가 살 칸」 표시는 2026-09-19에 사라졌다).
             m_SlotBgs = new UnityEngine.UI.Image[slots];
             m_SlotBgBase = new Color[slots];
             for (int i = 0; i < slots; i++)
@@ -162,13 +151,6 @@ namespace CTC.Runtime.Economy
                 m_SlotLabels[i].fontSizeMax = m_SlotLabels[i].fontSize;
                 m_SlotLabels[i].fontSizeMin = LABEL_MIN_FONT;
             }
-        }
-
-        /// <summary>Enter가 살 칸을 배경으로 알린다 — 글자를 안 늘리므로 라벨이 안 밀린다.</summary>
-        private void SetPicked(int _slot, bool _picked)
-        {
-            if (m_SlotBgs == null || _slot >= m_SlotBgs.Length || m_SlotBgs[_slot] == null) return;
-            m_SlotBgs[_slot].color = _picked ? COLOR_SLOT_PICKED : m_SlotBgBase[_slot];
         }
 
         private void Start()
@@ -321,8 +303,7 @@ namespace CTC.Runtime.Economy
         /// </summary>
         private void ResetCandidates()
         {
-            for (int i = 0; i < m_CandidateIndex.Length; i++) m_CandidateIndex[i] = i;
-            m_PickSlot = -1;
+            // 남은 것이 없다 — 후보 넘기기는 2026-09-19에 상점 팝업으로 갔다. 호출부는 그대로 둔다.
         }
 
         // 표시 여부는 시작 신호 × 로컬 상점 — 어느 쪽이 바뀌어도 여기로 온다
@@ -383,7 +364,6 @@ namespace CTC.Runtime.Economy
         private void RefreshSlots()
         {
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
-            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
             int cap = SlotCap;
             bool fixedSlots = TechLogic.FixedSlots(m_Role);
 
@@ -398,14 +378,13 @@ namespace CTC.Runtime.Economy
 
                 if (fixedSlots) DrawFixedSlot(slot, owned);
                 else if (slot < owned.Count) DrawOwned(slot, owned[slot], owned);
-                else DrawEmpty(slot, candidates);
+                else DrawEmpty(slot);
             }
 
-            string mode;
-            if (!m_InShop) mode = "숫자키 = 쓴다";
-            // 고정 배치는 Enter가 할 일이 없다 — 안내에서도 뺀다(없는 조작을 가르치면 안 된다).
-            else if (fixedSlots) mode = "숫자키 = 산다 / 키운다";
-            else mode = "상점 · 숫자키 = 산다 / 키운다 · Enter = 확정";
+            // 숫자키의 뜻은 **역할마다 하나뿐**이다(2026-09-19) — 상점 안팎으로 바뀌지 않는다.
+            // 상점 원 안에 서 있으면 "E = 상점"만 덧붙인다(구매는 팝업이 맡는다).
+            string mode = fixedSlots ? "숫자키 = 산다 / 키운다" : "숫자키 = 쓴다";
+            if (!fixedSlots && m_InShop) mode += " · E = 상점";
             if (FirstActiveKeySlot(owned) >= 0) mode += $" · {ACTIVE_KEY_LABEL} = 쓴다";
             if (m_ModeLabel != null) m_ModeLabel.text = $"{mode}    보유 {owned.Count}/{cap}";
         }
@@ -432,14 +411,15 @@ namespace CTC.Runtime.Economy
 
         private void DrawOwned(int _slot, TechEntry _e, IReadOnlyList<TechEntry> _owned)
         {
-            SetPicked(_slot, false);   // 산 칸은 Enter 대상이 아니다
             TechRow cur = TechLogic.RowOf(_e.Id, _e.Level);
             TechRow next = TechLogic.NextRow(_owned, _e.Id);
             m_SlotLabels[_slot].text = $"{_slot + 1}  {cur.Label} Lv{_e.Level}";
             SetHint(_slot, cur.Hint);
 
             Color c;
-            if (m_InShop)
+            // 고정 배치 역할(고양이)만 핫바로 산다 — 쥐의 칸은 2026-09-19부터 「쓰는 칸」이라
+            // 값이 아니라 쿨다운·사용 가능 여부를 보여 준다(사는 곳은 상점 팝업이다).
+            if (TechLogic.FixedSlots(m_Role))
             {
                 bool maxed = !next.IsValid;
                 bool affordable = next.IsValid && m_Cheese >= next.Cost;
@@ -497,7 +477,6 @@ namespace CTC.Runtime.Economy
         /// </summary>
         private void DrawFixedSlot(int _slot, IReadOnlyList<TechEntry> _owned)
         {
-            SetPicked(_slot, false);
             TechId id = TechLogic.SlotTechOf(m_Role, _slot);
             if (id == TechId.None)
             {
@@ -525,27 +504,16 @@ namespace CTC.Runtime.Economy
         }
 
         /// <summary>
-        /// 빈 칸. **칸마다 제 후보를 따로 고른다**(기획 §6-1: 「빈 칸 5번을 누르면 5번 자리에
-        /// 돌아가며 뜬다」). 그래서 시작 후보를 칸마다 어긋나게 둔다 — 전부 같은 번호로
-        /// 시작하면 다섯 칸이 똑같이 보여 「왜 다 발톱이냐」가 된다(2026-09-10 실플레이).
+        /// 아직 안 산 칸 — **빈 자리로 둔다**(2026-09-19). 파는 물건은 상점 팝업이 보여 주므로
+        /// 핫바가 카탈로그를 겸하지 않는다. 상점 원 안이면 어디서 사는지만 한 줄로 알린다.
         /// 넘기기 역할(쥐) 전용이다 — 고정 배치는 <see cref="DrawFixedSlot"/>가 그린다.
         /// </summary>
-        private void DrawEmpty(int _slot, IReadOnlyList<TechId> _candidates)
+        private void DrawEmpty(int _slot)
         {
-            if (!m_InShop || _candidates.Count == 0)
-            {
-                SetPicked(_slot, false);
-                m_SlotLabels[_slot].text = $"{_slot + 1}  —";
-                m_SlotCosts[_slot].text = "";
-                SetHint(_slot, m_InShop ? "살 게 없다" : "");
-                m_SlotLabels[_slot].color = COLOR_EMPTY;
-                return;
-            }
-            // Enter가 어느 칸을 살지는 **칸 배경**으로 알린다. 글자로 표시하면 두 가지가 깨진다:
-            // 라벨이 칸 폭을 넘어 힌트 줄을 덮고(「두꺼운 가죽」은 그것만으로도 넘친다),
-            // 화살표 같은 글자는 한글 폰트 아틀라스에 없어 □로 나온다(2026-09-10 실플레이).
-            SetPicked(_slot, _slot == PickSlotNow(m_TechSlots.Count));
-            DrawBuyable(_slot, _candidates[m_CandidateIndex[_slot] % _candidates.Count]);
+            m_SlotLabels[_slot].text = $"{_slot + 1}  —";
+            m_SlotCosts[_slot].text = "";
+            SetHint(_slot, m_InShop ? "E로 산다" : "");
+            m_SlotLabels[_slot].color = COLOR_EMPTY;
         }
 
         /// <summary>아직 없는 테크 한 칸 — Lv1 값과 힌트. 돈이 모자라면 붉게.</summary>
@@ -581,7 +549,7 @@ namespace CTC.Runtime.Economy
             // 액티브 전용 키(상점 면제 역할). 쓸 게 없으면 false를 주고 숫자키 검사로 흘러간다.
             if (kb.spaceKey.wasPressedThisFrame && PressActiveKey()) return;
 
-            // Enter(확정 구매)는 여기서 안 읽는다 — `EscapeRouter`가 단독으로 읽고 TryConfirmBuy를 부른다.
+            // Enter는 여기서 안 읽는다 — `EscapeRouter`가 단독으로 읽어 채팅으로 보낸다.
             int cap = SlotCap;
             for (int slot = 0; slot < cap && slot < m_Slots.Length && slot < MAX_HOTKEYS; slot++)
             {
@@ -600,7 +568,7 @@ namespace CTC.Runtime.Economy
         public void PressSlot(int _slot)
         {
             if (!m_GameStarted || m_Shop == null || m_TechSlots == null) return;
-            if (_slot < 0 || _slot >= SlotCap || _slot >= m_CandidateIndex.Length) return;
+            if (_slot < 0 || _slot >= SlotCap) return;
 
             IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
 
@@ -614,50 +582,9 @@ namespace CTC.Runtime.Economy
                 return;
             }
 
-            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
-
-            if (_slot < owned.Count)
-            {
-                if (m_InShop) TryBuy(owned[_slot].Id);       // 키운다
-                else TryUse(owned[_slot].Id);                // 쓴다
-            }
-            else if (m_InShop && candidates.Count > 0)
-            {
-                // 기획 §6-1 — 빈 칸은 **어느 칸이든** 제 자리에서 후보를 넘긴다.
-                // **다른 빈 칸이 이미 보여 주는 후보는 건너뛴다**(2026-09-11) — 안 그러면 두 칸이
-                // 같은 테크를 가리켜 「고를 게 하나뿐」으로 읽힌다.
-                // 그리고 방금 넘긴 칸이 Enter가 확정할 칸이 된다.
-                m_CandidateIndex[_slot] = TechLogic.NextCandidateIndex(
-                    m_CandidateIndex[_slot], candidates.Count,
-                    TakenCandidateIndexes(_slot, owned.Count, candidates.Count));
-                m_PickSlot = _slot;
-                m_SlotsDirty = true;
-            }
-            else if (m_InShop)
-            {
-                Say("살 게 없다");
-            }
-            else
-            {
-                Say("상점에서만 살 수 있다");
-            }
-        }
-
-        /// <summary>
-        /// **다른 빈 칸들이 지금 보여 주는** 후보 인덱스 — 넘길 때 이걸 건너뛴다(2026-09-11).
-        /// 산 칸은 후보가 아니므로 세지 않는다. 매 키 입력마다 도니 리스트를 재사용한다.
-        /// </summary>
-        private IReadOnlyList<int> TakenCandidateIndexes(int _slot, int _ownedCount, int _count)
-        {
-            m_TakenScratch.Clear();
-            if (_count <= 0) return m_TakenScratch;
-            int cap = SlotCap;
-            for (int s = _ownedCount; s < cap && s < m_CandidateIndex.Length; s++)
-            {
-                if (s == _slot) continue;
-                m_TakenScratch.Add(m_CandidateIndex[s] % _count);
-            }
-            return m_TakenScratch;
+            // 넘기기 역할(쥐) — 칸은 **보유 기술**이고 숫자키는 언제나 「쓴다」(2026-09-19).
+            if (_slot < owned.Count) TryUse(owned[_slot].Id);
+            else Say(m_InShop ? "E로 상점을 연다" : "상점에서 E로 산다");
         }
 
         /// <summary>
@@ -675,43 +602,6 @@ namespace CTC.Runtime.Economy
 
             TryUse(owned[slot].Id);
             return true;
-        }
-
-        /// <summary>지금 Enter가 확정 구매로 갈 수 있는가 — `EscapeRouter`가 Enter를 나눌 때 본다.</summary>
-        public bool CanConfirmBuy
-        {
-            get
-            {
-                if (!m_GameStarted || m_Shop == null || m_TechSlots == null || !m_InShop) return false;
-                // 고정 배치 역할은 고를 것이 없다 — Enter는 채팅으로 간다(EnterRouteLogic).
-                if (TechLogic.FixedSlots(m_Role)) return false;
-                int owned = m_TechSlots.Count;
-                return owned < SlotCap && owned < m_CandidateIndex.Length
-                       && CandidatesNow(m_TechSlots.Owned).Count > 0;
-            }
-        }
-
-        /// <summary>
-        /// **방금 고른 칸**의 후보를 확정 구매. 아직 아무 칸도 안 넘겼으면 맨 왼쪽 빈 칸이다.
-        /// 못 사는 상황이면 아무 일도 없이 false.
-        /// </summary>
-        public bool TryConfirmBuy()
-        {
-            if (!CanConfirmBuy) return false;
-            IReadOnlyList<TechEntry> owned = m_TechSlots.Owned;
-            IReadOnlyList<TechId> candidates = CandidatesNow(owned);
-            int slot = PickSlotNow(owned.Count);
-            TryBuy(candidates[m_CandidateIndex[slot] % candidates.Count]);
-            m_PickSlot = -1;   // 산 뒤에는 다시 맨 왼쪽이 기본이다
-            return true;
-        }
-
-        /// <summary>Enter가 확정할 빈 칸 — 고른 적 없거나 그새 채워졌으면 맨 왼쪽 빈 칸.</summary>
-        private int PickSlotNow(int _ownedCount)
-        {
-            if (m_PickSlot >= _ownedCount && m_PickSlot < SlotCap
-                && m_PickSlot < m_CandidateIndex.Length) return m_PickSlot;
-            return _ownedCount;
         }
 
         private void TryBuy(TechId _id)

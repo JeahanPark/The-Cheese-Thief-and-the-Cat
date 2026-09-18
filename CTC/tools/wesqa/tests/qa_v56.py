@@ -33,7 +33,10 @@ PASSWORD = "CHEESE"
 PW_REQUIRED, PW_WRONG, CLOSED = "PW_REQUIRED", "PW_WRONG", "CLOSED"
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다(qa_v52와 같은 규약).
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
@@ -86,14 +89,14 @@ def main():
     g1 = gate(host)
     check("① 비밀번호 방을 열면 대기실로 가고, 대기실이 서서 입장이 열린다",
           in_room and g1.get("hostPw") == "True" and g1.get("accepting") == "True" and g1.get("server") == "True",
-          "씬=%s · %s" % (host.invoke("TestGetActiveSceneName"), g1))
+          "씬=%s · %s" % (host.invoke("TestGetActiveSceneName"), g1), case="A-21")
 
     # ---------- ② 클론 자동 접속은 비밀번호 없이 두드린다 → 거절 ----------
     # 대기실 씬이 서는 몇 초 동안은 CLOSED로 거절된다(정상) — 자동 접속이 다시 두드려 PW_REQUIRED가 될 때까지 본다.
     r1 = wait_for(lambda: gate(c1).get("reject") == PW_REQUIRED and PW_REQUIRED, 20.0) or gate(c1).get("reject")
     check("② 비밀번호 없이 온 자동 접속은 PW_REQUIRED로 거절되고 붙지 않는다",
           r1 == PW_REQUIRED and gate(c1).get("connected") == "False" and gate(host).get("clients") == "1",
-          "클론1 reject=%s · 호스트 인원=%s" % (r1, gate(host).get("clients")))
+          "클론1 reject=%s · 호스트 인원=%s" % (r1, gate(host).get("clients")), case="A-21")
     time.sleep(2.5)   # 자동 접속이 멈추고 세션이 내려갈 때까지
 
     # ---------- ③ 틀린 비밀번호 ----------
@@ -102,7 +105,7 @@ def main():
     check("③ 틀린 비밀번호는 PW_WRONG — 호스트 인원이 그대로다",
           r3 == PW_WRONG and gate(host).get("clients") == "1" and c1.invoke("TestGetActiveSceneName") == "Intro",
           "클론1 reject=%s · 씬=%s · 호스트 인원=%s"
-          % (r3, c1.invoke("TestGetActiveSceneName"), gate(host).get("clients")))
+          % (r3, c1.invoke("TestGetActiveSceneName"), gate(host).get("clients")), case="A-21")
     time.sleep(2.0)
 
     # ---------- ④ 맞는 비밀번호(소문자·공백 섞어도 같다) ----------
@@ -110,12 +113,12 @@ def main():
     joined = wait_for(lambda: c1.invoke("TestGetActiveSceneName") == "Room", 15.0)
     check("④ 맞는 비밀번호(대소문자·공백 무시)면 대기실에 합류한다",
           joined and gate(host).get("clients") == "2" and gate(c1).get("connected") == "True",
-          "클론1 씬=%s · 호스트 인원=%s" % (c1.invoke("TestGetActiveSceneName"), gate(host).get("clients")))
+          "클론1 씬=%s · 호스트 인원=%s" % (c1.invoke("TestGetActiveSceneName"), gate(host).get("clients")), case="A-21")
 
     # ---------- ⑤ 시작하면 문이 닫힌다 ----------
     host.invoke("TestRoomForceStart")
     closed = wait_for(lambda: gate(host).get("accepting") == "False", 5.0)
-    check("⑤ 방장이 시작하면 입장이 닫힌다", closed, "호스트=%s" % gate(host))
+    check("⑤ 방장이 시작하면 입장이 닫힌다", closed, "호스트=%s" % gate(host), case="A-22")
 
     # ---------- ⑥ 시작 후 난입 ----------
     time.sleep(2.5)   # 클론2의 자동 접속이 멈췄는지 한 번 더 기다린다
@@ -124,7 +127,7 @@ def main():
     time.sleep(1.0)
     check("⑥ 시작한 방에는 맞는 비밀번호로도 못 들어온다 — CLOSED",
           r6 and gate(c2).get("connected") == "False" and c2.invoke("TestGetActiveSceneName") == "Intro",
-          "클론2 %s · 씬=%s" % (gate(c2), c2.invoke("TestGetActiveSceneName")))
+          "클론2 %s · 씬=%s" % (gate(c2), c2.invoke("TestGetActiveSceneName")), case="A-22")
 
     return summary()
 

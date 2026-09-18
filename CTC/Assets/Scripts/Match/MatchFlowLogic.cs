@@ -7,6 +7,11 @@ namespace CTC.Runtime.Match
         CatWin = 2,
         /// <summary>깡패 팀(보스+부하) 승리 — 2단계에서만 나온다(v3.9).</summary>
         GangWin = 3,
+        /// <summary>
+        /// 2단계에서 **깡패가 아닌 쥐**가 이겼다 — 깡패 팀 전멸 또는 버티기(2026-09-15).
+        /// 1단계의 <see cref="MouseWin"/>(깡패 없이 쥐 전원 승)과 가른다: 이긴 사람이 다르다.
+        /// </summary>
+        MiceBeatGang = 4,
     }
 
     /// <summary>

@@ -23,19 +23,19 @@ namespace CTC.Tests
         private static AnimationClip Pack(string _name)
         {
             AnimationClip clip = ClipParityProbe.FindClip(PACK_FBX, _name);
-            if (clip == null) Assert.Ignore($"팩 원본에 '{_name}'이 없다: {PACK_FBX}");
+            if (clip == null) Assert.Fail($"팩 원본에 '{_name}'이 없다: {PACK_FBX}");
             return clip;
         }
 
         /// <summary>
-        /// 왕복 FBX를 찾는다. 파일 자체가 없으면(레포를 받았지만 아직 블렌더 왕복을 안 돌린
-        /// 경우) 실패가 아니라 스킵이어야 한다 — 이 테스트들은 산출물이 있을 때만 의미가 있다.
+        /// 왕복 FBX를 찾는다. 파일이 없으면 **실패다**(케이스 E-30, 2026-09-14) — 산출물은 레포에
+        /// 커밋돼 있으므로 없다는 건 경로가 틀어졌거나 지워졌다는 뜻이고, 스킵이면 영영 초록이 된다.
         /// </summary>
         private static AnimationClip RoundTrip(string _name)
         {
             if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
             {
-                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+                Assert.Fail($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
             }
 
             AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, _name);
@@ -62,6 +62,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void SampleClip_FindsBoneCurves()
         {
             CurveSample[] samples = ClipParityProbe.SampleClip(Pack("Walk"), ClipParityProbe.SAMPLE_COUNT);
@@ -77,6 +78,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void Walk_ComparedToItself_IsIdentical()
         {
             AnimationClip walk = Pack("Walk");
@@ -88,6 +90,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void Walk_ComparedToRun_IsDifferent()
         {
             ParityReport r = ClipParityLogic.Compare(
@@ -99,6 +102,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void PackWalk_IsWithinTenFrames()
         {
             AnimationClip walk = Pack("Walk");
@@ -109,6 +113,7 @@ namespace CTC.Tests
         }
 
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void SampleClip_RejectsFewerThanTwoSamples()
         {
             AnimationClip walk = Pack("Walk");
@@ -224,14 +229,15 @@ namespace CTC.Tests
 
         /// <summary>
         /// **진짜 왕복 검사.** 팩 원본 Walk와 블렌더를 거쳐 나온 Walk가 커브까지 같은지 잰다.
-        /// 산출물이 없으면(레포만 받은 상태) 스킵 — 있는데 다르면 반드시 실패해야 한다.
+        /// 산출물이 없어도 실패다(케이스 E-30) — 있는데 다르면 당연히 실패해야 한다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTrippedWalk_MatchesPackWalk()
         {
             AnimationClip packWalk = Pack("Walk");
             AnimationClip roundTripWalk = RoundTrip("Walk");
-            if (roundTripWalk == null) Assert.Ignore($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
+            if (roundTripWalk == null) Assert.Fail($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
 
             ParityReport report = ClipParityLogic.Compare(
                 ClipParityProbe.SampleClip(packWalk, ClipParityProbe.SAMPLE_COUNT),
@@ -246,11 +252,12 @@ namespace CTC.Tests
         /// 재는 커브 비교는 길이가 늘어나도 매 지점에서 같은 값을 찍기 때문이다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTrippedWalk_HasSameClipSettings()
         {
             AnimationClip packWalk = Pack("Walk");
             AnimationClip roundTripWalk = RoundTrip("Walk");
-            if (roundTripWalk == null) Assert.Ignore($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
+            if (roundTripWalk == null) Assert.Fail($"왕복 FBX에 'Walk'가 없다: {ROUNDTRIP_FBX}");
 
             Assert.AreEqual(packWalk.length, roundTripWalk.length, ClipParityProbe.SETTING_EPSILON,
                 $"길이가 다르다: {packWalk.length:F5} vs {roundTripWalk.length:F5}");
@@ -267,11 +274,12 @@ namespace CTC.Tests
         /// 아무 데도 에러가 안 나서 이 테스트가 없으면 아무도 못 본다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTrippedClip_IsNamedWalk_NotRigPipeWalk()
         {
             if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
             {
-                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+                Assert.Fail($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
             }
 
             const string RECOVERY_HINT =
@@ -296,11 +304,12 @@ namespace CTC.Tests
         /// 실패(전부 `Take 001`)는 이름 하나만 보면 못 잡고, 목록 전체를 대조해야 잡힌다.
         /// </summary>
         [Test]
+        [NUnit.Framework.Category("Asset")]
         public void RoundTrippedFbx_HasAllPackClips()
         {
             if (AssetDatabase.LoadMainAssetAtPath(ROUNDTRIP_FBX) == null)
             {
-                Assert.Ignore($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
+                Assert.Fail($"왕복 FBX가 없다(아직 안 만들었거나 지워짐): {ROUNDTRIP_FBX}");
             }
 
             var packNames = new List<string>();

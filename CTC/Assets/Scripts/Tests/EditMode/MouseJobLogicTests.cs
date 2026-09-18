@@ -69,7 +69,7 @@ namespace CTC.Tests.EditMode
         [Test]
         public void EvaluateGangPhase_RestWinsWhenTheGangIsWipedOut()
         {
-            Assert.AreEqual(MatchResult.MouseWin,
+            Assert.AreEqual(MatchResult.MiceBeatGang,
                 MouseJobLogic.EvaluateGangPhase(_gangAlive: 0, _otherAlive: 1, _timeUp: false));
         }
 
@@ -77,7 +77,7 @@ namespace CTC.Tests.EditMode
         public void EvaluateGangPhase_RestWinsOnTimeUp()
         {
             // 시계를 쥔 쪽이 쫓는 쪽이다 — 버티면 나머지 쥐가 이긴다.
-            Assert.AreEqual(MatchResult.MouseWin,
+            Assert.AreEqual(MatchResult.MiceBeatGang,
                 MouseJobLogic.EvaluateGangPhase(_gangAlive: 2, _otherAlive: 1, _timeUp: true));
         }
 

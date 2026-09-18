@@ -25,6 +25,9 @@ namespace CTC.Runtime.Player
         private readonly NetworkVariable<double> m_ReadyAt = new NetworkVariable<double>();
         private readonly NetworkVariable<double> m_ActiveUntil = new NetworkVariable<double>();
 
+        /// <summary>켤 때 나는 소리 — C-21 테스트가 광분 소리(<see cref="CatFrenzy.USE_SFX"/>)와 비교한다.</summary>
+        public const Audio.SfxId USE_SFX = Audio.SfxId.CatSkill;
+
         private CatClass m_Class;
         private PlayerAnimationDriver m_AnimationDriver; // 쓸 때마다 찾지 않는다
 
@@ -116,7 +119,7 @@ namespace CTC.Runtime.Player
         private void SkillFxRpc()
         {
             // 위치가 실린 3D 소리다 — "어디서 켜졌나"까지 알려 줘야 도망칠 방향이 생긴다.
-            Audio.SfxPlayer.PlayAt(Audio.SfxId.CatSkill, transform.position, 1f,
+            Audio.SfxPlayer.PlayAt(USE_SFX, transform.position, 1f,
                 Info.InfoManager.Instance.Balance.CatSkillSoundMeters);
 
             // 소리와 같은 이유로 모션도 전 클라다(CatFrenzy.FrenzyFxRpc와 같은 규칙).

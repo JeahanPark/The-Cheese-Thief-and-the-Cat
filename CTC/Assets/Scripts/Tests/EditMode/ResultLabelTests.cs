@@ -10,12 +10,30 @@ namespace CTC.Tests.EditMode
     /// </summary>
     public class ResultLabelTests
     {
+        /// <summary>
+        /// 단판제의 결과 넷(2026-09-15): 고양이 승 · 깡패 없이 쥐 전원 승 · 깡패 승 · 깡패가 아닌 쥐 승.
+        /// </summary>
+        [NUnit.Framework.Property("CaseId", "A-27")]
         [Test]
         public void LabelOf_EveryWinnerHasItsOwnLine()
         {
             Assert.AreEqual("MICE WIN!", ResultHud.LabelOf(MatchResult.MouseWin));
             Assert.AreEqual("CAT WINS!", ResultHud.LabelOf(MatchResult.CatWin));
             Assert.AreEqual("GANG WINS!", ResultHud.LabelOf(MatchResult.GangWin));
+            Assert.AreEqual("GANG DOWN! MICE WIN", ResultHud.LabelOf(MatchResult.MiceBeatGang));
+        }
+
+        [NUnit.Framework.Property("CaseId", "A-27")]
+        [Test]
+        public void FourResults_ComeFromTheRightPhase()
+        {
+            // 1단계: 고양이가 죽고 깡패가 없으면 쥐 전원 승, 쥐가 다 잡히면 고양이 승
+            Assert.AreEqual(MatchResult.MouseWin, MatchFlowLogic.Evaluate(_armed: true, _aliveCats: 0, _aliveMice: 2));
+            Assert.AreEqual(MatchResult.CatWin, MatchFlowLogic.Evaluate(_armed: true, _aliveCats: 1, _aliveMice: 0));
+            // 2단계: 깡패 팀이 나머지를 다 잡으면 깡패 승, 깡패 팀이 전멸하거나 시간을 버티면 깡패가 아닌 쥐 승
+            Assert.AreEqual(MatchResult.GangWin, MouseJobLogic.EvaluateGangPhase(1, 0, false));
+            Assert.AreEqual(MatchResult.MiceBeatGang, MouseJobLogic.EvaluateGangPhase(0, 2, false));
+            Assert.AreEqual(MatchResult.MiceBeatGang, MouseJobLogic.EvaluateGangPhase(1, 2, true));
         }
 
         [Test]

@@ -28,7 +28,7 @@ from wesqa import WesPoco
 
 RESULTS = []
 EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
-EXPECTED = 15      # 이 스위트가 선언한 항목 수 — summary가 실행 수와 대조한다
+EXPECTED = 14      # 이 스위트가 선언한 항목 수(⑦-b는 qa_v53으로 옮김) — summary가 실행 수와 대조한다
 
 
 def check(name, ok, detail="", case=None):
@@ -231,8 +231,7 @@ def main():
     check("⑦-a 숨은 창고 Lv3 — 창고 HP 150→450",
           hidden == 3 and hp_after == 450,
           "Lv=%s 구조물 최저 HP %s→%s (기대 450)" % (hidden, hp_before, hp_after))
-    skip("⑦-b 숨은 창고 Lv3 — 생산음 무음(0m)",
-         "재는 훅이 없다 — `SfxPlayer.PlayAt`의 실제 재생 여부를 세는 훅(예: TestGetSfxPlayCount)이 필요")
+    # ⑦-b(숨은 창고 Lv3 무음)는 여기서 뺐다 — `qa_v53` ⑦·⑨·⑧이 실제 생산음 횟수로 잰다(2026-09-14).
 
     # ================= 호스트 쥐(m) — 전투·방어·도주 =================
 

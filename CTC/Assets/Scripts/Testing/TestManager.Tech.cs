@@ -559,6 +559,46 @@ namespace CTC.Runtime.Testing
             for (int i = 0; i < list.Count; i++) parts.Add(list[i].ToString());
             return string.Join(",", parts);
         }
+
+        // ───────────────────────────── 상점 팝업 (2026-09-19) ─────────────────────────────
+
+        /// <summary>
+        /// QA: 상점 팝업을 **E와 같은 길로** 토글한다 → 토글 뒤에 떠 있으면 true.
+        /// 컴포넌트가 없으면(씬을 안 다시 구웠다) 경고를 남기고 false.
+        /// </summary>
+        public bool TestToggleShopPopup()
+        {
+            var popup = FindFirstObjectByType<UI.ShopPopup>();
+            if (popup == null)
+            {
+                GameDebug.LogWarning("[TestManager] ShopPopup 없음 — Setup Networking Scene을 다시 돌렸는지 본다");
+                return false;
+            }
+
+            popup.OnPressE();
+            return popup.IsOpen;
+        }
+
+        /// <summary>QA: 팝업 카드들 — "테크:제목:살수있나"를 '|'로 잇는다. 안 떠 있으면 빈 문자열.</summary>
+        public string TestGetShopPopupCards()
+        {
+            var popup = FindFirstObjectByType<UI.ShopPopup>();
+            if (popup == null)
+            {
+                GameDebug.LogWarning("[TestManager] ShopPopup 없음 — 카드를 못 읽는다");
+                return MISSING;
+            }
+            return popup.IsOpen ? popup.DevCardSummary() : string.Empty;
+        }
+
+        /// <summary>QA: 팝업의 그 기술 카드를 **실제로 누른다**(사람의 클릭과 같은 길). 눌렀으면 true.</summary>
+        public bool TestClickShopCard(string _tech)
+        {
+            var popup = FindFirstObjectByType<UI.ShopPopup>();
+            if (popup == null || !popup.IsOpen) return false;
+
+            return popup.DevClick(_tech);
+        }
     }
 }
 #endif

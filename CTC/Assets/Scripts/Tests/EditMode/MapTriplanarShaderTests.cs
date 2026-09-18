@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace CTC.Tests
 {
+    [NUnit.Framework.Category("Asset")]
     public class MapTriplanarShaderTests
     {
         [Test]

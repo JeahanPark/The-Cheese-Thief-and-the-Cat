@@ -8,6 +8,7 @@ namespace CTC.Tests.EditMode
     /// <summary>맵 천장 자리(2026-09-14) — 들보가 경계를 덮고, 채광창이 달빛 자리에 뚫리고, 매달린 것이 빛을 피한다.</summary>
     public class MapCeilingLogicTests
     {
+        [NUnit.Framework.Property("CaseId", "D-24")]
         [Test]
         public void Girders_CoverBothEdges_EvenlySpaced()
         {
@@ -18,6 +19,7 @@ namespace CTC.Tests.EditMode
             Assert.Greater(MapCeilingLogic.JoistXs(15f).Count, z.Count, "장선이 들보보다 촘촘하다");
         }
 
+        [NUnit.Framework.Property("CaseId", "D-24")]
         [Test]
         public void Cells_TileTheMap_AndSkylightOnlyNearMoon()
         {
@@ -32,6 +34,7 @@ namespace CTC.Tests.EditMode
             Assert.IsFalse(MapCeilingLogic.IsSkylight(Vector2.zero, null));
         }
 
+        [NUnit.Framework.Property("CaseId", "D-24")]
         [Test]
         public void HangSlots_Deterministic_AvoidLights_WithinLengthRange()
         {
@@ -51,6 +54,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(0, MapCeilingLogic.HangSlots(30f, 7, 0, lamps, moons).Count, "매달 종류가 없으면 비운다");
         }
 
+        [NUnit.Framework.Property("CaseId", "D-24")]
         [Test]
         public void Deck_IsAboveWallsAndCamera()
         {

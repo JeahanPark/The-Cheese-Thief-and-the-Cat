@@ -47,8 +47,7 @@ namespace CTC.Editor
 
         // 로비 UGUI — Canvas + EventSystem(InputSystemUIInputModule) + 패널 + 플레인 UGUI 버튼.
         private static void BuildLobbyCanvas(LobbyController _lobby, MatchManager _match,
-            CTC.Runtime.Match.PhaseDirector _phase, CTC.Runtime.Match.MatchSeries _series,
-            CheeseSpotDirector _cheeseDirector)
+            CTC.Runtime.Match.PhaseDirector _phase, CheeseSpotDirector _cheeseDirector)
         {
             var canvasGo = new GameObject("LobbyCanvas");
             var canvas = canvasGo.AddComponent<Canvas>();
@@ -190,7 +189,7 @@ namespace CTC.Editor
             SetRef(hotbar, "m_Toast", toastText);
             SetRef(hotbar, "m_GhostMaterialSource", CreateGhostMaterialAsset());
 
-            // ESC 단독 소유자 — 배치 취소 / 채팅 닫기 / 옵션 닫기 / 옵션 열기 순으로 하나만 처리한다.
+            // ESC 단독 소유자 — 배치 취소 / 상점 닫기 / 채팅 닫기 / 옵션 닫기 / 옵션 열기 순으로 하나만 처리한다.
             // (전에는 QuitOnEscape와 ShopHotbar가 같은 프레임에 ESC를 각자 읽어 경합했다)
             var escGo = new GameObject("EscapeRouter");
             var escRouter = escGo.AddComponent<CTC.Runtime.Core.EscapeRouter>();
@@ -264,27 +263,6 @@ namespace CTC.Editor
             SetRef(timerHud, "m_Phase", _phase);
             SetRef(timerHud, "m_Text", timerText);
 
-            // 시계 바로 아래 한 줄 — 3판 시리즈의 판 번호와 점수. 단독 실행에선 안 뜬다.
-            var seriesTextGo = new GameObject("SeriesText");
-            seriesTextGo.transform.SetParent(canvasGo.transform, false);
-            var seriesText = seriesTextGo.AddComponent<TextMeshProUGUI>();
-            seriesText.text = "";
-            seriesText.fontSize = 20f;
-            seriesText.alignment = TextAlignmentOptions.Top;
-            seriesText.color = UiPalette.TextDim;
-            seriesText.raycastTarget = false;
-            var seriesRect = seriesTextGo.GetComponent<RectTransform>();
-            seriesRect.anchorMin = new Vector2(0.5f, 1f);
-            seriesRect.anchorMax = new Vector2(0.5f, 1f);
-            seriesRect.pivot = new Vector2(0.5f, 1f);
-            seriesRect.anchoredPosition = new Vector2(0f, -66f);
-            seriesRect.sizeDelta = new Vector2(420f, 30f);
-            seriesTextGo.SetActive(false);
-
-            var seriesView = canvasGo.AddComponent<MatchSeriesView>();
-            SetRef(seriesView, "m_Series", _series);
-            SetRef(seriesView, "m_Label", seriesText);
-
             // 배경음(2026-09-01) — 재생기는 씬을 넘어 하나뿐이다(BgmDirector).
             // 여기서는 "인게임 곡으로 바꿔라"만 말한다. 앞단 세 화면은 로비 곡을 이어서 튼다.
             SceneBgmBuilder.Attach(SceneBgmBuilder.INGAME_BGM);
@@ -350,6 +328,11 @@ namespace CTC.Editor
                 LoadClip("Combat/sfx_cat_skill"),        // CatSkill
                 LoadClip("Economy/sfx_shop_buy"),        // JobPickup (임시 — 상점 구매음 재사용)
                 LoadClip("UI/sfx_cat_advance"),          // GangRise (임시 — 전직음 재사용)
+                LoadClip("Economy/sfx_decoy_place"),     // WarehousePlace — 요새 설치음과 가른다(C-20)
+                // CatFrenzy — 전직 스킬음과 **번호를 가른다**(C-21). 음원은 아직 전용이 없어 전직음을 빌려 쓴다:
+                // 무료 플랜 라이선스 정리(사운드 전량 재생성) 때 ElevenLabs로 「성난 고양이 울부짖음」을 만들어 갈아 끼운다.
+                LoadClip("UI/sfx_cat_advance"),          // CatFrenzy (임시 음원)
+                LoadClip("Economy/sfx_shop_buy"),        // CatShopBuy — 음원은 ShopBuy와 같다(봇 청각용 번호)
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();
@@ -393,6 +376,8 @@ namespace CTC.Editor
             // 옵션창은 프리팹이다(2026-09-01) — 씬은 팝업 매니저에 캔버스만 물려준다.
             PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
             BuildCatClassPopup(canvasGo);
+            CTC.Runtime.UI.ShopPopup shopPopup = BuildShopPopup(canvasGo, _match);
+            SetRef(escRouter, "m_ShopPopup", shopPopup);
             BuildChatHud(canvasGo, escRouter);
             BuildMouseJobHud(canvasGo, _phase);
 
@@ -468,6 +453,71 @@ namespace CTC.Editor
         /// 어둠 스킬의 화면 암전과 빛 스킬의 실루엣도 여기서 같이 배선한다 —
         /// 둘 다 **보는 쪽 화면**에만 있는 것이라 캔버스에 붙는다.
         /// </summary>
+        /// <summary>
+        /// 상점 팝업(2026-09-19) — 카드 열 장을 두 줄씩 다섯 칸으로 깐다.
+        /// 클릭으로 사므로 **버튼이 곧 카드**다. 글자 두 줄(제목·힌트)은 버튼 안에 얹는다.
+        /// </summary>
+        private static CTC.Runtime.UI.ShopPopup BuildShopPopup(GameObject _canvasGo, MatchManager _match)
+        {
+            const int CARDS = 10;
+            const float CARD_W = 400f;
+            const float CARD_H = 72f;
+
+            var panel = new GameObject("ShopPanel", typeof(RectTransform));
+            panel.transform.SetParent(_canvasGo.transform, false);
+            var rt = (RectTransform)panel.transform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(880f, 540f);
+            panel.AddComponent<Image>().color = UiPalette.PanelSolid;
+
+            TMP_Text header = CreateTmpText("ShopHeader", panel.transform, "상점",
+                26f, TextAlignmentOptions.Center, new Vector2(0f, -18f), new Vector2(840f, 40f));
+            header.fontStyle = FontStyles.Bold;
+
+            var cards = new Button[CARDS];
+            var titles = new TMP_Text[CARDS];
+            var hints = new TMP_Text[CARDS];
+
+            for (int i = 0; i < CARDS; i++)
+            {
+                float x = -212f + (i % 2) * 424f;
+                float y = -84f - (i / 2) * (CARD_H + 10f);
+
+                Button button = CreatePanelButton(panel.transform, $"ShopCard{i}", "", new Vector2(x, y), CARD_W);
+                ((RectTransform)button.transform).sizeDelta = new Vector2(CARD_W, CARD_H);
+
+                // 버튼이 만든 글자를 제목으로 쓰고(위쪽 왼쪽 정렬), 힌트 줄을 아래에 하나 더 얹는다.
+                titles[i] = button.GetComponentInChildren<TMP_Text>();
+                titles[i].fontSize = 20f;
+                titles[i].alignment = TextAlignmentOptions.TopLeft;
+                // 제목은 위 절반만 쓴다 — 아래 절반은 힌트 줄 자리다(겹치면 둘 다 안 읽힌다).
+                titles[i].margin = new Vector4(14f, 8f, 14f, CARD_H * 0.5f);
+
+                hints[i] = CreateTmpText($"ShopCardHint{i}", button.transform, "",
+                    15f, TextAlignmentOptions.TopLeft, new Vector2(0f, -38f), new Vector2(CARD_W - 28f, 30f));
+                hints[i].color = UiPalette.TextDim;
+                hints[i].raycastTarget = false;
+
+                cards[i] = button;
+            }
+
+            TMP_Text foot = CreateTmpText("ShopFoot", panel.transform, "클릭해서 산다 · E · ESC 닫기",
+                15f, TextAlignmentOptions.Center, new Vector2(0f, -506f), new Vector2(840f, 26f));
+            foot.color = UiPalette.TextDim;
+
+            var popup = _canvasGo.AddComponent<CTC.Runtime.UI.ShopPopup>();
+            SetRef(popup, "m_Root", panel);
+            SetRef(popup, "m_Header", header);
+            SetRef(popup, "m_Match", _match);
+            SetRefArray(popup, "m_Cards", cards);
+            SetRefArray(popup, "m_CardTitles", titles);
+            SetRefArray(popup, "m_CardHints", hints);
+
+            panel.SetActive(false);
+            return popup;
+        }
+
         private static void BuildCatClassPopup(GameObject _canvasGo)
         {
             var panel = new GameObject("CatClassPanel", typeof(RectTransform));

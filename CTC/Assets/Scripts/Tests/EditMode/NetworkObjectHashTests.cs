@@ -12,6 +12,7 @@ namespace CTC.Tests
     /// (NetworkManager.cs:1475 "already contains the same GlobalObjectIdHash" Exception)
     /// 직렬화된 YAML을 직접 검사한다 — GlobalObjectIdHash는 internal이라 API 접근 불가.
     /// </summary>
+    [NUnit.Framework.Category("Asset")]
     public class NetworkObjectHashTests
     {
         private static readonly string[] ASSET_PATHS =

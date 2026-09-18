@@ -21,6 +21,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.dirname(os.path.dirname(HERE))  # tests -> wesqa -> tools
 sys.path.insert(0, TOOLS_DIR)
 
+from wesqa.qacase import qa_case  # noqa: E402
 from clip_review_page import (  # noqa: E402  (경로 세팅 뒤에 임포트)
     ClipReviewError,
     blender_frames_for,
@@ -277,6 +278,7 @@ def test_embed_frames_downscales_to_requested_width(tmp_path):
 
 # ---------- 진짜 클립 파일 계약 ----------
 
+@qa_case("B-27")
 @pytest.mark.skipif(not os.path.isdir(REAL_CLIPS), reason="클립 원본 폴더가 없다")
 def test_the_real_clip_files_still_parse():
     """값은 계속 굴러가므로 붙들지 않는다. **파싱이 되는지**와 1프레임·마지막 프레임이

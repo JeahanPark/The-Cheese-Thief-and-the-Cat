@@ -34,6 +34,7 @@ namespace CTC.Tests
             return count;
         }
 
+        [NUnit.Framework.Category("Asset")]
         [Test]
         public void Paint_TextureIsSquareOfRequestedSize()
         {
@@ -45,6 +46,7 @@ namespace CTC.Tests
             Object.DestroyImmediate(tex);
         }
 
+        [NUnit.Framework.Category("Asset")]
         [Test]
         public void Paint_DrawsSomethingOnTopOfTheFloor()
         {
@@ -53,6 +55,7 @@ namespace CTC.Tests
             Object.DestroyImmediate(tex);
         }
 
+        [NUnit.Framework.Category("Asset")]
         [Test]
         public void Paint_HandPlacedMapHasNoRoomsButStillShowsTerrain()
         {

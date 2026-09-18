@@ -28,7 +28,10 @@ BUY, FRENZY, ADVANCE_FIRE, SKILL_FIRE, CLAW = "BuyCoins", "FrenzyShock", "Advanc
 DASH, PLACE, STICKY, MUZZLE, IMPACT, CRUMBS = "DashDust", "PlaceDust", "StickySplat", "MuzzleFlash", "BulletImpact", "EatCrumbs"
 
 
-def check(name, ok, detail=""):
+def check(name, ok, detail="", case=None):
+    # `case`는 QA 케이스 대장(`QaCases.cs`)의 영구 ID다(qa_v52와 같은 규약).
+    if case:
+        name = "[%s] %s" % (case, name)
     RESULTS.append((name, bool(ok), detail))
     print(("[PASS] " if ok else "[FAIL] ") + name + ("  " + detail if detail else ""))
     sys.stdout.flush()
@@ -99,24 +102,24 @@ def main():
     # ===== 고양이(호스트)의 행동 → 쥐 m1 화면에서 센다 =====
     c = host.invoke("TestGetLocalClientId")
     _, got = seen_on(m1i, lambda: buy_slot(host, host, c, "CatFrenzy"), 0.8)
-    check("① 구매 — 고양이가 사면 쥐 화면에 BuyCoins가 뜬다", got.get(BUY, 0) >= 1, "m1 관측=%s" % got)
+    check("① 구매 — 고양이가 사면 쥐 화면에 BuyCoins가 뜬다", got.get(BUY, 0) >= 1, "m1 관측=%s" % got, case="B-25")
 
     used, got = seen_on(m1i, lambda: bool(host.invoke("TestPressActiveKey")))
     check("② 광분 — Space로 켜면 쥐 화면에 FrenzyShock이 한 번 뜬다(오라 아님)",
-          used and got.get(FRENZY, 0) == 1, "눌림=%s m1 관측=%s" % (used, got))
+          used and got.get(FRENZY, 0) == 1, "눌림=%s m1 관측=%s" % (used, got), case="B-25")
 
     host.invoke("TestGrantAdvanceMischief")
     time.sleep(1.0)
     _, got = seen_on(m1i, lambda: host.invoke("TestChooseCatClass", _id="Fire"))
-    check("③ 전직 — 불로 전직하면 쥐 화면에 AdvanceFire가 뜬다", got.get(ADVANCE_FIRE, 0) >= 1, "m1 관측=%s" % got)
+    check("③ 전직 — 불로 전직하면 쥐 화면에 AdvanceFire가 뜬다", got.get(ADVANCE_FIRE, 0) >= 1, "m1 관측=%s" % got, case="B-25")
 
     pressed, got = seen_on(m1i, lambda: bool(host.invoke("TestPressSkillKey")))
     check("④ 전직 스킬 — Q를 쓰면 쥐 화면에 SkillFire가 한 번 뜬다", pressed and got.get(SKILL_FIRE, 0) == 1,
-          "눌림=%s m1 관측=%s" % (pressed, got))
+          "눌림=%s m1 관측=%s" % (pressed, got), case="B-25")
 
     time.sleep(1.5)   # 덮치기 쿨다운이 광분·스킬과 겹치지 않게
     _, got = seen_on(m1i, lambda: host.invoke("TestPounce"))
-    check("⑤ 덮치기 — 쥐 화면에 ClawSlash가 뜬다", got.get(CLAW, 0) >= 1, "m1 관측=%s" % got)
+    check("⑤ 덮치기 — 쥐 화면에 ClawSlash가 뜬다", got.get(CLAW, 0) >= 1, "m1 관측=%s" % got, case="B-25")
 
     # ===== 쥐 m1의 행동 → 고양이(호스트) 화면에서 센다 =====
     warp_to_shop(host, m1)
@@ -128,30 +131,30 @@ def main():
     time.sleep(1.5)
 
     pressed, got = seen_on(host, lambda: bool(m1i.invoke("TestPressSlotKey", _slot=slots["Dash"])))
-    check("⑥ 대시 — 고양이 화면에 DashDust가 뜬다", pressed and got.get(DASH, 0) >= 1, "눌림=%s 호스트 관측=%s" % (pressed, got))
+    check("⑥ 대시 — 고양이 화면에 DashDust가 뜬다", pressed and got.get(DASH, 0) >= 1, "눌림=%s 호스트 관측=%s" % (pressed, got), case="B-25")
 
     time.sleep(2.0)
     pressed, got = seen_on(host, lambda: bool(m1i.invoke("TestPressSlotKey", _slot=slots["Fortress"])), 1.5)
     check("⑦ 요새 — 서는 자리에 PlaceDust가 고양이 화면에 뜬다", pressed and got.get(PLACE, 0) >= 1,
-          "눌림=%s 호스트 관측=%s" % (pressed, got))
+          "눌림=%s 호스트 관측=%s" % (pressed, got), case="B-25")
 
     m1i.invoke("TestTeleportLocalPlayer", _x=sx + 16.0, _z=sz + 16.0)
     time.sleep(1.5)
     pressed, got = seen_on(host, lambda: bool(m1i.invoke("TestPressSlotKey", _slot=slots["Sticky"])), 1.5)
     check("⑧ 끈끈이 — 장판 자리에 StickySplat이 고양이 화면에 뜬다", pressed and got.get(STICKY, 0) >= 1,
-          "눌림=%s 호스트 관측=%s" % (pressed, got))
+          "눌림=%s 호스트 관측=%s" % (pressed, got), case="B-25")
 
     time.sleep(1.0)
     shot, got = seen_on(host, lambda: bool(m1i.invoke("TestShootForward")), 1.0)
     check("⑨ 사격 — 고양이 화면에 총구 섬광과 탄착이 같은 수로 뜬다",
           shot and got.get(MUZZLE, 0) >= 1 and got.get(MUZZLE, 0) == got.get(IMPACT, 0),
-          "발사=%s 호스트 관측=%s" % (shot, got))
+          "발사=%s 호스트 관측=%s" % (shot, got), case="B-25")
 
     # ===== 쥐 m2 채굴 → 고양이 화면 =====
     m2i.invoke("TestTeleportLocalPlayer", _x=sx, _z=sz)
     time.sleep(1.5)
     _, got = seen_on(host, lambda: None, 2.5)
-    check("⑩ 채굴 — 지점에서 갉는 동안 EatCrumbs가 고양이 화면에 뜬다", got.get(CRUMBS, 0) >= 1, "호스트 관측=%s" % got)
+    check("⑩ 채굴 — 지점에서 갉는 동안 EatCrumbs가 고양이 화면에 뜬다", got.get(CRUMBS, 0) >= 1, "호스트 관측=%s" % got, case="B-25")
 
     return summary()
 
