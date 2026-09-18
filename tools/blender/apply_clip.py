@@ -83,6 +83,14 @@ def main():
     print(f"APPLIED {mod.NAME} frames={mod.FRAME_START}..{mod.FRAME_END}")
     print(f"ACTIONS {sorted(a.name for a in bpy.data.actions)}")
 
+    # 저장 전에 포즈를 쉬는 자세로 — 안 그러면 이 파일을 여는 다음 도구(내보내기·측정)가 이 액션의
+    # 마지막 프레임 자세를 「키 없는 뼈의 값」으로 물려받는다(export_clips.reset_pose 머리말).
+    arm.animation_data.action = None
+    for pb in arm.pose.bones:
+        pb.location = (0.0, 0.0, 0.0)
+        pb.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+        pb.scale = (1.0, 1.0, 1.0)
+
     bpy.ops.wm.save_as_mainfile(filepath=dst)
     print(f"SAVED {dst}")
 

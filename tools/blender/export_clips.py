@@ -42,6 +42,26 @@ def args_after_dashdash():
     return sys.argv[sys.argv.index("--") + 1:]
 
 
+def reset_pose(_arm):
+    """포즈 본을 쉬는 자세로 되돌린다 — **액션이 키를 안 찍은 뼈는 이 값으로 구워진다.**
+
+    2026-09-19 실측: 저장된 .blend의 포즈가 마지막으로 평가한 두 발 클립(뿌리 83mm 들어올림 ·
+    뒷다리 두 발 각도)에 머물러 있었고, 뿌리·귀를 안 건드리는 자작 클립(Shoot·ShootDraw·Dash·Fortress·
+    Sticky·Warehouse)이 **그 자세를 물려받아 83mm 뜬 채로** 내보내졌다(9-14 내보내기부터). 에러는 없다 —
+    FBX를 다시 들여 첫 프레임 발 높이를 재서야 보였다(뒷발 84mm · 앞발 115mm, 정상은 1 · 32).
+    내보내기 도구는 액션 사이에 **처음 포즈**로 되돌리므로, 처음 포즈만 쉬는 자세면 된다.
+    """
+    if _arm.animation_data is None:
+        _arm.animation_data_create()
+    _arm.animation_data.action = None
+    for pb in _arm.pose.bones:
+        pb.location = (0.0, 0.0, 0.0)
+        pb.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+        pb.rotation_euler = (0.0, 0.0, 0.0)
+        pb.scale = (1.0, 1.0, 1.0)
+    bpy.context.view_layer.update()
+
+
 def main():
     argv = args_after_dashdash()
     if len(argv) != 1:
@@ -57,6 +77,8 @@ def main():
     bpy.ops.object.select_all(action="DESELECT")
     arm.select_set(True)
     bpy.context.view_layer.objects.active = arm
+
+    reset_pose(arm)
 
     bpy.ops.export_scene.fbx(
         filepath=out,
