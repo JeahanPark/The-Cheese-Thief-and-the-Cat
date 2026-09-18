@@ -295,6 +295,9 @@ def test_the_real_clip_files_still_parse():
         # 깡패 두 발 클립(2026-09-14)은 **선 자세에서 시작해 선 자세로 끝난다** — 쉬는 자세가 네 발(0)이 아니다.
         # 이 넷은 0 대신 「첫 프레임 = 끝 프레임」(루프 이음매·원샷 복귀)을 계약으로 본다.
         posed = name.startswith("biped_") or name == "club_swing.py"
+        # 스턴(2026-09-19)은 **어지러운 자세로 도는 반복**이다 — 네 발(0)이 아니라 휘청이는 머리에서 시작해 거기로 돌아온다.
+        # 스턴 시간이 CSV로 바뀌어도 그동안 돌도록 반복으로 만들었다(stunned.py 머리말). 계약은 두 발 판과 같다.
+        posed = posed or name in ("stunned.py", "cat_stunned.py")
         # 변신(gang_transform)은 **네 발(0)에서 시작해 BipedIdle 첫 자세로 끝난다** — 원샷이 끝나면 두 발 서기로 튀지 않고 잇는다.
         transform = name == "gang_transform.py"
         idle = parse_clip(os.path.join(REAL_CLIPS, "biped_idle.py")) if transform else None

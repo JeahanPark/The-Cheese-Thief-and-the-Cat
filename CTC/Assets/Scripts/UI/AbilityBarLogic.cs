@@ -40,6 +40,13 @@ namespace CTC.Runtime.UI
         /// <summary>고양이 액티브 전용 키 — <c>ShopHotbar</c>도 이 글자를 읽는다(단일 출처).</summary>
         public const string KEY_FRENZY = "Space";
 
+        /// <summary>
+        /// 용사 무적(2026-09-19) — 용사의 Space는 대시가 아니라 무적이다(대시는 사지도 못한다 — <c>HeroSwordLogic.Denied</c>).
+        /// 칸 이름이 곧 갈림길이다(<see cref="NAME_INVINCIBLE"/>) — 글자는 대시와 같은 "Space"라서.
+        /// </summary>
+        public const string KEY_INVINCIBLE = "Space";
+        public const string NAME_INVINCIBLE = "무적";
+
         public static AbilitySlot[] Build(RoleId _role, MouseJobId _job, bool _dashOwned, CatClassId _class,
             bool _frenzyOwned = false)
         {
@@ -47,7 +54,9 @@ namespace CTC.Runtime.UI
             switch (_role)
             {
                 case RoleId.Mouse:
-                    if (_dashOwned) list.Add(new AbilitySlot(KEY_DASH, "대시", "순간 가속"));
+                    // 용사는 Space가 무적이다 — 대시를 이미 샀어도 칸을 무적이 차지한다(누르면 무적이 켜진다)
+                    if (_job == MouseJobId.Hero) list.Add(new AbilitySlot(KEY_INVINCIBLE, NAME_INVINCIBLE, "3초 동안 안 다친다"));
+                    else if (_dashOwned) list.Add(new AbilitySlot(KEY_DASH, "대시", "순간 가속"));
                     if (_job == MouseJobId.Gang) list.Add(new AbilitySlot(KEY_APPOINT, "임명", "보는 쥐를 부하로"));
                     break;
                 case RoleId.Cat:

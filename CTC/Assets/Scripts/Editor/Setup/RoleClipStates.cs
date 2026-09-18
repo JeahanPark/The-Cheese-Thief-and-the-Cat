@@ -25,11 +25,17 @@ namespace CTC.Editor
         public const string MOUSE_CLIPS_FBX = "Assets/Animations/Pets/CTC_Mouse_Clips.fbx";
         public const string CAT_CLIPS_FBX = "Assets/Animations/Pets/CTC_Cat_Clips.fbx";
 
-        public static void AddMouse() => Add(MOUSE_CONTROLLER, MOUSE_CLIPS_FBX, AnimationStateLogic.MouseOnly, "쥐 전용");
+        public static void AddMouse()
+        {
+            Add(MOUSE_CONTROLLER, MOUSE_CLIPS_FBX, AnimationStateLogic.MouseOnly, "쥐 전용");
+            // 스턴처럼 **둘 다** 갖는 자작 상태 — 각자의 FBX에서(2026-09-19)
+            Add(MOUSE_CONTROLLER, MOUSE_CLIPS_FBX, AnimationStateLogic.CustomShared, "공용 자작");
+        }
 
         public static void AddCat()
         {
             Add(CAT_CONTROLLER, CAT_CLIPS_FBX, AnimationStateLogic.CatOnly, "고양이 전용");
+            Add(CAT_CONTROLLER, CAT_CLIPS_FBX, AnimationStateLogic.CustomShared, "공용 자작");
             Remove(CAT_CONTROLLER, OBSOLETE_CAT_STATES);
         }
 

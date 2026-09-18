@@ -41,6 +41,7 @@ namespace CTC.Runtime.UI
         private CatSkill m_Skill;
         private CatFrenzy m_Frenzy;
         private bool m_FrenzyOwned;
+        private HeroInvincible m_Invincible;
         private AbilitySlot[] m_Built = System.Array.Empty<AbilitySlot>();
 
         public AbilitySlot[] Built => m_Built;
@@ -71,6 +72,7 @@ namespace CTC.Runtime.UI
             m_JobSub.Disposable = job != null ? job.JobChanged.Subscribe(j => { m_Job = j; Rebuild(); }) : null;
 
             m_Dash = _player != null ? _player.GetComponent<MouseDash>() : null;
+            m_Invincible = _player != null ? _player.GetComponent<HeroInvincible>() : null;
             m_DashOwned = false;
             m_DashSub.Disposable = m_Dash != null ? m_Dash.OwnedChanged.Subscribe(o => { m_DashOwned = o; Rebuild(); }) : null;
 
@@ -149,6 +151,7 @@ namespace CTC.Runtime.UI
             if (m_Dash != null && m_DashOwned) alive |= m_Dash.CooldownRemaining > 0f || m_Dash.ActiveRemaining > 0f;
             if (m_Skill != null && m_Class != CatClassId.None) alive |= m_Skill.CooldownRemaining > 0f || m_Skill.ActiveRemaining > 0f;
             if (m_Frenzy != null && m_FrenzyOwned) alive |= m_Frenzy.CooldownRemaining > 0f || m_Frenzy.ActiveRemaining > 0f;
+            if (m_Invincible != null && m_Job == MouseJobId.Hero) alive |= m_Invincible.CooldownRemaining > 0f || m_Invincible.ActiveRemaining > 0f;
             return alive;
         }
 
@@ -158,7 +161,13 @@ namespace CTC.Runtime.UI
             {
                 AbilitySlot slot = m_Built[i];
                 float cd = 0f, cdTotal = 0f, act = 0f, actTotal = 0f;
-                if (slot.Key == AbilityBarLogic.KEY_DASH && m_Dash != null)
+                // 무적도 글자가 "Space"다 — 칸 이름으로 먼저 가른다(용사면 대시 칸이 아예 안 생긴다).
+                if (slot.Name == AbilityBarLogic.NAME_INVINCIBLE && m_Invincible != null)
+                {
+                    cd = m_Invincible.CooldownRemaining; cdTotal = m_Invincible.CooldownTotal;
+                    act = m_Invincible.ActiveRemaining; actTotal = m_Invincible.ActiveTotal;
+                }
+                else if (slot.Key == AbilityBarLogic.KEY_DASH && m_Dash != null)
                 {
                     cd = m_Dash.CooldownRemaining; cdTotal = m_Dash.CooldownTotal;
                     act = m_Dash.ActiveRemaining; actTotal = m_Dash.ActiveTotal;

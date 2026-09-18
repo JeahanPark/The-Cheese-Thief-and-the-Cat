@@ -230,6 +230,25 @@ namespace CTC.Editor
                             ShapeEuler = new Vector3(-90f, 0f, 0f), Gravity = 1.5f, RandomSpin = true, Offset = new Vector3(0f, 0.3f, 0f) },
                         Ring(new Color(1f, 0.9f, 0.7f, 0.6f), 3f, 0.3f),
                     };
+                case FxId.HeroInvincible:
+                    // 켜는 순간 한 번(§11) — 무적이 「아직 켜져 있다」는 몸의 흰 테두리가 따로 말한다.
+                    return new[]
+                    {
+                        Ring(new Color(1f, 1f, 0.95f, 0.9f), 3.5f, 0.45f),
+                        new Layer { Name = "Sparks", Texture = Tex.Star, Burst = 12, Life = new Vector2(0.4f, 0.6f), Speed = new Vector2(1.5f, 3f),
+                            Size = new Vector2(0.1f, 0.16f), SizeTo = 0.2f, Color = new Color(1f, 1f, 0.9f), Shape = ParticleSystemShapeType.Sphere,
+                            Radius = 0.3f, Drag = 2f, RandomSpin = true, Offset = new Vector3(0f, 0.4f, 0f) },
+                        Flash(new Color(1f, 1f, 1f, 0.85f), 1.8f, 0.25f, 0.4f),
+                    };
+                case FxId.Stunned:
+                    // 머리 위 별 — 스턴 시간(0.8초) 동안만 산다. 사는 동안만 보이니 「굳어 있다」와 정확히 겹친다.
+                    return new[]
+                    {
+                        new Layer { Name = "Stars", Texture = Tex.Star, Burst = 4, Life = new Vector2(0.8f, 0.8f), Speed = new Vector2(0.4f, 0.6f),
+                            Size = new Vector2(0.14f, 0.18f), Color = new Color(1f, 0.93f, 0.5f), Shape = ParticleSystemShapeType.Circle,
+                            ShapeEuler = new Vector3(90f, 0f, 0f), Radius = 0.25f, RandomSpin = true, Offset = new Vector3(0f, 0.9f, 0f) },
+                        Flash(new Color(1f, 0.95f, 0.6f, 0.6f), 0.6f, 0.15f, 0.9f),
+                    };
                 case FxId.ClawSlash:
                     return new[]
                     {

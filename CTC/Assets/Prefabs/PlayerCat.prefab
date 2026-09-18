@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 2949772959274618968}
   - component: {fileID: 4598405987156818162}
   - component: {fileID: 3332337896690605887}
+  - component: {fileID: 5238147636296960383}
   - component: {fileID: 414784259355758427}
   - component: {fileID: 5587227467782674030}
   - component: {fileID: 4826755275216159815}
@@ -229,6 +230,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Health
   ShowTopMostFoldoutHeaderGroup: 1
   m_MaxHp: 1000
+--- !u!114 &5238147636296960383
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5090140034732257434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b614fe829718e54f8c83396fcd57fba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CTC.Runtime::CTC.Runtime.Combat.Stun
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &414784259355758427
 MonoBehaviour:
   m_ObjectHideFlags: 0

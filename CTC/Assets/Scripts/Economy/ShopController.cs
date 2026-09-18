@@ -134,6 +134,12 @@ namespace CTC.Runtime.Economy
                 if (m_Gun == null) m_Gun = GetComponent<MousePopgun>();
                 if (m_Gun != null && m_Gun.ClubActive) return TechDeny.GangNoGun;
             }
+            // 용사 — 칼이라 총알(총·후추)이 소용없고, Space가 무적이라 대시도 못 쓴다(2026-09-19).
+            if (HeroSwordLogic.Denied(_id))
+            {
+                if (m_Gun == null) m_Gun = GetComponent<MousePopgun>();
+                if (m_Gun != null && m_Gun.SwordActive) return TechDeny.HeroNoGun;
+            }
             if (TechLogic.NeedsShopSpot(m_Tag.Role) && !Map.ShopSpot.AnyContains(transform.position))
                 return TechDeny.NotInShop;
             // 서버 BuyRpc도 이 함수를 지난다 — 품절 판정의 권위는 그대로 서버에 있다.
@@ -150,7 +156,7 @@ namespace CTC.Runtime.Economy
         public UseDeny CanUse(TechId _id)
         {
             if (m_Slots == null || m_Wallet == null) return UseDeny.Unavailable;
-            if (Player.GangTransformLock.Locked(this)) return UseDeny.Unavailable;   // 깡패 변신 중 — 서버 UseRpc도 여기를 지난다
+            if (Player.ActionLock.Locked(this)) return UseDeny.Unavailable;   // 깡패 변신 중 — 서버 UseRpc도 여기를 지난다
             if (!TechLogic.IsActive(_id)) return UseDeny.NotActive;
             if (m_Slots.LevelOf(_id) == 0) return UseDeny.NotOwned;
 

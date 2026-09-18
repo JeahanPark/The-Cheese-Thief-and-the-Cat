@@ -167,6 +167,32 @@ namespace CTC.Editor
         }
 
         /// <summary>
+        /// 용사 쥐 클립(SwordSwing·HeroDraw·Stunned)용(2026-09-19) — 깡패 판과 같은 경로에 **게임의 용사 칼**을 얹는다.
+        /// 칼의 보이기·방향은 게임과 **같은 시간표**(<see cref="HeroSwordVisualLogic"/>·<see cref="HeroTransformLogic"/>)로 준다 —
+        /// 리그에 손목이 없어 칼 방향은 클립이 아니라 코드가 쥐기 때문이다(<see cref="HeroLook"/>).
+        /// </summary>
+        public static List<string> RenderHeroClipFramesForGif(string _clipName)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PLAYER_MOUSE_PREFAB);
+            if (prefab == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] 프리팹을 못 찾았다: {PLAYER_MOUSE_PREFAB}");
+                return null;
+            }
+
+            AnimationClip clip = ClipParityProbe.FindClip(ROUNDTRIP_FBX, _clipName);
+            if (clip == null)
+            {
+                Debug.LogError($"[ClipPreviewRender] {_clipName} 클립을 못 찾았다: {ROUNDTRIP_FBX}");
+                return null;
+            }
+
+            List<string> paths = RenderClip(prefab, clip, "gif", DenseNormalizedTimes(clip), null, false, true);
+            Debug.Log($"[ClipPreviewRender] 용사 GIF용 {_clipName} {paths.Count}장 렌더 완료");
+            return paths;
+        }
+
+        /// <summary>
         /// 클립 길이·프레임레이트로부터 **블렌더 프레임 1장 1장**에 해당하는 정규화 시간을
         /// 만든다. <see cref="SHOOT_NORMALIZED_TIMES"/>처럼 손으로 박은 표본이 아니라 클립
         /// 자체 길이를 재서 만들므로 다른 클립에도 그대로 쓸 수 있다 — GIF는 몇 프레임을
@@ -227,9 +253,10 @@ namespace CTC.Editor
         /// 참이면 <paramref name="_prefab"/>은 <c>PlayerMouse</c>이고, 그 <c>Model</c>만 떼어 몽둥이·모자를 켜고
         /// 화난 눈을 준 채 찍는다(<see cref="RenderGangClipFramesForGif"/>). 총은 붙이지 않는다 — 깡패는 총을 못 쓴다.
         /// </param>
+        /// <param name="_hero">참이면 깡패 판처럼 <c>Model</c>만 떼어 용사 칼을 게임과 같은 시간표로 띄운다(<see cref="RenderHeroClipFramesForGif"/>).</param>
         private static List<string> RenderClip(
             GameObject _prefab, AnimationClip _clip, string _tag, float[] _normalizedTimes,
-            float[] _gunAlphas = null, bool _gang = false)
+            float[] _gunAlphas = null, bool _gang = false, bool _hero = false)
         {
             var writtenPaths = new List<string>();
             PreviewRenderUtility preview = null;
@@ -249,13 +276,17 @@ namespace CTC.Editor
             {
                 preview = new PreviewRenderUtility();
 
-                instance = _gang ? InstantiateModelOnly(_prefab) : UnityEngine.Object.Instantiate(_prefab);
+                instance = _gang || _hero ? InstantiateModelOnly(_prefab) : UnityEngine.Object.Instantiate(_prefab);
                 if (instance == null) return writtenPaths;
                 preview.AddSingleGO(instance);
 
                 if (_gang)
                 {
                     DressGang(instance, gangMats);
+                }
+                else if (_hero)
+                {
+                    DressHero(instance, gangMats);
                 }
                 else
                 {
@@ -326,9 +357,12 @@ namespace CTC.Editor
                 // bounds를 직접 월드로 옮겨 합친다 — BakeMesh가 동기적으로 채워 주는 값이다.
                 // 경계는 **둘 다 보이는 셈 치고** 잡는다 — 실제로는 한 번에 하나만 보이지만,
                 // 틀이 프레임마다 바뀌면 장끼리 비교가 안 된다.
+                GameObject heroInstance = instance;
+                System.Action<float> pose = null;
+                if (_hero) pose = _t => PoseHeroPropsFor(_clip.name, _t, heroInstance);
                 Bounds bounds = BakeAndEncapsulate(
                     _clip, instance, bakedPairs, bakedGos, heldGun, holsteredGun,
-                    _normalizedTimes, length, out float floorY);
+                    _normalizedTimes, length, out float floorY, pose);
                 // 깡패(두 발) 판은 바닥을 **모델 원점 = 게임의 땅**에 둔다. 첫 프레임 최저점으로 잡으면 두 발 자세에선
                 // 엉덩이(-17mm)가 최저점이라 바닥이 그만큼 내려가고, 딛은 발이 **떠 보였다**(2026-09-14 사용자 지적 — 인게임은 딛고 있었다).
                 if (_gang) floorY = instance.transform.position.y;
@@ -368,6 +402,7 @@ namespace CTC.Editor
                     _clip.SampleAnimation(instance, t);
                     ShowGunsFor(_clip.name, t, heldGun, holsteredGun);
                     if (_gang) PoseGangPropsFor(_clip.name, t, instance);
+                    if (_hero) PoseHeroPropsFor(_clip.name, t, instance);
 
                     // 페이드 확인용 — 게임과 **같은 방식**으로 알파를 준다(프로퍼티 블록, 머티리얼 사본 없음).
                     if (_gunAlphas != null) SetGunAlpha(heldGun, holsteredGun, _gunAlphas[i]);
@@ -499,6 +534,103 @@ namespace CTC.Editor
                 int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
                 if (rabid >= 0) smr.SetBlendShapeWeight(rabid, GangAngryFace.RABID_WEIGHT);
                 if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, 100f - GangAngryFace.RABID_WEIGHT);
+            }
+        }
+
+        /// <summary>
+        /// 용사 모습을 입힌다 — 총·깡패 소품은 끄고, 칼 두 조각(날·자루)을 미리보기 전용 사본 머티리얼로 칠한다
+        /// (<see cref="DressGang"/>과 같은 처방 — URP/Lit은 이 오프스크린 씬에서 마젠타로 나온다). 몸은 팩 머티리얼, 얼굴은 게임 기본(Annoyed).
+        /// </summary>
+        private static void DressHero(GameObject _instance, List<Material> _createdMats)
+        {
+            Shader shader = Shader.Find("Sprites/Default");
+            foreach (Transform t in _instance.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name.StartsWith("MouseGun") || t.name == GangLook.CLUB_NAME || t.name == GangLook.HAT_NAME
+                    || t.name.StartsWith(GangLook.BROW_PREFIX))
+                {
+                    t.gameObject.SetActive(false);
+                    continue;
+                }
+                if (t.parent == null || t.parent.name != HeroLook.SWORD_NAME) continue;
+
+                var r = t.GetComponent<Renderer>();
+                if (r == null || shader == null) continue;
+                Color color = Color.gray;
+                Material real = r.sharedMaterial;
+                if (real != null && real.HasProperty("_BaseColor")) color = real.GetColor("_BaseColor");
+                else if (real != null && real.HasProperty("_Color")) color = real.GetColor("_Color");
+                var mat = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+                r.sharedMaterial = mat;
+                _createdMats.Add(mat);
+            }
+
+            Material[] packMats = null;
+            var pack = AssetDatabase.LoadAssetAtPath<GameObject>(MOUSE_PREFAB);
+            var packSkin = pack != null ? pack.GetComponentInChildren<SkinnedMeshRenderer>(true) : null;
+            if (packSkin != null) packMats = packSkin.sharedMaterials;
+            foreach (SkinnedMeshRenderer smr in _instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh == null) continue;
+                if (packMats != null && packMats.Length > 0)
+                {
+                    var mats = new Material[smr.sharedMaterials.Length];
+                    for (int i = 0; i < mats.Length; i++) mats[i] = packMats[Mathf.Min(i, packMats.Length - 1)];
+                    smr.sharedMaterials = mats;
+                }
+                int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
+                if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, 100f);
+            }
+        }
+
+        /// <summary>
+        /// 용사 칼의 이 프레임 — 게임과 **같은 시간표**로 알파·방향을 준다. 변신·휘두르기가 아닌 클립에선 칼이 없다.
+        /// 방향은 <see cref="HeroLook"/>의 LateUpdate와 같은 식(캐릭터 = 떼어 온 Model의 회전).
+        /// </summary>
+        private static void PoseHeroPropsFor(string _clipName, float _seconds, GameObject _instance)
+        {
+            float alpha = 0f;
+            Vector2 aim = Vector2.zero;
+            if (_clipName == AnimationStateLogic.HeroDraw)
+            {
+                alpha = HeroTransformLogic.SwordAlpha(_seconds);
+                aim = HeroTransformLogic.SwordAim(_seconds);
+            }
+            else if (_clipName == AnimationStateLogic.SwordSwing)
+            {
+                alpha = HeroSwordVisualLogic.SwingAlpha(_seconds);
+                aim = HeroSwordVisualLogic.SwingAim(_seconds);
+            }
+
+            foreach (Transform t in _instance.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name != HeroLook.SWORD_NAME) continue;
+                t.gameObject.SetActive(GunFadeLogic.ShouldRender(alpha));
+                t.rotation = _instance.transform.rotation
+                             * HeroSwordVisualLogic.LocalRotation(HeroSwordVisualLogic.Direction(aim.x, aim.y));
+                foreach (Renderer r in t.GetComponentsInChildren<Renderer>(true))
+                {
+                    Material m = r.sharedMaterial;   // DressHero가 만든 미리보기 전용 사본이다
+                    if (m == null || !m.HasProperty("_Color")) continue;
+                    Color c = m.GetColor("_Color");
+                    c.a = alpha;
+                    m.SetColor("_Color", c);
+                }
+            }
+
+            // 얼굴 — 게임에서 그 원샷이 켜는 표정(FaceExpressionLogic)을 셰이프키로 흉내 낸다(없는 키는 건너뛴다).
+            string face = FaceExpressionLogic.ForOneShot(_clipName);
+            if (face == null) return;
+            string key = face.Replace("Eyes_", "eyes.").ToLowerInvariant();
+            foreach (SkinnedMeshRenderer smr in _instance.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.sharedMesh == null) continue;
+                int index = smr.sharedMesh.GetBlendShapeIndex(key);
+                int annoyed = smr.sharedMesh.GetBlendShapeIndex("eyes.annoyed");
+                if (index < 0) continue;
+                smr.SetBlendShapeWeight(index, 100f);
+                if (annoyed >= 0) smr.SetBlendShapeWeight(annoyed, 0f);
             }
         }
 
@@ -696,7 +828,8 @@ namespace CTC.Editor
             Renderer _holsteredGun,
             float[] _normalizedTimes,
             float _length,
-            out float _floorY)
+            out float _floorY,
+            System.Action<float> _pose = null)
         {
             var bounds = new Bounds();
             bool seeded = false;
@@ -708,6 +841,7 @@ namespace CTC.Editor
             for (int i = 0; i < _normalizedTimes.Length; i++)
             {
                 _clip.SampleAnimation(_instance, _length * _normalizedTimes[i]);
+                _pose?.Invoke(_length * _normalizedTimes[i]);   // 용사 칼처럼 코드가 쥐는 소품 — 틀이 칼끝을 자르지 않게
 
                 for (int b = 0; b < _bakedPairs.Count; b++)
                 {
@@ -750,6 +884,7 @@ namespace CTC.Editor
                     foreach (MeshRenderer prop in _instance.GetComponentsInChildren<MeshRenderer>())
                     {
                         if (prop.name == GangLook.CLUB_NAME || prop.name == GangLook.HAT_NAME || prop.name.StartsWith(GangLook.BROW_PREFIX)) bounds.Encapsulate(prop.bounds);
+                        else if (prop.transform.parent != null && prop.transform.parent.name == HeroLook.SWORD_NAME) bounds.Encapsulate(prop.bounds);
                     }
                 }
             }

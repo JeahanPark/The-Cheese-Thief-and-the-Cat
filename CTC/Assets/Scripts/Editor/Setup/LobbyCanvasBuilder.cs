@@ -377,6 +377,8 @@ namespace CTC.Editor
             PopupSceneBinder.Attach(canvasGo.GetComponent<Canvas>());
             BuildCatClassPopup(canvasGo);
             CTC.Runtime.UI.ShopPopup shopPopup = BuildShopPopup(canvasGo, _match);
+            BuildLoadingOverlayPrefab();   // 로딩창은 씬 밖 프리팹이다 — 대기실에서 떠서 씬을 건너온다
+            BuildStunVignette(canvasGo);
             SetRef(escRouter, "m_ShopPopup", shopPopup);
             BuildChatHud(canvasGo, escRouter);
             BuildMouseJobHud(canvasGo, _phase);
@@ -516,6 +518,104 @@ namespace CTC.Editor
 
             panel.SetActive(false);
             return popup;
+        }
+
+        private const string LOADING_BACKDROP_PATH = "Assets/Materials/UI/T_LoadingBackdrop.png";
+        private const string LOADING_OVERLAY_PREFAB = "Assets/Resources/" + CTC.Runtime.UI.LoadingScreen.RESOURCE_PATH + ".prefab";
+        private const int LOADING_SORT_ORDER = 5000;   // 어떤 씬의 캔버스보다 위 — 대기실·게임 HUD를 전부 덮는다
+
+        /// <summary>
+        /// 접속 대기 로딩창(2026-09-19, 사용자 시안 5) — 화면 전체 그림 + 오른쪽 아래 「로딩중」과 도는 점.
+        /// **게임 씬이 아니라 프리팹**(<c>Resources/UI/LoadingOverlay</c>)으로 굽는다 — 대기실에서 떠서 씬을 건너와야
+        /// 씬 로딩 동안의 검은 화면까지 덮는다(<see cref="CTC.Runtime.UI.LoadingScreen"/>). 캔버스 정렬은 무엇보다 위.
+        /// </summary>
+        private static void BuildLoadingOverlayPrefab()
+        {
+            var root = new GameObject("LoadingOverlay");
+            var canvas = root.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = LOADING_SORT_ORDER;
+            var scaler = root.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+            root.AddComponent<GraphicRaycaster>();   // 가리는 동안 아래 버튼이 눌리면 안 된다
+            var group = root.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.blocksRaycasts = true;
+
+            var backdrop = new GameObject("Backdrop", typeof(RectTransform), typeof(Image));
+            backdrop.transform.SetParent(root.transform, false);
+            var rt = (RectTransform)backdrop.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            var image = backdrop.GetComponent<Image>();
+            image.raycastTarget = true;
+            image.color = Color.white;
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(LOADING_BACKDROP_PATH);
+            if (sprite != null)
+            {
+                image.sprite = sprite;
+                image.type = Image.Type.Simple;
+                image.preserveAspect = false;   // 화면비가 달라도 빈 데가 생기면 안 된다
+            }
+            else
+            {
+                Debug.LogWarning($"[LobbyCanvasBuilder] 로딩 그림이 없다 — 단색으로 간다: {LOADING_BACKDROP_PATH}");
+                image.color = UiPalette.PanelSolid;
+            }
+
+            // 오른쪽 아래 — 「로딩중」과 점. 점은 자리를 따로 잡아 늘어나도 글자가 안 밀린다.
+            TMP_Text label = CreateTmpText("LoadingLabel", root.transform, "로딩중",
+                34f, TextAlignmentOptions.BottomRight, Vector2.zero, new Vector2(260f, 50f));
+            var labelRt = (RectTransform)label.transform;
+            labelRt.anchorMin = labelRt.anchorMax = new Vector2(1f, 0f);
+            labelRt.pivot = new Vector2(1f, 0f);
+            labelRt.anchoredPosition = new Vector2(-96f, 56f);
+            label.fontStyle = FontStyles.Bold;
+            label.color = UiPalette.TextOn;
+            label.raycastTarget = false;
+
+            TMP_Text dots = CreateTmpText("LoadingDots", root.transform, ".",
+                34f, TextAlignmentOptions.BottomLeft, Vector2.zero, new Vector2(60f, 50f));
+            var dotsRt = (RectTransform)dots.transform;
+            dotsRt.anchorMin = dotsRt.anchorMax = new Vector2(1f, 0f);
+            dotsRt.pivot = new Vector2(0f, 0f);
+            dotsRt.anchoredPosition = new Vector2(-92f, 56f);
+            dots.fontStyle = FontStyles.Bold;
+            dots.color = UiPalette.Accent;
+            dots.raycastTarget = false;
+
+            var screen = root.AddComponent<CTC.Runtime.UI.LoadingScreen>();
+            SetRef(screen, "m_Group", group);
+            SetRef(screen, "m_Dots", dots);
+
+            if (!AssetDatabase.IsValidFolder("Assets/Resources/UI")) AssetDatabase.CreateFolder("Assets/Resources", "UI");
+            PrefabUtility.SaveAsPrefabAsset(root, LOADING_OVERLAY_PREFAB);
+            Object.DestroyImmediate(root);
+        }
+
+        /// <summary>
+        /// 칼에 맞아 굳은 **내 화면** 가장자리가 하얗게 선다(2026-09-19, 기획 hero-sword §4) — 3D 화면 위, HUD 아래(첫 형제).
+        /// 그림은 런타임이 코드로 굽는다(<see cref="CTC.Runtime.UI.StunVignette"/>).
+        /// </summary>
+        private static void BuildStunVignette(GameObject _canvasGo)
+        {
+            var go = new GameObject("StunVignette", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(_canvasGo.transform, false);
+            go.transform.SetAsFirstSibling();
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = rt.offsetMax = Vector2.zero;
+            var image = go.GetComponent<Image>();
+            image.raycastTarget = false;
+            image.color = new Color(1f, 1f, 1f, 0f);
+            image.enabled = false;
+
+            var vignette = _canvasGo.AddComponent<CTC.Runtime.UI.StunVignette>();
+            SetRef(vignette, "m_Image", image);
         }
 
         private static void BuildCatClassPopup(GameObject _canvasGo)

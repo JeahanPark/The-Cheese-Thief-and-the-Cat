@@ -45,7 +45,7 @@ namespace CTC.Runtime.Combat
             if (!Player.LocalControl.Mine(this) || Cursor.lockState != CursorLockMode.Locked) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
-            if (Player.GangTransformLock.Locked(this)) return; // 깡패 변신 중에는 못 친다
+            if (Player.ActionLock.Locked(this)) return; // 깡패 변신 중에는 못 친다
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
 
@@ -58,7 +58,9 @@ namespace CTC.Runtime.Combat
         /// 봇 전용 — 지금 무기의 사거리(m). 티어를 타므로 총을 사면 늘어난다.
         /// 봇이 "안 맞을 거리에선 안 쏜다"를 판단하려면 사람이 보는 것과 같은 값을 봐야 한다.
         /// </summary>
-        public float BotRange => ClubActive ? Info.InfoManager.Instance.Balance.GangClubRange : ShopLogic.WeaponStatsForTier(m_Tier.Value).Range;
+        public float BotRange => SwordActive ? Info.InfoManager.Instance.Balance.HeroSwordRange
+            : ClubActive ? Info.InfoManager.Instance.Balance.GangClubRange
+            : ShopLogic.WeaponStatsForTier(m_Tier.Value).Range;
 
         private Match.MouseJob m_Job;
         private Match.PhaseDirector m_Phase;
@@ -78,6 +80,19 @@ namespace CTC.Runtime.Combat
         }
 
         /// <summary>
+        /// 용사 칼이 총을 대신하는가(2026-09-19) — 용사면 단계와 무관하게 참(<see cref="HeroSwordLogic.Active"/>).
+        /// 몽둥이와 같은 버튼·같은 Rpc를 탄다. 둘이 겹칠 일은 없다(직업이 하나다).
+        /// </summary>
+        public bool SwordActive
+        {
+            get
+            {
+                if (m_Job == null) m_Job = GetComponent<Match.MouseJob>();
+                return m_Job != null && HeroSwordLogic.Active(m_Job.Value, Match.MatchPhase.Hunt);
+            }
+        }
+
+        /// <summary>
         /// 봇 전용 — 지금 쏠 수 있나. 서버가 <see cref="FireRpc"/>에서 같은 판정을 다시 하지만,
         /// 봇이 모르면 판단 틱마다(0.5초) 거절당하는 죽은 RPC를 계속 보낸다.
         /// 봇은 서버에서 도므로 서버 시계를 그대로 읽는다.
@@ -85,9 +100,11 @@ namespace CTC.Runtime.Combat
         public bool BotCanFire()
         {
             if (NetworkManager == null) return false;
-            if (Player.GangTransformLock.Locked(this)) return false;
+            if (Player.ActionLock.Locked(this)) return false;
 
-            float cooldown = ClubActive ? Info.InfoManager.Instance.Balance.GangClubCooldown
+            var balance = Info.InfoManager.Instance.Balance;
+            float cooldown = SwordActive ? balance.HeroSwordCooldown
+                : ClubActive ? balance.GangClubCooldown
                 : ShopLogic.WeaponStatsForTier(m_Tier.Value).CooldownSeconds;
             return CombatLogic.IsCooldownReady(m_LastUseTime, NetworkManager.ServerTime.Time, cooldown);
         }
@@ -128,7 +145,13 @@ namespace CTC.Runtime.Combat
         private void FireRpc(Vector3 _direction)
         {
             // 변신 중(서버가 보는 값) — 날아온 입력은 버린다. 이미 처리된 발은 그대로 성공이다.
-            if (Player.GangTransformLock.Locked(this)) return;
+            if (Player.ActionLock.Locked(this)) return;
+
+            if (SwordActive)
+            {
+                ServerSword(_direction);
+                return;
+            }
 
             if (ClubActive)
             {
@@ -196,6 +219,65 @@ namespace CTC.Runtime.Combat
             }
 
             TracerRpc(origin, end);
+        }
+
+        // ===== 용사 칼(2026-09-19) =====
+
+
+        /// <summary>
+        /// 몸 앞 부채꼴 안의 표적을 한 번씩 **베고 굳힌다**. 피해는 약하다(주목적은 스턴 — 사용자 결정).
+        /// 몽둥이와 같은 규칙이되, 편은 「같은 용사만 못 벤다」다 — 2단계의 깡패도 벤다.
+        /// </summary>
+        private void ServerSword(Vector3 _direction)
+        {
+            var balance = Info.InfoManager.Instance.Balance;
+            double now = NetworkManager.ServerTime.Time;
+            if (!CombatLogic.IsCooldownReady(m_LastUseTime, now, balance.HeroSwordCooldown)) return;
+            m_LastUseTime = now;
+
+            Vector3 forward = _direction.sqrMagnitude > 1e-4f ? _direction : transform.forward;
+            Match.MouseJobId myJob = m_Job != null ? m_Job.Value : Match.MouseJobId.None;
+            int damage = Mathf.RoundToInt(balance.HeroSwordDamage * HeroMultiplier());
+            int hits = 0;
+
+            foreach (Collider col in Physics.OverlapSphere(transform.position, balance.HeroSwordRange + 0.5f))
+            {
+                Health target = col.GetComponentInParent<Health>();
+                if (target == null || target.IsDead || target.transform.root == transform.root) continue;
+                if (!Match.GangLookLogic.InArc(transform.position, forward, target.transform.position,
+                        balance.HeroSwordRange, balance.HeroSwordArcDegrees)) continue;
+
+                RoleTag tag = target.GetComponent<RoleTag>();
+                bool isPlayer = target.NetworkObject != null && target.NetworkObject.IsPlayerObject;
+                bool isMapLoot = target.GetComponent<Map.Alcove>() != null || target.GetComponent<Map.LootBox>() != null;
+                if (tag == null || !CombatLogic.CanAttack(RoleId.Mouse, tag.Role, isPlayer, isMapLoot)) continue;
+
+                var targetJob = target.GetComponent<Match.MouseJob>();
+                if (targetJob != null && !HeroSwordLogic.CanCut(myJob, targetJob.Value)) continue;
+
+                if (s_ClubHitThisSwing.Contains(target)) continue;   // 콜라이더가 여럿인 몸은 한 번만
+                s_ClubHitThisSwing.Add(target);
+
+                target.TakeDamage(damage);
+                Stun stun = target.GetComponent<Stun>();
+                if (stun != null) stun.ServerApply(balance.StunSeconds);
+                hits++;
+            }
+            s_ClubHitThisSwing.Clear();
+
+            SwordSwingRpc(transform.position + forward * 1.0f, hits > 0);
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void SwordSwingRpc(Vector3 _front, bool _hit)
+        {
+            Audio.SfxPlayer.PlayAt(Audio.SfxId.PounceSwing, transform.position);   // 근접 공격 소리 — 덮치기·몽둥이와 같은 뜻
+
+            Player.PlayerAnimationDriver driver = GetComponent<Player.PlayerAnimationDriver>();
+            // 원샷 길이 = 클립 길이 — 칼 소품 시간표(HeroLook)가 이 원샷이 걸리는 순간 같은 박자로 돈다
+            if (driver != null) driver.PlayOneShot(Player.AnimationStateLogic.SwordSwing, Player.HeroSwordVisualLogic.SWING_SECONDS);
+
+            if (_hit) Fx.FxPlayer.PlayAt(Fx.FxId.ClubSmash, _front, transform.rotation, 0.8f);
         }
 
         // ===== 깡패 몽둥이(2026-09-14) =====

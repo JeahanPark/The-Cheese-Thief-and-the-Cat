@@ -129,7 +129,9 @@ namespace CTC.Runtime.Player
         private void TryDash()
         {
             if (!IsOwner) return;
-            if (GangTransformLock.Locked(this)) return;   // 깡패 변신 중에는 못 쓴다
+            if (ActionLock.Locked(this)) return;   // 깡패·용사 변신, 스턴 중에는 못 쓴다
+            // 용사에게 Space는 무적이다(2026-09-19) — 용사가 되기 전에 산 대시는 칸에 남되 쓰이지 않는다.
+            if (HeroInvincible.IsHero(this)) return;
             if (m_DashRemainingSeconds > 0f) return;
             if (!m_Owned.Value) return;
             if (!Combat.CombatLogic.IsCooldownReady(m_LastUseTime, Time.timeAsDouble, CooldownSeconds)) return;

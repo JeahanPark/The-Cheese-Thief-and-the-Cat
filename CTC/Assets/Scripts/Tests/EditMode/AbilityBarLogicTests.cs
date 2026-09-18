@@ -28,6 +28,25 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual("순간 가속", slots[0].Hint);
         }
 
+        /// <summary>
+        /// 용사(2026-09-19) — Space가 대시가 아니라 **무적**이다. 대시를 이미 샀어도 칸은 무적이 차지한다
+        /// (누르면 무적이 켜지고, 대시는 용사가 사지도 못한다).
+        /// </summary>
+        [NUnit.Framework.Property("CaseId", "C-37")]
+        [Test]
+        public void Hero_SpaceSlotIsInvincible_EvenWithDashOwned()
+        {
+            foreach (bool dashOwned in new[] { false, true })
+            {
+                var hero = AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.Hero, dashOwned, CatClassId.None);
+                Assert.AreEqual(1, hero.Length, $"대시 보유={dashOwned}");
+                Assert.AreEqual("Space", hero[0].Key);
+                Assert.AreEqual(AbilityBarLogic.NAME_INVINCIBLE, hero[0].Name);
+            }
+            Assert.AreEqual("대시", AbilityBarLogic.Build(RoleId.Mouse, MouseJobId.None, true, CatClassId.None)[0].Name,
+                "용사가 아니면 Space는 그대로 대시다");
+        }
+
         [Test]
         public void Mouse_AppointOnlyForGang_AfterDash()
         {

@@ -20,7 +20,7 @@ namespace CTC.Runtime.Room
     /// | 1.8s | 뽑힌 사람 위에서 정지 · 빛이 좁아지고 카드가 커진다 |
     /// | 2.6s | 이름 공개 |
     /// | 3.8s | 검게 페이드 |
-    /// | 4.2s | (감독이) 인게임 씬 로드 |
+    /// | 4.2s | 로딩창(<see cref="UI.LoadingScreen"/>) · (감독이) 인게임 씬 로드 |
     ///
     /// 마지막 시각은 <see cref="RoomDirector"/>의 대기 시간과 **같아야 한다.** 어긋나면
     /// 연출이 덜 끝난 채 씬이 넘어가거나, 검은 화면이 필요 이상으로 오래 남는다.
@@ -105,6 +105,11 @@ namespace CTC.Runtime.Room
             ShowCard(_cat);
             await UniTask.Delay(Milli(HOLD_SECONDS), cancellationToken: cancel);
 
+            // 검게 닫히기 **시작하는** 순간 로딩창이 같이 떠오른다(2026-09-19) — 방이 로딩 그림으로 넘어가고,
+            // 그 그림이 씬을 건너와 게임 씬이 로드되는 동안의 검은 화면을 덮다가 판이 서면(전원 접속) 걷힌다.
+            // 이 연출은 전원 화면에서 돌므로 클라도 스스로 띄운다(통신 0). **닫힌 뒤에 띄우면 호스트는 못 띄운다** —
+            // 감독이 4.2초에 바로 씬을 넘기는데 이 연출은 프레임만큼 늦게 끝나 그 전에 파괴됐다(3인 실측).
+            UI.LoadingScreen.Begin();
             await Fade(cancel);
         }
 

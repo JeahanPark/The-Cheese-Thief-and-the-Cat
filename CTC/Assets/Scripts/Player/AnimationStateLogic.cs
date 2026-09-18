@@ -71,6 +71,18 @@ namespace CTC.Runtime.Player
         /// <summary>깡패판이 열린 순간 네 발 → 두 발 변신(원샷 2초, 2026-09-14). 시간표는 <see cref="GangTransformLogic"/>.</summary>
         public const string GangTransform = "GangTransform";
 
+        // 용사 칼(2026-09-19) — 네 발 그대로 쓴다(두 발 서기는 깡패의 정체성이다). 원본: tools/blender/clips/*.py.
+        // 칼 소품의 방향은 클립이 아니라 코드가 준다(리그에 손목이 없다) — HeroSwordVisualLogic·HeroTransformLogic.
+        public const string SwordSwing = "SwordSwing";   // 칼을 오른쪽 위로 치켜들었다 앞으로 내리벤다(0.58초) — sword_swing.py
+        public const string HeroDraw = "HeroDraw";       // 엉덩이에서 칼을 뽑아 하늘을 찌른다(1.5초) — hero_draw.py
+
+        /// <summary>
+        /// 칼에 맞아 굳은 자세(2026-09-19) — **쥐·고양이 둘 다** 갖는다(스턴은 진영을 가리지 않는다).
+        /// 머리가 원을 그리며 휘청이는 0.5초 반복이라 스턴이 몇 초든 그동안 돈다.
+        /// 두 컨트롤러에 **각자의 FBX에서** 넣는다(<see cref="CustomShared"/>) — 원본: stunned.py · cat_stunned.py.
+        /// </summary>
+        public const string Stunned = "Stunned";
+
         /// <summary>
         /// 고양이 광분·전직 스킬(2026-09-13) — **AC_Cat에만** 있다(원본: <c>art/blender/cat.blend</c> ·
         /// <c>tools/blender/clips/cat_frenzy.py</c>·<c>cat_skill.py</c> → <c>CTC_Cat_Clips.fbx</c>).
@@ -111,16 +123,24 @@ namespace CTC.Runtime.Player
             Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, Frenzy,
             CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark,
             BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform,
+            SwordSwing, HeroDraw, Stunned,
         };
 
         /// <summary>
         /// **AC_Mouse에만** 있는 상태. 고양이 컨트롤러에 이 이름이 생기면 그건 실수다 —
         /// 고양이는 총을 쏘지 않는다. EditMode가 양쪽을 이 목록으로 갈라 검사한다.
         /// </summary>
-        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform };
+        public static readonly string[] MouseOnly = { Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform, SwordSwing, HeroDraw };
 
         /// <summary>**AC_Cat에만** 있는 상태(2026-09-13). 쥐 컨트롤러에 생기면 실수다.</summary>
         public static readonly string[] CatOnly = { Frenzy, CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark };
+
+        /// <summary>
+        /// **자작 클립인데 두 컨트롤러가 다 갖는** 상태(2026-09-19). 팩 상태(Idle·Walk…)와 달리 컨트롤러에 원래 없어서
+        /// 굽는 메뉴가 넣어 준다 — 쥐는 <c>CTC_Mouse_Clips.fbx</c>, 고양이는 <c>CTC_Cat_Clips.fbx</c>의 같은 이름 클립으로
+        /// (<c>RoleClipStates.AddMouse·AddCat</c>). <see cref="Shared"/>에 들어가므로 두 컨트롤러에 있는지는 거기서 검사된다.
+        /// </summary>
+        public static readonly string[] CustomShared = { Stunned };
 
         /// <summary>두 컨트롤러가 **둘 다** 가져야 하는 상태 — <see cref="All"/>에서 쥐 전용·고양이 전용을 뺀 것.</summary>
         public static readonly string[] Shared = Except(All, MouseOnly, CatOnly);

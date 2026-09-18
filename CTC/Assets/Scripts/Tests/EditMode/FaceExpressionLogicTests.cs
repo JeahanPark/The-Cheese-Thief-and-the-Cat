@@ -27,6 +27,21 @@ namespace CTC.Tests
             Assert.AreEqual(FaceExpressionLogic.EXCITED, FaceExpressionLogic.ForOneShot(AnimationStateLogic.Clicked));
         }
 
+        /// <summary>
+        /// 용사 칼(2026-09-19) — 스턴은 머리 위 별·굳은 몸으로 이미 전원에게 보이는 사건이라 어지러운 눈(Eyes_Spin)이
+        /// 새 정보가 아니다. 그래서 Eyes_Spin을 기각 목록에서 뺐다. 변신은 반짝 눈.
+        /// </summary>
+        [NUnit.Framework.Property("CaseId", "B-34")]
+        [Test]
+        public void HeroSword_FacesFollowTheVisibleEvents()
+        {
+            Assert.AreEqual(FaceExpressionLogic.SPIN, FaceExpressionLogic.ForOneShot(AnimationStateLogic.Stunned), "칼에 맞아 굳으면 어지러운 눈");
+            Assert.AreEqual(FaceExpressionLogic.EXCITED, FaceExpressionLogic.ForOneShot(AnimationStateLogic.HeroDraw), "용사가 되면 반짝");
+            Assert.IsNull(FaceExpressionLogic.ForOneShot(AnimationStateLogic.SwordSwing), "휘두르기는 몸이 크게 읽혀 얼굴까지 안 바꾼다");
+            CollectionAssert.DoesNotContain(FaceExpressionLogic.REJECTED, FaceExpressionLogic.SPIN);
+            CollectionAssert.Contains(FaceExpressionLogic.Used, FaceExpressionLogic.SPIN);
+        }
+
         [Test]
         public void MovementAndMouseActives_KeepTheFace()
         {

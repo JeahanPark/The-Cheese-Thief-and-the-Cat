@@ -87,6 +87,19 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(TechDeny.None, dash.Deny, "깡패도 대시는 산다");
         }
 
+        [NUnit.Framework.Property("CaseId", "C-33")]
+        [Test]
+        public void Card_HeroCannotBuyGunPepperOrDash()
+        {
+            foreach (TechId id in new[] { TechId.Gun, TechId.Pepper, TechId.Dash })
+            {
+                Assert.AreEqual(TechDeny.HeroNoGun, ShopPopupLogic
+                    .CardOf(Owned(), id, RoleId.Mouse, 9999, 5, null, false, _swordActive: true).Deny, id + "는 용사가 못 산다");
+            }
+            Assert.AreEqual(TechDeny.None, ShopPopupLogic
+                .CardOf(Owned(), TechId.Fortress, RoleId.Mouse, 9999, 5, null, false, _swordActive: true).Deny, "요새는 산다");
+        }
+
         [NUnit.Framework.Property("CaseId", "C-34")]
         [Test]
         public void CanOpen_NeedsShopSpotAndAliveAndFreeHands()

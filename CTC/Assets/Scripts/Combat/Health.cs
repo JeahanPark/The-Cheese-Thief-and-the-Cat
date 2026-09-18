@@ -11,9 +11,20 @@ namespace CTC.Runtime.Combat
         int ServerAbsorb(int _damage);   // 돌려주는 값 = HP로 갈 피해
     }
 
+    /// <summary>
+    /// 지금 피해를 **아예 안 받는** 상태(용사 무적, 2026-09-19). 서버에서만 불린다.
+    /// 흡수(<see cref="IDamageAbsorber"/>)와 나눈 이유 — 흡수는 대가(치즈)를 내고 막는 것이라,
+    /// 무적 중에 치즈 방패가 먼저 돌면 받지도 않을 피해에 치즈를 낸다. 면역은 흡수보다 **먼저** 본다.
+    /// </summary>
+    public interface IDamageImmunity
+    {
+        bool ServerImmune { get; }
+    }
+
     /// <summary>HP. 서버만 기록, 전원 읽기(HUD). 사망 이벤트는 서버에서만 발화.</summary>
     public class Health : NetworkBehaviour
     {
+
         // 프리팹에 구워지는 시작값(에디터 팩토리들이 `m_MaxHp`라는 이름으로 직접 찍는다) 겸
         // **스폰 전 서버 원본**이다. 이름을 바꾸면 구운 프리팹 값이 조용히 날아간다.
         [SerializeField] private int m_MaxHp = 100;
@@ -75,6 +86,10 @@ namespace CTC.Runtime.Combat
 
             // 인터페이스 타입 필드는 Unity의 == 오버로드를 건너뛴다(규칙 9) — 파괴된 컴포넌트를
             // 캐시해 두면 조용히 통과한다. 그래서 여기만은 캐시하지 않고 매번 찾는다.
+            // 면역(용사 무적)이면 흡수도 안 돈다 — 받지도 않을 피해에 치즈를 내면 안 된다.
+            IDamageImmunity immunity = GetComponent<IDamageImmunity>();
+            if (immunity != null && immunity.ServerImmune) return 0;
+
             IDamageAbsorber absorber = GetComponent<IDamageAbsorber>();
             if (absorber != null) _damage = absorber.ServerAbsorb(_damage);
 

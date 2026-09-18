@@ -64,6 +64,8 @@ namespace CTC.Editor
 
                 var health = root.AddComponent<Health>();
                 SetInt(health, "m_MaxHp", _maxHp);
+                // 스턴(2026-09-19) — 용사 칼이 고양이·쥐 모두를 굳힌다. 입력 가드는 ActionLock이 이 값을 본다.
+                root.AddComponent<CTC.Runtime.Combat.Stun>();
 
                 var roleTag = root.AddComponent<RoleTag>();
                 SetInt(roleTag, "m_Role", (int)_role); // enum은 intValue로
@@ -124,6 +126,9 @@ namespace CTC.Editor
                     root.AddComponent<CTC.Runtime.Match.GangRecruit>();
                     // 머리 위 편 표식 — 2단계는 쥐끼리 편이 갈리는데 표시가 없으면 누굴 쏠지 모른다
                     root.AddComponent<CTC.Runtime.UI.JobBadge>();
+                    // 용사(2026-09-19) — 무적(Space)과 칼 모습·변신. 칼 소품은 HeroPropBaker가 모델 뒤에 단다.
+                    root.AddComponent<HeroInvincible>();
+                    root.AddComponent<HeroLook>();
                 }
 
                 // 조준 방향 복제(2026-09-10) — **EyeLook보다 먼저 붙인다**(EyeLook이 Awake에서 집어 간다).
@@ -199,6 +204,8 @@ namespace CTC.Editor
                 if (_role == RoleId.Mouse) MouseGunBaker.Attach(root);
                 // 깡패 소품(2026-09-14) — 총 다음에 단다(몽둥이가 총과 같은 자리를 쓴다)
                 if (_role == RoleId.Mouse) GangPropBaker.Attach(root);
+                // 용사 칼·무적 테두리(2026-09-19) — 몽둥이와 같은 앞발에 꺼진 채로 단다(쓸 때만 HeroLook이 켠다)
+                if (_role == RoleId.Mouse) HeroPropBaker.Attach(root);
 
                 // 카메라 Deoccluder IgnoreTag용 — 히트한 '콜라이더의 GO' 태그를 비교하므로
                 // 모델 자식(Quirky 캡슐 콜라이더 포함)까지 전부 태깅해야 자기-차폐가 안 생긴다

@@ -155,7 +155,8 @@ namespace CTC.Runtime.UI
                 ShopPopupCard card = ShopPopupLogic.CardOf(
                     m_Slots.Owned, m_Catalog[i], role, m_Wallet.CheeseValue, slotCap,
                     m_Shop != null ? m_Shop.SoldOutToday : null,
-                    m_Popgun != null && m_Popgun.ClubActive);
+                    m_Popgun != null && m_Popgun.ClubActive,
+                    m_Popgun != null && m_Popgun.SwordActive);
 
                 RenderCard(i, card, role, slotCap);
                 m_Buyable.Add(card.CanBuy);
@@ -198,7 +199,7 @@ namespace CTC.Runtime.UI
 
         private bool InShop() => m_Shop != null && ShopSpot.AnyContains(m_Shop.transform.position);
         private bool Dead() => m_Health == null || m_Health.IsDead;
-        private bool Locked() => m_Shop != null && GangTransformLock.Locked(m_Shop);
+        private bool Locked() => m_Shop != null && ActionLock.Locked(m_Shop);
         private bool MatchOver() => m_Match != null && m_Match.Result != MatchResult.None;
 
         // ───────────────────────────── QA 전용 ─────────────────────────────

@@ -1,5 +1,9 @@
 # 용사 쥐 「칼과 무적」 구현 계획
 
+> **상태: 완료(2026-09-19).** 계획과 달라진 것(칼은 쓸 때만 보인다 · 칼 방향은 코드 · 스턴 자세는 쥐·고양이 공용 ·
+> 무적 전용 림 셰이더 · 스턴 테두리 · 능력 바 무적 칸 · 대장 번호 C-36→C-38)은 기획서 §10에 있다.
+> 검증: EditMode 1016 통과 · `qa_v60` 9/9 · 회귀 `qa_v52` 6/6 · `qa_v58` 8/8 · `qa_v59` 7/7 · pytest 217.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 용사 표를 밟은 쥐가 총 대신 칼을 들고(연출 1.5초), 3초마다 한 번 휘둘러 0.8초 스턴을 걸며, Space로 3초 무적을 쓴다.

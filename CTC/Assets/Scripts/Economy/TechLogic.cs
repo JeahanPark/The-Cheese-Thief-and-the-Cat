@@ -57,7 +57,7 @@ namespace CTC.Runtime.Economy
 
     // **뒤에만 추가한다** — 값이 직렬화되진 않지만 QA 문자열(wesqa)이 이름에 붙어 있다.
     /// <remarks><c>GangNoGun</c>(2026-09-14) — 깡패판의 깡패 편은 총을 못 쓰니 총·후추 탄도 못 산다. 새 값은 **맨 뒤에** 붙인다(정수 값 유지).</remarks>
-    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop, SoldOut, GangNoGun }
+    public enum TechDeny { None, Unknown, WrongRole, MaxLevel, SlotsFull, NotEnough, NotInShop, SoldOut, GangNoGun, HeroNoGun }
 
     /// <summary>
     /// "쓰기"가 막힌 이유 (2026-09-07). 전에는 <c>CanUse</c>가 bool이라 View가 TechId로 이유를 추측했다 —
@@ -254,6 +254,7 @@ namespace CTC.Runtime.Economy
                 case TechDeny.WrongRole: return "이 역할은 못 산다";
                 case TechDeny.SoldOut: return "오늘은 품절";
                 case TechDeny.GangNoGun: return "깡패는 총을 못 쓴다 — 몽둥이뿐";
+                case TechDeny.HeroNoGun: return "용사는 칼을 쓴다 — 총·대시는 못 산다";
                 default: return "살 수 없다";
             }
         }

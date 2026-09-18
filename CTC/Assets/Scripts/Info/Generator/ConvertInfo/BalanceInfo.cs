@@ -104,6 +104,13 @@ namespace CTC.Runtime.Info
         public float GangClubRange;
         public float GangClubArcDegrees;
         public float GangClubCooldown;
+        public int HeroSwordDamage;
+        public float HeroSwordRange;
+        public float HeroSwordArcDegrees;
+        public float HeroSwordCooldown;
+        public float StunSeconds;
+        public float HeroInvincibleSeconds;
+        public float HeroInvincibleCooldown;
     }
 
     public partial class InfoManager

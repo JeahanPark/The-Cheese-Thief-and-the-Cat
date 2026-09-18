@@ -27,6 +27,7 @@ namespace CTC.Runtime.Ai
         private void Update()
         {
             if (!IsServer || m_Brain == null) return;
+            if (Combat.Stun.Locked(this)) return;   // 굳은 강아지는 못 문다(2026-09-19)
 
             m_Cooldown = DogAiLogic.TickCooldown(m_Cooldown, Time.deltaTime);
             if (m_Brain.State != DogState.Bite || m_Cooldown > 0f) return;

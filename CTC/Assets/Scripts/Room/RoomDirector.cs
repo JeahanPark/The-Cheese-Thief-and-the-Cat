@@ -144,6 +144,9 @@ namespace CTC.Runtime.Room
             // 대기실 몸은 여기서 걷는다 — 동적 스폰은 씬을 넘어 살아남는다(실측).
             if (m_Spawner != null) m_Spawner.ServerDespawnAll();
 
+            // 로딩창 안전망 — 추첨 연출이 띄웠으면 그대로 둔다(이미 떠 있으면 아무것도 안 한다).
+            UI.LoadingScreen.Begin();
+
             var status = nm.SceneManager.LoadScene(m_GameSceneName, UnityEngine.SceneManagement.LoadSceneMode.Single);
             if (status != SceneEventProgressStatus.Started)
             {

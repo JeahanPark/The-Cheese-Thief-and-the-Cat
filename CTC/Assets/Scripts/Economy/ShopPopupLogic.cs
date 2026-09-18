@@ -30,14 +30,15 @@ namespace CTC.Runtime.Economy
     {
         /// <summary>카드 한 장의 상태.</summary>
         public static ShopPopupCard CardOf(IReadOnlyList<TechEntry> _owned, TechId _id, RoleId _role,
-            int _cheese, int _slotCap, IReadOnlyList<TechId> _soldOut, bool _clubActive)
+            int _cheese, int _slotCap, IReadOnlyList<TechId> _soldOut, bool _clubActive, bool _swordActive = false)
         {
             int level = TechLogic.LevelOf(_owned, _id);
             TechRow next = TechLogic.NextRow(_owned, _id);
 
             // 깡패판의 깡패는 총·후추를 못 산다 — 공격 버튼이 몽둥이라 사 봐야 치즈만 사라진다.
-            TechDeny deny = _clubActive && TechLogic.IsGunTech(_id)
-                ? TechDeny.GangNoGun
+            // 용사는 칼을 쓴다 — 총알·대시는 소용없다(2026-09-19). 서버(ShopController.CanBuyNow)와 같은 규칙.
+            TechDeny deny = _clubActive && TechLogic.IsGunTech(_id) ? TechDeny.GangNoGun
+                : _swordActive && Combat.HeroSwordLogic.Denied(_id) ? TechDeny.HeroNoGun
                 : TechLogic.CanBuy(_owned, _id, _role, _cheese, _slotCap, _soldOut);
 
             return new ShopPopupCard

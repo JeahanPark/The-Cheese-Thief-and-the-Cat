@@ -60,6 +60,8 @@ namespace CTC.Editor
                 // 때려도 장난기가 안 나온다 — 안 붙이면 '강아지 때리기가 최고 수입'이 되어
                 // v3.5의 '벽 때리기' 실패가 되살아난다.
                 root.AddComponent<BountyExempt>();
+                // 스턴(2026-09-19) — 용사 칼은 강아지도 굳힌다(진영을 가리지 않는다).
+                root.AddComponent<CTC.Runtime.Combat.Stun>();
 
                 var feedback = root.AddComponent<HitFeedback>();
                 SetInt(feedback, "m_OverrideSfx", 1);

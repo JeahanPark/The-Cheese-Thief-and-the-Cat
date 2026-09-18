@@ -23,13 +23,13 @@
 
 | 도메인 | 전체 | 구현됨 | 미구현 | 폐기 |
 |---|:--:|:--:|:--:|:--:|
-| A 매치 · 로비 · 네트워크 | 27 | 9 | 12 | 6 |
-| B 플레이어 · 전투 · 카메라 | 27 | 15 | 12 | 0 |
-| C 경제 · 테크 · UI · 데이터 | 36 | 18 | 18 | 0 |
+| A 매치 · 로비 · 네트워크 | 29 | 11 | 12 | 6 |
+| B 플레이어 · 전투 · 카메라 | 37 | 25 | 12 | 0 |
+| C 경제 · 테크 · UI · 데이터 | 38 | 20 | 18 | 0 |
 | D 맵 · 길찾기 · 봇 | 25 | 17 | 8 | 0 |
 | E 개발 · 테스트 도구 자체 | 32 | 21 | 11 | 0 |
 | M 수동 — 절차가 곧 구현 | 7 | 7 | 0 | 0 |
-| **합계** | **154** | **87** | **61** | **6** |
+| **합계** | **168** | **101** | **61** | **6** |
 
 ## A — 매치 · 로비 · 네트워크
 
@@ -62,6 +62,8 @@
 | **A-25** | 서버 목록 검색(모든 단어·이름/방장)·페이지 계산·빠른 참가(가장 찬 빈자리 방)가 정해진 대로 고른다 | EditMode | `Assets/Scripts/Tests/EditMode/FrontDoorLogicTests.cs` | 구현됨 | 빠른 참가가 가득 찬 방이나 빈 방을 골라 매칭이 흩어진다 |
 | **A-26** | 대기실에서 연 판이 끝나면 결과를 보여 준 뒤 대기실로 돌아가고, 거기서 다시 시작한 판이 처음처럼 열린다 | wesqa | `tools/wesqa/tests/qa_v52.py` | 구현됨 | 단판제에서 판이 끝난 뒤 결과 화면에 갇히거나 다음 판이 이전 판의 상태를 물려받는다 |
 | **A-27** | 결과 넷(고양이 승 · 깡패 없이 쥐 전원 승 · 깡패 승 · 깡패가 아닌 쥐 승)이 각자 판정되고 문구가 다르다 | EditMode | `Assets/Scripts/Tests/EditMode/ResultLabelTests.cs` | 구현됨 | 2단계에서 깡패가 아닌 쥐의 승리가 1단계 쥐 승리와 같은 결과로 뭉개진다 |
+| **A-28** | 로딩창은 판이 시작될 때까지 가리되 최소 시간은 보이고, 서버가 멈춰도 상한 시간이 지나면 걷힌다 | EditMode | `Assets/Scripts/Tests/EditMode/LoadingScreenLogicTests.cs` | 구현됨 | 먼저 들어온 사람이 빈 맵에 혼자 서 있거나, 한 프레임 번쩍하고 말거나, 영영 안 걷혀 조작을 못 한다 |
+| **A-29** | 대기실에서 판을 시작하면 추첨 연출이 닫히는 순간부터 전원(클라 포함) 화면에 로딩창이 씬을 건너 뜨고, 판이 서면 걷힌다 | wesqa | `tools/wesqa/tests/qa_v61.py` | 구현됨 | 로딩창이 게임 씬에만 있어 씬 로딩 동안 검은 화면이 보이거나, 클라 화면에서만 안 걷힌다 |
 
 ## B — 플레이어 · 전투 · 카메라
 
@@ -94,6 +96,16 @@
 | **B-25** | 쥐·고양이 기술 이펙트(구매·광분·전직·스킬·덮치기·대시·요새·끈끈이·사격·채굴 등)가 남의 화면에 한 번씩 뜬다 | wesqa | `tools/wesqa/tests/qa_v57.py` | 구현됨 | 서버 전용 자리에 붙어 호스트 화면에만 뜬다 · Rpc가 복제값보다 먼저 와 엉뚱한 이펙트가 뜬다 |
 | **B-26** | 전직마다 전직·스킬 이펙트가 서로 다르고 모든 이펙트 id가 카탈로그 안에 겹치지 않고 들어간다 | EditMode | `Assets/Scripts/Tests/EditMode/FxCatalogLogicTests.cs` | 구현됨 | 카탈로그 크기를 넘는 id가 조용히 안 뜬다 |
 | **B-27** | 두 발 클립은 첫 자세 = 끝 자세이고, 변신 클립은 네 발(0)에서 시작해 BipedIdle 첫 자세로 끝난다 | pytest | `tools/wesqa/tests/test_clip_review_page.py` | 구현됨 | 원샷이 끝날 때 자세가 튄다 · 루프 이음매가 덜컥인다 |
+| **B-28** | 스턴은 도장이 지날 때까지 유지되고, 겹쳐 맞으면 더하지 않고 늦게 끝나는 쪽으로 갱신된다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroSwordLogicTests.cs` | 구현됨 | 여럿이 동시에 베어 스턴이 쌓여 고양이가 영영 못 움직인다 |
+| **B-29** | 용사는 단계와 무관하게 칼을 들고, 같은 용사만 못 베며, 총·후추·대시는 못 산다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroSwordLogicTests.cs` | 구현됨 | 용사가 총을 사서 치즈만 날리거나, 2단계에서 깡패를 못 벤다 |
+| **B-30** | 용사 무적은 지속 시간 동안만 피해를 전부 흡수하고, 쿨다운이 지나야 다시 켜진다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroSwordLogicTests.cs` | 구현됨 | 무적이 끝나지 않거나 쿨다운 없이 연달아 켜진다 |
+| **B-31** | 용사 칼은 휘두를 때만 앞발에 보이고, 오른쪽 위로 치켜들었다가 오른쪽 앞으로 수평에 가깝게 벤다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroSwordVisualLogicTests.cs` | 구현됨 | 칼이 걸을 때도 떠 바닥·볼을 뚫거나, 벤 칼끝이 바닥 아래로 들어간다 |
+| **B-32** | 용사 변신 1.5초 동안 칼이 엉덩이에서 뽑혀 하늘을 찌르고, 잠금이 풀리기 전에 거둬진다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroSwordVisualLogicTests.cs` | 구현됨 | 변신이 끝난 뒤에도 칼이 손에 남아 걸음마다 바닥을 뚫는다 |
+| **B-33** | 스턴 자세는 쥐·고양이 컨트롤러 둘 다에 있고 반복이며, 칼 클립 둘은 쥐 전용이고 길이가 칼 시간표와 같다 | EditMode | `Assets/Scripts/Tests/EditMode/HeroClipTests.cs` | 구현됨 | 고양이가 맞아도 몸이 그대로 걷거나, 칼이 허공에서 휘둘린다 |
+| **B-34** | 칼에 맞아 굳으면 어지러운 눈, 용사가 되는 순간은 반짝 눈이다 | EditMode | `Assets/Scripts/Tests/EditMode/FaceExpressionLogicTests.cs` | 구현됨 | 스턴을 얼굴이 모르고 평소 얼굴로 굳어 선다 |
+| **B-35** | 표를 밟은 용사가 1.5초 변신 뒤 칼로 벤 고양이는 다른 화면에서도 굳어 걷지도 덮치지도 못하고, 겹쳐 맞아도 스턴이 늘지 않는다 | wesqa | `tools/wesqa/tests/qa_v60.py` | 구현됨 | 스턴이 서버에만 걸려 고양이 화면에선 그냥 움직이거나, 연달아 베어 영영 굳는다 |
+| **B-36** | 용사 무적이 켜지면 남의 화면에도 흰 테두리가 뜨고 그동안 맞아도 HP가 그대로이며, 쿨 동안엔 다시 안 켜진다 | wesqa | `tools/wesqa/tests/qa_v60.py` | 구현됨 | 무적이 서버에만 있고 상대는 모르거나, 테두리가 끝나도 안 꺼진다 |
+| **B-37** | 스턴 테두리는 맞는 즉시 가장자리만 하얗게 서고(가운데는 비움) 풀리면 빠진다 | EditMode | `Assets/Scripts/Tests/EditMode/StunVignetteLogicTests.cs` | 구현됨 | 조작이 막혔는데 아무 표시가 없어 렉으로 읽히거나, 테두리가 조준을 가린다 |
 
 ## C — 경제 · 테크 · UI · 데이터
 
@@ -135,6 +147,8 @@
 | **C-34** | 상점 팝업은 상점 원 안의 살아 있는 쥐만 열 수 있고, 맞으면 닫힌다 | EditMode | `Assets/Scripts/Tests/EditMode/ShopPopupLogicTests.cs` · `tools/wesqa/tests/qa_v59.py` | 구현됨 | 커서가 풀린 채 굳거나, 상점이 무적 지대가 된다 |
 | **C-35** | 쥐 핫바에는 보유 기술만 올라가고 숫자키는 언제나 「쓴다」다 | wesqa | `tools/wesqa/tests/qa_v59.py` | 구현됨 | 상점 안팎으로 같은 키의 뜻이 바뀌어 살 때마다 헷갈린다 |
 | **C-36** | 상점 원 안에서만 팝업이 열리고, 카드를 클릭하면 서버까지 닿아 실제로 사진다 | wesqa | `tools/wesqa/tests/qa_v59.py` | 구현됨 | 커서를 푸는 배선이나 클릭 → 서버 경로가 빠져 창은 뜨는데 못 산다 |
+| **C-37** | 용사의 능력 바 Space 칸은 대시가 아니라 무적이다(대시를 이미 샀어도) | EditMode | `Assets/Scripts/Tests/EditMode/AbilityBarLogicTests.cs` | 구현됨 | Space를 누르면 무적이 켜지는데 바에는 대시가 떠 쿨다운을 엉뚱하게 보여 준다 |
+| **C-38** | 용사는 실제 상점 경로로 총·후추·대시를 못 사고 치즈가 그대로다 | wesqa | `tools/wesqa/tests/qa_v60.py` | 구현됨 | 쓰지도 못할 총·대시에 치즈가 사라진다 |
 
 ## D — 맵 · 길찾기 · 봇
 

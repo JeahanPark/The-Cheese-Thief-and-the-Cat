@@ -156,6 +156,9 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
   대기실이 서면 열리고(`RoomDirector.Start`) 시작하면 닫힌다.
 - 접속 절차는 `SessionStarter` 한 곳(Intro·Lobby 공용). QA는 팝업 없이 `TestFrontDoorHost` / `TestFrontDoorJoin` / `TestGetGateState`, 스위트 `qa_v56`.
 - **임시: 에디터에서는 `SessionStarter`가 스팀 경로를 안 탄다**(`#if UNITY_EDITOR` — 사용자 지시). 스팀 클라이언트가 떠 있으면 호스트만 Facepunch로 열려 클론(UTP)이 못 붙었다. 스팀 경로 검증은 개발용 빌드로 하고, 실측이 끝나면 분기를 걷는다. (스팀 클라이언트 자체는 여전히 함정 10 — 유니티 작업 중엔 끈다.)
+- **접속 대기 로딩창**(2026-09-19)은 **게임 씬에 없다** — `Resources/UI/LoadingOverlay` 프리팹(씬 빌더가 굽는다)이 대기실 추첨 연출의
+  페이드 **시작**(3.8초)에 전원 화면에서 떠(`LoadingScreen.Begin`, DontDestroyOnLoad) 씬을 건너오고, 게임 씬의 판이 서면(최소 2초) 걷혀 사라진다.
+  게임 씬 캔버스에 붙였던 첫 판은 씬 로딩의 검은 화면을 못 덮었고 로컬에선 0.4초 만에 걷혀 한 번도 안 보였다. QA `qa_v61`(Intro에서 3인).
 
 ### 맵 분위기 — 전등·빛줄기·밤 하늘·후보정 (2026-09-14)
 
@@ -196,6 +199,18 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
 - 두 발 클립에서 앞발을 어깨 앞(40~60도)으로 들면 **앞발이 눈 원판을 뚫는다**(몸을 48도 젖혀서) — 몽둥이 발은 허리 옆(10, -45), 빈 발은 30 이하.
 - `TestForceGangPhase`는 시계도 채운다 — 예전엔 0이라 다음 틱에 시간 초과로 판이 끝나 결과 패널이 화면을 덮었다. QA는 `qa_v58`(호스트=쥐, **새 판에서** — 이미 2페이즈인 판이면 ①이 실패한다).
 
+### 용사 쥐 — 칼·스턴·무적 (2026-09-19)
+
+기획 `docs/superpowers/specs/2026-09-19-hero-sword-design.md`(§10에 구현하며 바뀐 것). 수치는 CSV `HeroSword*`·`StunSeconds`·`HeroInvincible*`.
+
+- **칼은 쓸 때만 보인다**(변신 `HeroDraw` 1.5초 · 휘두르기 `SwordSwing` 0.58초) — 네 발로 걸을 때 앞발에 칼을 들면 걸음마다 바닥·볼을 뚫는다.
+- **칼 방향은 클립이 아니라 코드가 준다** — 리그에 손목이 없다. 칼은 `leg.F.R` 끝을 따라가고 `HeroLook.LateUpdate`가 캐릭터(Model) 기준 방향을 덮어쓴다.
+  키는 `HeroSwordVisualLogic`·`HeroTransformLogic`과 블렌더 원본(`tools/blender/clips/sword_swing.py`·`hero_draw.py`의 `SWORD`)이 **같은 숫자**다 — 하나를 고치면 둘 다.
+- **스턴(`Stun`)은 쥐·고양이·강아지 공통**이고 잠금은 `ActionLock` 하나(깡패 변신 || 스턴 || 용사 변신)가 본다. `Stunned` 자세는 **두 컨트롤러가 다 갖는다**
+  (`AnimationStateLogic.CustomShared` — `Bake Mouse Gun`·`Bake Cat Clip States`가 각자의 FBX에서 넣는다). 맞은 사람 화면 가장자리는 `StunVignette`가 하얗게 세운다.
+- 무적 표시는 **전용 림 셰이더 `CTC/HeroRim`**(깊이 검사 켬 — 빛 실루엣처럼 벽 너머로 새지 않는다)를 몸 SMR 머티리얼 칸 끝에 켜 있는 동안만 덧붙인다(`HeroInvincibleVisual`).
+- 소품은 `Tools/CTC/Dev/Bake Hero Props (칼)`(씬 재생성이 같이 부른다). 눈으로는 `Tools/CTC/Dev/용사 쥐 클립 GIF 내보내기`. QA `qa_v60`(호스트=쥐, **새 판에서**).
+
 ### 블렌더로 애니메이션 클립 만들기 (2026-09-12)
 
 리그는 **Generic**이라 유니티가 뼈를 **트랜스폼 경로 문자열**로 찾는다(`Rig/root/body/head/ear.L`).
@@ -225,6 +240,10 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
 | `add_leaf_bones=False` | 없던 말단 뼈가 생겨 경로가 어긋난다 |
 | `bake_anim_simplify_factor=0.0` | 기본값 1.0이 키를 솎아내 값이 달라진다 |
 | `ignore_leaf_bones=False` (들일 때) | **켜면 진짜 뼈 `tail.02`가 사라진다.** 팩마다 다르니 재 보고 정한다 |
+
+**내보내기 전에 포즈를 쉬는 자세로 되돌린다**(2026-09-19 — `export_clips.reset_pose`). 액션이 키를 안 찍은 뼈(뿌리·귀 등)는
+**`.blend`에 저장된 포즈 값으로 구워진다.** 마지막으로 평가한 두 발 클립(뿌리 83mm 들어올림)이 남아 있어 `Shoot·Dash·Fortress·Sticky·Warehouse`가
+83mm 뜬 채로 들어가 있었다(9-14부터, 에러 없음). 새 클립을 넣을 때도 `apply_clip.py`가 저장 전에 포즈를 되돌린다.
 
 유니티 쪽 `.meta`에 손으로 넣은 것이 둘 있다 — `preserveHierarchy: 1`과 `clipAnimations`의
 `takeName: Rig|…` 매핑(블렌더가 테이크 이름을 `{오브젝트}|{액션}`으로 강제해서다).

@@ -94,6 +94,7 @@ namespace CTC.Runtime.Player
         {
             if (UiFocus.BlocksGameplay) return false;   // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
             if (Cursor.lockState != CursorLockMode.Locked) return false;
+            if (ActionLock.Locked(this)) return false;   // 용사 칼에 굳었다(2026-09-19)
             UseRpc();
             return true;
         }
@@ -104,6 +105,7 @@ namespace CTC.Runtime.Player
         [Rpc(SendTo.Server, RequireOwnership = true)]
         private void UseRpc()
         {
+            if (ActionLock.Locked(this)) return;   // 굳은 고양이는 스킬도 못 쓴다(서버가 보는 값)
             double now = NetworkManager.ServerTime.Time;
             float cooldown = (float)System.Math.Max(0.0, m_ReadyAt.Value - now);
             if (!CatClassLogic.CanUseSkill(m_Class.Value, cooldown, m_Active.Value)) return;

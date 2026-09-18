@@ -69,6 +69,7 @@ namespace CTC.Runtime.Ai
         private void Update()
         {
             if (!IsServer) return;
+            if (Combat.Stun.Locked(this)) return;   // 용사 칼에 굳었다 — 강아지도 진영을 가리지 않고 멈춘다(2026-09-19)
 
             float dt = Time.deltaTime;
             m_RepathTimer -= dt;

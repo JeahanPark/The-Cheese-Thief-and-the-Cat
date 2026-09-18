@@ -51,6 +51,7 @@ namespace CTC.Runtime.Combat
             if (!Player.LocalControl.Mine(this) || Cursor.lockState != CursorLockMode.Locked) return;
 
             if (Core.UiFocus.BlocksGameplay) return; // 채팅 타이핑·옵션 창 중에는 조작하지 않는다
+            if (Player.ActionLock.Locked(this)) return; // 용사 칼에 굳었다(2026-09-19)
             Mouse mouse = Mouse.current;
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame) return;
 
@@ -63,6 +64,9 @@ namespace CTC.Runtime.Combat
         [Rpc(SendTo.Server, RequireOwnership = true)] // 타인 고양이 쿨다운 강제 소모 차단 — 리뷰 I2
         private void PounceRpc()
         {
+            // 굳은 고양이는 못 덮친다(서버가 보는 값) — 클라 가드를 속여도 여기서 끊긴다.
+            if (Player.ActionLock.Locked(this)) return;
+
             // 자기 컴포넌트는 루프 밖에서 한 번만 찾는다 — 부채꼴 안 대상마다 GetComponent를
             // 돌릴 이유가 없다(리뷰 2·4). 불 배율도 한 번의 판정으로 고정한다.
             Health self = GetComponent<Health>();

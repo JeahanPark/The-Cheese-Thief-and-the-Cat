@@ -17,8 +17,10 @@ namespace CTC.Runtime.Player
     ///   Eyes_Sleep                        오래 가만히 있었다(숨은 자리·자리 비움)
     ///   Eyes_Dead                         묶을 사건이 없다(Death 동작을 안 쓴다)
     ///   Eyes_Trauma                       맞을 때 후보였지만 **시선 키와 섞이면 윤곽이 찢어진다**(렌더 확인)
-    ///   Eyes_Spin                         어지러움 — 묶을 사건이 없다
     ///   Eyes_Squint                       사격 감기가 <see cref="EyeLook"/>에서 직접 민다(레이어가 덮으면 둘이 싸운다)
+    ///
+    /// **Eyes_Spin은 2026-09-19에 기각에서 뺐다** — 「묶을 사건이 없다」였는데 용사 칼의 스턴이 생겼다.
+    /// 스턴은 머리 위 별·굳은 몸으로 이미 전원에게 보이는 사건이라 어지러운 눈은 새 정보가 아니다.
     /// </summary>
     public static class FaceExpressionLogic
     {
@@ -31,15 +33,16 @@ namespace CTC.Runtime.Player
         public const string SHRINK = "Eyes_Shrink";   // 콩알 동공 — 움찔
         public const string RABID = "Eyes_Rabid";     // 세로 동공 — 사냥
         public const string HAPPY = "Eyes_Happy";     // 초승달 — 맛있다
-        public const string EXCITED = "Eyes_Excited"; // 반짝 — 샀다
+        public const string EXCITED = "Eyes_Excited"; // 반짝 — 샀다 · 용사가 됐다
+        public const string SPIN = "Eyes_Spin";       // 빙글 — 칼에 맞아 어지럽다(2026-09-19)
 
         /// <summary>이 게임이 켜는 표정 전부(기본 포함). 컨트롤러에 실제로 있는지 EditMode가 본다.</summary>
-        public static readonly string[] Used = { DEFAULT, SHRINK, RABID, HAPPY, EXCITED };
+        public static readonly string[] Used = { DEFAULT, SHRINK, RABID, HAPPY, EXCITED, SPIN };
 
         /// <summary>정보를 흘려서 **일부러 안 쓰는** 표정. 여기 있는 이름이 매핑에 나오면 테스트가 깨진다.</summary>
         public static readonly string[] REJECTED =
         {
-            "Eyes_Sad", "Eyes_Cry", "Eyes_Sleep", "Eyes_Dead", "Eyes_Trauma", "Eyes_Spin", "Eyes_Squint",
+            "Eyes_Sad", "Eyes_Cry", "Eyes_Sleep", "Eyes_Dead", "Eyes_Trauma", "Eyes_Squint",
             "Teardrop_L", "Teardrop_R", "Sweat_L", "Sweat_R",
         };
 
@@ -62,6 +65,8 @@ namespace CTC.Runtime.Player
                 case AnimationStateLogic.CatSkillDark: return RABID;
                 case AnimationStateLogic.Eat: return HAPPY;        // 채굴(CheeseSpot — 각 클라)
                 case AnimationStateLogic.Clicked: return EXCITED;  // 구매(ShopController — 전원)
+                case AnimationStateLogic.HeroDraw: return EXCITED; // 용사 변신 — 칼을 뽑아 하늘을 찌른다(HeroLook — 전원)
+                case AnimationStateLogic.Stunned: return SPIN;     // 칼에 맞아 굳었다(Stun — 전원)
                 default: return null;
             }
         }

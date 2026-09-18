@@ -108,7 +108,7 @@ namespace CTC.Tests
     /// </summary>
     public static class QaCases
     {
-        // ══════════════════════ A · 매치 · 로비 · 네트워크 (27) ══════════════════════
+        // ══════════════════════ A · 매치 · 로비 · 네트워크 (29) ══════════════════════
         private static readonly QaCase[] DOMAIN_A =
         {
             QaCase.Of("A-01",
@@ -219,11 +219,19 @@ namespace CTC.Tests
             QaCase.Of("A-27",
                 "결과 넷(고양이 승 · 깡패 없이 쥐 전원 승 · 깡패 승 · 깡패가 아닌 쥐 승)이 각자 판정되고 문구가 다르다",
                 "2단계에서 깡패가 아닌 쥐의 승리가 1단계 쥐 승리와 같은 결과로 뭉개진다",
-                QaLayer.EditMode, QaStatus.Implemented)
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("A-28",
+                "로딩창은 판이 시작될 때까지 가리되 최소 시간은 보이고, 서버가 멈춰도 상한 시간이 지나면 걷힌다",
+                "먼저 들어온 사람이 빈 맵에 혼자 서 있거나, 한 프레임 번쩍하고 말거나, 영영 안 걷혀 조작을 못 한다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("A-29",
+                "대기실에서 판을 시작하면 추첨 연출이 닫히는 순간부터 전원(클라 포함) 화면에 로딩창이 씬을 건너 뜨고, 판이 서면 걷힌다",
+                "로딩창이 게임 씬에만 있어 씬 로딩 동안 검은 화면이 보이거나, 클라 화면에서만 안 걷힌다",
+                QaLayer.Wesqa, QaStatus.Implemented)
 
         };
 
-        // ══════════════════════ B · 플레이어 · 전투 · 카메라 (18) ══════════════════════
+        // ══════════════════════ B · 플레이어 · 전투 · 카메라 (37) ══════════════════════
         private static readonly QaCase[] DOMAIN_B =
         {
             QaCase.Of("B-01",
@@ -335,11 +343,52 @@ namespace CTC.Tests
             QaCase.Of("B-27",
                 "두 발 클립은 첫 자세 = 끝 자세이고, 변신 클립은 네 발(0)에서 시작해 BipedIdle 첫 자세로 끝난다",
                 "원샷이 끝날 때 자세가 튄다 · 루프 이음매가 덜컥인다",
-                QaLayer.Pytest, QaStatus.Implemented)
+                QaLayer.Pytest, QaStatus.Implemented),
+            QaCase.Of("B-28",
+                "스턴은 도장이 지날 때까지 유지되고, 겹쳐 맞으면 더하지 않고 늦게 끝나는 쪽으로 갱신된다",
+                "여럿이 동시에 베어 스턴이 쌓여 고양이가 영영 못 움직인다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-29",
+                "용사는 단계와 무관하게 칼을 들고, 같은 용사만 못 베며, 총·후추·대시는 못 산다",
+                "용사가 총을 사서 치즈만 날리거나, 2단계에서 깡패를 못 벤다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-30",
+                "용사 무적은 지속 시간 동안만 피해를 전부 흡수하고, 쿨다운이 지나야 다시 켜진다",
+                "무적이 끝나지 않거나 쿨다운 없이 연달아 켜진다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            // ── 2026-09-19 용사 칼 모습 ──
+            QaCase.Of("B-31",
+                "용사 칼은 휘두를 때만 앞발에 보이고, 오른쪽 위로 치켜들었다가 오른쪽 앞으로 수평에 가깝게 벤다",
+                "칼이 걸을 때도 떠 바닥·볼을 뚫거나, 벤 칼끝이 바닥 아래로 들어간다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-32",
+                "용사 변신 1.5초 동안 칼이 엉덩이에서 뽑혀 하늘을 찌르고, 잠금이 풀리기 전에 거둬진다",
+                "변신이 끝난 뒤에도 칼이 손에 남아 걸음마다 바닥을 뚫는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-33",
+                "스턴 자세는 쥐·고양이 컨트롤러 둘 다에 있고 반복이며, 칼 클립 둘은 쥐 전용이고 길이가 칼 시간표와 같다",
+                "고양이가 맞아도 몸이 그대로 걷거나, 칼이 허공에서 휘둘린다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-34",
+                "칼에 맞아 굳으면 어지러운 눈, 용사가 되는 순간은 반짝 눈이다",
+                "스턴을 얼굴이 모르고 평소 얼굴로 굳어 선다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-35",
+                "표를 밟은 용사가 1.5초 변신 뒤 칼로 벤 고양이는 다른 화면에서도 굳어 걷지도 덮치지도 못하고, 겹쳐 맞아도 스턴이 늘지 않는다",
+                "스턴이 서버에만 걸려 고양이 화면에선 그냥 움직이거나, 연달아 베어 영영 굳는다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-36",
+                "용사 무적이 켜지면 남의 화면에도 흰 테두리가 뜨고 그동안 맞아도 HP가 그대로이며, 쿨 동안엔 다시 안 켜진다",
+                "무적이 서버에만 있고 상대는 모르거나, 테두리가 끝나도 안 꺼진다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-37",
+                "스턴 테두리는 맞는 즉시 가장자리만 하얗게 서고(가운데는 비움) 풀리면 빠진다",
+                "조작이 막혔는데 아무 표시가 없어 렉으로 읽히거나, 테두리가 조준을 가린다",
+                QaLayer.EditMode, QaStatus.Implemented)
 
         };
 
-        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (36) ══════════════════════
+        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (38) ══════════════════════
         private static readonly QaCase[] DOMAIN_C =
         {
             QaCase.Of("C-01",
@@ -488,6 +537,15 @@ namespace CTC.Tests
             QaCase.Of("C-36",
                 "상점 원 안에서만 팝업이 열리고, 카드를 클릭하면 서버까지 닿아 실제로 사진다",
                 "커서를 푸는 배선이나 클릭 → 서버 경로가 빠져 창은 뜨는데 못 산다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            // ── 2026-09-19 용사 ──
+            QaCase.Of("C-37",
+                "용사의 능력 바 Space 칸은 대시가 아니라 무적이다(대시를 이미 샀어도)",
+                "Space를 누르면 무적이 켜지는데 바에는 대시가 떠 쿨다운을 엉뚱하게 보여 준다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("C-38",
+                "용사는 실제 상점 경로로 총·후추·대시를 못 사고 치즈가 그대로다",
+                "쓰지도 못할 총·대시에 치즈가 사라진다",
                 QaLayer.Wesqa, QaStatus.Implemented)
 
         };

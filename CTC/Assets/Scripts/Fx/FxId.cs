@@ -23,6 +23,8 @@ namespace CTC.Runtime.Fx
         HeroBurst = 10,
         GangSmoke = 11,
         ClubSmash = 12,       // 깡패 몽둥이 내려치기(2026-09-14)
+        HeroInvincible = 13,  // 용사 무적을 켜는 순간 — 흰 빛이 한 번 퍼진다(2026-09-19)
+        Stunned = 14,         // 칼에 맞아 굳은 머리 위 — 별이 한 바퀴 돈다(2026-09-19)
 
         // 고양이
         ClawSlash = 20,

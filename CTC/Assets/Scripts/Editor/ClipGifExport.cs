@@ -39,6 +39,16 @@ namespace CTC.Editor
         [MenuItem("Tools/CTC/Dev/깡패 쥐 클립 GIF 내보내기")]
         public static void ExportGang() => ExportClips(GANG_CLIP_NAMES, ClipPreviewRender.RenderGangClipFramesForGif);
 
+        /// <summary>용사 쥐 클립 — 칼을 게임과 같은 시간표로 띄워 찍는다(<see cref="ClipPreviewRender.RenderHeroClipFramesForGif"/>).</summary>
+        private static readonly string[] HERO_CLIP_NAMES =
+        {
+            Runtime.Player.AnimationStateLogic.SwordSwing, Runtime.Player.AnimationStateLogic.HeroDraw,
+            Runtime.Player.AnimationStateLogic.Stunned,
+        };
+
+        [MenuItem("Tools/CTC/Dev/용사 쥐 클립 GIF 내보내기")]
+        public static void ExportHero() => ExportClips(HERO_CLIP_NAMES, ClipPreviewRender.RenderHeroClipFramesForGif);
+
         private static void ExportClips(string[] _clipNames, System.Func<string, List<string>> _render)
         {
             string pythonExe = FindPython();
