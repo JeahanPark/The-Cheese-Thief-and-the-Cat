@@ -146,7 +146,9 @@ namespace CTC.Runtime.Combat
             // 자기 위치에서 RaycastAll 후 자기 자신만 스킵하고 최근접 유효 히트를 취한다.
             Vector3 origin = transform.position + Vector3.up * MUZZLE_HEIGHT;
             Vector3 end = origin + _direction * stats.Range;
-            RaycastHit[] hits = Physics.RaycastAll(origin, _direction, stats.Range);
+            // **트리거는 무시한다**(SightLine과 같은 규칙). 맵 옷(MapDresser)의 팩 가구가 트리거 콜라이더를 달고 오는데,
+            // 그게 먼저 걸리면 「벽이 막았다」로 끝나 바로 앞 쥐가 안 맞았다(2026-09-14 qa_v41 쥐끼리 항목 — 자리에 따라 났다 안 났다).
+            RaycastHit[] hits = Physics.RaycastAll(origin, _direction, stats.Range, ~0, QueryTriggerInteraction.Ignore);
             System.Array.Sort(hits, (_a, _b) => _a.distance.CompareTo(_b.distance));
 
             foreach (RaycastHit hit in hits)

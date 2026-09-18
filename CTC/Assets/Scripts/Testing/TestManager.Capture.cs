@@ -121,6 +121,31 @@ namespace CTC.Runtime.Testing
         }
 
         /// <summary>
+        /// QA: 두 몸 사이(총구 높이 0.3m)를 레이로 훑어 **걸리는 콜라이더를 가까운 순서로** 적는다(2026-09-14).
+        /// 「쐈는데 안 맞는다」가 표적 판정 탓인지, 사이에 뭔가 막는지를 가른다 — "이름@거리 | 이름@거리 …".
+        /// </summary>
+        public string TestRaycastBetween(long _fromClientId, long _toClientId)
+        {
+            var from = CTC.Runtime.Core.NetUtil.FindPlayerObject((ulong)_fromClientId);
+            var to = CTC.Runtime.Core.NetUtil.FindPlayerObject((ulong)_toClientId);
+            if (from == null || to == null) return "missing";
+            Vector3 a = from.transform.position + Vector3.up * 0.3f;
+            Vector3 b = to.transform.position + Vector3.up * 0.3f;
+            Vector3 dir = b - a;
+            RaycastHit[] hits = Physics.RaycastAll(a, dir.normalized, dir.magnitude + 0.5f);
+            System.Array.Sort(hits, (_x, _y) => _x.distance.CompareTo(_y.distance));
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (RaycastHit hit in hits)
+            {
+                Transform t = hit.collider.transform;
+                string path = t.name;
+                if (t.parent != null) path = t.parent.name + "/" + path;
+                parts.Add($"{path}[{LayerMask.LayerToName(t.gameObject.layer)}{(hit.collider.isTrigger ? ",trigger" : "")}]@{hit.distance:0.00}");
+            }
+            return parts.Count == 0 ? "none" : string.Join(" | ", parts);
+        }
+
+        /// <summary>
         /// QA: **아무 자리·방향에서** 게임 화면처럼(후보정 포함) 찍는다(2026-09-14 천장 검수).
         /// 게임 카메라는 몸 뒤 3m에 묶여 있어 천장 채광창처럼 위에 있는 것을 정면으로 못 잡는다.
         /// 몸·카메라는 건드리지 않는다 — 임시 카메라를 세워 한 장 찍고 지운다.
