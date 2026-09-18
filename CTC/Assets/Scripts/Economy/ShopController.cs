@@ -142,6 +142,9 @@ namespace CTC.Runtime.Economy
             }
             if (TechLogic.NeedsShopSpot(m_Tag.Role) && !Map.ShopSpot.AnyContains(transform.position))
                 return TechDeny.NotInShop;
+            // 상점 원 안인데 철문이 닫혔다 — 고양이가 가까이 있다(2026-09-19). 서버 BuyRpc도 이 함수를 지난다.
+            if (TechLogic.NeedsShopSpot(m_Tag.Role) && !Map.ShopSpot.AnyOpenContains(transform.position))
+                return TechDeny.ShopClosed;
             // 서버 BuyRpc도 이 함수를 지난다 — 품절 판정의 권위는 그대로 서버에 있다.
             // 칸 상한은 **역할별**이다(2026-09-11) — 고양이는 제 테크 수(6)만큼 칸을 갖는다.
             // 전역 5를 그대로 쓰면 고양이가 여섯째 테크에서 SlotsFull로 막힌다.

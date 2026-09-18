@@ -50,6 +50,21 @@ def note(name, detail):
     sys.stdout.flush()
 
 
+def wallet_of(host, client_id):
+    """그 몸의 (잔액, 누적 획득) — 두 값 사이에 수입이 끼면 다시 읽는다.
+
+    쓴 돈은 **잔액 차이 + 그 사이 번 돈**이다. 잔액만 보면 상점 곁 채굴 수입이 섞여
+    「80을 냈는데 74가 빠졌다」·「거절됐는데 치즈가 5 늘었다」가 된다(2026-09-19 실측).
+    """
+    for _ in range(5):
+        e0 = host.invoke("TestGetEarnedOf", _clientId=client_id)
+        c = host.invoke("TestGetCheeseOf", _clientId=client_id)
+        e1 = host.invoke("TestGetEarnedOf", _clientId=client_id)
+        if e0 == e1:
+            return c, e1
+    return c, e1
+
+
 def warp_to_shop(host, client_id):
     """가장 가까운 상점 자리로 옮긴다 — qa_v36과 같은 규약.
 
@@ -198,10 +213,11 @@ def main():
     # 설치권(TechInfo Lv1)은 위에서 이미 샀다. 여기서 재는 건 **쓸 때마다 나가는 설치비**다.
     # 서 있는 요새 안이면 겹치기 금지로 거절되므로 상점 자리에서 그대로 세운다(아직 요새 없음).
     place_cost = host.invoke("TestGetPlaceCost", _techId="Fortress")
-    fort_before = host.invoke("TestGetCheeseOf", _clientId=m)
+    fc0, fe0 = wallet_of(host, m)
     host.invoke("TestUseTech", _clientId=m, _techId="Fortress")
     time.sleep(1.5)
-    fort_spent = fort_before - host.invoke("TestGetCheeseOf", _clientId=m)
+    fc1, fe1 = wallet_of(host, m)
+    fort_spent = (fc0 - fc1) + (fe1 - fe0)
     fort_pos = host.invoke("TestGetFortressPos")        # 실제로 선 FortressShield — Model 값이 아니다
     check("⑤ 요새 설치비가 설치마다 나간다", fort_spent == place_cost,
           "%s 나감 (기대 %s)" % (fort_spent, place_cost))
@@ -222,17 +238,17 @@ def main():
     # ---------- ⑦ 역할이 다른 테크는 칸을 안 늘린다 ----------
     # 쥐가 고양이 테크를 사면 WrongRole로 거절 — 칸이 늘면 6번째가 새는 것이다.
     before_slots = host.invoke("TestGetTechSlotCount", _clientId=m)
-    wrong_cheese_before = host.invoke("TestGetCheeseOf", _clientId=m)
+    wc0, we0 = wallet_of(host, m)
     host.invoke("TestBuyTech", _clientId=m, _techId="CatClaw")
     time.sleep(1.2)
     after_slots = host.invoke("TestGetTechSlotCount", _clientId=m)
     wrong_lv = host.invoke("TestGetTechLevel", _clientId=m, _techId="CatClaw")
-    wrong_cheese_after = host.invoke("TestGetCheeseOf", _clientId=m)
-    check("⑦ 쥐가 고양이 테크를 사면 거절(칸 5 유지 · 치즈 그대로)",
-          before_slots == 5 and after_slots == 5 and wrong_lv == 0
-          and wrong_cheese_after == wrong_cheese_before,
-          "칸 %s→%s lv=%s 치즈 %s→%s"
-          % (before_slots, after_slots, wrong_lv, wrong_cheese_before, wrong_cheese_after))
+    wc1, we1 = wallet_of(host, m)
+    wrong_spent = (wc0 - wc1) + (we1 - we0)
+    check("⑦ 쥐가 고양이 테크를 사면 거절(칸 5 유지 · 치즈 안 나감)",
+          before_slots == 5 and after_slots == 5 and wrong_lv == 0 and wrong_spent == 0,
+          "칸 %s→%s lv=%s 치즈 %s→%s(그 사이 번 돈 %s) → 쓴 돈 %s"
+          % (before_slots, after_slots, wrong_lv, wc0, wc1, we1 - we0, wrong_spent))
 
     return summary()
 

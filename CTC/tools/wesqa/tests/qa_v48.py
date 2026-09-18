@@ -21,7 +21,7 @@
 값은 전부 훅에서 읽는다(`TestGetTechCost`·`TestGetPlaceCost`) — 가격을 손으로 적지 않는다.
 한 판에 한 번만 돌린다(칸을 다 채우고 요새가 남는다). 다시 돌리려면 플레이모드를 껐다 켠다.
 """
-import sys, time, io
+import sys, time, io, math
 
 sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -67,6 +67,53 @@ def warp_to_shop(host, client_id):
     host.invoke("TestWarpToNearestShop", _clientId=client_id)
     time.sleep(1.2)
     return bool(host.invoke("TestIsInShop", _clientId=client_id))
+
+
+def fields(line):
+    out = {}
+    for part in (line or "").split():
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k] = v
+    return out
+
+
+def park_cat(cat, host, client_id):
+    """고양이(`cat` = 그 몸의 인스턴스)를 그 쥐의 상점에서 14m 떨어뜨리고 철문이 다시 열릴 때까지 기다린다
+    (6.5m 밖 1.5초). 고양이가 상점 5m 안이면 철문이 닫혀 쥐의 구매가 `ShopClosed`로 거절된다(2026-09-19 상점 부스).
+    상점은 쥐가 **선 자리**에서 가장 가까운 것을 고른다 — 그래서 워프 **뒤에** 부른다.
+    """
+    cat.invoke("TestTeleportNearShopOf", _clientId=client_id, _meters=14.0)
+    t0 = time.time()
+    while time.time() - t0 < 5.0:
+        if fields(host.invoke("TestGetNearestShutter", _clientId=client_id)).get("closed") == "False":
+            return
+        time.sleep(0.3)
+    print("    !! 고양이를 치웠는데 철문이 5초 안에 안 열렸다 — 아래 구매가 ShopClosed로 거절될 수 있다")
+
+
+def fortress_spot_near_shop(host, client_id):
+    """상점 근처에서 **요새가 서는** 자리 (x, z) — 없으면 None.
+
+    즉발 요새는 자리를 안 가리고 **내 몸을 중심으로** 선다 — 창구 앞(1.3m)에서 세우면 벽이 부스 몸통을
+    파고들어(2026-09-19 상점 부스) 덮치기 차폐·밀어내기 계측에 부스가 섞인다. 창구 쪽으로 떨어뜨려 가며
+    설치 판정과 **같은 질의**(`TestDebugPlacementBlockers`)로 빈자리를 먼저 재 본다.
+    """
+    s = fields(host.invoke("TestGetNearestShutter", _clientId=client_id))
+    if "center" not in s:
+        return None
+    cx, cz = [float(v) for v in s["center"].split(",")]
+    fx, fz = [float(v) for v in s["front"].split(",")]
+    n = math.hypot(fx - cx, fz - cz) or 1.0
+    ux, uz = (fx - cx) / n, (fz - cz) / n     # 창구 쪽
+    rx, rz = uz, -ux                          # 그 오른쪽
+    for meters in (2.8, 3.4, 4.0, 4.8):
+        for a, b in ((1.0, 0.0), (0.707, 0.707), (0.707, -0.707)):
+            x = cx + (ux * a + rx * b) * meters
+            z = cz + (uz * a + rz * b) * meters
+            if (host.invoke("TestDebugPlacementBlockers", _x=x, _z=z, _techId="Fortress") or "").startswith("fits=True"):
+                return x, z
+    return None
 
 
 def buy_to(inst, host, client_id, tech, level):
@@ -206,13 +253,22 @@ def main():
 
     # ---------- 계측대 세우기: 쥐B의 요새 Lv3(HP 1200) ----------
     # ③⑥의 피해 배율은 여기서 잰다. 쥐 몸(HP 100)으로는 ×2.5를 볼 수 없다.
-    # **선 자리에서 그대로 세운다**(qa_v47 ③과 같은 자리). 임의 좌표로 옮겨 세웠더니
+    # **상점 곁에 세운다**(qa_v47 ③과 같은 자리). 임의 좌표로 옮겨 세웠더니
     # 고양이와 벽 사이에 방 바닥 콜라이더가 끼어 `SightLine`이 전부 차폐로 판정했다
     # (2026-09-08 실측: `Floor_R5@MapBuilder`에 막혀 네 번의 덮치기가 전부 0). 상점 자리는
     # 사람이 실제로 서는 자리라 그 사고가 안 난다.
+    # 2026-09-19 상점 부스: 고양이(호스트)가 ②에서 쥐B 곁에 서 있다 — 치워야 철문이 열려 산다.
+    # 그리고 창구 앞(1.3m)에 세우면 요새 벽이 부스 몸통을 파고든다 — 빈자리로 비켜서 세운다.
     in_shop = warp_to_shop(host, m2)
+    park_cat(host, host, m2)
     fort = buy_to(m2i, host, m2, "Fortress", 3)
     fort_place = host.invoke("TestGetPlaceCost", _techId="Fortress")
+    fort_at = fortress_spot_near_shop(host, m2)
+    if fort_at is not None:
+        m2i.invoke("TestTeleportLocalPlayer", _x=fort_at[0], _z=fort_at[1])
+        time.sleep(1.2)
+    else:
+        print("    !! 상점 근처에 요새가 설 자리를 못 찾았다 — 창구 앞에서 그대로 세워 본다")
     m2i.invoke("TestUseTechLocal", _techId="Fortress")
     time.sleep(2.0)
     wall_max = host.invoke("TestGetNearestFortressMaxHp", _clientId=m2)

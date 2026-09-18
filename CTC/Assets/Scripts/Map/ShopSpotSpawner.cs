@@ -48,7 +48,9 @@ namespace CTC.Runtime.Map
 
             foreach (Vector2 p in picked)
             {
-                GameObject go = Instantiate(m_SpotPrefab, new Vector3(p.x, 0f, p.y), Quaternion.identity);
+                // 부스 창구가 맵 가운데를 본다(2026-09-19) — 벽을 보고 서면 사는 자리가 벽 쪽에 난다
+                GameObject go = Instantiate(m_SpotPrefab, new Vector3(p.x, 0f, p.y),
+                    Quaternion.Euler(0f, ShopSpotLogic.FacingYaw(p), 0f));
                 var no = go.GetComponent<NetworkObject>();
                 no.Spawn(true);
                 m_Spawned.Add(no);
@@ -75,13 +77,17 @@ namespace CTC.Runtime.Map
         {
             // 설치물 크기의 주인은 ShopController다 — 여기서 숫자를 베끼면 요새를 키웠을 때 조용히 갈라진다.
             float placeHalf = Economy.ShopController.HalfExtentsOf(Economy.TechId.Fortress).x;
+            Info.BalanceInfo b = Info.InfoManager.Instance.Balance;
 
             var check = new ShopSpotLogic.SpotCheck
             {
                 PlaceHalfExtent = placeHalf,
                 KeepAway = Lobby.PlayerSpawner.CatSpawnPoints(),
-                KeepAwayMargin = Info.InfoManager.Instance.PlayerOf(Lobby.RoleId.Cat).CcRadius
-                                 + CAT_SPAWN_MARGIN,
+                // 원반이 스폰을 삼키지 않는 것만으로는 모자라다(2026-09-19 상점 부스) — 스폰에 **서 있기만 해도**
+                // 철문 반경(5m) 안이면 판 시작부터 그 상점이 닫혀 있다. 둘 중 먼 쪽까지 띄운다.
+                KeepAwayMargin = Mathf.Max(
+                    Info.InfoManager.Instance.PlayerOf(Lobby.RoleId.Cat).CcRadius + CAT_SPAWN_MARGIN,
+                    b.ShopShutterCloseMeters - b.ShopSpotRadius + SHUTTER_SPAWN_SLACK),
             };
 
             Ai.NavGrid grid = Ai.NavGridService.Grid;
@@ -99,6 +105,9 @@ namespace CTC.Runtime.Map
 
         /// <summary>고양이 몸 반지름 위에 더 띄우는 여유(m) — 원반 가장자리에 걸치는 것도 막는다.</summary>
         private const float CAT_SPAWN_MARGIN = 1f;
+
+        /// <summary>철문 닫힘 반경 위에 더 띄우는 여유(m) — 스폰에서 반 걸음 움직여도 안 닫히게.</summary>
+        private const float SHUTTER_SPAWN_SLACK = 0.5f;
 
         /// <summary>서버 전용. 로비 복귀 시 걷는다.</summary>
         public void ServerDespawnAll()

@@ -197,7 +197,8 @@ namespace CTC.Runtime.UI
             m_Shop.Buy(m_Catalog[_index]);
         }
 
-        private bool InShop() => m_Shop != null && ShopSpot.AnyContains(m_Shop.transform.position);
+        // 철문이 닫힌 상점은 「상점 밖」과 같다 — 팝업을 못 열고, 열려 있으면 닫힌다(2026-09-19 상점 부스).
+        private bool InShop() => m_Shop != null && ShopSpot.AnyOpenContains(m_Shop.transform.position);
         private bool Dead() => m_Health == null || m_Health.IsDead;
         private bool Locked() => m_Shop != null && ActionLock.Locked(m_Shop);
         private bool MatchOver() => m_Match != null && m_Match.Result != MatchResult.None;

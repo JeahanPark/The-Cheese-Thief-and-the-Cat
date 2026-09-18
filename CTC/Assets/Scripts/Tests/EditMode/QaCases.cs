@@ -388,7 +388,7 @@ namespace CTC.Tests
 
         };
 
-        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (38) ══════════════════════
+        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (40) ══════════════════════
         private static readonly QaCase[] DOMAIN_C =
         {
             QaCase.Of("C-01",
@@ -546,11 +546,20 @@ namespace CTC.Tests
             QaCase.Of("C-38",
                 "용사는 실제 상점 경로로 총·후추·대시를 못 사고 치즈가 그대로다",
                 "쓰지도 못할 총·대시에 치즈가 사라진다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            // ── 2026-09-19 상점 부스 ──
+            QaCase.Of("C-39",
+                "상점 철문은 걷는 고양이 5m·살금살금 2.5m에서 즉시 닫히고, 6.5m 밖에 1.5초 머물러야 열리며, 닫힌 상점에서는 이유를 말하며 못 산다",
+                "경계에서 철문이 떨거나, 닫힌 채 사지거나, 살금살금 매복이 불가능해진다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("C-40",
+                "고양이가 다가가면 쥐 화면에서도 철문이 내려오고 점원이 움츠리며 그 상점에서 못 사고 팝업도 못 연다 · 떠나면 다시 열린다",
+                "철문이 서버에만 닫혀 쥐 화면은 열린 채이거나, 닫혀도 사지거나, 한 번 닫히면 안 열린다",
                 QaLayer.Wesqa, QaStatus.Implemented)
 
         };
 
-        // ══════════════════════ D · 맵 · 길찾기 · 봇 (23) ══════════════════════
+        // ══════════════════════ D · 맵 · 길찾기 · 봇 (26) ══════════════════════
         private static readonly QaCase[] DOMAIN_D =
         {
             QaCase.Of("D-01",
@@ -664,7 +673,12 @@ namespace CTC.Tests
                 "밤 맵(안개 켬)에만 천장·전등·달빛 기둥이 생기고, 콜라이더가 없어 이동·시야 판정에 안 걸린다",
                 "천장에 콜라이더가 붙어 시야 레이·가림막 페이드가 막힌다 · BotLab에도 천장이 생긴다",
                 QaLayer.Wesqa, QaStatus.Missing,
-                "천장 오브젝트·콜라이더 수를 읽는 훅이 없다(TestGetCeilingInfo)")
+                "천장 오브젝트·콜라이더 수를 읽는 훅이 없다(TestGetCeilingInfo)"),
+            // ── 2026-09-19 상점 부스 ──
+            QaCase.Of("D-26",
+                "상점 부스 칸은 누구도 못 지나가고 부술 대상도 아니며, 부스는 맵 가운데를 본다",
+                "봇이 부스를 부수려 하거나 부스 속으로 길을 내 제자리걸음하고, 창구가 벽을 본다",
+                QaLayer.EditMode, QaStatus.Implemented)
 
         };
 

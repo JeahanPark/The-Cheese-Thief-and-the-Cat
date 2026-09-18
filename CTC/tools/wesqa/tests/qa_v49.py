@@ -124,6 +124,17 @@ def teleport(inst, x, z, settle=1.2):
     time.sleep(settle)
 
 
+def park_cat(cat, host, client_id):
+    """고양이(`cat` = 그 몸의 인스턴스)를 그 쥐의 상점에서 14m 떨어뜨리고 철문이 다시 열릴 때까지 기다린다.
+
+    2026-09-19 상점 부스 — 고양이가 상점 5m 안이면 철문이 닫혀 쥐의 구매가 `ShopClosed`로 거절된다.
+    ③이 고양이를 치즈 매장지 위에 세워 두므로, 쥐가 워프한 상점이 그 곁일 수 있다. 워프 **뒤에** 부른다.
+    """
+    cat.invoke("TestTeleportNearShopOf", _clientId=client_id, _meters=14.0)
+    return poll(lambda: "closed=False" in (host.invoke("TestGetNearestShutter", _clientId=client_id) or ""),
+                lambda v: v, limit=5.0)
+
+
 def main():
     p = [WesPoco(instance=i) for i in range(3)]
     ids = [int(x.invoke("TestGetLocalClientId")) for x in p]
@@ -199,6 +210,7 @@ def main():
     # 나눠 부른다: TestPlaceWarehouseAt에 맡기면 "못 샀나 못 세웠나"가 한 덩어리로 실패한다.
     host.invoke("TestWarpToNearestShop", _clientId=m1)
     in_shop = poll(lambda: bool(host.invoke("TestIsInShop", _clientId=m1)), lambda v: v)
+    park_cat(host, host, m1)
     m1i.invoke("TestBuyTechLocal", _techId="Warehouse")
     permit = poll(lambda: host.invoke("TestGetTechLevel", _clientId=m1, _techId="Warehouse"),
                   lambda v: v >= 1)
@@ -223,15 +235,13 @@ def main():
     ring = float(host.invoke("TestGetShopSpotRadius")) * 0.6
 
     placed, placed_at, blockers = warehouses0, None, []
-    for k in range(9):
+    for k in range(1, 9):
         if placed > warehouses0:
             break
-        # 발치 -> 원반 안쪽 여덟 방향. 쥐는 이미 상점 한가운데 서 있어 걷지 않는다.
-        if k == 0:
-            px, pz = shx, shz
-        else:
-            ang = (k - 1) * math.pi / 4.0
-            px, pz = shx + math.cos(ang) * ring, shz + math.sin(ang) * ring
+        # 원반 안쪽 여덟 방향. 쥐는 이미 창구 앞에 서 있어 걷지 않는다.
+        # 한가운데는 안 본다 — 2026-09-19부터 **막힌 부스 몸통**이라 늘 거절돼 5'에 헛된 차단물만 남긴다.
+        ang = (k - 1) * math.pi / 4.0
+        px, pz = shx + math.cos(ang) * ring, shz + math.sin(ang) * ring
         m1i.invoke("TestPlaceWarehouseAt", _x=px, _z=pz)
         placed = poll(lambda: host.invoke("TestGetWarehouseCountOf", _clientId=m1),
                       lambda v: v > warehouses0, limit=3.0)

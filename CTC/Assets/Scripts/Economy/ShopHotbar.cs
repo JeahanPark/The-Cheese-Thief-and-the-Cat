@@ -50,6 +50,9 @@ namespace CTC.Runtime.Economy
         // 액티브 전용 키의 글자 — 단일 출처는 능력 바다(같은 키를 두 화면이 다르게 부르면 안 된다).
         private const string ACTIVE_KEY_LABEL = UI.AbilityBarLogic.KEY_FRENZY;
 
+        // 상점 원 안인데 철문이 내려왔을 때 모드 줄에 붙는 말 — "E = 상점" 자리(2026-09-19)
+        public const string SHOP_CLOSED_LABEL = "철문 닫힘";
+
         // 고스트가 뻗는 최대 거리 — 서버 검증(ShopController.MAX_PLACE_DISTANCE)보다 짧아야 한다.
         private static float GHOST_MAX_DISTANCE => Info.InfoManager.Instance.Balance.PlaceGhostMaxMeters;
 
@@ -101,6 +104,7 @@ namespace CTC.Runtime.Economy
         private float m_CooldownWatchUntil;   // 방금 액티브를 썼다 — 쿨다운이 복제돼 올 때까지 지켜본다
         private bool m_IntroShown; // 기본 조작 토스트는 매치당 1회 — 매판 반복되면 소음이다
         private bool m_InShop;
+        private bool m_ShopClosed;   // 상점 원 안인데 철문이 닫혔다(2026-09-19) — "E = 상점"을 거두고 닫혔다고 알린다
 
         // 오늘의 품절(계획 3 Task 3) — 판정은 ShopController가 하고 View는 받아 쓰기만 한다(규칙 5).
         private static readonly TechId[] NONE_SOLD_OUT = new TechId[0];
@@ -335,8 +339,17 @@ namespace CTC.Runtime.Economy
             if (!m_GameStarted || m_Shop == null) return;
 
             // 상점 안/밖은 위치라 매 프레임 본다 — ShopSpot은 정적 목록(≤4)이라 싸다
-            bool inShop = !TechLogic.NeedsShopSpot(m_Role) || Map.ShopSpot.AnyContains(m_Shop.transform.position);
-            if (inShop != m_InShop) { m_InShop = inShop; m_SlotsDirty = true; }
+            Vector3 here = m_Shop.transform.position;
+            bool needsSpot = TechLogic.NeedsShopSpot(m_Role);
+            bool inShop = !needsSpot || Map.ShopSpot.AnyContains(here);
+            // 고양이가 가까이 와 철문이 내려오면 E가 안 먹는다 — 안내도 같이 바꾼다(말없이 안 열리면 고장으로 보인다)
+            bool closed = needsSpot && inShop && !Map.ShopSpot.AnyOpenContains(here);
+            if (inShop != m_InShop || closed != m_ShopClosed)
+            {
+                m_InShop = inShop;
+                m_ShopClosed = closed;
+                m_SlotsDirty = true;
+            }
 
             // 구독 콜백이 아니라 여기서 그리는 이유: 구매 하나가 치즈·테크 목록 등 NetworkVariable 여러 개를
             // 같은 틱에 바꾸는데, 콜백 시점엔 시블링 변수가 아직 옛값일 수 있다. 여기서는 전부 새 값이다.
@@ -382,9 +395,9 @@ namespace CTC.Runtime.Economy
             }
 
             // 숫자키의 뜻은 **역할마다 하나뿐**이다(2026-09-19) — 상점 안팎으로 바뀌지 않는다.
-            // 상점 원 안에 서 있으면 "E = 상점"만 덧붙인다(구매는 팝업이 맡는다).
+            // 상점 원 안에 서 있으면 "E = 상점"만 덧붙인다(구매는 팝업이 맡는다). 철문이 닫혔으면 그렇다고.
             string mode = fixedSlots ? "숫자키 = 산다 / 키운다" : "숫자키 = 쓴다";
-            if (!fixedSlots && m_InShop) mode += " · E = 상점";
+            if (!fixedSlots && m_InShop) mode += m_ShopClosed ? $" · {SHOP_CLOSED_LABEL}" : " · E = 상점";
             if (FirstActiveKeySlot(owned) >= 0) mode += $" · {ACTIVE_KEY_LABEL} = 쓴다";
             if (m_ModeLabel != null) m_ModeLabel.text = $"{mode}    보유 {owned.Count}/{cap}";
         }
@@ -512,7 +525,7 @@ namespace CTC.Runtime.Economy
         {
             m_SlotLabels[_slot].text = $"{_slot + 1}  —";
             m_SlotCosts[_slot].text = "";
-            SetHint(_slot, m_InShop ? "E로 산다" : "");
+            SetHint(_slot, m_InShop && !m_ShopClosed ? "E로 산다" : "");
             m_SlotLabels[_slot].color = COLOR_EMPTY;
         }
 
@@ -584,6 +597,7 @@ namespace CTC.Runtime.Economy
 
             // 넘기기 역할(쥐) — 칸은 **보유 기술**이고 숫자키는 언제나 「쓴다」(2026-09-19).
             if (_slot < owned.Count) TryUse(owned[_slot].Id);
+            else if (m_ShopClosed) Say(TechLogic.DenyText(TechDeny.ShopClosed, m_Role, 0, SlotCap));
             else Say(m_InShop ? "E로 상점을 연다" : "상점에서 E로 산다");
         }
 

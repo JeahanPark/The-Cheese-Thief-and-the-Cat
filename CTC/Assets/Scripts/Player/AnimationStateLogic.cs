@@ -22,6 +22,7 @@ namespace CTC.Runtime.Player
         public const string Spin = "Spin";       // 팩 원본 발레 회전 — **광분에서는 더 이상 안 쓴다**(Frenzy 참조)
         public const string Clicked = "Clicked"; // 구매 — 짧은 끄덕임
         public const string Eat = "Eat";         // 채굴 — 갉아먹기(반복)
+        public const string Fear = "Fear";       // 상점 점원 — 철문을 내리고 움츠린다(2026-09-19, 팩 원본 · 두 컨트롤러 다 있다)
 
         // 쥐 사격(2026-09-12) — **AC_Mouse에만** 있다. 고양이는 총을 쏘지 않는다.
         // 블렌더 왕복 FBX(CTC_Mouse_Clips.fbx)에서 새로 만든 클립 둘이다.
@@ -119,7 +120,7 @@ namespace CTC.Runtime.Player
         /// </summary>
         public static readonly string[] All =
         {
-            Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat,
+            Idle, Walk, Run, Attack, Hit, Roll, Bounce, Jump, Spin, Clicked, Eat, Fear,
             Shoot, ShootDraw, Dash, Sticky, Fortress, Warehouse, Frenzy,
             CatSkillFire, CatSkillWind, CatSkillLight, CatSkillDark,
             BipedIdle, BipedWalk, BipedRun, ClubSwing, GangTransform,

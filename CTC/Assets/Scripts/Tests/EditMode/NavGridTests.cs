@@ -109,6 +109,27 @@ namespace CTC.Tests.EditMode
             Assert.IsTrue(grid.NeedsBreaking(5, 5, NavAgent.Cat));
         }
 
+        /// <summary>상점 부스(2026-09-19) — 누구도 못 지나가고, 부술 값을 줘도 안 열린다(돌아가야 한다).</summary>
+        [NUnit.Framework.Property("CaseId", "D-26")]
+        [Test]
+        public void Solid_BlocksEveryoneEvenWithBreakCost()
+        {
+            NavGrid grid = Empty();
+            grid.AddStructureCell(5, 5, NavStructureKind.Solid);
+            grid.AddStructureCell(5, 5, NavStructureKind.MouseDoor);   // 문이 겹쳐도 부스가 이긴다
+
+            foreach (NavAgent agent in new[] { NavAgent.Mouse, NavAgent.Cat, NavAgent.Dog })
+            {
+                Assert.IsFalse(grid.CanEnter(5, 5, agent, R_MOUSE, 0f, out _), $"{agent} 1차");
+                Assert.IsFalse(grid.CanEnter(5, 5, agent, R_MOUSE, 10f, out _), $"{agent} 부수기 값을 줘도");
+                Assert.IsFalse(grid.NeedsBreaking(5, 5, agent), $"{agent} — 부수는 게 아니라 돌아간다");
+            }
+
+            grid.RemoveStructureCell(5, 5, NavStructureKind.Solid);
+            grid.RemoveStructureCell(5, 5, NavStructureKind.MouseDoor);
+            Assert.IsTrue(grid.CanEnter(5, 5, NavAgent.Cat, R_CAT, 0f, out _), "부스가 걷히면 다시 열린다");
+        }
+
         [Test]
         public void CatBreakable_IsWallForMiceAndCostForCats()
         {

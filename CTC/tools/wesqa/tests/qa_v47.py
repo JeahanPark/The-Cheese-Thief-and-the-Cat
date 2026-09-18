@@ -19,7 +19,7 @@
 오늘의 품절(계획 3)은 판마다 쥐 테크 둘을 막는다 — 이 스크립트는 **효과**를 재는 것이라
 `TestClearSoldOut`으로 주사위를 먼저 걷는다. 품절 자체의 검증은 `qa_v50`이 한다.
 """
-import sys, time, io
+import sys, time, io, math
 
 sys.path.insert(0, r"c:\GitFork\The-Cheese-Thief-and-the-Cat\CTC\tools\wesqa")
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -29,6 +29,8 @@ from wesqa import WesPoco
 RESULTS = []
 EXTRA = []          # 분모에 안 들어가는 참고 기록(NOTE)
 EXPECTED = 14      # 이 스위트가 선언한 항목 수(⑦-b는 qa_v53으로 옮김) — summary가 실행 수와 대조한다
+
+CAT = None         # 고양이 인스턴스 — 상점에 갈 때마다 멀리 치운다(`park_cat`)
 
 
 def check(name, ok, detail="", case=None):
@@ -61,10 +63,61 @@ def warp_to_shop(host, client_id):
 
     `TestWarpToNearestShop`은 `BodyPush.ServerPush` 경유라 **호스트 인스턴스**에서 불러야 하고,
     그 안에서 다시 소유자 RPC를 타므로 반환값은 "보냈다"지 "도착했다"가 아니다 — 쉬었다 확인한다.
+
+    **도착하면 고양이를 치운다**(2026-09-19 상점 부스) — 고양이가 상점 5m 안이면 철문이 닫혀
+    구매가 `ShopClosed`로 거절된다. 이 스크립트는 덮치기를 재느라 고양이를 쥐 옆에 자주 붙인다.
     """
     host.invoke("TestWarpToNearestShop", _clientId=client_id)
     time.sleep(1.2)
+    if CAT is not None:
+        park_cat(CAT, host, client_id)
     return bool(host.invoke("TestIsInShop", _clientId=client_id))
+
+
+def fields(line):
+    out = {}
+    for part in (line or "").split():
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k] = v
+    return out
+
+
+def park_cat(cat, host, client_id):
+    """고양이(`cat` = 그 몸의 인스턴스)를 그 쥐의 상점에서 14m 떨어뜨리고 철문이 다시 열릴 때까지 기다린다
+    (6.5m 밖 1.5초). 상점은 쥐가 **선 자리**에서 가장 가까운 것을 고른다 — 그래서 워프 **뒤에** 부른다.
+    """
+    cat.invoke("TestTeleportNearShopOf", _clientId=client_id, _meters=14.0)
+    t0 = time.time()
+    while time.time() - t0 < 5.0:
+        if fields(host.invoke("TestGetNearestShutter", _clientId=client_id)).get("closed") == "False":
+            return
+        time.sleep(0.3)
+    print("    !! 고양이를 치웠는데 철문이 5초 안에 안 열렸다 — 아래 구매가 ShopClosed로 거절될 수 있다")
+
+
+def fortress_spot_near_shop(host, client_id):
+    """상점 근처에서 **요새가 서는** 자리 (x, z) — 없으면 None.
+
+    즉발 요새는 자리를 안 가리고 **내 몸을 중심으로** 선다 — 창구 앞(1.3m)에서 세우면 벽이 부스 몸통을
+    파고들어(2026-09-19 상점 부스) 덮치기 차폐·밀어내기 계측에 부스가 섞인다. 창구 쪽으로 떨어뜨려 가며
+    설치 판정과 **같은 질의**(`TestDebugPlacementBlockers`)로 빈자리를 먼저 재 본다.
+    """
+    s = fields(host.invoke("TestGetNearestShutter", _clientId=client_id))
+    if "center" not in s:
+        return None
+    cx, cz = [float(v) for v in s["center"].split(",")]
+    fx, fz = [float(v) for v in s["front"].split(",")]
+    n = math.hypot(fx - cx, fz - cz) or 1.0
+    ux, uz = (fx - cx) / n, (fz - cz) / n     # 창구 쪽
+    rx, rz = uz, -ux                          # 그 오른쪽
+    for meters in (2.8, 3.4, 4.0, 4.8):
+        for a, b in ((1.0, 0.0), (0.707, 0.707), (0.707, -0.707)):
+            x = cx + (ux * a + rx * b) * meters
+            z = cz + (uz * a + rz * b) * meters
+            if (host.invoke("TestDebugPlacementBlockers", _x=x, _z=z, _techId="Fortress") or "").startswith("fits=True"):
+                return x, z
+    return None
 
 
 def buy_to(inst, host, client_id, tech, level):
@@ -146,6 +199,8 @@ def main():
     m2_idx = [i for i in range(3) if i != 0 and i != cat_idx][0]
     m2i, m2 = p[m2_idx], ids[m2_idx]
     print("호스트 쥐=%s · 고양이=%s(inst %s) · 클론 쥐=%s(inst %s)" % (m, c, cat_idx, m2, m2_idx))
+    global CAT
+    CAT = cat
 
     # 오늘의 품절이 판마다 쥐 테크 둘을 막는다(테크 v3 계획 3). 이 스크립트가 재는 것은
     # **테크 효과**라 열 종류를 다 사야 하고, 그러면 한 판으로는 구조적으로 불가능해진다 —
@@ -304,15 +359,24 @@ def main():
     time.sleep(11.0)   # BalanceInfo.StickySeconds = 10
     patches_gone = host.invoke("TestGetStickyPatchCount")
     cat_back = host.invoke("TestGetMoveSpeedOf", _clientId=c)
+    # 장판이 실제로 깔렸어야 「사라졌다」가 뜻이 있다 — 못 샀으면 처음부터 없어서 공짜로 통과한다
     check("⑧-b 10초 뒤 장판이 사라지고 이속이 돌아온다",
-          patches_gone == patches_before and abs(cat_back - cat_free) < 0.05,
-          "장판=%s 고양이 이속 %.2f (원래 %.2f)" % (patches_gone, cat_back, cat_free))
+          sticky == 3 and patches == patches_before + 1
+          and patches_gone == patches_before and abs(cat_back - cat_free) < 0.05,
+          "장판 %s→%s→%s 고양이 이속 %.2f (원래 %.2f)" % (patches_before, patches, patches_gone, cat_back, cat_free))
 
     # ---------- ③ 요새 Lv3 — HP 1200 · 가시 벽 반사 ----------
     # 마지막에 둔다 — 요새는 몸을 밀어내므로 다른 계측의 자리를 흐트러뜨린다.
     warp_to_shop(host, m)
     fort = buy_to(host, host, m, "Fortress", 3)
     fort_place = host.invoke("TestGetPlaceCost", _techId="Fortress")
+    # 창구 앞에 세우면 요새 벽이 부스 몸통을 파고든다(2026-09-19) — 빈자리로 비켜서 세운다
+    fort_at = fortress_spot_near_shop(host, m)
+    if fort_at is not None:
+        host.invoke("TestTeleportLocalPlayer", _x=fort_at[0], _z=fort_at[1])
+        time.sleep(1.2)
+    else:
+        print("    !! 상점 근처에 요새가 설 자리를 못 찾았다 — 창구 앞에서 그대로 세워 본다")
     host.invoke("TestUseTechLocal", _techId="Fortress")
     time.sleep(2.0)
     fort_hp = host.invoke("TestGetNearestFortressMaxHp", _clientId=m)

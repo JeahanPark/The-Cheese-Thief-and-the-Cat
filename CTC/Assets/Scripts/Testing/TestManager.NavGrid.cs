@@ -104,6 +104,7 @@ namespace CTC.Runtime.Testing
             if (_center) return 'C';
 
             NavCellStructure cell = _grid.StructureAt(_grid.Index(_x, _z));
+            if (cell.Solid > 0) return 'x';            // 상점 부스 — 누구도 못 지난다
             if (cell.MouseDoor > 0) return 'd';        // 쥐만 지나는 문
             if (cell.CatBreakable > 0 || cell.AnyBreakable > 0) return 'o';
 

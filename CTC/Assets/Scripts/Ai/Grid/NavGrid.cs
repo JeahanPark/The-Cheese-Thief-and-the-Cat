@@ -28,7 +28,10 @@ namespace CTC.Runtime.Ai
         /// <summary>쥐만 지나가는 틈(요새 문). 고양이는 인방 높이에 걸린다.</summary>
         public byte MouseDoor;
 
-        public bool IsEmpty => CatBreakable == 0 && AnyBreakable == 0 && MouseDoor == 0;
+        /// <summary>아무도 못 지나가고 아무도 못 부수는 것(상점 부스, 2026-09-19). 판 중에 서는 영구 벽이다.</summary>
+        public byte Solid;
+
+        public bool IsEmpty => CatBreakable == 0 && AnyBreakable == 0 && MouseDoor == 0 && Solid == 0;
     }
 
     /// <summary>
@@ -248,6 +251,7 @@ namespace CTC.Runtime.Ai
                 case NavStructureKind.CatBreakable: cell.CatBreakable++; break;
                 case NavStructureKind.AnyBreakable: cell.AnyBreakable++; break;
                 case NavStructureKind.MouseDoor: cell.MouseDoor++; break;
+                case NavStructureKind.Solid: cell.Solid++; break;
             }
             m_Structures[i] = cell;
         }
@@ -263,6 +267,7 @@ namespace CTC.Runtime.Ai
                 case NavStructureKind.CatBreakable: if (cell.CatBreakable > 0) cell.CatBreakable--; break;
                 case NavStructureKind.AnyBreakable: if (cell.AnyBreakable > 0) cell.AnyBreakable--; break;
                 case NavStructureKind.MouseDoor: if (cell.MouseDoor > 0) cell.MouseDoor--; break;
+                case NavStructureKind.Solid: if (cell.Solid > 0) cell.Solid--; break;
             }
             if (cell.IsEmpty) m_Structures.Remove(i);
             else m_Structures[i] = cell;
@@ -315,6 +320,9 @@ namespace CTC.Runtime.Ai
 
             if (!m_Structures.TryGetValue(i, out NavCellStructure cell)) return true;
 
+            // 상점 부스 — 누구도 못 지나가고 부술 수도 없다(문이 겹쳐 있어도 이긴다)
+            if (cell.Solid > 0) return false;
+
             // 쥐 전용 문: 쥐면 통과, 아니면 인방(0.75m)에 걸린다. 문 셀에는 벽도 같이 겹쳐 있을 수 있는데
             // (문틀), 쥐는 그 틈으로 지나가므로 문이 이긴다.
             bool blockedByCat = cell.CatBreakable > 0;
@@ -345,6 +353,7 @@ namespace CTC.Runtime.Ai
         {
             if (!InBounds(_cx, _cz)) return false;
             if (!m_Structures.TryGetValue(Index(_cx, _cz), out NavCellStructure cell)) return false;
+            if (cell.Solid > 0) return false;   // 부수는 게 아니라 돌아가야 한다
             if (cell.MouseDoor > 0 && _agent == NavAgent.Mouse) return false;
             if (cell.AnyBreakable > 0) return true;
             return cell.CatBreakable > 0 && _agent != NavAgent.Mouse;
@@ -362,5 +371,8 @@ namespace CTC.Runtime.Ai
 
         /// <summary>요새 문 — 쥐만 지나간다.</summary>
         MouseDoor = 2,
+
+        /// <summary>상점 부스(2026-09-19) — 아무도 못 지나가고 아무도 못 부순다.</summary>
+        Solid = 3,
     }
 }

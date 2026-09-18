@@ -333,6 +333,7 @@ namespace CTC.Editor
                 // 무료 플랜 라이선스 정리(사운드 전량 재생성) 때 ElevenLabs로 「성난 고양이 울부짖음」을 만들어 갈아 끼운다.
                 LoadClip("UI/sfx_cat_advance"),          // CatFrenzy (임시 음원)
                 LoadClip("Economy/sfx_shop_buy"),        // CatShopBuy — 음원은 ShopBuy와 같다(봇 청각용 번호)
+                LoadClip("Economy/sfx_fortress_place"),  // ShopShutter (임시 — 요새 설치음 재사용, 2026-09-19)
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

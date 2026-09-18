@@ -111,6 +111,10 @@ namespace CTC.Runtime.Info
         public float StunSeconds;
         public float HeroInvincibleSeconds;
         public float HeroInvincibleCooldown;
+        public float ShopShutterCloseMeters;
+        public float ShopShutterSneakMeters;
+        public float ShopShutterOpenMeters;
+        public float ShopShutterReopenSeconds;
     }
 
     public partial class InfoManager

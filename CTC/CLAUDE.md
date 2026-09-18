@@ -211,6 +211,16 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
 - 무적 표시는 **전용 림 셰이더 `CTC/HeroRim`**(깊이 검사 켬 — 빛 실루엣처럼 벽 너머로 새지 않는다)를 몸 SMR 머티리얼 칸 끝에 켜 있는 동안만 덧붙인다(`HeroInvincibleVisual`).
 - 소품은 `Tools/CTC/Dev/Bake Hero Props (칼)`(씬 재생성이 같이 부른다). 눈으로는 `Tools/CTC/Dev/용사 쥐 클립 GIF 내보내기`. QA `qa_v60`(호스트=쥐, **새 판에서**).
 
+### 상점 부스 — 쥐 점원과 철문 (2026-09-19)
+
+기획 `docs/superpowers/specs/2026-09-19-shop-booth-design.md`. 수치는 CSV `ShopShutter*`(닫힘 5m · 살금살금 2.5m · 열림 6.5m 밖 1.5초).
+
+- **고양이가 오면 철문이 닫히고, 닫힌 동안 그 상점에서는 못 산다** — 판정은 `ShopSpot.AnyOpenContains`(구매·팝업·봇). 「원 안인가」만 볼 땐 `AnyContains`.
+- **부스 몸통은 막힌다**(콜라이더 + 격자 `Solid` 칸) — 상점으로 보낼 땐 가운데가 아니라 `ShopSpot.FrontPoint`(창구 앞 1.3m)로. 워프 훅·봇이 그렇게 한다.
+- 부스는 `Tools/CTC/Dev/Bake Shop Booth (상점 부스)`가 상점 자리 프리팹에 굽는다(씬 재생성은 철문이 없을 때만 다시 굽는다). 철문 소리는 **임시로 요새 설치음**이다.
+- 상점 근처에서 사는 QA는 **고양이를 먼저 치운다**(`TestTeleportNearShopOf(_clientId, 14)`) — 안 치우면 철문이 닫혀 구매가 거절된다. QA `qa_v62`(호스트=쥐).
+- **값이 빠졌나를 잴 땐 잔액만 보지 않는다** — 창구 앞이 치즈 지점 채굴 반경 안인 판이 있다. 쓴 돈 = 잔액 차이 + 누적 획득(`TestGetEarnedOf`) 차이(`qa_v36`·`v46`·`v59`의 `wallet_of`).
+
 ### 블렌더로 애니메이션 클립 만들기 (2026-09-12)
 
 리그는 **Generic**이라 유니티가 뼈를 **트랜스폼 경로 문자열**로 찾는다(`Rig/root/body/head/ear.L`).

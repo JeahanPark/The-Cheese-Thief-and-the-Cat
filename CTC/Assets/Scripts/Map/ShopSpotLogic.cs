@@ -312,6 +312,16 @@ namespace CTC.Runtime.Map
         }
 
         /// <summary>수평 반경 판정 — 높이는 무시(평면 맵).</summary>
+        /// <summary>
+        /// 상점 부스가 보는 방향(도, y축) — **맵 가운데를 본다**(창구가 방 안쪽으로 난다, 2026-09-19).
+        /// 가운데에 거의 붙어 있으면 0(북쪽).
+        /// </summary>
+        public static float FacingYaw(Vector2 _position)
+        {
+            if (_position.sqrMagnitude < 0.25f) return 0f;
+            return Mathf.Atan2(-_position.x, -_position.y) * Mathf.Rad2Deg;
+        }
+
         public static bool Contains(Vector3 _center, Vector3 _point, float _radius)
         {
             float dx = _point.x - _center.x, dz = _point.z - _center.z;

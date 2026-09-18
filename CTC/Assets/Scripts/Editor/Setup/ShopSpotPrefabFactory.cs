@@ -12,6 +12,9 @@ namespace CTC.Editor
     /// `SetupNetworkingScene`의 다른 팩토리와 달리 **있으면 안 덮어쓴다**(CLAUDE.md 함정 2) —
     /// 자리는 스포너가 정하지만 생김새의 주인은 프리팹이라, 씬을 다시 구울 때마다
     /// 손으로 고친 비주얼이 지워지면 안 된다.
+    ///
+    /// **예외: 철문(<see cref="ShopShutter"/>)이 없는 옛 프리팹은 새로 굽는다**(2026-09-19 상점 부스 — 빵 선반이 쥐 점원 부스로 바뀌었다).
+    /// 부스만 다시 굽고 싶으면 `Tools/CTC/Dev/Bake Shop Booth (상점 부스)`.
     /// </summary>
     public static class ShopSpotPrefabFactory
     {
@@ -21,16 +24,13 @@ namespace CTC.Editor
         private const string DISC_MATERIAL =
             "Assets/Thirdparty/Ciathyza/Gridbox Prototype Materials/Materials/URP/Prototype_512x512_Orange.mat";
 
-        // 가운데 세우는 진열대 — 팩이 없으면 원반만 남는다(마젠타 방지, 함정 6)
-        private const string STAND_PREFAB =
-            "Assets/polyperfect/Poly Universal Pack/- Prefabs/Fantasy/Bakery Fantasy/shelf-wall-a-pastry-fantasy.prefab";
-
         private const float DISC_HEIGHT = 0.05f;
 
         public static GameObject Build()
         {
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(PATH);
-            if (existing != null) return existing;   // 있으면 안 덮어쓴다(CLAUDE.md 함정 2)
+            // 있으면 안 덮어쓴다(CLAUDE.md 함정 2) — 단 철문 없는 옛 판(빵 선반)은 새로 굽는다
+            if (existing != null && existing.GetComponent<ShopShutter>() != null) return existing;
 
             var root = new GameObject("ShopSpot");
             try
@@ -42,8 +42,9 @@ namespace CTC.Editor
                 // 반경은 CSV(BalanceInfo.ShopSpotRadius)가 원본이라 여기서는 굽기만 한다.
                 float radius = CTC.Runtime.Info.InfoManager.Instance.Balance.ShopSpotRadius;
                 AddDisc(root, radius);
-                AddStand(root);
+                ShopBoothBuilder.Attach(root);   // 쥐 점원 부스 + 철문(2026-09-19) — 예전 빵 선반(AddStand)을 대신한다
 
+                // 부스 몸통이 창구를 +Z로 둔다 — 스포너가 맵 가운데를 보도록 돌려 세운다(ShopSpotLogic.FacingYaw)
                 GameObject asset = PrefabUtility.SaveAsPrefabAsset(root, PATH);
                 AssetDatabase.SaveAssets();
                 return asset;
@@ -68,27 +69,6 @@ namespace CTC.Editor
             var mat = AssetDatabase.LoadAssetAtPath<Material>(DISC_MATERIAL);
             if (mat == null) Debug.LogError($"[ShopSpotPrefabFactory] 원반 머티리얼 없음: {DISC_MATERIAL}");
             else disc.GetComponent<Renderer>().sharedMaterial = mat;
-        }
-
-        private static void AddStand(GameObject _root)
-        {
-            var standAsset = AssetDatabase.LoadAssetAtPath<GameObject>(STAND_PREFAB);
-            if (standAsset == null)
-            {
-                Debug.LogWarning($"[ShopSpotPrefabFactory] 진열대 프리팹 없음(원반만): {STAND_PREFAB}");
-                return;
-            }
-
-            var stand = (GameObject)PrefabUtility.InstantiatePrefab(standAsset);
-            stand.name = "Stand";
-            stand.transform.SetParent(_root.transform, false);
-            stand.transform.localPosition = new Vector3(0f, DISC_HEIGHT, 0f);
-
-            // 걸어 들어가는 구역이라 몸을 막으면 안 된다
-            foreach (Collider col in stand.GetComponentsInChildren<Collider>(true))
-            {
-                Object.DestroyImmediate(col);
-            }
         }
     }
 }

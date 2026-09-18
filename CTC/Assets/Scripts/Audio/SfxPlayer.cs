@@ -61,6 +61,9 @@ namespace CTC.Runtime.Audio
         /// 누가 냈는지를 가르는데, 한 번호를 둘이 쓰면 고양이 봇이 제 구매음을 쫓아간다(C-22).
         /// </summary>
         CatShopBuy = 39,
+
+        /// <summary>상점 철문(2026-09-19) — 닫힐 때 쾅, 열릴 때 작게. 음원은 요새 설치음을 임시로 쓴다(소리 전량 재제작 때 갈아 끼운다).</summary>
+        ShopShutter = 40,
     }
 
     /// <summary>

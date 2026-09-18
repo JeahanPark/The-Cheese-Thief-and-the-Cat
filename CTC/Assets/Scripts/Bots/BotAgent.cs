@@ -595,7 +595,7 @@ namespace CTC.Runtime.Bots
         /// <summary>
         /// 지금 갈 상점. 없으면 false.
         ///
-        /// 자리는 <see cref="Map.ShopSpot.Nearest"/>가 명부에서 준다 — 판마다 바뀌므로
+        /// 자리는 <see cref="Map.ShopSpot.NearestFront"/>가 명부에서 준다 — 판마다 바뀌므로
         /// 좌표를 캐시하지 않는다. 갈지 말지는 <see cref="MouseBotLogic.WantsShopping"/>가 정한다.
         /// </summary>
         public bool TryGetShop(out Vector3 _shop)
@@ -605,13 +605,14 @@ namespace CTC.Runtime.Bots
 
             TechId next = m_Shopper.NextWant();
             if (next == TechId.None) return false;
-            if (!Map.ShopSpot.Nearest(Position, out Vector3 center)) return false;
+            // 부스 몸통이 막혀 있어(2026-09-19) 가운데가 아니라 **창구 앞**으로 간다. 철문이 닫힌 상점은 안 고른다.
+            if (!Map.ShopSpot.NearestFront(Position, true, out Vector3 front)) return false;
 
             int cheese = m_Wallet != null ? m_Wallet.CheeseValue : 0;
             int cost = TechLogic.RowOf(next, 1).Cost;
-            if (!MouseBotLogic.WantsShopping(next, cheese, cost, DistanceTo(center))) return false;
+            if (!MouseBotLogic.WantsShopping(next, cheese, cost, DistanceTo(front))) return false;
 
-            _shop = center;
+            _shop = front;
             return true;
         }
 
@@ -619,7 +620,7 @@ namespace CTC.Runtime.Bots
         /// 지금 상점 원반 안인가 — 도착 판정은 반경이지 <c>ARRIVE_DISTANCE</c>가 아니다.
         /// 거리로 재면 반경 밖에 서서 영원히 구매에 실패한다(서버 판정과 같은 식을 쓴다).
         /// </summary>
-        public bool IsInsideShop() => Map.ShopSpot.AnyContains(Position);
+        public bool IsInsideShop() => Map.ShopSpot.AnyOpenContains(Position);
 
         /// <summary>상점으로 가는 중이다 — 계측용 시간 적립(도달 실패를 여기서 센다).</summary>
         public void MarkShopping(bool _inside, float _seconds)

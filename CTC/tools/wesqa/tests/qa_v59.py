@@ -68,6 +68,49 @@ def warp_into_shop(host, limit=12.0):
     return False
 
 
+def fields(line):
+    out = {}
+    for part in (line or "").split():
+        if "=" in part:
+            k, v = part.split("=", 1)
+            out[k] = v
+    return out
+
+
+def shutter_closed(host):
+    """호스트 쥐에게 가장 가까운 상점의 철문 — "True"/"False"(없으면 None)."""
+    return fields(host.invoke("TestGetNearestShutter", _clientId=0)).get("closed")
+
+
+def wallet(host):
+    """호스트 쥐의 (잔액, 누적 획득). 두 값 사이에 수입이 끼면 다시 읽는다.
+
+    쓴 돈은 **잔액 차이 + 그 사이 번 돈**이다 — 잔액만 보면 상점 곁 채굴 수입이 섞여
+    「50을 냈는데 42가 빠졌다」가 된다(2026-09-19 실측 73→31).
+    """
+    for _ in range(5):
+        e0 = host.invoke("TestGetEarnedOf", _clientId=0)
+        c = host.invoke("TestGetCheese")
+        e1 = host.invoke("TestGetEarnedOf", _clientId=0)
+        if e0 == e1:
+            return c, e1
+    return c, e1
+
+
+def park_cat(cat, host):
+    """고양이를 호스트 쥐의 상점에서 14m 떨어뜨리고 철문이 다시 열릴 때까지 기다린다(6.5m 밖 1.5초).
+
+    2026-09-19 상점 부스 — 고양이가 상점 5m 안이면 철문이 닫혀 팝업이 안 열린다. ①이 호스트를
+    맵 가운데(고양이 스폰 곁)로 보냈다가 가장 가까운 상점으로 워프하므로 고양이가 가까울 수 있다.
+    """
+    cat.invoke("TestTeleportNearShopOf", _clientId=0, _meters=14.0)
+    t0 = time.time()
+    while time.time() - t0 < 5.0:
+        if shutter_closed(host) == "False":
+            return
+        time.sleep(0.3)
+
+
 def main():
     host = WesPoco(instance=0)     # 쥐
     cat = WesPoco(instance=1)      # 고양이
@@ -90,6 +133,7 @@ def main():
 
     # ---------- ② 상점 안에서 열리고 열 장이 보인다 ----------
     in_shop = warp_into_shop(host)
+    park_cat(cat, host)
     opened = host.invoke("TestToggleShopPopup") if in_shop else False
     cards = cards_of(host)
     check("② 상점 원 안에서 E를 누르면 파는 물건 %d종이 한 화면에 뜬다" % CARD_COUNT,
@@ -112,13 +156,16 @@ def main():
 
     # ---------- ④ 클릭하면 사진다 ----------
     before_level = host.invoke("TestGetTechLevel", _clientId=0, _techId=FIRST_BUY)
+    c0, e0 = wallet(host)
     clicked = host.invoke("TestClickShopCard", _tech=FIRST_BUY)
     time.sleep(1.5)
     after_level = host.invoke("TestGetTechLevel", _clientId=0, _techId=FIRST_BUY)
-    after_cheese = host.invoke("TestGetCheese")
-    check("④ 카드를 클릭하면 실제로 사진다 — 레벨이 오르고 치즈가 준다",
-          clicked and after_level == before_level + 1 and after_cheese == cheese - FIRST_BUY_COST,
-          "클릭=%s · 레벨 %s→%s · 치즈 %s→%s" % (clicked, before_level, after_level, cheese, after_cheese),
+    c1, e1 = wallet(host)
+    spent = (c0 - c1) + (e1 - e0)
+    check("④ 카드를 클릭하면 실제로 사진다 — 레벨이 오르고 값만큼 치즈가 나간다",
+          clicked and after_level == before_level + 1 and spent == FIRST_BUY_COST,
+          "클릭=%s · 레벨 %s→%s · 치즈 %s→%s(그 사이 번 돈 %s) → 쓴 돈 %s (기대 %s)"
+          % (clicked, before_level, after_level, c0, c1, e1 - e0, spent, FIRST_BUY_COST),
           case="C-36")
 
     # ---------- ⑤ 핫바는 「쓴다」 전용이다 ----------
@@ -130,13 +177,21 @@ def main():
 
     # ---------- ⑥ 맞으면 닫힌다 ----------
     # 고양이를 덮치기 사거리 안으로 데려와 실제로 때린다 — 상점은 안전지대가 아니다.
-    # **다른 쥐를 먼저 치운다** — `TestTeleportAtRangeFrom`은 가장 가까운 쥐를 고르므로,
-    # 클론 쥐가 더 가까우면 고양이가 그쪽을 때려 호스트 HP가 안 준다(2026-09-19 실측).
+    # **다른 쥐를 먼저 치운다** — 클론 쥐가 더 가까우면 고양이가 그쪽을 때려 호스트 HP가 안 준다(2026-09-19 실측).
+    # 2026-09-19 상점 부스: 걷는 고양이가 상점 5m 안에 들면 **철문이 먼저 닫혀** 팝업이 닫힌다 —
+    # 그러면 「맞아서 닫혔다」를 못 잰다. 그래서 **살금살금**(철문 반경 2.5m)으로 중심 3m 대각선에 세운다.
+    # 호스트(창구 앞 1.3m)까지 약 2.3m · 덮치기 사거리 2.8m · 부채꼴 안(약 24도)이다.
     other = WesPoco(instance=2)
-    other.invoke("TestTeleportLocalPlayer", _x=13.0, _z=13.0)
+    s6 = fields(host.invoke("TestGetNearestShutter", _clientId=0))
+    cx, cz = [float(v) for v in s6.get("center", "0,0").split(",")]
+    far = max([(13.0, 13.0), (-13.0, -13.0)], key=lambda q: (q[0] - cx) ** 2 + (q[1] - cz) ** 2)
+    other.invoke("TestTeleportLocalPlayer", _x=far[0], _z=far[1])
+    cat.invoke("TestSetSneak", _on=True)
     time.sleep(1.5)
-    cat.invoke("TestTeleportAtRangeFrom", _role="Mouse", _meters=1.5, _yawOffset=0.0, _botOnly=False)
+    cat.invoke("TestTeleportNearShopOf", _clientId=0, _meters=3.0)
     time.sleep(1.5)
+    pre_open = len(cards_of(host)) > 0
+    pre_shutter = shutter_closed(host)
     hp0 = host.invoke("TestGetLocalHp")
     for _ in range(8):
         cat.invoke("TestPounce")
@@ -146,9 +201,13 @@ def main():
     hp1 = host.invoke("TestGetLocalHp")
     time.sleep(0.5)
     still_open = len(cards_of(host)) > 0
-    check("⑥ 맞으면 창이 닫힌다 — 상점은 안전지대가 아니다",
-          hp1 < hp0 and not still_open,
-          "HP %s→%s · 닫힘=%s" % (hp0, hp1, not still_open), case="C-34")
+    post_shutter = shutter_closed(host)
+    cat.invoke("TestSetSneak", _on=False)
+    # 철문이 내내 열려 있었어야 「맞아서」 닫힌 것이다(철문이 닫혀도 팝업은 닫힌다)
+    check("⑥ 맞으면 창이 닫힌다 — 상점은 안전지대가 아니다(철문은 열린 채)",
+          pre_open and pre_shutter == "False" and hp1 < hp0 and not still_open and post_shutter == "False",
+          "맞기 전 창=%s 철문 닫힘=%s · HP %s→%s · 창 닫힘=%s · 맞은 뒤 철문 닫힘=%s"
+          % (pre_open, pre_shutter, hp0, hp1, not still_open, post_shutter), case="C-34")
 
     return summary()
 

@@ -136,6 +136,17 @@ def snapshot(host):
     }
 
 
+def park_cat(cat, host, client_id):
+    """고양이(`cat` = 그 몸의 인스턴스)를 그 쥐의 상점에서 14m 떨어뜨리고 철문이 다시 열릴 때까지 기다린다.
+
+    2026-09-19 상점 부스 — 고양이가 상점 5m 안이면 철문이 닫혀 쥐의 구매가 `ShopClosed`로 거절된다.
+    거절 사유 검사에서 **품절(SoldOut)보다 철문(ShopClosed)이 먼저**라, 닫힌 채면 ⑥이 엉뚱한 이유로 통과한다.
+    """
+    cat.invoke("TestTeleportNearShopOf", _clientId=client_id, _meters=14.0)
+    return poll(lambda: "closed=False" in (host.invoke("TestGetNearestShutter", _clientId=client_id) or ""),
+                lambda v: v, limit=5.0)
+
+
 def restart_round(host):
     """판을 끝내고 다시 연다 → (성공?, 설명).
 
@@ -290,6 +301,7 @@ def main():
 
     host.invoke("TestWarpToNearestShop", _clientId=m1)
     in_shop = poll(lambda: bool(host.invoke("TestIsInShop", _clientId=m1)), lambda v: v, limit=8.0)
+    park_cat(host, host, m1)      # 호스트 = 고양이
 
     sold = last["soldout"][0] if last["soldout"] else ""
     control = next((t for t in CONTROL_CANDIDATES if t not in last["soldout"]), "")
@@ -297,16 +309,17 @@ def main():
     # ⑥ 품절 테크 — 레벨도 치즈도 **안 움직여야** 한다.
     lv_before = host.invoke("TestGetTechLevel", _clientId=m1, _techId=sold)
     cheese_before = host.invoke("TestGetCheeseOf", _clientId=m1)
-    m1i.invoke("TestBuyTechLocal", _techId=sold)
+    verdict = m1i.invoke("TestBuyTechLocal", _techId=sold) or ""
     time.sleep(2.0)                       # 거절은 "아무 일도 안 일어난다"라 기다릴 조건이 없다
     lv_after = host.invoke("TestGetTechLevel", _clientId=m1, _techId=sold)
     cheese_after = host.invoke("TestGetCheeseOf", _clientId=m1)
-    check("⑥ 품절 테크는 상점 안에서도 못 산다 (레벨 0 유지 · 차감 0)",
+    # 거절 **사유**까지 본다 — 레벨·치즈만 보면 철문(ShopClosed)이 막아도 통과한다(2026-09-19 상점 부스)
+    check("⑥ 품절 테크는 상점 안에서도 못 산다 (레벨 0 유지 · 차감 0 · 사유 SoldOut)",
           bool(sold) and in_shop and lv_before == 0 and lv_after == 0
-          and cheese_after == cheese_before,
-          "%s Lv%s→%s · 치즈 %s→%s (차감 %s) · 상점 안=%s"
+          and cheese_after == cheese_before and "local=SoldOut" in verdict,
+          "%s Lv%s→%s · 치즈 %s→%s (차감 %s) · 상점 안=%s · 판정=%s"
           % (sold or "?", lv_before, lv_after, cheese_before, cheese_after,
-             cheese_before - cheese_after if cheese_before is not None else "?", in_shop))
+             cheese_before - cheese_after if cheese_before is not None else "?", in_shop, verdict))
 
     # ⑦ 대조군 — 같은 자리·같은 지갑으로 품절 아닌 것은 사진다.
     cost = host.invoke("TestGetTechCost", _techId=control, _level=1)

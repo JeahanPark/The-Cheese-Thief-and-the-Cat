@@ -52,15 +52,36 @@ def note(name, detail):
 
 def face_and_pounce(cat, tx, tz, cx, cz):
     """고양이를 (cx,cz)에 세우고 (tx,tz)를 바라보게 한 뒤 덮친다.
-    몸 회전은 이동 입력으로만 바뀌므로 아주 짧게 밀었다가 제자리로 되돌린다."""
-    cat.invoke("TestTeleportLocalPlayer", _x=cx, _z=cz)
-    time.sleep(0.4)
-    cat.invoke("TestWalkDirection", _x=tx - cx, _z=tz - cz, _seconds=0.08)
-    time.sleep(0.4)
+    몸 회전은 이동 입력으로만 바뀌므로 아주 짧게 밀었다가 제자리로 되돌린다.
+
+    한 번(0.08s)에 약 58도(회전 720도/s)라 **네 번** 민다 — 반대쪽을 보고 있어도 돈다.
+    한 번만 밀던 시절엔 앞 절이 고양이를 +x로 세워 두는 데 기댔는데, 상점 부스(2026-09-19) 뒤로
+    `warp_to_shop`이 고양이를 치우며 상점 쪽으로 돌려 세워 §6이 헛쳤다(획득 0).
+    """
+    for _ in range(4):
+        cat.invoke("TestTeleportLocalPlayer", _x=cx, _z=cz)
+        time.sleep(0.3)
+        cat.invoke("TestWalkDirection", _x=tx - cx, _z=tz - cz, _seconds=0.08)
+        time.sleep(0.3)
     cat.invoke("TestTeleportLocalPlayer", _x=cx, _z=cz)
     time.sleep(0.3)
     cat.invoke("TestPounce")
     time.sleep(0.6)
+
+
+def wallet_of(inst, client_id):
+    """그 몸의 (잔액, 누적 획득) — 두 값 사이에 수입이 끼면 다시 읽는다.
+
+    쓴 돈은 **잔액 차이 + 그 사이 번 돈**이다. 잔액만 보면 상점 곁 채굴 수입이 섞여
+    「100을 냈는데 93이 빠졌다」가 된다(2026-09-19 실측 — 창구 앞이 치즈 지점 채굴 반경 안이었다).
+    """
+    for _ in range(5):
+        e0 = inst.invoke("TestGetEarnedOf", _clientId=client_id)
+        c = inst.invoke("TestGetCheese")
+        e1 = inst.invoke("TestGetEarnedOf", _clientId=client_id)
+        if e0 == e1:
+            return c, e1
+    return c, e1
 
 
 def warp_to_shop(host, player, client_id):
@@ -69,9 +90,18 @@ def warp_to_shop(host, player, client_id):
 
     TestWarpToNearestShop은 BodyPush.ServerPush 경유라 **서버(호스트) 인스턴스**로 불러야 하고,
     그 안에서 다시 소유자 RPC를 타므로 클론의 몸은 왕복이 끝나야 실제로 움직인다 — 그래서 쉬었다 확인한다.
+
+    이 스위트의 호스트는 **고양이**다 — 도착하면 고양이(호스트)를 그 상점에서 14m 치우고 철문이 열리길 기다린다
+    (2026-09-19 상점 부스: 고양이가 상점 5m 안이면 철문이 닫혀 구매가 `ShopClosed`로 거절된다).
     """
     host.invoke("TestWarpToNearestShop", _clientId=client_id)
     time.sleep(1.0)
+    host.invoke("TestTeleportNearShopOf", _clientId=client_id, _meters=14.0)
+    t0 = time.time()
+    while time.time() - t0 < 5.0:
+        if "closed=False" in (host.invoke("TestGetNearestShutter", _clientId=client_id) or ""):
+            break
+        time.sleep(0.3)
     return bool(player.invoke("TestIsInShop", _clientId=client_id))
 
 
@@ -156,10 +186,11 @@ def main():
     # (1) 설치권은 상점에서만 살 수 있다 — 옮겨 사고 자리로 돌아온다
     in_shop = warp_to_shop(cat, m2, m2_id)
     check("상점 — 쥐가 상점 자리로 들어갔다", in_shop, "inShop=%s" % in_shop)
-    right_before = m2.invoke("TestGetCheese")
+    rc0, re0 = wallet_of(m2, m2_id)
     m2.invoke("TestBuyTechLocal", _techId="Fortress")
     time.sleep(1.2)
-    right_spent = right_before - m2.invoke("TestGetCheese")
+    rc1, re1 = wallet_of(m2, m2_id)
+    right_spent = (rc0 - rc1) + (re1 - re0)
     check("요새 — 상점에서 설치권 구매",
           m2.invoke("TestGetTechLevel", _clientId=m2_id, _techId="Fortress") == 1
           and right_spent == fort_right_cost,
@@ -172,7 +203,7 @@ def main():
     # §6의 face_and_pounce(+x)와 바라보는 방향이 같다 — 0.08s 걷기론 180°를 못 돈다(실측).
     cat.invoke("TestTeleportLocalPlayer", _x=fort_x - 0.6, _z=sz)
     time.sleep(0.8)
-    fort_cheese_before = m2.invoke("TestGetCheese")
+    fc0, fe0 = wallet_of(m2, m2_id)
     m2.invoke("TestUseTechLocal", _techId="Fortress")
     time.sleep(1.5)
     fpos = m2.invoke("TestGetFortressPos")
@@ -193,7 +224,8 @@ def main():
         cat_gap2 = cat.invoke("TestGetDistanceTo", _x=fx, _z=fz)
         check("요새 — 고양이는 못 들어간다", cat_gap2 > 1.2, "밀어붙인 뒤 %.2f" % cat_gap2)
         # 첫 요새 = 설치권 + 설치비(=180). 부수고 다시 세우는 건 설치비(80)만 — 째기 응징이 살아 있다.
-        place_spent = fort_cheese_before - m2.invoke("TestGetCheese")
+        fc1, fe1 = wallet_of(m2, m2_id)
+        place_spent = (fc0 - fc1) + (fe1 - fe0)
         check("요새 — 설치마다 설치비가 나간다(재설치 값)", place_spent == fort_place_cost,
               "설치 %s (기대 %s)" % (place_spent, fort_place_cost))
         check("요새 — 첫 요새 총액 = 설치권 + 설치비",
@@ -257,8 +289,11 @@ def main():
 
     # ---------- 7. 창고 수입 1/s ----------
     print("   창고 생산 21초 대기...")
+    # 세기는 **기다리는 21초 동안만** — 설치 전(before_ticks)부터 세면 §6 덮치기 시간까지 섞여
+    # 창은 25~27초가 된다(2026-09-19: 덮치기 조준을 네 번 밀게 되자 13틱으로 넘쳤다).
+    ticks0 = m1.invoke("TestGetWarehouseTicks")
     time.sleep(21)
-    ticks = m1.invoke("TestGetWarehouseTicks") - before_ticks
+    ticks = m1.invoke("TestGetWarehouseTicks") - ticks0
     check("창고 — 2초마다 1틱(5/s)", 8 <= ticks <= 12, "21초 동안 %s틱 (기대 10)" % ticks)
 
     # ---------- 8. 따봉 ----------

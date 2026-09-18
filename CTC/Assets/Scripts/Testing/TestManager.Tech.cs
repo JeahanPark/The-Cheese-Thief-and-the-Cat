@@ -349,7 +349,8 @@ namespace CTC.Runtime.Testing
             if (p == null) return false;
 
             // 같은 질의는 한 군데서 — 봇 목적지와 같은 명부를 본다(계획 3 Task 6).
-            if (!ShopSpot.Nearest(p.transform.position, out Vector3 center)) return false;
+            // 부스 몸통이 막혀 있다(2026-09-19) — 가운데가 아니라 창구 앞으로 민다. 철문 상태는 안 가린다.
+            if (!ShopSpot.NearestFront(p.transform.position, false, out Vector3 center)) return false;
 
             BodyPush push = p.GetComponent<BodyPush>();
             if (push == null) return false;
