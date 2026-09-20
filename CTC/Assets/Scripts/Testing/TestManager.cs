@@ -166,6 +166,73 @@ namespace CTC.Runtime.Testing
             return session != null ? session.BotCount : -1;
         }
 
+        /// <summary>대기실 맵 고르기 — 방장(서버)만. 배열 순서가 곧 맵 인덱스다(RoomMapCatalog).</summary>
+        public void TestSelectRoomMap(int _index)
+        {
+            var session = FindAnyObjectByType<Room.RoomSession>();
+            if (session == null) { GameDebug.LogError("[TestManager] RoomSession 없음"); return; }
+            session.SelectMap(_index);
+        }
+
+        /// <summary>
+        /// 대기실 한 줄 — 봇·맵(고른 것/개수)·시작 가능·시작 중·시작 버튼이 눌리는 상태인가(2026-09-19).
+        /// 판에서 돌아온 대기실이 설정을 들고 있는지, 시작 버튼이 실제로 눌리는지를 같이 본다.
+        /// </summary>
+        public string TestGetRoomState()
+        {
+            var session = FindAnyObjectByType<Room.RoomSession>();
+            if (session == null) return "missing";
+            var catalog = FindAnyObjectByType<Room.RoomMapCatalog>();
+            var controller = FindAnyObjectByType<Room.RoomController>();
+            UnityEngine.UI.Button start = controller != null ? controller.DevStartButton : null;
+            bool pressable = start != null && start.gameObject.activeInHierarchy && start.interactable;
+            return $"bots={session.BotCount} map={session.MapIndex} maps={(catalog != null ? catalog.Count : -1)} " +
+                   $"canStart={session.CanStart} starting={session.Starting} startPressable={pressable}";
+        }
+
+        /// <summary>
+        /// 시작 버튼을 **사람처럼** 누른다 — 버튼 한가운데에 UI 레이를 쏴서 맨 위에 맞은 것을 누른다.
+        /// 그래서 흐린(잠긴) 버튼은 안 눌리고, 투명한 무언가가 버튼을 덮고 있으면 그것이 클릭을 먹는다.
+        /// 강제 시작(`TestRoomForceStart`)과 달리 시작 조건을 그대로 지난다. 시작이 걸렸으면 true.
+        /// </summary>
+        public bool TestRoomClickStart()
+        {
+            var controller = FindAnyObjectByType<Room.RoomController>();
+            var session = FindAnyObjectByType<Room.RoomSession>();
+            UnityEngine.UI.Button start = controller != null ? controller.DevStartButton : null;
+            var events = UnityEngine.EventSystems.EventSystem.current;
+            if (start == null || session == null || events == null)
+            {
+                GameDebug.LogError("[TestManager] 대기실 시작 버튼·EventSystem 없음");
+                return false;
+            }
+
+            var rect = (RectTransform)start.transform;
+            Canvas canvas = start.GetComponentInParent<Canvas>();
+            Camera eye = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            var pointer = new UnityEngine.EventSystems.PointerEventData(events)
+            {
+                position = RectTransformUtility.WorldToScreenPoint(eye, rect.TransformPoint(rect.rect.center))
+            };
+            var hits = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+            events.RaycastAll(pointer, hits);
+            if (hits.Count == 0) { GameDebug.LogWarning("[TestManager] 시작 버튼 자리에 아무것도 안 맞는다"); return false; }
+
+            GameObject target = UnityEngine.EventSystems.ExecuteEvents
+                .GetEventHandler<UnityEngine.EventSystems.IPointerClickHandler>(hits[0].gameObject);
+            if (target != start.gameObject)
+            {
+                GameDebug.LogWarning($"[TestManager] 시작 버튼 자리의 클릭을 '{hits[0].gameObject.name}'가 먹는다");
+                return false;
+            }
+
+            pointer.pointerPressRaycast = hits[0];
+            pointer.pointerCurrentRaycast = hits[0];
+            UnityEngine.EventSystems.ExecuteEvents.Execute(target, pointer,
+                UnityEngine.EventSystems.ExecuteEvents.pointerClickHandler);
+            return session.Starting;
+        }
+
         /// <summary>대기실 강제 시작(인원 조건 무시) — RoomDirector.DevForceStartMatch 통로.</summary>
         public void TestRoomForceStart()
         {

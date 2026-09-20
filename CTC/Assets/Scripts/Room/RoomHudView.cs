@@ -2,6 +2,7 @@ using CTC.Runtime.Core;
 using R3;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CTC.Runtime.Room
 {
@@ -54,10 +55,16 @@ namespace CTC.Runtime.Room
             }
 
             if (m_CountLabel != null) m_CountLabel.text = RoomLogic.CountLabel(count);
-            if (m_StartHint != null) m_StartHint.text = RoomLogic.StartHint(count, isHost);
+            // 봇도 인원이다 — 시작 조건(RoomBotLogic.CanStartWithBots)과 같은 수로 안내한다.
+            if (m_StartHint != null) m_StartHint.text = RoomLogic.StartHint(count + m_Session.BotCount, isHost);
 
             // 방장이 아니면 버튼 자체를 안 보여 준다 — 못 누르는 버튼이 떠 있으면 기다리게 만든다.
-            if (m_StartButton != null) m_StartButton.SetActive(isHost && !m_Session.Starting);
+            if (m_StartButton != null)
+            {
+                m_StartButton.SetActive(isHost && !m_Session.Starting);
+                // 아직 못 시작하면 흐리게 잠근다 — 눌러도 아무 일도 없는 밝은 버튼이 「고장」으로 읽혔다(2026-09-19).
+                if (m_StartButton.TryGetComponent(out Button button)) button.interactable = m_Session.CanStart;
+            }
 
             // 봇 자리 — 방장 + 개발 빌드에서만. 배포 빌드에선 버튼도 글자도 없다.
             bool showBots = isHost && !m_Session.Starting && Debug.isDebugBuild;

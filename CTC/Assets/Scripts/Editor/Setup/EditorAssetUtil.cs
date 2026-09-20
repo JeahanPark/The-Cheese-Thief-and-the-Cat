@@ -76,8 +76,17 @@ namespace CTC.Editor
             }
 
             var source = AssetDatabase.LoadAssetAtPath<Material>(_sourceMatPath);
+            string path = MaterialsDir + "/" + _name + ".mat";
 
-            var mat = new Material(shader) { name = _name };
+            // **지우고 다시 만들지 않는다**(2026-09-19). 이 메뉴가 다시 굽지 않는 프리팹(대기실 몸 `RoomMouse`)이
+            // 이 머티리얼을 물고 있는데, 지웠다 만들면 에디터가 들고 있는 그 프리팹의 참조가 **지워진 옛 객체**를
+            // 가리킨 채 남는다. 에디터 화면은 멀쩡해 보여도 빌드가 그 프리팹을 메모리에서 쓰면서
+            // **머티리얼 칸이 비어** 대기실 쥐가 마젠타로 떴다. 있으면 그 객체를 그대로 고쳐 쓴다.
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            bool created = mat == null;
+            if (created) mat = new Material(shader) { name = _name };
+            else mat.shader = shader;
+
             if (source != null)
             {
                 if (source.HasProperty("_Color")) mat.SetColor("_Color", source.GetColor("_Color"));
@@ -85,9 +94,12 @@ namespace CTC.Editor
                 if (source.HasProperty("_Emission")) mat.SetFloat("_Emission", source.GetFloat("_Emission"));
             }
 
-            string path = MaterialsDir + "/" + _name + ".mat";
-            AssetDatabase.DeleteAsset(path);
-            AssetDatabase.CreateAsset(mat, path);
+            if (created) AssetDatabase.CreateAsset(mat, path);
+            else
+            {
+                EditorUtility.SetDirty(mat);
+                AssetDatabase.SaveAssetIfDirty(mat);
+            }
 
             // 구운 뒤 실제로 셰이더가 붙었는지 다시 확인한다 — 디스크에 마젠타가 남는 것을 막는다.
             var written = AssetDatabase.LoadAssetAtPath<Material>(path);

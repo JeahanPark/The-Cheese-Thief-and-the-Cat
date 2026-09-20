@@ -107,6 +107,14 @@ namespace CTC.Runtime.Room
                 NetworkManager.OnClientConnectedCallback += OnClientConnected;
                 NetworkManager.OnClientDisconnectCallback += OnClientDisconnected;
                 foreach (ulong id in NetworkManager.ConnectedClientsIds) EnsureEntry(id);
+
+                // 판에서 돌아온 대기실이면 봇 수·맵을 되살린다(2026-09-19) — 새로 스폰된 이 세션은
+                // 봇 0·기본 맵이라, 혼자+봇으로 한 판 하고 돌아오면 시작을 눌러도 아무 일도 없었다.
+                if (RoomReturnMemo.TryConsume(out int bots, out int map))
+                {
+                    m_MapIndex.Value = map;
+                    m_BotCount.Value = RoomBotLogic.ClampBots(bots, MemberCount);
+                }
             }
 
             // 이름은 각자만 안다(스팀 이름은 로컬 API다) — 붙자마자 서버에 알린다.

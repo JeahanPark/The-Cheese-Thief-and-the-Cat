@@ -77,6 +77,11 @@ namespace CTC.Runtime.Room
             if (nm != null) nm.OnClientDisconnectCallback -= OnDisconnected;
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>QA 전용 — 시작 버튼을 사람처럼 누르려고 꺼낸다(흐린 버튼은 안 눌린다).</summary>
+        public Button DevStartButton => m_StartButton;
+#endif
+
         private void OnClickStart()
         {
             if (m_Director == null || m_Session == null) return;

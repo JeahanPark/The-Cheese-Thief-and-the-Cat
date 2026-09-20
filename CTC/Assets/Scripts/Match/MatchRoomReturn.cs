@@ -10,9 +10,9 @@ namespace CTC.Runtime.Match
     /// **단판제**(2026-09-15, 사용자 결정 — 3판 시리즈를 걷었다). `LobbyController` GO에 동승한다.
     ///
     /// 판이 끝나면 결과를 잠깐 보여 주고 **대기실로 돌아간다.** 다음 판은 대기실에서 다시 시작한다 —
-    /// 고양이 재추첨·봇 수는 대기실이 매번 새로 정하므로(직전 고양이는 `MatchHandoff.PreviousCat`으로 빠진다)
+    /// 고양이는 대기실이 매번 새로 뽑으므로(직전 고양이는 `MatchHandoff.PreviousCat`으로 빠진다)
     /// 여기서 판을 넘기며 상태를 이어 붙일 일이 없다. 시리즈가 겪던 판 넘김 버그(봇 증발·단계 잔존)가
-    /// 구조째로 사라진다.
+    /// 구조째로 사라진다. 방 설정(봇 수·맵)은 `RoomReturnMemo`가 대기실로 되가져간다(2026-09-19).
     ///
     /// **대기실에서 온 판에서만 돈다.** `Game.unity`를 혼자 열었을 때(wesqa·MPPM)는
     /// 아무 일도 안 한다 — 그쪽은 지금까지처럼 사람이 재시작을 누르는 흐름이다.
@@ -84,7 +84,11 @@ namespace CTC.Runtime.Match
             {
                 GameDebug.LogError($"[RoomReturn] 대기실 복귀 실패: {status}");
                 m_Handling = false;
+                return;
             }
+
+            // 돌아간 대기실이 떠나기 전 방 설정(봇 수·맵)을 되살린다(2026-09-19).
+            Room.RoomReturnMemo.MarkReturning();
         }
     }
 }

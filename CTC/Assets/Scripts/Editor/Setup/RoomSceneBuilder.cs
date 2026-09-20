@@ -42,7 +42,15 @@ namespace CTC.Editor
         /// <summary>참가자들이 둘러서는 원의 반지름(m). 정원 10명이 3m씩 벌어진다.</summary>
         private const float ROOM_STAND_RADIUS = 5f;
 
+        // 방 크기(2026-09-19 사용자: 「맵에 끝이 없다」) — 40m 바닥이 어둠 속으로 끝없이 이어져 보였다.
+        // 벽으로 닫는다. 서는 원(5m) 뒤로 궤도 카메라가 벽 안에 머물 만큼만 — 22×22m.
+        // 모습은 예전 그대로(단색 바닥 · 스포트라이트) 두고 **벽만 검게** 세운다(사용자 결정 — 벽돌·벽등은 걷었다).
+        private const float ROOM_HALF = 11f;
+        private const float ROOM_WALL_HEIGHT = 3.5f;
+        private const float ROOM_WALL_THICK = 0.4f;
+
         private static readonly Color ROOM_FLOOR = new Color(0.11f, 0.09f, 0.07f);
+        private static readonly Color ROOM_WALL = Color.black;
         private static readonly Color ROOM_LIGHT = new Color(1f, 0.91f, 0.72f);
         // 값의 출처는 CTC.Runtime.UI.UiPalette 하나다.
         private static readonly Color ROOM_ACCENT = UiPalette.Accent;
@@ -370,9 +378,40 @@ namespace CTC.Editor
         {
             GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
             floor.name = "Floor";
-            floor.transform.localScale = new Vector3(4f, 1f, 4f);   // 40×40m
-            floor.GetComponent<Renderer>().sharedMaterial =
-                MakeRoomMaterial("M_RoomFloor", ROOM_FLOOR, 0.06f);
+            floor.transform.localScale = new Vector3(ROOM_HALF * 0.2f, 1f, ROOM_HALF * 0.2f);   // 평면 1 = 10m, 벽까지
+            floor.GetComponent<Renderer>().sharedMaterial = MakeRoomMaterial("M_RoomFloor", ROOM_FLOOR, 0.06f);
+            // 바닥은 가림막이 아니다 — 인게임 바닥처럼 Ignore Raycast에 둬서 카메라 페이더가 바닥을 안 흐린다.
+            floor.layer = LayerMask.NameToLayer("Ignore Raycast");
+
+            BuildRoomWalls();
+        }
+
+        // 네 검은 벽 — 콜라이더가 있어 밖으로 못 나간다. Default 레이어라 궤도 카메라의 가림막
+        // 페이더(OccluderFader)가 벽 너머로 밀려난 시점에서 벽을 흐린다(카메라 등 뒤 벽에 붙어도 몸이 보인다).
+        private static void BuildRoomWalls()
+        {
+            Material wallMat = MakeRoomMaterial("M_RoomWall", ROOM_WALL, 0f);
+
+            var root = new GameObject("Walls").transform;
+            float span = ROOM_HALF * 2f + ROOM_WALL_THICK * 2f;
+            float offset = ROOM_HALF + ROOM_WALL_THICK * 0.5f;
+            float y = ROOM_WALL_HEIGHT * 0.5f;
+            (string name, Vector3 pos, Vector3 size)[] walls =
+            {
+                ("WallNorth", new Vector3(0f, y, offset), new Vector3(span, ROOM_WALL_HEIGHT, ROOM_WALL_THICK)),
+                ("WallSouth", new Vector3(0f, y, -offset), new Vector3(span, ROOM_WALL_HEIGHT, ROOM_WALL_THICK)),
+                ("WallEast", new Vector3(offset, y, 0f), new Vector3(ROOM_WALL_THICK, ROOM_WALL_HEIGHT, ROOM_HALF * 2f)),
+                ("WallWest", new Vector3(-offset, y, 0f), new Vector3(ROOM_WALL_THICK, ROOM_WALL_HEIGHT, ROOM_HALF * 2f)),
+            };
+            foreach ((string name, Vector3 pos, Vector3 size) in walls)
+            {
+                GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                wall.name = name;
+                wall.transform.SetParent(root, false);
+                wall.transform.localPosition = pos;
+                wall.transform.localScale = size;
+                if (wallMat != null) wall.GetComponent<Renderer>().sharedMaterial = wallMat;
+            }
         }
 
         private static void BuildRoomCamera()
@@ -380,7 +419,7 @@ namespace CTC.Editor
             // 몸이 스폰되기 전까지는 궤도 카메라가 안 붙는다 — 그 몇 프레임 동안 카메라가
             // 원점(=바닥 높이)에 있으면 화면이 통째로 검다(실측). 처음부터 방을 내려다보게 둔다.
             var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
-            camGo.transform.position = new Vector3(0f, 7f, -11f);
+            camGo.transform.position = new Vector3(0f, 7f, -ROOM_HALF + 1.5f);   // 남쪽 벽 안쪽
             camGo.transform.rotation = Quaternion.Euler(24f, 0f, 0f);
             Camera cam = camGo.AddComponent<Camera>();
             cam.clearFlags = CameraClearFlags.SolidColor;
@@ -407,26 +446,48 @@ namespace CTC.Editor
             var composer = orbitGo.AddComponent<CinemachineRotationComposer>();
             composer.Composition.ScreenPosition = new Vector2(0f, balance.CamScreenY);
 
+            // 인게임과 같은 가림막 처리 — 대기실 시점은 고정각이라 카메라 등 뒤 벽에 붙으면 카메라가 벽 밖으로
+            // 밀려나 벽이 몸을 가린다. 그 벽만 반투명으로 흐린다(카메라 거리는 그대로).
+            orbitGo.AddComponent<OccluderFader>();
             orbitGo.AddComponent<OrbitCameraController>();
         }
 
+        // 있는 머티리얼은 **그 객체를 고쳐 쓴다**(함정 22) — 지웠다 다시 만들면 이번에 다시 굽지 않은
+        // 에셋에 빈 참조가 굳어 빌드에서만 마젠타가 뜬다.
         private static Material MakeRoomMaterial(string _name, Color _color, float _smoothness)
         {
             if (!AssetDatabase.IsValidFolder(RoomMaterialDir))
                 AssetDatabase.CreateFolder("Assets/Materials", "Room");
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
-            if (shader == null) shader = Shader.Find("Standard");
-
             string path = $"{RoomMaterialDir}/{_name}.mat";
-            var mat = new Material(shader) { name = _name };
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            if (shader == null)
+            {
+                // 대규모 리임포트 중엔 null이 온다(함정 6) — 마젠타를 굽느니 있는 것을 그대로 쓴다.
+                Debug.LogError($"[RoomSceneBuilder] URP Lit 셰이더를 못 찾았다 — {_name}을 안 고친다");
+                return mat;
+            }
+
+            bool created = mat == null;
+            if (created) mat = new Material(shader) { name = _name };
+            else if (mat.shader != shader) mat.shader = shader;
+
             mat.SetColor("_BaseColor", _color);
             mat.SetColor("_Color", _color);
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0f);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", _smoothness);
 
-            AssetDatabase.DeleteAsset(path);
-            AssetDatabase.CreateAsset(mat, path);
+            if (created)
+            {
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            else
+            {
+                EditorUtility.SetDirty(mat);
+                AssetDatabase.SaveAssetIfDirty(mat);
+            }
             return mat;
         }
     }

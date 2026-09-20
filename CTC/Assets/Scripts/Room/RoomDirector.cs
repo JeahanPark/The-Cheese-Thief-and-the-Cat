@@ -129,6 +129,8 @@ namespace CTC.Runtime.Room
         {
             (int mice, int cats) = CatDrawLogic.BotSplit(m_Session.BotCount, _cat);
             MatchHandoff.Set(CatDrawLogic.RoleTable(_members, _cat), m_Session.MapIndex, _cat, mice, cats);
+            // 판이 끝나 돌아오면 이 방 설정 그대로 다시 선다 — 돌아온 대기실이 꺼내 간다.
+            RoomReturnMemo.Remember(m_Session.BotCount, m_Session.MapIndex);
         }
 
         // 결과가 화면에 뜰 시간을 준 뒤 넘긴다. **NGO의 SceneManager로만** 넘긴다 —

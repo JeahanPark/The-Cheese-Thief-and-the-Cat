@@ -17,9 +17,14 @@
   ⓪ 대기실에서 봇 판을 열면 「대기실에서 온 판」으로 켜지고 봇이 선다
   ① 시간 만료로 끝나면 결과 패널이 뜨고 **재시작 버튼은 없다**(대기실이 다음 판을 연다)
   ② 결과를 보여 준 뒤 **대기실로 돌아간다**
-  ③ 돌아간 대기실에서 다시 시작하면 판이 **처음처럼** 열린다 — 단계 Hunt · 봇 수 같음
+  ②-b 돌아간 대기실이 봇 수·맵을 **그대로 들고 있고** 시작 버튼이 눌리는 상태다
+  ③ 거기서 **시작 버튼을 사람처럼 누르면** 판이 처음처럼 열린다 — 단계 Hunt · 봇 수 같음
   ④ 2단계(깡패판)에서 깡패가 아닌 쥐가 이기면 결과가 「GANG DOWN! MICE WIN」이다
   ⑤ 그 판도 끝나면 대기실로 돌아간다
+
+②-b·③은 2026-09-19 사용자 보고(「게임이 끝나고 대기실로 돌아오면 시작이 안 된다」)에서 왔다.
+돌아온 대기실이 봇 0으로 서서 혼자면 시작 조건이 안 찼는데, 예전 ③은 봇을 **훅으로 다시 채우고
+강제 시작**해서 그 길을 한 번도 안 밟았다. 이제 ③은 봇을 건드리지 않고 진짜 시작 버튼을 누른다.
 """
 import sys, time, io
 
@@ -30,7 +35,7 @@ from wesqa import WesPoco
 
 RESULTS = []
 EXTRA = []
-EXPECTED = 6      # ⓪ 전제 + ①~⑤
+EXPECTED = 7      # ⓪ 전제 + ①~⑤ + ②-b
 
 
 def check(name, ok, detail="", case=None):
@@ -56,14 +61,30 @@ def skip(name, why):
     sys.stdout.flush()
 
 
+def room_state(host):
+    """대기실 한 줄(`TestGetRoomState`)을 사전으로 — bots·map·maps·canStart·starting·startPressable."""
+    out = {}
+    for part in (host.invoke("TestGetRoomState") or "").split():
+        if "=" in part:
+            key, value = part.split("=", 1)
+            out[key] = value
+    return out
+
+
 def start_from_room(host, bots=4):
-    """대기실에서 봇을 채워 강제 시작 → (대기실 봇 수, 판에 선 봇 수, 대기실에서 온 판인가)."""
+    """대기실에서 봇을 채우고 기본이 아닌 맵을 골라 강제 시작 → (시작 직전 대기실 상태, 판에 선 봇 수, 대기실에서 온 판인가).
+
+    맵을 일부러 바꾼다 — 돌아온 대기실이 맵까지 들고 있는지(②-b)를 기본값과 구별해 보려고.
+    고르는 건 대기실에 버튼이 있는 앞 두 칸 중 지금과 다른 것이다 — 넷째(격자 대형)는 개발 전용이라 버튼이 없다."""
     host.invoke("TestSetRoomBots", _count=bots)
     time.sleep(1.0)
-    room_bots = host.invoke("TestGetRoomBots")
+    current = int(room_state(host).get("map", "0"))
+    host.invoke("TestSelectRoomMap", _index=0 if current != 0 else 1)
+    time.sleep(1.0)
+    before = room_state(host)
     host.invoke("TestRoomForceStart")
     time.sleep(12.0)     # 씬 전환 + AutoStart(참가 대기·맵·판) + 봇 1초
-    return room_bots, host.invoke("TestGetBotCount"), host.invoke("TestGetRoomReturn") == "True"
+    return before, host.invoke("TestGetBotCount"), host.invoke("TestGetRoomReturn") == "True"
 
 
 def end_by_timer(host):
@@ -121,13 +142,13 @@ def main():
     time.sleep(6.0)     # 호스트 기동 + Room.unity 로드
     print("대기실 진입: 씬=%s" % host.invoke("TestGetActiveSceneName"))
 
-    room_bots, bots1, from_room = start_from_room(host)
+    before1, bots1, from_room = start_from_room(host)
     ok_setup = check("⓪ 대기실 봇 판이 열렸다 — 대기실에서 온 판 · 봇이 섰다",
                      from_room and bots1 >= 1 and host.invoke("TestGetMatchResult") == "None"
                      and host.invoke("TestGetPhase") == "Hunt",
-                     "대기실 봇=%s · 대기실 판=%s · 선 봇=%s · 단계=%s · 씬=%s"
-                     % (room_bots, from_room, bots1, host.invoke("TestGetPhase"),
-                        host.invoke("TestGetActiveSceneName")))
+                     "대기실 봇=%s · 맵=%s/%s · 대기실 판=%s · 선 봇=%s · 단계=%s · 씬=%s"
+                     % (before1.get("bots"), before1.get("map"), before1.get("maps"), from_room, bots1,
+                        host.invoke("TestGetPhase"), host.invoke("TestGetActiveSceneName")))
     if not ok_setup:
         print("!! 판이 안 열렸다 — Room.unity에서 시작했는지, 봇이 켜졌는지 본다")
         return summary(aborted=True)
@@ -147,13 +168,27 @@ def main():
     if scene1 != "Room":
         return summary(aborted=True)
 
-    # ---------- ③ 다음 판이 처음처럼 열린다 ----------
-    room_bots2, bots2, from_room2 = start_from_room(host)
+    # ---------- ②-b 돌아간 대기실이 설정을 들고 있다 ----------
+    after = room_state(host)
+    check("②-b 돌아간 대기실이 봇 수·맵을 그대로 들고 있고 시작 버튼이 눌리는 상태다",
+          after.get("bots") == before1.get("bots") and after.get("map") == before1.get("map")
+          and after.get("canStart") == "True" and after.get("startPressable") == "True",
+          "봇 %s→%s · 맵 %s→%s · 시작 가능=%s · 버튼 눌림=%s"
+          % (before1.get("bots"), after.get("bots"), before1.get("map"), after.get("map"),
+             after.get("canStart"), after.get("startPressable")), case="A-30")
+
+    # ---------- ③ 시작 버튼을 누르면 다음 판이 처음처럼 열린다 ----------
+    # 봇을 다시 채우지 않는다 — 돌아온 사람이 하는 일은 시작을 누르는 것뿐이다(강제 시작도 안 쓴다).
+    clicked = host.invoke("TestRoomClickStart")
+    time.sleep(12.0)     # 추첨 연출 + 씬 전환 + AutoStart
+    bots2 = host.invoke("TestGetBotCount")
+    from_room2 = host.invoke("TestGetRoomReturn") == "True"
     phase2 = host.invoke("TestGetPhase")
-    check("③ 돌아간 대기실에서 다시 시작하면 판이 처음처럼 열린다 — 단계 Hunt · 봇 수 같음",
-          from_room2 and phase2 == "Hunt" and bots2 == bots1
+    check("③ 돌아간 대기실에서 시작 버튼을 누르면 판이 처음처럼 열린다 — 단계 Hunt · 봇 수 같음",
+          clicked in (True, "True") and from_room2 and phase2 == "Hunt" and bots2 == bots1
           and host.invoke("TestGetMatchResult") == "None",
-          "대기실 판=%s · 단계=%s · 봇 %s→%s" % (from_room2, phase2, bots1, bots2), case="A-26")
+          "눌림=%s · 대기실 판=%s · 단계=%s · 봇 %s→%s" % (clicked, from_room2, phase2, bots1, bots2),
+          case="A-26 A-30")
 
     # ---------- ④ 깡패가 아닌 쥐의 승리 ----------
     # 정상 경로(깡패 쥐 + 고양이 사망)는 봇 판에서 못 만든다 — 봇에는 clientId가 없어
