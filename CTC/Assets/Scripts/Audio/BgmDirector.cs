@@ -17,6 +17,7 @@ namespace CTC.Runtime.Audio
         public static BgmDirector Instance { get; private set; }
 
         private AudioSource m_Source;
+        private AudioVolumeFollower m_Follower;
 
         private void Awake()
         {
@@ -46,21 +47,29 @@ namespace CTC.Runtime.Audio
             if (m_Source.clip == _clip && m_Source.isPlaying) return;
 
             m_Source.clip = _clip;
-            if (m_Source.volume > 0.0001f) m_Source.Play();
+            if (!IsOff()) m_Source.Play();
         }
 
         private void Update()
         {
             if (m_Source == null || m_Source.clip == null) return;
 
-            // 배경음 볼륨 0은 "끔"이다 — 소리 없이 돌리면 CPU만 쓴다.
-            if (m_Source.volume <= 0.0001f)
+            // 배경음 볼륨 0은 "끔"이다 — 소리 없이 돌리면 CPU만 쓴다. 단, 추격곡(`ChaseBgm`)이 섞느라 비율을
+            // 0으로 내린 것은 끔이 아니다 — 여기서 멈추면 추격이 끝났을 때 곡이 처음부터 다시 시작한다(2026-09-20).
+            if (IsOff())
             {
                 if (m_Source.isPlaying) m_Source.Stop();
                 return;
             }
 
             if (!m_Source.isPlaying) m_Source.Play();
+        }
+
+        private bool IsOff()
+        {
+            // 팔로워는 코드로 세울 때 나중에 붙는다(SceneBgm) — 그때그때 찾는다
+            if (m_Follower == null) m_Follower = GetComponent<AudioVolumeFollower>();
+            return m_Follower != null ? m_Follower.UserMuted : m_Source.volume <= 0.0001f;
         }
     }
 }

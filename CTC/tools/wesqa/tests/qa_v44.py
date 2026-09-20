@@ -74,6 +74,29 @@ def walk_and_measure(walker, listener, walker_id, dx, dz):
     return best
 
 
+def sneak_walk(walker, listener, walker_id):
+    """살금살금 걸으며 들리는 반경을 잰다 → (최대 반경, 출발점에서 가장 멀어진 거리 m).
+
+    무음이면 반경은 -1(안 걷는 것과 같다) — 그래서 **움직였는데도** -1이어야 무음이다(2026-09-20).
+    """
+    def at():
+        raw = listener.invoke("TestGetPlayerPos", _clientId=walker_id) or ""
+        x, z = (float(v) for v in raw.split(",")) if "," in raw else (0.0, 0.0)
+        return x, z
+
+    start = at()
+    best, moved, dx = -1.0, 0.0, 1.0
+    for _ in range(3):
+        walker.invoke("TestWalkDirection", _x=dx, _z=0.0, _seconds=1.2)
+        for _ in range(4):
+            time.sleep(0.25)
+            best = max(best, float(listener.invoke("TestGetFootstepRange", _clientId=walker_id)))
+            x, z = at()
+            moved = max(moved, ((x - start[0]) ** 2 + (z - start[1]) ** 2) ** 0.5)
+        dx = -dx   # 막혔으면 반대로 — 어느 쪽이든 벽 없는 방향이 하나는 있다
+    return best, moved
+
+
 def setup(p):
     """로비를 몰아 2:1 매치를 연다. 이미 시작돼 있으면 그대로 쓴다."""
     if p[0].invoke("TestGetRole") in ("Cat", "Mouse"):
@@ -150,7 +173,7 @@ def main():
           total - (reserve + wall + box_total) < 14,
           f"빈 몫 {total - (reserve + wall + box_total)}")
 
-    # ---------- 발소리: 잠행은 무음이 아니라 '좁게' ----------
+    # ---------- 발소리: 뛰면 넓게, 살금살금은 무음 ----------
     mouse_id = int(mouse.invoke("TestGetLocalClientId"))
     cat_id = int(cat.invoke("TestGetLocalClientId"))
 
@@ -164,12 +187,13 @@ def main():
           abs(walk_range - 22.0) < 0.6, f"{walk_range}")
 
     mouse.invoke("TestSetSneak", _on=True)
-    sneak_range = walk_and_measure(mouse, cat, mouse_id, -1.0, 0.0)
-    # 여기가 이 판의 핵심이다 — -1(무음)이면 넓은 맵에서 고양이가 이길 길이 없다
-    check("발소리 — 웅크려도 소리가 난다(무음 아님)", sneak_range > 0, f"{sneak_range}")
-    # 4 → 6 (`5e308d3` 같은 상향). 값의 주인은 `PlayerInfo.csv`(Mouse.SneakFootstepRangeMeters)다.
-    check("발소리 — 웅크리면 6m로 좁아진다(CSV Mouse.SneakFootstepRangeMeters)",
-          abs(sneak_range - 6.0) < 0.6, f"{sneak_range}")
+    sneak_range, sneak_moved = sneak_walk(mouse, cat, mouse_id)
+    # 2026-09-20 사용자 결정: 살금살금은 **완전 무음**(CSV Mouse.SneakFootstepRangeMeters 4→6→0).
+    # 무음이면 반경은 -1(멈춘 것과 같다)이라, 벽에 막혀 멈춘 것과 가르려면 **실제로 움직였는지**를 같이 본다.
+    # (8/10에 무음을 좁은 반경으로 바꾼 이유 — 넓은 맵에서 웅크린 쥐는 고양이에게 단서가 0 — 는 남은 위험이다.)
+    check("발소리 — 살금살금으로도 실제로 걷는다(무음 판정의 전제)", sneak_moved > 1.0, f"이동 {sneak_moved:.1f}m", case="B-40")
+    check("발소리 — 살금살금 걸음은 무음이다(CSV Mouse.SneakFootstepRangeMeters=0)",
+          sneak_moved > 1.0 and sneak_range <= 0, f"반경 {sneak_range} · 이동 {sneak_moved:.1f}m", case="B-40")
     mouse.invoke("TestSetSneak", _on=False)
     time.sleep(0.5)
 

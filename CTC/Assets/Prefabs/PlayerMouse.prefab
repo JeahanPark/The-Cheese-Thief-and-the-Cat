@@ -713,7 +713,7 @@ MonoBehaviour:
   m_StrideMeters: 1.9411764
   m_WalkThreshold: 0.5
   m_NormalRange: 22
-  m_SneakRange: 6
+  m_SneakRange: 0
 --- !u!114 &6539816911504078304
 MonoBehaviour:
   m_ObjectHideFlags: 0

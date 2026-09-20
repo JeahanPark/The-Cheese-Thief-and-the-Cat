@@ -10,14 +10,24 @@ namespace CTC.Runtime.Audio
     /// 맵이 8배 넓어지면 "숨어서 버티면 쥐 승"이라는 규칙과 맞물려 고양이가 이길 길이 없다.
     /// 그래서 잠행은 '무음'이 아니라 '아주 좁은 반경'이 됐다 — 스쳐 지나가면 못 듣지만
     /// 같은 방 코앞까지 오면 들킨다. 잠행의 값어치(이속 ×0.45)는 그대로다.
+    ///
+    /// **2026-09-20 사용자 결정: 살금살금은 다시 완전 무음이다** — CSV `SneakFootstepRangeMeters`를 0으로 내렸다.
+    /// 반경이 0이면 소리도 걸음 신호(<see cref="FootstepPlayer.Stepped"/> — 귀·봇 청각)도 없다. 위의 걱정(구석에 웅크린 쥐는
+    /// 고양이에게 단서가 0)은 그대로 남은 위험이다 — 판이 쥐 쪽으로 기울면 CSV 값만 되돌리면 된다.
     /// </summary>
     public static class FootstepLogic
     {
-        /// <summary>발소리가 들리는 최대 거리(m). 0이면 아무 소리도 안 난다(정지).</summary>
+        /// <summary>발소리가 들리는 최대 거리(m). 0이면 아무 소리도 안 난다(정지·무음 잠행).</summary>
         public static float AudibleRange(bool _moving, bool _sneaking, float _normalRange, float _sneakRange)
         {
             if (!_moving) return 0f;
             return Mathf.Max(0f, _sneaking ? _sneakRange : _normalRange);
+        }
+
+        /// <summary>이 반경으로 걸음 소리가 나는가 — 0이면 걸어도 소리·걸음 신호가 없다(무음 잠행).</summary>
+        public static bool MakesSound(float _range)
+        {
+            return _range > 0f;
         }
 
         /// <summary>속도가 걷기 임계를 넘었는가 — 제자리 미세 떨림으로 소리가 나면 안 된다.</summary>

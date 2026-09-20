@@ -77,7 +77,9 @@ namespace CTC.Runtime.Audio
             bool sneaking = m_Sneak != null && m_Sneak.Sneaking;
             bool moving = FootstepLogic.IsMoving(m_SmoothedSpeed, m_WalkThreshold);
             float range = FootstepLogic.AudibleRange(moving, sneaking, m_NormalRange, m_SneakRange);
-            IsStepping = moving;
+            // 잠행 반경이 0이면 걸어도 무음이다(2026-09-20) — 소리·걸음 신호 둘 다 없다
+            bool audible = FootstepLogic.MakesSound(range);
+            IsStepping = audible;
             CurrentRange = range;
 
             // 예민한 귀(내 클라의 가청 배율)는 여기서만 곱한다 — CurrentRange는 원본으로 남긴다.
@@ -85,10 +87,11 @@ namespace CTC.Runtime.Audio
             float heard = range * ListenerRange.Multiplier;
             HeardRange = heard;
 
-            // 반경을 바꿔 '들리는 거리'를 줄인다 — 재생을 끄면 잠행이 다시 완전 무음이 된다
+            // 반경을 바꿔 '들리는 거리'를 줄인다 — 반경 0(무음 잠행)은 아래에서 아예 재생하지 않는다
             if (heard > 0f && !Mathf.Approximately(m_Source.maxDistance, heard)) m_Source.maxDistance = heard;
 
-            if (!moving)
+            // 멈췄거나 무음 잠행 — 다시 소리가 나기 시작하면 첫 걸음이 바로 나게 누적을 비운다
+            if (!audible)
             {
                 m_WasMoving = false;
                 m_Accumulated = 0f;

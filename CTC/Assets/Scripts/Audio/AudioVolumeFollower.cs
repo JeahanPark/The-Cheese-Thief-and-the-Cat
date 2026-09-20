@@ -31,6 +31,8 @@ namespace CTC.Runtime.Audio
 
         private AudioSource m_Source;
         private float m_DesignVolume;
+        private float m_UserVolume = 1f;
+        private float m_Weight = 1f;
         private bool m_Bound;
 
         // 순수 C# 구독 핸들 — 규칙 9(`?.` 금지)는 UnityEngine.Object 파생에만 해당한다
@@ -38,6 +40,20 @@ namespace CTC.Runtime.Audio
 
         /// <summary>지금 따라가는 카테고리 — QA·테스트가 배선을 확인한다.</summary>
         public Category Kind => m_Category;
+
+        /// <summary>사용자가 이 카테고리를 껐는가(슬라이더 0) — 섞는 비율 때문에 0이 된 것과 가른다.</summary>
+        public bool UserMuted => m_UserVolume <= 0.0001f;
+
+        /// <summary>
+        /// 섞는 비율(0~1, 기본 1) — 두 곡을 크로스페이드하는 쪽(`ChaseBgm`)이 준다(2026-09-20). 소리 크기는
+        /// `설계값 × 사용자 볼륨 × 비율`이다. 볼륨을 쓰는 주인은 여전히 이 컴포넌트 하나다 — 밖에서
+        /// `AudioSource.volume`을 직접 쓰면 슬라이더를 움직이는 순간 덮인다.
+        /// </summary>
+        public void SetWeight(float _weight)
+        {
+            m_Weight = Mathf.Clamp01(_weight);
+            Apply();
+        }
 
         /// <summary>
         /// 카테고리를 정한다. **언제 불러도 늦지 않다** — 아직 구독 전이면 지금 구독하고,
@@ -92,8 +108,14 @@ namespace CTC.Runtime.Audio
 
             m_Link = setting.Subscribe(v =>
             {
-                if (m_Source != null) m_Source.volume = m_DesignVolume * v;
+                m_UserVolume = v;
+                Apply();
             }).AddTo(this);
+        }
+
+        private void Apply()
+        {
+            if (m_Source != null) m_Source.volume = m_DesignVolume * m_UserVolume * m_Weight;
         }
     }
 }

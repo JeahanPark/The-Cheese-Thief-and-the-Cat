@@ -115,6 +115,8 @@ namespace CTC.Runtime.Info
         public float ShopShutterSneakMeters;
         public float ShopShutterOpenMeters;
         public float ShopShutterReopenSeconds;
+        public float ChaseBgmMeters;
+        public float ChaseBgmSneakMeters;
     }
 
     public partial class InfoManager
