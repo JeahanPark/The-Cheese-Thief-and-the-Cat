@@ -89,5 +89,26 @@ namespace CTC.Tests
             OcclusionFadeLogic.CollectRestored(new List<string>(), new HashSet<string>(), restored);
             Assert.IsEmpty(restored);
         }
+
+        [Test]
+        [NUnit.Framework.Property("CaseId", "B-39")]
+        public void AimPoint_RisesFromFeet_NeverBelow()
+        {
+            // 발끝만 보면 윗몸을 가린 물체를 놓친다(2026-09-20) — 겨누는 점은 발 위다
+            Vector3 feet = new Vector3(3f, 0f, -2f);
+            Assert.AreEqual(new Vector3(3f, 0.7f, -2f), OcclusionFadeLogic.AimPoint(feet, 0.7f));
+            Assert.AreEqual(feet, OcclusionFadeLogic.AimPoint(feet, -1f), "음수 높이는 발로 친다");
+        }
+
+        [Test]
+        [NUnit.Framework.Property("CaseId", "B-39")]
+        public void FadeableGroup_RejectsEmptyAndWholeMap()
+        {
+            Assert.IsFalse(OcclusionFadeLogic.IsFadeableGroup(0), "그림이 없는 판정 상자");
+            Assert.IsTrue(OcclusionFadeLogic.IsFadeableGroup(1));
+            Assert.IsTrue(OcclusionFadeLogic.IsFadeableGroup(20), "상점 부스 한 채");
+            Assert.IsFalse(OcclusionFadeLogic.IsFadeableGroup(OcclusionFadeLogic.MAX_GROUP_RENDERERS + 1),
+                "맵 루트까지 올라가 통째로 흐리면 안 된다");
+        }
     }
 }

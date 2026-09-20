@@ -9,6 +9,21 @@ namespace CTC.Runtime.Cameras
     /// </summary>
     public static class OcclusionFadeLogic
     {
+        /// <summary>한 번에 흐릴 묶음의 렌더러 상한 — 넘으면 맵·방 통째일 수 있어 안 흐린다(상점 부스는 20개 안쪽).</summary>
+        public const int MAX_GROUP_RENDERERS = 48;
+
+        /// <summary>카메라가 겨누는 점 — 발에서 <paramref name="_height"/> 위. 발끝만 보면 윗몸을 가린 것을 놓친다.</summary>
+        public static Vector3 AimPoint(Vector3 _feet, float _height)
+        {
+            return _feet + Vector3.up * Mathf.Max(0f, _height);
+        }
+
+        /// <summary>이 크기의 묶음을 흐려도 되는가 — 비었거나 너무 크면(맵 통째) 안 된다.</summary>
+        public static bool IsFadeableGroup(int _rendererCount)
+        {
+            return _rendererCount > 0 && _rendererCount <= MAX_GROUP_RENDERERS;
+        }
+
         /// <summary>
         /// 스피어캐스트 시작점 — 카메라 위치에서 대상 쪽으로 캐스트 반경만큼 전진시킨다.
         /// 카메라에 딱 붙은 면이 자기 자신을 가린 것으로 잡히는 것을 막는다.

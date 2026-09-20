@@ -11,6 +11,14 @@ Shader "CTC/MapTriplanar"
         _SkirtMeters("Skirt height (0 = off)", Float) = 0.0
         _SkirtColor("Skirt tint", Color) = (0.45,0.36,0.28,1)
         _FillLight("Fill light (0 = off)", Color) = (0,0,0,0)
+
+        // 카메라 가림막 페이드(OccluderFader) 전용 — URP Lit과 같은 이름이라 페이더의 반투명 전환이 그대로 먹는다
+        // (2026-09-20). 예전엔 이게 없어 벽·선반 판벽이 카메라와 캐릭터 사이에 와도 절대 안 흐려졌다.
+        // 기본값은 불투명(One/Zero · 깊이 씀)이라 평소 그림은 전과 같다. 알파는 _BaseColor.a다.
+        [HideInInspector] _Surface("__surface", Float) = 0
+        [HideInInspector] _SrcBlend("__src", Float) = 1
+        [HideInInspector] _DstBlend("__dst", Float) = 0
+        [HideInInspector] _ZWrite("__zw", Float) = 1
     }
     SubShader
     {
@@ -20,6 +28,8 @@ Shader "CTC/MapTriplanar"
         {
             Name "ForwardLit"
             Tags { "LightMode"="UniversalForward" }
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
             HLSLPROGRAM
             #pragma vertex Vert
             #pragma fragment Frag
@@ -111,7 +121,8 @@ Shader "CTC/MapTriplanar"
                 lighting += _FillLight.rgb;
 
                 half3 color = MixFog(albedo * lighting, i.fogFactor);
-                return half4(color, 1);
+                // 알파는 페이드 때만 쓰인다 — 불투명(One/Zero)에서는 섞이지 않는다
+                return half4(color, _BaseColor.a);
             }
             ENDHLSL
         }

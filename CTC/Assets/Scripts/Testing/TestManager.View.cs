@@ -36,6 +36,100 @@ namespace CTC.Runtime.Testing
             return fader != null ? fader.FadedCount : -1;
         }
 
+        /// <summary>
+        /// QA: 가장 가까운 선반 벽(`Wall_Shelf_*`) 너머에서 나를 보게 세운다(2026-09-20 — 「카메라와 캐릭터 사이의
+        /// 사물이 안 흐려진다」 재현). 몸은 선반 한쪽 면에서 <paramref name="_gap"/> m, 카메라는 반대쪽에서 몸을 본다.
+        /// 고른 선반·선 자리·카메라 각도를 한 줄로 돌려준다.
+        /// </summary>
+        public string TestStageShelfOcclusion(float _gap, float _pitch)
+        {
+            var builder = FindFirstObjectByType<CTC.Runtime.Map.MapBuilder>();
+            Transform root = builder != null ? builder.BuiltRoot : null;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (root == null || local == null) return "missing";
+
+            Transform shelf = null;
+            float best = float.MaxValue;
+            foreach (Transform child in root)
+            {
+                if (!child.name.StartsWith("Wall_Shelf_")) continue;
+                Vector3 d = child.position - local.transform.position;
+                d.y = 0f;
+                if (d.sqrMagnitude < best) { best = d.sqrMagnitude; shelf = child; }
+            }
+            if (shelf == null) return "no shelf";
+
+            // 선반 박스는 축 정렬이다(MapBuilder.AddBox) — 얇은 축이 두께, 그 축으로 나를 세운다.
+            Vector3 size = shelf.lossyScale;
+            bool thinX = size.x < size.z;
+            Vector3 normal = thinX ? Vector3.right : Vector3.forward;
+            Vector3 toMe = local.transform.position - shelf.position;
+            if (Vector3.Dot(toMe, normal) < 0f) normal = -normal;
+            float half = (thinX ? size.x : size.z) * 0.5f;
+            Vector3 stand = shelf.position + normal * (half + _gap);
+
+            var cc = local.GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            local.transform.position = new Vector3(stand.x, 0.1f, stand.z);
+            if (cc != null) cc.enabled = true;
+
+            // 카메라는 몸 - 전방×거리에 선다 → 전방이 normal이면 카메라가 선반 너머에 선다.
+            float yaw = Mathf.Atan2(normal.x, normal.z) * Mathf.Rad2Deg;
+            TestSetCameraAngles(yaw, _pitch);
+            return $"shelf={shelf.name} size={size.ToString("F1")} stand={stand.ToString("F1")} yaw={yaw:F0} pitch={_pitch:F0}";
+        }
+
+        /// <summary>
+        /// QA: 추격곡 상태 한 줄(2026-09-20) — `chasing=… weight=… cat=…m trigger=…m clip=yes|none`.
+        /// 거리 판정은 음원이 없어도 돈다(clip=none이면 소리만 안 바뀐다). 없으면 "missing".
+        /// </summary>
+        public string TestGetChaseBgm()
+        {
+            var chase = FindFirstObjectByType<CTC.Runtime.Audio.ChaseBgm>();
+            if (chase == null) return "missing";
+            return $"chasing={chase.Chasing} weight={chase.Weight:F2} cat={chase.NearestCatMeters:F1} " +
+                   $"trigger={chase.TriggerMeters:F1} clip={(chase.HasClip ? "yes" : "none")}";
+        }
+
+        /// <summary>
+        /// QA: 카메라→내 발·몸 가운데 사이에 무엇이 있는지와 페이더가 지금 무엇을 흐렸는지(2026-09-20 진단).
+        /// 걸린 것은 `이름(L레이어 T=트리거 r=렌더러 on/off/none)`으로 가까운 순이다.
+        /// </summary>
+        public string TestProbeOcclusion()
+        {
+            Camera cam = Camera.main;
+            var fader = FindFirstObjectByType<CTC.Runtime.Cameras.OccluderFader>();
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            var local = nm != null && nm.SpawnManager != null ? nm.SpawnManager.GetLocalPlayerObject() : null;
+            if (cam == null || local == null) return "missing";
+
+            Vector3 from = cam.transform.position;
+            Vector3 feet = local.transform.position;
+            var cc = local.GetComponent<CharacterController>();
+            Vector3 body = cc != null ? cc.bounds.center : feet + Vector3.up * 0.3f;
+
+            string Hits(Vector3 _to)
+            {
+                Vector3 delta = _to - from;
+                RaycastHit[] hits = Physics.RaycastAll(from, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Collide);
+                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                var sb = new System.Text.StringBuilder();
+                foreach (RaycastHit h in hits)
+                {
+                    Renderer r = h.collider.GetComponent<Renderer>();
+                    sb.Append(h.collider.name).Append("(L").Append(h.collider.gameObject.layer)
+                      .Append(h.collider.isTrigger ? " T" : "")
+                      .Append(" r=").Append(r == null ? "none" : r.enabled ? "on" : "off").Append(") ");
+                }
+                return sb.Length > 0 ? sb.ToString() : "-";
+            }
+
+            string faded = fader != null ? $"{fader.FadedCount} {fader.DevDescribeFaded()}" : "no fader";
+            return $"cam={from.ToString("F1")} feet={feet.ToString("F1")} body={body.ToString("F1")} " +
+                   $"faded={faded}| toFeet: {Hits(feet)}| toBody: {Hits(body)}";
+        }
+
         /// <summary>QA: 고양이 잠행 On/Off — 키 없이 강제한다.</summary>
         public void TestSetSneak(bool _on)
         {
