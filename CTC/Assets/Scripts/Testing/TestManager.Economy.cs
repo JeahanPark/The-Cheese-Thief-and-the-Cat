@@ -37,6 +37,28 @@ namespace CTC.Runtime.Testing
             GameDebug.Log("[TestManager] TestGrantCheeseAll → 전 지갑 +1000");
         }
 
+        /// <summary>
+        /// 서버(호스트) 전용: 모든 지갑을 **정확히** 그 값으로 — 수동 플레이 테스트용(쥐 시작 치즈·고양이 0을 한 값으로 맞춘다).
+        /// **잔액만** 바꾼다(환급 경로 — 누적 획득은 그대로). 번 것으로 넣으면 고양이 누적 장난기가 전직 문턱(300)을 넘어
+        /// 판 시작부터 전직이 열린다(2026-09-19 수동 플레이에서 드러났다). 넘치면 쓴 것으로 맞춘다.
+        /// "wallets=3 → 2000". 서버가 아니면 "notServer".
+        /// </summary>
+        public string TestSetCheeseAll(int _amount)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return "notServer";
+
+            int count = 0;
+            foreach (var wallet in FindObjectsByType<CheeseWallet>())
+            {
+                int diff = _amount - wallet.CheeseValue;
+                if (diff > 0) wallet.RefundCheese(diff);
+                else if (diff < 0) wallet.TrySpend(-diff);
+                count++;
+            }
+            return $"wallets={count} → {_amount}";
+        }
+
         // ===== 구매 훅 (테크 v3로 이관, 2026-09-07) =====
         //
         // **이름은 그대로 둔다** — wesqa 스크립트가 문자열로 부른다. 속만 TechId로 바꿨다.

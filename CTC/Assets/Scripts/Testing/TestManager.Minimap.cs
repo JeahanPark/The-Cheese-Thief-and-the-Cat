@@ -89,6 +89,33 @@ namespace CTC.Runtime.Testing
             Vector3 p = player.transform.position;
             return $"{p.x:F2},{p.z:F2}";
         }
+
+        /// <summary>
+        /// QA: 수입 「+N」 표시(2026-09-20 A안) — `text=+5 alpha=1.00`. 컴포넌트가 없으면 "missing".
+        /// 쓴 돈은 안 뜨므로 구매 뒤에는 빈 글자여야 한다.
+        /// </summary>
+        public string TestGetGainPopup()
+        {
+            var popup = FindFirstObjectByType<CheeseGainPopup>();
+            if (popup == null) return "missing";
+            return $"text={(string.IsNullOrEmpty(popup.DevText) ? "-" : popup.DevText)} alpha={popup.DevAlpha:F2}";
+        }
+
+        /// <summary>
+        /// QA: 미니맵 내 삼각형(몸)·부채꼴(시선)의 **화면 각**과 그 각이 따라야 할 몸·카메라의 월드 yaw(2026-09-20).
+        /// `body=… view=… bodyYaw=… camYaw=…` — 각 = (360 − yaw) mod 360이면 제대로 돈다. 미니맵이 없으면 "missing".
+        /// </summary>
+        public string TestGetMinimapHeading()
+        {
+            var hud = FindFirstObjectByType<MinimapHud>();
+            var markers = FindFirstObjectByType<MinimapMarkers>();
+            if (hud == null || markers == null || markers.Me == null) return "missing";
+
+            Vector2 angles = hud.DevHeadingAngles();
+            Transform view = markers.View;
+            float camYaw = view != null ? view.eulerAngles.y : -1f;
+            return $"body={angles.x:F0} view={angles.y:F0} bodyYaw={markers.Me.eulerAngles.y:F0} camYaw={camYaw:F0}";
+        }
     }
 }
 #endif

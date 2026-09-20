@@ -43,6 +43,9 @@ namespace CTC.Runtime.UI
         public static readonly Color TextOn = new Color(0.82f, 0.85f, 0.88f);
         public static readonly Color TextDim = new Color(0.435f, 0.475f, 0.529f);
 
+        /// <summary>설명 한 줄(효과·힌트) — 본문(TextOn)보다 한 단 낮고 흐린 글(TextDim)보다 잘 읽힌다(2026-09-19 상점 상세).</summary>
+        public static readonly Color TextSub = new Color(0.682f, 0.718f, 0.761f);
+
         /// <summary>노란 바탕 위에 올리는 글자. 흰색을 올리면 안 읽힌다.</summary>
         public static readonly Color TextOnAccent = new Color(0.133f, 0.102f, 0.016f);
 
@@ -65,6 +68,12 @@ namespace CTC.Runtime.UI
 
         /// <summary>경고·깡패. 노랑과 빨강 사이라 강조색과 안 헷갈릴 만큼만 띄운다.</summary>
         public static readonly Color Warn = new Color(0.95f, 0.65f, 0.35f);
+
+        /// <summary>
+        /// 미니맵 내 삼각형의 끝 — 몸이 보는 방향(2026-09-20 사용자: 「끝을 빨갛게」). <see cref="Bad"/>는 살굿빛이라
+        /// 7 px 조각에서 주황으로 읽혀 더 붉은 값을 따로 둔다.
+        /// </summary>
+        public static readonly Color Heading = new Color(1f, 0.25f, 0.21f);
 
         /// <summary>같은 색을 투명도만 바꿔 쓸 때. 값을 또 적지 않게.</summary>
         public static Color WithAlpha(Color _color, float _alpha)

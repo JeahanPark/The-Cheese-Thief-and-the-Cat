@@ -31,6 +31,8 @@ namespace CTC.Runtime.UI
         [SerializeField] private RawImage m_Terrain;
         [SerializeField] private RectTransform m_MarkerLayer;
         [SerializeField] private RectTransform m_MeIcon;
+        // 시선 부채꼴(2026-09-20) — 내 삼각형 뒤에 깔리고 카메라 방향을 따라 돈다. 삼각형 끝(빨강)은 몸 방향이다.
+        [SerializeField] private RectTransform m_ViewCone;
 
         private readonly List<Image> m_Pool = new List<Image>();
 
@@ -156,6 +158,23 @@ namespace CTC.Runtime.UI
             Place(m_MeIcon, new Vector2(me.position.x, me.position.z));
             m_MeIcon.localRotation = Quaternion.Euler(0f, 0f,
                 MinimapLogic.YawToUiAngle(me.eulerAngles.y));
+
+            if (m_ViewCone == null) return;
+            Transform view = m_Markers.View;
+            bool show = view != null;
+            if (m_ViewCone.gameObject.activeSelf != show) m_ViewCone.gameObject.SetActive(show);
+            if (!show) return;
+            m_ViewCone.anchoredPosition = m_MeIcon.anchoredPosition;
+            m_ViewCone.localRotation = Quaternion.Euler(0f, 0f,
+                MinimapLogic.YawToUiAngle(view.eulerAngles.y));
+        }
+
+        /// <summary>QA: 지금 화면의 두 각(UI 도) — 삼각형(몸)과 부채꼴(시선). 부채꼴이 없거나 꺼져 있으면 -1.</summary>
+        public Vector2 DevHeadingAngles()
+        {
+            float body = m_MeIcon != null ? m_MeIcon.localEulerAngles.z : -1f;
+            float view = m_ViewCone != null && m_ViewCone.gameObject.activeInHierarchy ? m_ViewCone.localEulerAngles.z : -1f;
+            return new Vector2(body, view);
         }
 
         // 마커 레이어는 좌하단(0,0) 기준이라 픽셀 좌표가 그대로 anchoredPosition이 된다.

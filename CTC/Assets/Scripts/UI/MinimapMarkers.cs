@@ -84,6 +84,18 @@ namespace CTC.Runtime.UI
         /// </summary>
         public Transform Me => m_Me;
 
+        /// <summary>
+        /// 내 시선 — 메인 카메라(2026-09-20). 부채꼴이 매 프레임 따라간다. 「무엇이 시선인가」 판정은 여기(Model)가 한다.
+        /// </summary>
+        public Transform View
+        {
+            get
+            {
+                Camera cam = Camera.main;
+                return cam != null ? cam.transform : null;
+            }
+        }
+
         /// <summary>QA·디버그용 — 지금 걸린 마커 목록.</summary>
         public IReadOnlyList<MinimapMarker> Markers => m_Buffer;
 
