@@ -73,5 +73,26 @@ namespace CTC.Tests
         {
             StringAssert.StartsWith(SteamInviteLogic.CONNECT_ARG, SteamInviteLogic.ConnectValue(7UL));
         }
+
+        // ── 켜진 게임에서의 친구 목록 「게임 참가」(2026-09-20) ────────
+
+        /// <summary>리치 프레즌스 값이 그대로 콜백 문자열로 온다 — 커맨드라인 파서와 왕복해야 한다.</summary>
+        [Test]
+        public void TryParseConnectString_RichPresenceValue_RoundTrips()
+        {
+            const ulong LOBBY = 109775241234567890UL;
+
+            Assert.IsTrue(SteamInviteLogic.TryParseConnectString(SteamInviteLogic.ConnectValue(LOBBY), out ulong id));
+            Assert.AreEqual(LOBBY, id);
+        }
+
+        [Test]
+        public void TryParseConnectString_EmptyOrGarbage_False()
+        {
+            Assert.IsFalse(SteamInviteLogic.TryParseConnectString(null, out _));
+            Assert.IsFalse(SteamInviteLogic.TryParseConnectString("   ", out _));
+            Assert.IsFalse(SteamInviteLogic.TryParseConnectString("+connect_lobby", out _), "값 없음");
+            Assert.IsFalse(SteamInviteLogic.TryParseConnectString("join 42", out _), "다른 규약");
+        }
     }
 }

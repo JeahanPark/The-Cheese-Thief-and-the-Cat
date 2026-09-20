@@ -133,6 +133,12 @@ namespace Netcode.Transports.Facepunch
 
                 connectionManager?.Close();
                 socketManager?.Close();
+                // [CTC 패치 2026-09-20] 닫은 관리자는 버린다. 들고 있으면 다음 세션이 옛 리슨 소켓 위에
+                // 새 소켓을 만들려다 스팀이 "Already have a listen socket on P2P vport 0"으로 거절하고,
+                // 옛 연결의 이벤트가 새 세션에 섞여 들어온다.
+                connectionManager = null;
+                socketManager = null;
+                connectedClients?.Clear();
                 // [CTC 패치 2026-08-20] SteamClient.Shutdown() 제거.
                 // NGO는 Disconnect 버튼·접속 실패 정리·앱 종료 등 **세션이 끝날 때마다**
                 // transport.Shutdown()을 부른다 — 여기서 스팀 클라이언트를 통째로 내리면
@@ -174,6 +180,16 @@ namespace Netcode.Transports.Facepunch
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Starting as client.");
 
+            // [CTC 패치 2026-09-20] 옛 연결이 남아 있으면 먼저 닫는다 — 정상 종료라면 Shutdown()이 이미 비웠다.
+            // 남아 있다는 건 NGO가 이 트랜스포트를 Shutdown 안 하고 세션을 끝냈다는 뜻이다(트랜스포트 교체 순서 사고).
+            if (connectionManager != null)
+            {
+                if (LogLevel <= LogLevel.Normal)
+                    Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Stale connection manager found on StartClient; closing it first.");
+                connectionManager.Close();
+                connectionManager = null;
+            }
+
             connectionManager = SteamNetworkingSockets.ConnectRelay<ConnectionManager>(targetSteamId);
             connectionManager.Interface = this;
             return true;
@@ -183,6 +199,16 @@ namespace Netcode.Transports.Facepunch
         {
             if (LogLevel <= LogLevel.Developer)
                 Debug.Log($"[{nameof(FacepunchTransport)}] - Starting as server.");
+
+            // [CTC 패치 2026-09-20] 옛 리슨 소켓이 남아 있으면 먼저 닫는다 — 같은 가상 포트에 두 번째 리슨 소켓은
+            // 스팀이 "Already have a listen socket on P2P vport 0"으로 거절해 아무도 못 들어오는 방이 된다.
+            if (socketManager != null)
+            {
+                if (LogLevel <= LogLevel.Normal)
+                    Debug.LogWarning($"[{nameof(FacepunchTransport)}] - Stale socket manager found on StartServer; closing it first.");
+                socketManager.Close();
+                socketManager = null;
+            }
 
             socketManager = SteamNetworkingSockets.CreateRelaySocket<SocketManager>();
             socketManager.Interface = this;

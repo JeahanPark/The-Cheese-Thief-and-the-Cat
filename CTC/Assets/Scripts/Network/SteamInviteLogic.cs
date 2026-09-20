@@ -23,6 +23,22 @@ namespace CTC.Runtime.Networking
         public static string ConnectValue(ulong _lobbyId) => $"{CONNECT_ARG} {_lobbyId}";
 
         /// <summary>
+        /// **게임이 켜져 있을 때** 친구 목록 「게임 참가」가 주는 문자열(2026-09-20) — 리치 프레즌스 `connect` 값이
+        /// 그대로 온다(`GameRichPresenceJoinRequested_t.m_rgchConnect`). 커맨드라인과 같은 규약이라 같은 파서를 쓴다.
+        ///
+        /// 왜 따로 받나: `connect` 키를 적어 두면 스팀은 친구 목록 참가를 **로비 콜백이 아니라 리치 프레즌스 콜백**으로
+        /// 보낸다. 로비 콜백(`OnGameLobbyJoinRequested`)만 받고 있으면 켜진 게임에서의 「게임 참가」가 조용히 죽는다.
+        /// </summary>
+        public static bool TryParseConnectString(string _connect, out ulong _lobbyId)
+        {
+            _lobbyId = 0UL;
+            if (string.IsNullOrWhiteSpace(_connect)) return false;
+
+            string[] parts = _connect.Split(new[] { ' ', '\t' }, System.StringSplitOptions.RemoveEmptyEntries);
+            return TryParseConnectLobby(parts, out _lobbyId);
+        }
+
+        /// <summary>
         /// 커맨드라인에서 초대받은 방 번호를 꺼낸다. 없거나 이상하면 false.
         ///
         /// 인자가 몇 번째에 오는지는 보장되지 않는다 — 스팀이 실행 옵션 뒤에 붙이기도 한다.

@@ -111,18 +111,21 @@ namespace CTC.Runtime.Lobby.Browser
             if (m_PrevButton != null) m_PrevButton.SetActive(m_Browser.Page > 0);
             if (m_NextButton != null) m_NextButton.SetActive(m_Browser.Page < pages - 1);
 
-            // 방이 없는 이유가 셋이다 — 정말 없거나, 검색에 안 걸리거나, 스팀이 없거나. 구별해 준다.
+            // 방이 없는 이유가 넷이다 — 정말 없거나, 검색에 안 걸리거나, 스팀이 없거나, 버전이 달라 숨겼거나. 구별해 준다.
             if (m_EmptyLabel != null)
             {
                 bool empty = total == 0 && !m_Browser.Busy;
                 m_EmptyLabel.gameObject.SetActive(empty);
                 if (empty)
                 {
+                    int hidden = m_Browser.HiddenByVersion;
                     m_EmptyLabel.text = !m_Browser.SteamReady && m_Browser.Rooms.Count == 0
                         ? "스팀에 연결되지 않아 방을 불러올 수 없습니다."
                         : m_Browser.Rooms.Count > 0
                             ? "검색에 맞는 방이 없습니다."
-                            : "열린 방이 없습니다. 직접 만들어 보세요.";
+                            : hidden > 0
+                                ? $"열린 방이 없습니다. 다른 버전의 방 {hidden}개는 숨겼습니다 — 같은 빌드끼리만 보입니다."
+                                : "열린 방이 없습니다. 직접 만들어 보세요.";
                 }
             }
 

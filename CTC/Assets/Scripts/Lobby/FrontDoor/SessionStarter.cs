@@ -139,7 +139,11 @@ namespace CTC.Runtime.Lobby.FrontDoor
             bool handedOff = false;
             try
             {
-                handedOff = await _step(this.GetCancellationTokenOnDestroy());
+                CancellationToken ct = this.GetCancellationTokenOnDestroy();
+                // 직전 세션이 아직 내려가는 중이면 기다린다(2026-09-20) — 방을 나온 직후 바로 누르면
+                // NGO가 "이미 시작됨"으로 거절해 「방을 만들지 못했습니다」가 떴다.
+                await WaitShutdownFinished(ct);
+                handedOff = await _step(ct);
             }
             catch (System.OperationCanceledException)
             {
@@ -153,8 +157,9 @@ namespace CTC.Runtime.Lobby.FrontDoor
 
         private async UniTask<bool> HostFriendsAsync(CancellationToken _ct)
         {
+            // 친구 전용 방은 스팀이 서버 목록에서 뺀다(문서: Public·Invisible만 검색된다) — 문구로 못박는다.
             string password = await AskText(TextInputPopup.Mode.Password,
-                "방 비밀번호", "친구 초대로만 들어오는 방입니다. 비워 두면 비밀번호 없이 열립니다.");
+                "방 비밀번호", "친구 초대·친구 목록 「게임 참가」로만 들어오는 방입니다(서버 목록에는 안 보입니다). 비워 두면 비밀번호 없이 열립니다.");
             if (password == null) return false;
 
             if (SteamReady)
@@ -183,6 +188,7 @@ namespace CTC.Runtime.Lobby.FrontDoor
             if (SteamReady && _lobby.HasValue)
             {
                 m_PromptCancelled = false;
+                await DropPendingClient(_ct);
                 if (!await m_Steam.JoinLobby(_lobby.Value))
                 {
                     if (!m_PromptCancelled) await Fail("방에 들어가지 못했습니다. 목록을 새로고침해 보세요.");
@@ -219,9 +225,14 @@ namespace CTC.Runtime.Lobby.FrontDoor
                         locked ? found[i].MaxMembers : found[i].MemberCount, found[i].MaxMembers, i));
                 }
 
+                // 방금 내가 나온 방은 목록(RefreshLobbies)이 이미 뺐다 — 스팀이 빈 방을 지우기 전에 잠깐 남아
+                // 자기 시체 방에 들어가려다 DoesntExist로 실패하던 것(2026-09-20).
                 int pick = ServerListLogic.PickQuickMatch(rooms);
-                if (pick >= 0 && await m_Steam.JoinLobby(found[pick]) && await AwaitClientResult(_ct) == null)
-                    return true;
+                if (pick >= 0)
+                {
+                    await DropPendingClient(_ct);
+                    if (await m_Steam.JoinLobby(found[pick]) && await AwaitClientResult(_ct) == null) return true;
+                }
 
                 await WaitNetworkIdle(_ct);
                 if (await m_Steam.CreateLobby(SteamLobbyLogic.DefaultRoomName(SafeSteamName()), true, "")) return true;
@@ -390,9 +401,23 @@ namespace CTC.Runtime.Lobby.FrontDoor
         /// </summary>
         private static async UniTask DropPendingClient(CancellationToken _ct)
         {
+            await WaitShutdownFinished(_ct);
             NetworkManager nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsListening || nm.IsServer || nm.IsConnectedClient) return;
             await WaitNetworkIdle(_ct);
+        }
+
+        /// <summary>
+        /// 내려가는 중인 세션이 있으면 끝날 때까지만 기다린다(2026-09-20). <see cref="WaitNetworkIdle"/>과 달리 살아 있는
+        /// 세션은 건드리지 않는다 — `Shutdown()`은 플래그만 세우고 실제 정리는 다음 네트워크 업데이트라, 그 틈에
+        /// StartHost/StartClient를 부르면 NGO가 "이미 시작됨"으로 거절한다. 방장이 손님을 내보내는 동안(최대 5초)도 여기다.
+        /// </summary>
+        private static async UniTask WaitShutdownFinished(CancellationToken _ct)
+        {
+            NetworkManager nm = NetworkManager.Singleton;
+            if (nm == null || !nm.ShutdownInProgress) return;
+            await UniTask.WaitUntil(() => !nm.ShutdownInProgress && !nm.IsListening, cancellationToken: _ct);
+            await UniTask.NextFrame(_ct);
         }
 
         /// <summary>끊긴 세션이 완전히 내려갈 때까지 — 곧바로 다시 Start하면 NGO가 거절한다.</summary>

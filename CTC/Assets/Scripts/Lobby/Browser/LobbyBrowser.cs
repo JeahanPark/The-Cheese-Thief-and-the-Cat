@@ -47,6 +47,9 @@ namespace CTC.Runtime.Lobby.Browser
         /// <summary>스팀이 붙어 있는가. 아니면 화면이 안내를 띄운다.</summary>
         public bool SteamReady => SteamBootstrap.Ready;
 
+        /// <summary>마지막 새로고침에서 **다른 프로토콜 버전**이라 숨긴 방 수 — 빌드가 어긋난 두 사람에게 「왜 비었나」를 알려 준다(2026-09-20).</summary>
+        public int HiddenByVersion => m_Steam != null ? m_Steam.HiddenByVersion : 0;
+
         public int Page => m_Page;
 
         public int PageCount => ServerListLogic.PageCount(m_Filtered.Count);
@@ -148,9 +151,10 @@ namespace CTC.Runtime.Lobby.Browser
             for (int i = 0; i < m_Raw.Length; i++)
             {
                 SteamLobby lobby = m_Raw[i];
+                // 방장 이름은 방 데이터에서 — 안 들어간 방의 Owner는 스팀이 안 준다(멤버여야 읽힌다, 2026-09-20).
                 m_Rooms.Add(new LobbyRoomInfo(
                     lobby.GetData(SteamLobbyLogic.NAME_KEY),
-                    lobby.Owner.Name,
+                    SteamLobbyLogic.HostLabel(lobby.GetData(SteamLobbyLogic.HOST_KEY), lobby.Owner.Name),
                     lobby.MemberCount,
                     lobby.MaxMembers,
                     i));
