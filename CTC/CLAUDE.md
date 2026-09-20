@@ -139,6 +139,10 @@
 | 18 | **MCP 브리지가 컴파일마다 죽는다** | 도메인 리로드 뒤 `McpBridge`가 다시 안 켜진다. 에디터는 멀쩡한데(`Responding`·에러 0) MCP가 전부 타임아웃한다. 파이프가 **남아 있는 경우도** 있어 존재 여부로는 판정이 안 된다 | `Logs/Editor.log`의 `McpBridge` 마지막 줄이 「중지됨」이면 이 상태다. 포커스 → 재컴파일 강제 → 그래도 안 되면 **에디터 재시작**(2026-09-13에 두 번 다 재시작으로만 풀렸다). **컴파일이 필요한 편집은 모아서 한 번에** 하는 것이 가장 아낀다 |
 | 19 | **팩 캐릭터에 셰이프키를 쓸 때 LOD·기본 표정을 놓침** | 팩 프리팹은 **LODGroup + `Mesh_LOD0..3`**이다. 첫 렌더러만 굴리면 **멀어졌을 때 눈이 멈춘다.** 그리고 팩 컨트롤러의 Shapekey 레이어가 기본으로 `Eyes_Annoyed`를 틀어 **`eyes.annoyed`를 매 프레임 100으로 쓴다** — 지금 게임의 기본 얼굴이 그것이라, 「안 쓰는 표정」이라며 지우면 모든 캐릭터 얼굴이 조용히 바뀐다(2026-09-13 둘 다 물릴 뻔했다). 팩 FBX 메시 이름도 LOD 넷 다 그냥 `"Mesh"`라 이름으로 파일을 만들면 겹친다 | 렌더러는 `GetComponentsInChildren`으로 **전부** 굴리고, 셰이프키는 버리지 말고 담는다(`EyeSplitMeshBaker`). 메시는 이름이 아니라 **원본 프리팹의 같은 렌더러**로 찾는다 |
 | 20 | **사격·판정 레이가 트리거에 막힘** | 맵 옷(`MapDresser`)의 팩 가구가 카메라 페이더용 **트리거 콜라이더**를 달고 온다. `RaycastAll` 기본값은 트리거도 맞혀 **쥐 총알이 통 앞에서 사라졌다**(qa_v41 「쥐끼리」 재현, 2026-09-14) | 판정 레이는 `QueryTriggerInteraction.Ignore`. 막히면 추측 말고 `TestRaycastBetween(from, to)`로 무엇에 맞았는지 본다 |
+| 21 | **투명한 Image에 `Outline`을 닮** | `Outline`은 테두리가 아니라 **그래픽을 네 방향으로 밀어 찍은 복사본**이다. 바탕이 투명하면 가려 주는 원본이 없어 **칸 전체가 선 색으로 칠해진다**(상점 상세 사다리에서 걸릴 뻔했다, 2026-09-19) | 테두리를 달 칸의 바탕은 **불투명**하게 — 뒤와 같은 색을 불투명으로 칠한다(`ShopPopup.DETAIL_BG`) |
+| 22 | **생성기가 머티리얼 에셋을 지웠다 다시 만듦**(`DeleteAsset` → `CreateAsset`) | GUID는 그대로라 에디터 화면·YAML은 멀쩡한데, **그 실행에서 다시 굽지 않은 에셋**(대기실 몸 `RoomMouse` 등)의 가져오기 결과에 잠깐 비었던 참조가 굳어 **빌드에서만 머티리얼 칸이 비어 마젠타**로 떴다(2026-09-19). 재가져오기로도 안 풀렸고 그 씬 생성 메뉴를 다시 돌려서야 풀렸다 | 있는 머티리얼은 **그 객체를 고쳐 쓴다**(`EditorAssetUtil.CreateUrpMaterial`). 빌드에서만 깨지는 그림은 추측 말고 개발 빌드에 `TestDumpRenderers(이름)`로 머티리얼·셰이더를 찍는다 |
+| 23 | **`NetworkManager.Shutdown()` 직후에 `NetworkConfig.NetworkTransport`를 바꿈** | `Shutdown()`은 플래그만 세우고 실제 정리(`ShutdownInternal` → `transport.Shutdown()`·`OnTransportEvent -=`)는 **다음 네트워크 업데이트**에 그 순간의 트랜스포트로 돈다. 스팀 방을 나가며 바로 UTP로 되돌리니 NGO가 **UTP를 내리고 Facepunch는 산 채로** 남았다 — 릴레이 소켓·이벤트 구독이 누적돼 다음 스팀 세션은 이벤트가 두 번씩 들어가고, 재호스트는 리슨 소켓이 「이미 있다」로 실패하고, 방장이 나가도 손님이 안 끊겼다(2026-09-20, 「방 만들기→나가기→빠른 참가→에러」). 에러도 경고도 없다 | 트랜스포트 교체는 **`OnClientStopped`/`OnServerStopped` 뒤에**(`SteamLobbyManager.OnNetworkStopped`). 세션이 도는 동안엔 `NetworkConfig.NetworkTransport`를 건드리지 않는다. 트랜스포트 `Shutdown()`은 관리자를 **null로 비운다**(Facepunch 패치) |
+| 24 | **커스텀 셰이더에 카메라 가림막 페이드가 안 먹음** | `OccluderFader`는 URP Lit의 속성(`_Surface`·`_SrcBlend`·`_DstBlend`·`_ZWrite`·`_BaseColor.a`)으로 반투명을 켠다. 맵 전용 `CTC/MapTriplanar`엔 그게 없어 **벽·선반 판벽이 흐린 목록엔 들어가는데 화면엔 불투명**했다 — 캐릭터를 가린 채였고, 카메라가 벽 속으로 들어가 뒷면이 안 그려질 때만 비쳐 보여 「부딪쳐야만 투명해진다」로 보였다(2026-09-20 사용자 보고). 에러 없음 | 가림막이 될 물체의 셰이더엔 저 넷을 `[HideInInspector]`로 두고 패스에 `Blend [_SrcBlend] [_DstBlend]`·`ZWrite [_ZWrite]`, 출력 알파는 `_BaseColor.a`. 페이더는 `_Surface`가 없는 셰이더는 **건드리지 않는다**. 확인은 개발 빌드에서 `TestStageShelfOcclusion` → `TestProbeOcclusion`(흐린 것마다 셰이더·큐·알파가 찍힌다) |
 
 애니메이션·이펙트를 다룰 때 추가로 겪은 것:
 - **커브·마스크 경로는 Animator 기준**이다. Animator가 자식(`Model`)에 있으면 그 접두를 뺀다. 틀려도 에러가 없다.
@@ -155,6 +159,10 @@ Lobby 씬은 이제 「서버 목록」이다. 설계: `docs/superpowers/specs/2
   거절 코드 `CLOSED`·`FULL`·`PW_REQUIRED`·`PW_WRONG`. **잠금 기본값은 열림**이라 `Game.unity` 단독(wesqa)은 그대로 붙는다.
   대기실이 서면 열리고(`RoomDirector.Start`) 시작하면 닫힌다.
 - 접속 절차는 `SessionStarter` 한 곳(Intro·Lobby 공용). QA는 팝업 없이 `TestFrontDoorHost` / `TestFrontDoorJoin` / `TestGetGateState`, 스위트 `qa_v56`.
+- **메인 「방 만들기」 방은 서버 목록에 안 뜬다 — 설계다**(스팀: `RequestLobbyList`는 Public·Invisible이면서 joinable인 방만 준다). 목록에 뜨는 건 「서버 목록 → 새로 만들기」·「빠른 참가」가 만든 공개 방뿐.
+  친구는 초대·친구 목록 「게임 참가」로 온다 — 게임이 **꺼져 있으면** `+connect_lobby`, **켜져 있으면** `OnGameRichPresenceJoinRequested`(2026-09-20에 받기 시작 — 그 전엔 켜진 게임에서 조용히 죽었다).
+- **스팀 방 나가기 순서**: `nm.Shutdown()` → `LeaveLobby()`(스팀 방만 즉시) → NGO가 멈춘 뒤 UTP 복원(함정 23). 목록은 방금 나온 내 방을 30초 숨긴다(`SteamLobbyLogic.IsRecentlyLeft`) — 스팀이 빈 방을 지우기 전에 「빠른 참가」가 자기 시체 방에 들어가려다 `DoesntExist`였다.
+  버전 필터는 서버가 아니라 `RefreshLobbies`가 건다 — 다른 버전 방은 `HiddenByVersion`으로 세어 서버 목록 빈 화면에 「다른 버전의 방 N개는 숨겼습니다」를 띄운다(빌드가 어긋난 두 사람이 서로 안 보이는 걸 알 수 있게).
 - **임시: 에디터에서는 `SessionStarter`가 스팀 경로를 안 탄다**(`#if UNITY_EDITOR` — 사용자 지시). 스팀 클라이언트가 떠 있으면 호스트만 Facepunch로 열려 클론(UTP)이 못 붙었다. 스팀 경로 검증은 개발용 빌드로 하고, 실측이 끝나면 분기를 걷는다. (스팀 클라이언트 자체는 여전히 함정 10 — 유니티 작업 중엔 끈다.)
 - **접속 대기 로딩창**(2026-09-19)은 **게임 씬에 없다** — `Resources/UI/LoadingOverlay` 프리팹(씬 빌더가 굽는다)이 대기실 추첨 연출의
   페이드 **시작**(3.8초)에 전원 화면에서 떠(`LoadingScreen.Begin`, DontDestroyOnLoad) 씬을 건너오고, 게임 씬의 판이 서면(최소 2초) 걷혀 사라진다.

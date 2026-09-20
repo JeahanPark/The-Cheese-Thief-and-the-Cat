@@ -108,7 +108,7 @@ namespace CTC.Tests
     /// </summary>
     public static class QaCases
     {
-        // ══════════════════════ A · 매치 · 로비 · 네트워크 (29) ══════════════════════
+        // ══════════════════════ A · 매치 · 로비 · 네트워크 (31) ══════════════════════
         private static readonly QaCase[] DOMAIN_A =
         {
             QaCase.Of("A-01",
@@ -227,11 +227,19 @@ namespace CTC.Tests
             QaCase.Of("A-29",
                 "대기실에서 판을 시작하면 추첨 연출이 닫히는 순간부터 전원(클라 포함) 화면에 로딩창이 씬을 건너 뜨고, 판이 서면 걷힌다",
                 "로딩창이 게임 씬에만 있어 씬 로딩 동안 검은 화면이 보이거나, 클라 화면에서만 안 걷힌다",
-                QaLayer.Wesqa, QaStatus.Implemented)
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("A-30",
+                "판이 끝나고 돌아온 대기실이 봇 수·맵을 그대로 들고 있어, 시작 버튼을 누르기만 하면 다음 판이 열린다",
+                "돌아온 대기실의 봇이 0으로 돌아가 혼자+봇이면 밝은 시작 버튼을 눌러도 아무 일도 안 일어난다(2026-09-19 사용자 보고)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("A-31",
+                "대기실 설정 쪽지는 판에서 돌아올 때만 한 번 되살리고, 메인에서 새로 연 방은 기본값으로 선다",
+                "새 방이 지난 방의 봇·맵을 물려받거나, 돌아온 대기실이 같은 설정을 두 번 되살린다",
+                QaLayer.EditMode, QaStatus.Implemented)
 
         };
 
-        // ══════════════════════ B · 플레이어 · 전투 · 카메라 (37) ══════════════════════
+        // ══════════════════════ B · 플레이어 · 전투 · 카메라 (43) ══════════════════════
         private static readonly QaCase[] DOMAIN_B =
         {
             QaCase.Of("B-01",
@@ -384,11 +392,35 @@ namespace CTC.Tests
             QaCase.Of("B-37",
                 "스턴 테두리는 맞는 즉시 가장자리만 하얗게 서고(가운데는 비움) 풀리면 빠진다",
                 "조작이 막혔는데 아무 표시가 없어 렉으로 읽히거나, 테두리가 조준을 가린다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-38",
+                "선반이 카메라와 캐릭터 사이에 오면 선반 판벽(맵 셰이더)과 가구가 모두 반투명해져 캐릭터가 보인다",
+                "맵 전용 셰이더가 반투명 전환을 못 받아 벽이 그대로 캐릭터를 가리고, 카메라가 벽 속에 들어가야만 비쳐 보인다(2026-09-20 사용자 보고)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-39",
+                "가림막 판정은 발과 카메라가 겨누는 점을 둘 다 보고, 흐릴 묶음이 비었거나 맵 통째만큼 크면 흐리지 않는다",
+                "윗몸을 가린 물체를 놓치거나, 판정 상자 하나 때문에 맵 전체가 반투명해진다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-40",
+                "살금살금 걸으면 실제로 움직이는데도 발소리 반경이 없다(무음)",
+                "잠행이 좁은 반경으로 남아 가까이 온 상대에게 들린다(2026-09-20 사용자 결정: 무음)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-41",
+                "CSV 잠행 발소리 반경이 0이면 걸어도 소리·걸음 신호가 없고, 보통 걸음은 그대로 소리가 난다",
+                "반경 0인데 이전 반경으로 한 걸음씩 계속 재생되거나, 보통 걸음까지 조용해진다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("B-42",
+                "쥐에게 산 고양이가 20 m(살금살금이면 10 m) 안에 오면 추격곡으로 넘어가고, 벗어나면 3초를 버틴 뒤 돌아온다",
+                "살금살금 고양이에게도 멀리서 곡이 바뀌어 정보가 새거나, 경계에서 곡이 깜빡인다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("B-43",
+                "추격곡 판정 — 반경은 CSV(살금살금은 절반), 켜기는 즉시·끄기는 3초 버틴 뒤, 섞기는 켤 때 빠르고 끌 때 느리다",
+                "곡이 너무 늦게 바뀌어 「왔다!」가 안 살거나, 끌 때 뚝 끊긴다",
                 QaLayer.EditMode, QaStatus.Implemented)
 
         };
 
-        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (40) ══════════════════════
+        // ══════════════════════ C · 경제 · 테크 · UI · 데이터 (43) ══════════════════════
         private static readonly QaCase[] DOMAIN_C =
         {
             QaCase.Of("C-01",
@@ -555,7 +587,28 @@ namespace CTC.Tests
             QaCase.Of("C-40",
                 "고양이가 다가가면 쥐 화면에서도 철문이 내려오고 점원이 움츠리며 그 상점에서 못 사고 팝업도 못 연다 · 떠나면 다시 열린다",
                 "철문이 서버에만 닫혀 쥐 화면은 열린 채이거나, 닫혀도 사지거나, 한 번 닫히면 안 열린다",
-                QaLayer.Wesqa, QaStatus.Implemented)
+                QaLayer.Wesqa, QaStatus.Implemented),
+            // ── 2026-09-19 상점 팝업 「목록 + 상세」(시안 B) ──
+            QaCase.Of("C-41",
+                "상점 목록은 축별로 묶이고, 상세의 단계(보유·다음·잠김)와 구매 버튼 글이 산다·키운다·모자람·품절·만렙을 구분한다",
+                "축 머리글이 두 번 뜨거나, 못 사는 이유 대신 가격만 보여 왜 안 사지는지 모른다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("C-42",
+                "상점 목록 줄에 마우스를 올리면 오른쪽 상세가 그 기술로 바뀌고, 보이는 글(이름·Lv·버튼)이 그 기술의 상태와 맞다",
+                "목록만 바뀌고 상세는 첫 기술에 멈춰 엉뚱한 것을 사거나, 버튼 글이 상태와 어긋난다",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("C-43",
+                "미니맵 내 삼각형은 몸 방향을, 뒤에 깔린 부채꼴은 카메라 방향을 따라 돈다 — 카메라만 돌리면 삼각형은 그대로다",
+                "몸과 시선이 한 아이콘에 섞여 뒷걸음질·옆 보기를 지도에서 구별 못 한다(2026-09-20 사용자 요청)",
+                QaLayer.Wesqa, QaStatus.Implemented),
+            QaCase.Of("C-44",
+                "미니맵 글리프 모양 — 삼각형은 위를 향하고 끝 조각(빨강)은 절반보다 작으며, 부채꼴은 위를 가운데로 좌우 대칭이다",
+                "모양이 기울어 회전각과 방향이 어긋나거나, 빨간 끝이 몸 전체를 덮는다",
+                QaLayer.EditMode, QaStatus.Implemented),
+            QaCase.Of("C-45",
+                "재화를 벌면 숫자 옆에 「+N」이 뜨고, 잘게 여러 번 들어오면 한 숫자로 합쳐지며, 버틴 뒤 사라진다. 쓴 돈은 안 뜬다",
+                "채굴 틱마다 숫자가 깜빡여 얼마를 벌었는지 안 읽히거나, 구매 때 빨간 숫자가 같이 떠 벌었는지 썼는지 헷갈린다",
+                QaLayer.EditMode, QaStatus.Implemented)
 
         };
 
