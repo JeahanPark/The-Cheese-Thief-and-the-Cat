@@ -21,7 +21,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 from wesqa import WesPoco
 
 RESULTS = []
-EXPECTED = 7     # ⓪ 전제 + ①~⑥
+EXPECTED = 8     # ⓪ 전제 + ①~⑥ + ③-b(마우스 올림 → 상세)
 
 CARD_COUNT = 10          # 쥐 카탈로그 10종 — 한 화면에 전부 보이는 것이 이 기획의 전부다
 FIRST_BUY = "Warehouse"  # 설치권 50 — 시작 치즈 65로 살 수 있는 유일한 테크다
@@ -153,6 +153,19 @@ def main():
     check("③ 잔액으로 살 수 있는 카드만 살 수 있다고 뜬다",
           len(buyable) >= 1 and len(too_poor) >= 1,
           "치즈 %s · 살 수 있음 %d / 못 삼 %d" % (cheese, len(buyable), len(too_poor)), case="C-33")
+
+    # ---------- ③-b 마우스를 올리면 오른쪽 상세가 그 기술로 바뀐다 (2026-09-19 시안 B) ----------
+    # 목록만 바뀌고 상세가 첫 기술에 멈추면 엉뚱한 것을 산다 — **보이는 글**로 잰다(이름|Lv|버튼 글|밑줄|사다리 값).
+    host.invoke("TestHoverShopRow", _tech=FIRST_BUY)
+    d1 = host.invoke("TestGetShopDetail") or ""
+    host.invoke("TestHoverShopRow", _tech="Gun")
+    d2 = host.invoke("TestGetShopDetail") or ""
+    p1, p2 = d1.split("|"), d2.split("|")
+    check("③-b 목록 줄에 마우스를 올리면 오른쪽 상세가 그 기술로 바뀐다 — 이름·버튼 글이 그 기술의 상태와 맞다",
+          len(p1) >= 3 and len(p2) >= 3
+          and p1[0] == "창고" and "산다" in p1[2] and str(FIRST_BUY_COST) in p1[2]
+          and p2[0] == "새총" and "모자람" in p2[2],
+          "창고 → %r · 새총 → %r" % (d1, d2), case="C-42")
 
     # ---------- ④ 클릭하면 사진다 ----------
     before_level = host.invoke("TestGetTechLevel", _clientId=0, _techId=FIRST_BUY)

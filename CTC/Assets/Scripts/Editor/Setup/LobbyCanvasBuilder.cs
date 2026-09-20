@@ -281,6 +281,21 @@ namespace CTC.Editor
             // 앰비언스는 배경음 쪽 — 계속 깔리는 분위기라 음악을 끄는 사람은 이것도 끄고 싶어 한다
             AddVolumeFollower(ambGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
 
+            // 추격곡(2026-09-20) — 고양이가 다가오면 쥐에게만 인게임 곡과 섞여 넘어간다(ChaseBgm).
+            // 음원이 아직 없으면 빈 채로 굽는다 — 판정만 돌고 소리는 안 바꾼다. 곡을 넣고 씬을 다시 구우면 켜진다.
+            var chaseGo = new GameObject("ChaseBgmPlayer");
+            var chaseSource = chaseGo.AddComponent<AudioSource>();
+            chaseSource.clip = AssetDatabase.LoadAssetAtPath<AudioClip>(CHASE_BGM);
+            chaseSource.loop = true;
+            chaseSource.playOnAwake = false;
+            chaseSource.volume = 0.35f;   // 인게임 곡과 같은 설계 볼륨 — 넘어갈 때 크기가 튀면 안 된다
+            chaseSource.spatialBlend = 0f;
+            AddVolumeFollower(chaseGo, CTC.Runtime.Audio.AudioVolumeFollower.Category.Bgm);
+            var chase = chaseGo.AddComponent<CTC.Runtime.Audio.ChaseBgm>();
+            SetRef(chase, "m_Lobby", _lobby);
+            SetRef(chase, "m_Source", chaseSource);
+            SetRef(chase, "m_Follower", chaseGo.GetComponent<CTC.Runtime.Audio.AudioVolumeFollower>());
+
             // 효과음 허브 — m_Clips는 SfxId enum 순서와 1:1
             var sfxGo = new GameObject("SfxPlayer");
             var sfxPlayer = sfxGo.AddComponent<CTC.Runtime.Audio.SfxPlayer>();
@@ -460,67 +475,6 @@ namespace CTC.Editor
         /// 상점 팝업(2026-09-19) — 카드 열 장을 두 줄씩 다섯 칸으로 깐다.
         /// 클릭으로 사므로 **버튼이 곧 카드**다. 글자 두 줄(제목·힌트)은 버튼 안에 얹는다.
         /// </summary>
-        private static CTC.Runtime.UI.ShopPopup BuildShopPopup(GameObject _canvasGo, MatchManager _match)
-        {
-            const int CARDS = 10;
-            const float CARD_W = 400f;
-            const float CARD_H = 72f;
-
-            var panel = new GameObject("ShopPanel", typeof(RectTransform));
-            panel.transform.SetParent(_canvasGo.transform, false);
-            var rt = (RectTransform)panel.transform;
-            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.sizeDelta = new Vector2(880f, 540f);
-            panel.AddComponent<Image>().color = UiPalette.PanelSolid;
-
-            TMP_Text header = CreateTmpText("ShopHeader", panel.transform, "상점",
-                26f, TextAlignmentOptions.Center, new Vector2(0f, -18f), new Vector2(840f, 40f));
-            header.fontStyle = FontStyles.Bold;
-
-            var cards = new Button[CARDS];
-            var titles = new TMP_Text[CARDS];
-            var hints = new TMP_Text[CARDS];
-
-            for (int i = 0; i < CARDS; i++)
-            {
-                float x = -212f + (i % 2) * 424f;
-                float y = -84f - (i / 2) * (CARD_H + 10f);
-
-                Button button = CreatePanelButton(panel.transform, $"ShopCard{i}", "", new Vector2(x, y), CARD_W);
-                ((RectTransform)button.transform).sizeDelta = new Vector2(CARD_W, CARD_H);
-
-                // 버튼이 만든 글자를 제목으로 쓰고(위쪽 왼쪽 정렬), 힌트 줄을 아래에 하나 더 얹는다.
-                titles[i] = button.GetComponentInChildren<TMP_Text>();
-                titles[i].fontSize = 20f;
-                titles[i].alignment = TextAlignmentOptions.TopLeft;
-                // 제목은 위 절반만 쓴다 — 아래 절반은 힌트 줄 자리다(겹치면 둘 다 안 읽힌다).
-                titles[i].margin = new Vector4(14f, 8f, 14f, CARD_H * 0.5f);
-
-                hints[i] = CreateTmpText($"ShopCardHint{i}", button.transform, "",
-                    15f, TextAlignmentOptions.TopLeft, new Vector2(0f, -38f), new Vector2(CARD_W - 28f, 30f));
-                hints[i].color = UiPalette.TextDim;
-                hints[i].raycastTarget = false;
-
-                cards[i] = button;
-            }
-
-            TMP_Text foot = CreateTmpText("ShopFoot", panel.transform, "클릭해서 산다 · E · ESC 닫기",
-                15f, TextAlignmentOptions.Center, new Vector2(0f, -506f), new Vector2(840f, 26f));
-            foot.color = UiPalette.TextDim;
-
-            var popup = _canvasGo.AddComponent<CTC.Runtime.UI.ShopPopup>();
-            SetRef(popup, "m_Root", panel);
-            SetRef(popup, "m_Header", header);
-            SetRef(popup, "m_Match", _match);
-            SetRefArray(popup, "m_Cards", cards);
-            SetRefArray(popup, "m_CardTitles", titles);
-            SetRefArray(popup, "m_CardHints", hints);
-
-            panel.SetActive(false);
-            return popup;
-        }
-
         private const string LOADING_BACKDROP_PATH = "Assets/Materials/UI/T_LoadingBackdrop.png";
         private const string LOADING_OVERLAY_PREFAB = "Assets/Resources/" + CTC.Runtime.UI.LoadingScreen.RESOURCE_PATH + ".prefab";
         private const int LOADING_SORT_ORDER = 5000;   // 어떤 씬의 캔버스보다 위 — 대기실·게임 HUD를 전부 덮는다
@@ -967,6 +921,11 @@ namespace CTC.Editor
         // 가려지면 QA가 미니맵을 못 본다. 그래서 그 아래로 내려 시작한다.
         private const float MINIMAP_MARGIN_X = 24f;
         private const float MINIMAP_TOP = 128f;
+        // 시선 부채꼴 반경(px) — 삼각형(18 px)의 두 배 남짓. 실제 시야 거리가 아니라 「어느 쪽을 보나」만 말한다.
+        private const float MINIMAP_VIEW_RADIUS = 34f;
+
+        // 추격곡 — 고양이가 다가오면 쥐에게 섞여 들린다(ChaseBgm). 파일이 없으면 빈 칸으로 굽는다.
+        private const string CHASE_BGM = "Assets/Audio/BGM/bgm_chase.ogg";
 
         private static void BuildMinimap(GameObject _canvasGo, LobbyController _lobby,
             CheeseSpotDirector _cheeseDirector)
@@ -1010,19 +969,25 @@ namespace CTC.Editor
             markerLayer.transform.SetParent(root.transform, false);
             RectTransform markerRt = StretchToParent((RectTransform)markerLayer.transform);
 
-            // 나 — 삼각형 글리프. 스프라이트를 새로 굽지 않고 돌릴 수 있는 아이콘이 필요했다.
+            // 시선 부채꼴(2026-09-20) — 내 삼각형 **뒤에** 깔려야 해서 먼저 만든다. 카메라 방향을 따라 돈다.
+            var coneGo = new GameObject("View", typeof(RectTransform));
+            coneGo.transform.SetParent(markerLayer.transform, false);
+            var coneRt = (RectTransform)coneGo.transform;
+            coneRt.anchorMin = coneRt.anchorMax = Vector2.zero;
+            coneRt.pivot = new Vector2(0.5f, 0.5f);
+            coneRt.sizeDelta = new Vector2(MINIMAP_VIEW_RADIUS * 2f, MINIMAP_VIEW_RADIUS * 2f);
+            var cone = coneGo.AddComponent<CTC.Runtime.UI.MinimapViewCone>();
+            cone.raycastTarget = false;   // 미니맵은 입력을 안 받는다
+
+            // 나 — 위를 향한 삼각형, 끝이 빨갛다(몸 방향). 예전 「▲」 글자는 한 색이라 끝만 칠할 수 없었다.
             var meGo = new GameObject("Me", typeof(RectTransform));
             meGo.transform.SetParent(markerLayer.transform, false);
             var meRt = (RectTransform)meGo.transform;
             meRt.anchorMin = meRt.anchorMax = Vector2.zero;
             meRt.pivot = new Vector2(0.5f, 0.5f);
-            meRt.sizeDelta = new Vector2(18f, 18f);
-            var meText = meGo.AddComponent<TextMeshProUGUI>();
-            meText.text = "▲";
-            meText.fontSize = 18f;
-            meText.alignment = TextAlignmentOptions.Center;
-            meText.color = UiPalette.TextOn;
-            meText.raycastTarget = false;
+            meRt.sizeDelta = new Vector2(16f, 18f);
+            var meGlyph = meGo.AddComponent<CTC.Runtime.UI.MinimapMeGlyph>();
+            meGlyph.raycastTarget = false;
 
             root.SetActive(false);   // MinimapHud가 게임 시작 시 켠다
 
@@ -1038,6 +1003,7 @@ namespace CTC.Editor
             SetRef(hud, "m_Terrain", terrain);
             SetRef(hud, "m_MarkerLayer", markerRt);
             SetRef(hud, "m_MeIcon", meRt);
+            SetRef(hud, "m_ViewCone", coneRt);
         }
 
         private static RectTransform StretchToParent(RectTransform _rt)
@@ -1070,6 +1036,11 @@ namespace CTC.Editor
                 16f, TextAlignmentOptions.Right, new Vector2(0f, -66f), new Vector2(320f, 24f));
             badge.color = UiPalette.WithAlpha(UiPalette.TextOn, 0.9f);
 
+            // 수입 「+N」(2026-09-20 A안) — 재화 숫자 **왼쪽**에 떴다 사라진다. 치즈 색(강조색)이라 재화 줄과 한 덩이로 읽힌다.
+            TMP_Text gain = CreateTmpText("GainText", root.transform, "",
+                22f, TextAlignmentOptions.Right, new Vector2(-126f, -32f), new Vector2(180f, 32f));
+            gain.color = UiPalette.Accent;
+
             root.SetActive(false); // StatusHud가 게임 시작 시 켬
 
             var hud = _canvasGo.AddComponent<CTC.Runtime.UI.StatusHud>();
@@ -1079,6 +1050,9 @@ namespace CTC.Editor
             SetRef(hud, "m_MyHpText", myText);
             SetRef(hud, "m_WalletText", wallet);
             SetRef(hud, "m_BadgeText", badge);
+
+            var gainPopup = _canvasGo.AddComponent<CTC.Runtime.UI.CheeseGainPopup>();
+            SetRef(gainPopup, "m_Label", gain);
         }
 
         // 게이지 한 줄(배경 + 채움 + 겹침 라벨). 채움은 StatusHud가 anchorMax.x 비율로 그린다.

@@ -125,5 +125,105 @@ namespace CTC.Tests.EditMode
             Assert.IsTrue(ShopPopupLogic.ShouldClose(true, false, false, false, true), "판이 끝났다");
             Assert.IsFalse(ShopPopupLogic.ShouldClose(true, false, false, false, false), "평온하면 안 닫는다");
         }
+
+        // ───────────── 목록 + 상세(2026-09-19 시안 B) ─────────────
+
+        private static ShopPopupCard Card(TechId _id, int _cheese, IReadOnlyList<TechId> _soldOut = null,
+            params (TechId id, int level)[] _owned)
+        {
+            return ShopPopupLogic.CardOf(Owned(_owned), _id, RoleId.Mouse, _cheese, 5, _soldOut, false);
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void ListOrder_GroupsByAxis_KeepsCatalogOrderWithin()
+        {
+            IReadOnlyList<TechId> catalog = TechLogic.Catalog(RoleId.Mouse);
+            List<TechId> order = ShopPopupLogic.ListOrder(catalog);
+
+            CollectionAssert.AreEquivalent(catalog, order, "빠지거나 겹치는 기술이 없다");
+            var position = new List<TechId>(catalog);
+            for (int i = 1; i < order.Count; i++)
+            {
+                TechAxis before = TechLogic.RowOf(order[i - 1], 1).Axis;
+                TechAxis now = TechLogic.RowOf(order[i], 1).Axis;
+                Assert.LessOrEqual((int)before, (int)now, "축 순서로 묶인다 — 한 축이 두 번 나뉘면 머리글이 두 번 뜬다");
+                if (before == now)
+                    Assert.Less(position.IndexOf(order[i - 1]), position.IndexOf(order[i]), "같은 축 안에서는 CSV 순서 그대로");
+            }
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void AxisLabel_EveryAxisHasItsOwnName()
+        {
+            var seen = new HashSet<string>();
+            foreach (TechAxis axis in System.Enum.GetValues(typeof(TechAxis)))
+            {
+                string label = ShopPopupLogic.AxisLabel(axis);
+                Assert.IsNotEmpty(label, axis.ToString());
+                Assert.IsTrue(seen.Add(label), "축 이름이 겹친다: " + label);
+            }
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void Steps_OwnedThenNextThenLocked()
+        {
+            ShopPopupCard card = Card(TechId.Warehouse, 5000, null, (TechId.Warehouse, 1));
+
+            Assert.AreEqual(ShopStep.Owned, ShopPopupLogic.StepOf(card, 1));
+            Assert.AreEqual(ShopStep.Next, ShopPopupLogic.StepOf(card, 2));
+            Assert.AreEqual(ShopStep.Locked, ShopPopupLogic.StepOf(card, 3));
+            Assert.AreEqual("Lv 1/3", ShopPopupLogic.LevelText(card), "예전 ○○○ 점 대신 글자로");
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void Steps_NextIsBlockedWhenShort_AndLockedWhenSoldOut()
+        {
+            ShopPopupCard shortCard = Card(TechId.Gun, 100, null, (TechId.Gun, 1));
+            Assert.AreEqual(ShopStep.NextBlocked, ShopPopupLogic.StepOf(shortCard, 2), "다음 단계지만 치즈가 모자라다");
+
+            ShopPopupCard sold = Card(TechId.Pepper, 5000, new List<TechId> { TechId.Pepper });
+            Assert.AreEqual(ShopStep.Locked, ShopPopupLogic.StepOf(sold, 1), "품절이면 다음 단계도 잠긴 것으로 보인다");
+            Assert.AreEqual("품절", ShopPopupLogic.RowPrice(sold, RoleId.Mouse));
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void Button_SaysBuyOrUpgrade_WithNextLabelAndPrice()
+        {
+            ShopPopupCard fresh = Card(TechId.Fortress, 5000);
+            string buyText = ShopPopupLogic.ButtonText(fresh, RoleId.Mouse, 5);
+            StringAssert.Contains("산다", buyText);
+            StringAssert.Contains(fresh.Cost.ToString(), buyText);
+            Assert.AreEqual(ShopButtonTone.Buy, ShopPopupLogic.ButtonTone(fresh));
+            Assert.AreEqual("새로 사면 칸 1개를 쓴다", ShopPopupLogic.NoteText(fresh, RoleId.Mouse));
+
+            ShopPopupCard upgrade = Card(TechId.Fortress, 5000, null, (TechId.Fortress, 1));
+            string upText = ShopPopupLogic.ButtonText(upgrade, RoleId.Mouse, 5);
+            StringAssert.Contains("키운다", upText);
+            StringAssert.Contains(TechLogic.RowOf(TechId.Fortress, 2).Label, upText, "다음 단계 이름을 쓴다");
+            Assert.AreEqual("강화는 칸을 안 쓴다", ShopPopupLogic.NoteText(upgrade, RoleId.Mouse));
+        }
+
+        [NUnit.Framework.Property("CaseId", "C-41")]
+        [Test]
+        public void Button_TellsWhyNot_ShortSoldOutMaxed()
+        {
+            ShopPopupCard poor = Card(TechId.Dash, 40);
+            Assert.AreEqual(ShopButtonTone.Short, ShopPopupLogic.ButtonTone(poor));
+            StringAssert.Contains((poor.Cost - 40) + " 모자람", ShopPopupLogic.ButtonText(poor, RoleId.Mouse, 5));
+
+            ShopPopupCard sold = Card(TechId.Dash, 5000, new List<TechId> { TechId.Dash });
+            Assert.AreEqual(ShopButtonTone.Blocked, ShopPopupLogic.ButtonTone(sold));
+            Assert.AreEqual("오늘은 품절", ShopPopupLogic.ButtonText(sold, RoleId.Mouse, 5));
+
+            ShopPopupCard maxed = Card(TechId.Dash, 5000, null, (TechId.Dash, 3));
+            Assert.AreEqual(ShopButtonTone.Maxed, ShopPopupLogic.ButtonTone(maxed));
+            Assert.AreEqual("만렙", ShopPopupLogic.RowPrice(maxed, RoleId.Mouse));
+            StringAssert.StartsWith("만렙", ShopPopupLogic.ButtonText(maxed, RoleId.Mouse, 5));
+        }
     }
 }

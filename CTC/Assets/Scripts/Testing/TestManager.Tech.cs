@@ -600,6 +600,23 @@ namespace CTC.Runtime.Testing
 
             return popup.DevClick(_tech);
         }
+
+        /// <summary>QA: 팝업 목록의 그 기술 줄에 **커서를 올린다**(사람과 같은 길 — 오른쪽 상세가 바뀐다). 올렸으면 true.</summary>
+        public bool TestHoverShopRow(string _tech)
+        {
+            var popup = FindFirstObjectByType<UI.ShopPopup>();
+            if (popup == null || !popup.IsOpen) return false;
+
+            return popup.DevHover(_tech);
+        }
+
+        /// <summary>QA: 팝업 오른쪽 상세에 **보이는 글** — "이름|Lv 1/3|버튼 글|밑줄 글|사다리 가격들". 안 떠 있으면 빈 문자열.</summary>
+        public string TestGetShopDetail()
+        {
+            var popup = FindFirstObjectByType<UI.ShopPopup>();
+            if (popup == null) return MISSING;
+            return popup.IsOpen ? popup.DevDetailSummary() : string.Empty;
+        }
     }
 }
 #endif
