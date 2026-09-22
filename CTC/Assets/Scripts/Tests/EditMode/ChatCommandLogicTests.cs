@@ -33,6 +33,29 @@ namespace CTC.Tests.EditMode
         }
 
         [Test]
+        public void MoveSelection_WrapsBothWays()
+        {
+            // 위아래로 고르기(2026-09-23) — 끝에서 누르면 반대쪽 끝으로 돈다
+            Assert.AreEqual(1, ChatCommandLogic.MoveSelection(0, +1, 3));
+            Assert.AreEqual(0, ChatCommandLogic.MoveSelection(2, +1, 3), "맨 아래에서 아래 → 맨 위");
+            Assert.AreEqual(2, ChatCommandLogic.MoveSelection(0, -1, 3), "맨 위에서 위 → 맨 아래");
+            Assert.AreEqual(0, ChatCommandLogic.MoveSelection(0, -1, 1), "하나뿐이면 제자리");
+            Assert.AreEqual(0, ChatCommandLogic.MoveSelection(5, +1, 0), "후보가 없으면 0");
+        }
+
+        [Test]
+        public void IsComplete_OnlyWhenTheWholeCommandIsTyped()
+        {
+            // 치는 중이면 Enter는 채우기, 다 쳤으면 실행
+            Assert.IsFalse(ChatCommandLogic.IsComplete("/"));
+            Assert.IsFalse(ChatCommandLogic.IsComplete("/se"));
+            Assert.IsTrue(ChatCommandLogic.IsComplete("/send log"));
+            Assert.IsTrue(ChatCommandLogic.IsComplete(" /SEND  log "), "대소문자·공백은 실행 판정과 같게 본다");
+            Assert.IsFalse(ChatCommandLogic.IsComplete("안녕"));
+            Assert.IsFalse(ChatCommandLogic.IsComplete(null));
+        }
+
+        [Test]
         public void Match_PlainChatShowsNothing()
         {
             Assert.AreEqual(0, ChatCommandLogic.Match("안녕").Count);

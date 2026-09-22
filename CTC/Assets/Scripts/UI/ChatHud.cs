@@ -45,9 +45,32 @@ namespace CTC.Runtime.UI
         public string DevLogText => m_Log != null ? m_Log.text : "";
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private const string HINT_MARK = "<mark=#F2E68C40>";   // 고른 줄 배경
+        private const string HINT_NAME = "#F2E68C";
+        private const string HINT_NAME_DIM = "#A89F5C";
+        private const string HINT_DESC_DIM = "#9AA0A6";
+
+        private readonly List<ChatCommandLogic.Command> m_Matches = new List<ChatCommandLogic.Command>();
+        private int m_HintIndex;
+        private bool m_CaretToEnd;
+
         /// <summary>QA 전용 — 예약어 힌트가 떠 있으면 그 내용, 아니면 빈 문자열.</summary>
         public string DevHintText =>
             m_HintRoot != null && m_HintRoot.activeSelf && m_HintText != null ? m_HintText.text : "";
+
+        /// <summary>QA 전용 — 입력창에 지금 든 글자.</summary>
+        public string DevInputText => m_Input != null ? m_Input.text : "";
+
+        /// <summary>QA 전용 — 힌트에서 지금 고른 예약어(없으면 빈 문자열).</summary>
+        public string DevHintSelected => HintShown ? m_Matches[m_HintIndex].Name : "";
+
+        /// <summary>QA 전용 — 위(−1)·아래(+1) 키와 같은 길로 고른 줄을 옮긴다.</summary>
+        public void DevMoveHint(int _delta) => MoveHint(_delta);
+
+        /// <summary>QA 전용 — Tab과 같은 길로 고른 예약어를 입력창에 채운다.</summary>
+        public void DevCompleteHint() => CompleteHint();
+
+        private bool HintShown => IsOpen && m_Matches.Count > 0 && m_HintIndex < m_Matches.Count;
 #endif
 
         private void Start()
@@ -80,19 +103,60 @@ namespace CTC.Runtime.UI
         {
             if (m_HintRoot == null || m_HintText == null) return;
 
-            var matches = ChatCommandLogic.Match(_text);
-            bool show = IsOpen && matches.Count > 0;
-            if (m_HintRoot.activeSelf != show) m_HintRoot.SetActive(show);
-            if (!show) return;
+            m_Matches.Clear();
+            m_Matches.AddRange(ChatCommandLogic.Match(_text));
+            m_HintIndex = 0; // 글자가 바뀌면 후보도 바뀐다 — 맨 위부터 다시
 
+            bool show = IsOpen && m_Matches.Count > 0;
+            if (m_HintRoot.activeSelf != show) m_HintRoot.SetActive(show);
+            if (show) RenderHint();
+        }
+
+        // 고른 줄은 배경을 깔고 밝게, 나머지는 흐리게 — 위아래로 옮기는 게 눈에 보이게
+        private void RenderHint()
+        {
             m_Builder.Clear();
-            for (int i = 0; i < matches.Count; i++)
+            for (int i = 0; i < m_Matches.Count; i++)
             {
                 if (i > 0) m_Builder.Append('\n');
-                m_Builder.Append("<color=#F2E68C>").Append(matches[i].Name).Append("</color>  ")
-                         .Append(matches[i].Description);
+                bool selected = i == m_HintIndex;
+                if (selected) m_Builder.Append(HINT_MARK);
+                m_Builder.Append("<color=").Append(selected ? HINT_NAME : HINT_NAME_DIM).Append('>')
+                         .Append(m_Matches[i].Name).Append("</color>  ");
+                if (selected) m_Builder.Append(m_Matches[i].Description).Append("</mark>");
+                else m_Builder.Append("<color=").Append(HINT_DESC_DIM).Append('>')
+                              .Append(m_Matches[i].Description).Append("</color>");
             }
             m_HintText.text = m_Builder.ToString();
+        }
+
+        // 위·아래 = 고르기, Tab = 채우기. Enter는 EscapeRouter → Submit이 처리한다(치는 중이면 채우기).
+        private void ReadHintKeys()
+        {
+            if (!HintShown) return;
+            UnityEngine.InputSystem.Keyboard kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+
+            if (kb.upArrowKey.wasPressedThisFrame) MoveHint(-1);
+            else if (kb.downArrowKey.wasPressedThisFrame) MoveHint(+1);
+            else if (kb.tabKey.wasPressedThisFrame) CompleteHint();
+        }
+
+        private void MoveHint(int _delta)
+        {
+            if (!HintShown) return;
+            m_HintIndex = ChatCommandLogic.MoveSelection(m_HintIndex, _delta, m_Matches.Count);
+            RenderHint();
+            m_CaretToEnd = true; // 한 줄 입력창은 위·아래 키에 캐럿을 맨 앞/뒤로 보낸다 — 되돌린다
+        }
+
+        private void CompleteHint()
+        {
+            if (!HintShown) return;
+            string chosen = m_Matches[m_HintIndex].Name;
+            m_Input.text = chosen; // onValueChanged → 힌트가 그 한 줄로 좁혀진다
+            if (!m_Input.isFocused) m_Input.ActivateInputField();
+            m_CaretToEnd = true;
         }
 #endif
 
@@ -100,12 +164,27 @@ namespace CTC.Runtime.UI
         {
             // Enter는 더 이상 여기서 안 읽는다(2026-09-07) — `EscapeRouter`가 단독으로 읽고
             // Submit/Open을 부른다. 여기서도 읽으면 상점 확정 구매와 같은 프레임에 겹쳤다.
-            // 남은 건 유휴 후 로그 감추기뿐 — 표시는 전부 위 구독이 한다(규칙 3).
+            // 여기서 읽는 건 힌트의 위·아래·Tab뿐 — 입력창이 열려 있을 때만 의미가 있어 다른 입력과 겹치지 않는다.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            ReadHintKeys();
+#endif
             if (!IsOpen && m_Root != null && m_Root.activeSelf && Time.time >= m_HideAt)
             {
                 m_Root.SetActive(false);
             }
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // 입력창이 키를 처리한 **뒤에** 캐럿을 끝으로 — Update에서 하면 입력창이 다시 앞으로 보낸다
+        private void LateUpdate()
+        {
+            if (!m_CaretToEnd || m_Input == null) return;
+            m_CaretToEnd = false;
+            int end = m_Input.text.Length;
+            m_Input.stringPosition = end;
+            m_Input.caretPosition = end;
+        }
+#endif
 
         public void Open()
         {
@@ -145,6 +224,14 @@ namespace CTC.Runtime.UI
             string text = m_Input != null ? m_Input.text : "";
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // 치는 중(`/`·`/se`)에 Enter면 고른 줄로 채우기만 한다 — 반쪽 명령이 채팅으로 새지 않게.
+            // 한 번 더 Enter를 누르면 그때 실행된다.
+            if (HintShown && !ChatCommandLogic.IsComplete(text))
+            {
+                CompleteHint();
+                return;
+            }
+
             // 완성된 예약어는 채팅으로 보내지 않고 실행한다. 모르는 /문자열은 그냥 채팅이다.
             if (ChatCommandLogic.IsSendLog(text))
             {

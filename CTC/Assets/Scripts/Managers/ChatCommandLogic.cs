@@ -54,6 +54,31 @@ namespace CTC.Runtime.Managers
             return result;
         }
 
+        /// <summary>
+        /// 힌트에서 고른 줄을 위아래로 옮긴다(2026-09-23 건의) — 끝에서 누르면 반대쪽 끝으로 돈다.
+        /// 후보가 없으면 0.
+        /// </summary>
+        public static int MoveSelection(int _current, int _delta, int _count)
+        {
+            if (_count <= 0) return 0;
+            int next = (_current + _delta) % _count;
+            return next < 0 ? next + _count : next;
+        }
+
+        /// <summary>
+        /// 이미 어떤 예약어를 끝까지 쳤는가 — 그러면 Enter는 채우기가 아니라 **실행**이다.
+        /// 치는 중(`/se`)에 Enter를 누르면 고른 줄로 채우기만 한다 — 반쪽 명령이 채팅으로 새지 않게.
+        /// </summary>
+        public static bool IsComplete(string _input)
+        {
+            string typed = Normalize(_input);
+            foreach (Command cmd in ALL)
+            {
+                if (cmd.Name.Equals(typed, System.StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         public static bool IsSendLog(string _input) =>
             Normalize(_input).Equals("/send log", System.StringComparison.OrdinalIgnoreCase);
 
