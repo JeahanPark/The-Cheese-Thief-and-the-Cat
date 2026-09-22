@@ -62,6 +62,7 @@ namespace CTC.Runtime.UI
             GameObject go = Instantiate(prefab);
             go.name = prefab.name;
             DontDestroyOnLoad(go);
+            UiCorners.ApplyTo(go.transform); // 씬이 뜬 뒤에 만들어져 씬 로드 때의 둥글리기를 못 받는다
             s_Current = go.GetComponent<LoadingScreen>();
             if (s_Current != null) s_Current.Restart();
         }

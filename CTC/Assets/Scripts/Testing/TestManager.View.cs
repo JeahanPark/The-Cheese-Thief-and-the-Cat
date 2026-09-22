@@ -233,6 +233,30 @@ namespace CTC.Runtime.Testing
             return hud != null ? hud.DevHintText : "";
         }
 
+        /// <summary>
+        /// QA: 힌트 고르기 — 위(−1)·아래(+1) 키와 같은 길로 옮기고, 고른 예약어를 돌려준다(힌트가 없으면 빈 문자열).
+        /// 0을 주면 옮기지 않고 지금 고른 것만 읽는다. 키 주입은 창 포커스가 없으면 씹혀서 이 길로 잰다.
+        /// </summary>
+        public string TestMoveChatHint(int _delta)
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            if (hud == null) return MISSING;
+            if (_delta != 0) hud.DevMoveHint(_delta);
+            return hud.DevHintSelected;
+        }
+
+        /// <summary>QA: Tab과 같은 길로 고른 예약어를 채우고, 입력창 글자를 돌려준다.</summary>
+        public string TestCompleteChatHint()
+        {
+            var hud = FindFirstObjectByType<CTC.Runtime.UI.ChatHud>();
+            if (hud == null) return MISSING;
+            hud.DevCompleteHint();
+            return hud.DevInputText;
+        }
+
+        /// <summary>QA: UI 둥근 모서리(2026-09-23) — `sprite=1 rounded=N`. 스프라이트가 안 실렸으면 sprite=0.</summary>
+        public string TestGetUiCorners() => CTC.Runtime.UI.UiCorners.DevDescribe();
+
         /// <summary>QA: 채팅 입력창 열림 여부.</summary>
         public bool TestGetChatOpen()
         {
