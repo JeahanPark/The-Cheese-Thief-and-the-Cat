@@ -8,25 +8,25 @@ Dash,Mouse,Utility,1,100,대시,Space 순간 가속,6,0,0
 CatClaw,Cat,Attack,1,100,발톱,덮치기 +10,0,0,0
 CatClaw,Cat,Attack,2,140,발톱,덮치기 +20,0,0,0
 CatClaw,Cat,Attack,3,180,발톱,덮치기 +30,0,0,0
-CatStomp,Cat,Utility,1,80,발 구르기,이속 +0.2,0,0,0
-CatStomp,Cat,Utility,2,120,발 구르기,이속 +0.4,0,0,0
-CatStomp,Cat,Utility,3,160,발 구르기,이속 +0.6,0,0,0
+CatStomp,Cat,Utility,1,80,날쌘 발,이속 +0.2,0,0,0
+CatStomp,Cat,Utility,2,120,날쌘 발,이속 +0.4,0,0,0
+CatStomp,Cat,Utility,3,160,날쌘 발,이속 +0.6,0,0,0
 Gun,Mouse,Attack,3,450,긴 총열,사거리 14m · DPS ×1.4,3,0,0
-Pepper,Mouse,Attack,2,180,매운 맛,도트 4중첩,4,4,0
-Pepper,Mouse,Attack,3,240,오래 감,도트 6초,4,6,0
+Pepper,Mouse,Attack,2,180,진한 후추,도트 4중첩,4,4,0
+Pepper,Mouse,Attack,3,240,오래 가는 후추,도트 6초,4,6,0
 Fortress,Mouse,Defense,2,260,두꺼운 벽,요새 HP 900,900,0,0
 Fortress,Mouse,Defense,3,400,가시 벽,요새 HP 1200 · 치면 25 반사,1200,25,0
 CheeseShield,Mouse,Defense,1,100,치즈 방패,피해 30%를 치즈로 낸다,0.3,0,0
 CheeseShield,Mouse,Defense,2,160,치즈 방패,피해 45%를 치즈로,0.45,0,0
 CheeseShield,Mouse,Defense,3,220,치즈 방패,피해 60%를 치즈로,0.6,0,0
 Warehouse,Mouse,Resource,2,240,둘째 창고,창고 상한 2,2,1,0
-Warehouse,Mouse,Resource,3,320,바쁜 창고,창고 수입 ×2,2,2,0
-BigPouch,Mouse,Resource,1,120,큰 주머니,채굴 ×1.3,1.3,0,0
-BigPouch,Mouse,Resource,2,200,큰 주머니,채굴 ×1.6,1.6,0,0
-BigPouch,Mouse,Resource,3,280,큰 주머니,채굴 ×1.9,1.9,0,0
-HiddenWarehouse,Mouse,Resource,1,200,숨은 창고,창고 소리 24→16m,16,150,0
-HiddenWarehouse,Mouse,Resource,2,320,숨은 창고,소리 8m · HP 300,8,300,0
-HiddenWarehouse,Mouse,Resource,3,450,숨은 창고,무음 · HP 450 · 부서지면 절반 환급,0,450,0.5
+Warehouse,Mouse,Resource,3,320,풀가동 창고,창고 수입 ×2,2,2,0
+BigPouch,Mouse,Resource,1,120,날카로운 앞니,채굴 ×1.3,1.3,0,0
+BigPouch,Mouse,Resource,2,200,날카로운 앞니,채굴 ×1.6,1.6,0,0
+BigPouch,Mouse,Resource,3,280,날카로운 앞니,채굴 ×1.9,1.9,0,0
+HiddenWarehouse,Mouse,Resource,1,200,조용한 창고,창고 소리 24→16m,16,150,0
+HiddenWarehouse,Mouse,Resource,2,320,조용한 창고,소리 8m · HP 300,8,300,0
+HiddenWarehouse,Mouse,Resource,3,450,조용한 창고,무음 · HP 450 · 부서지면 절반 환급,0,450,0.5
 Sticky,Mouse,Escape,1,220,끈끈이,반경 2.5m 10초 고양이 −40% · 쿨 30,2.5,0.4,30
 Sticky,Mouse,Escape,2,300,끈끈이,−60% · 반경 3.5m,3.5,0.6,30
 Sticky,Mouse,Escape,3,400,끈끈이,−75% · 쿨 12,3.5,0.75,12
@@ -38,12 +38,12 @@ FastFeet,Mouse,Utility,3,360,빠른 발,이속 +0.7 — 고양이 7.4에 근접,
 CatHide,Cat,Defense,1,120,두꺼운 가죽,HP 1150,1150,0,0
 CatHide,Cat,Defense,2,200,두꺼운 가죽,HP 1300,1300,0,0
 CatHide,Cat,Defense,3,280,두꺼운 가죽,HP 1450,1450,0,0
-CatHunger,Cat,Resource,1,80,배고픔,장난기 ×1.2,1.2,0,0
-CatHunger,Cat,Resource,2,120,배고픔,장난기 ×1.4,1.4,0,0
-CatHunger,Cat,Resource,3,160,배고픔,장난기 ×1.6,1.6,0,0
-CatFrenzy,Cat,Escape,1,200,광분,10초 덮치기 ×1.5 · 쿨 40,1.5,10,40
-CatFrenzy,Cat,Escape,2,300,광분,10초 덮치기 ×2 · 쿨 40,2,10,40
-CatFrenzy,Cat,Escape,3,400,광분,10초 덮치기 ×2.5 · 쿨 20,2.5,10,20
+CatHunger,Cat,Resource,1,80,장난 본능,장난기 ×1.2,1.2,0,0
+CatHunger,Cat,Resource,2,120,장난 본능,장난기 ×1.4,1.4,0,0
+CatHunger,Cat,Resource,3,160,장난 본능,장난기 ×1.6,1.6,0,0
+CatFrenzy,Cat,Escape,1,200,분노 발톱,10초 덮치기 ×1.5 · 쿨 40,1.5,10,40
+CatFrenzy,Cat,Escape,2,300,분노 발톱,10초 덮치기 ×2 · 쿨 40,2,10,40
+CatFrenzy,Cat,Escape,3,400,분노 발톱,10초 덮치기 ×2.5 · 쿨 20,2.5,10,20
 CatEar,Cat,Utility,1,160,예민한 귀,소리가 1.3배 멀리 들린다,1.3,0,0
 CatEar,Cat,Utility,2,260,예민한 귀,소리가 1.6배,1.6,0,0
 CatEar,Cat,Utility,3,380,예민한 귀,소리가 2배 — 창고 48m,2,0,0

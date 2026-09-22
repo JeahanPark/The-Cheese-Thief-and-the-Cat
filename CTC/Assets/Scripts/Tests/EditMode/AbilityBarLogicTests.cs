@@ -83,7 +83,7 @@ namespace CTC.Tests.EditMode
             Assert.AreEqual(1, owned.Length);
             Assert.AreEqual(AbilityBarLogic.KEY_FRENZY, owned[0].Key);
             Assert.AreEqual("Space", owned[0].Key);
-            Assert.AreEqual("광분", owned[0].Name);
+            Assert.AreEqual("분노 발톱", owned[0].Name);
             Assert.IsNotEmpty(owned[0].Hint);
         }
 

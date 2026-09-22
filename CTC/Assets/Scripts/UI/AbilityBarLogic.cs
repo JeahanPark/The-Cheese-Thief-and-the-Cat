@@ -62,7 +62,7 @@ namespace CTC.Runtime.UI
                 case RoleId.Cat:
                     if (_class != CatClassId.None)
                         list.Add(new AbilitySlot(KEY_SKILL, CatClassLogic.ClassWordOf(_class), SkillHintOf(_class)));
-                    if (_frenzyOwned) list.Add(new AbilitySlot(KEY_FRENZY, "광분", "한동안 덮치기가 더 아프다"));
+                    if (_frenzyOwned) list.Add(new AbilitySlot(KEY_FRENZY, "분노 발톱", "한동안 덮치기가 더 아프다"));
                     break;
             }
             return list.ToArray();
