@@ -169,6 +169,17 @@ namespace CTC.Runtime.UI
                 MinimapLogic.YawToUiAngle(view.eulerAngles.y));
         }
 
+        /// <summary>
+        /// QA: 삼각형·부채꼴이 **그려질 수 있는가** — CanvasRenderer가 없으면 각은 제대로 도는데 화면엔
+        /// 아무것도 없다(2026-09-23 사용자 보고 — 각만 재던 QA가 통과시켰다).
+        /// </summary>
+        public bool DevGlyphsDrawable()
+        {
+            bool me = m_MeIcon != null && m_MeIcon.GetComponent<CanvasRenderer>() != null;
+            bool cone = m_ViewCone == null || m_ViewCone.GetComponent<CanvasRenderer>() != null;
+            return me && cone;
+        }
+
         /// <summary>QA: 지금 화면의 두 각(UI 도) — 삼각형(몸)과 부채꼴(시선). 부채꼴이 없거나 꺼져 있으면 -1.</summary>
         public Vector2 DevHeadingAngles()
         {

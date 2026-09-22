@@ -10,6 +10,7 @@ namespace CTC.Runtime.UI
     /// 가운데는 진하고 끝으로 갈수록 투명해진다(정점 색 그라데이션, 스프라이트 없음). 모양은 위(+Y)를 향하고
     /// 회전은 <see cref="MinimapHud"/>가 카메라 방향으로 준다. 반경은 RectTransform 크기의 절반이다.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class MinimapViewCone : MaskableGraphic
     {
         // 부채꼴을 나누는 조각 수 — 36 px 반경에서 모서리가 안 보일 만큼

@@ -114,7 +114,8 @@ namespace CTC.Runtime.Testing
             Vector2 angles = hud.DevHeadingAngles();
             Transform view = markers.View;
             float camYaw = view != null ? view.eulerAngles.y : -1f;
-            return $"body={angles.x:F0} view={angles.y:F0} bodyYaw={markers.Me.eulerAngles.y:F0} camYaw={camYaw:F0}";
+            int drawn = hud.DevGlyphsDrawable() ? 1 : 0;
+            return $"body={angles.x:F0} view={angles.y:F0} bodyYaw={markers.Me.eulerAngles.y:F0} camYaw={camYaw:F0} drawn={drawn}";
         }
     }
 }

@@ -970,7 +970,8 @@ namespace CTC.Editor
             RectTransform markerRt = StretchToParent((RectTransform)markerLayer.transform);
 
             // 시선 부채꼴(2026-09-20) — 내 삼각형 **뒤에** 깔려야 해서 먼저 만든다. 카메라 방향을 따라 돈다.
-            var coneGo = new GameObject("View", typeof(RectTransform));
+            // CanvasRenderer를 직접 단다 — 직접 만든 Graphic엔 자동으로 안 붙어 아무것도 안 그려졌다(2026-09-23)
+            var coneGo = new GameObject("View", typeof(RectTransform), typeof(CanvasRenderer));
             coneGo.transform.SetParent(markerLayer.transform, false);
             var coneRt = (RectTransform)coneGo.transform;
             coneRt.anchorMin = coneRt.anchorMax = Vector2.zero;
@@ -980,7 +981,7 @@ namespace CTC.Editor
             cone.raycastTarget = false;   // 미니맵은 입력을 안 받는다
 
             // 나 — 위를 향한 삼각형, 끝이 빨갛다(몸 방향). 예전 「▲」 글자는 한 색이라 끝만 칠할 수 없었다.
-            var meGo = new GameObject("Me", typeof(RectTransform));
+            var meGo = new GameObject("Me", typeof(RectTransform), typeof(CanvasRenderer));
             meGo.transform.SetParent(markerLayer.transform, false);
             var meRt = (RectTransform)meGo.transform;
             meRt.anchorMin = meRt.anchorMax = Vector2.zero;

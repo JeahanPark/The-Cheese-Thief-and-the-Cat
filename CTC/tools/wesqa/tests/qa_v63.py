@@ -111,8 +111,10 @@ def main():
     time.sleep(1.2)
     h1 = fields(host.invoke("TestGetMinimapHeading"))
     body_ok = angle_gap(h1.get("body", -1), (360.0 - float(h1.get("bodyYaw", 0))) % 360.0) < 2.0
-    check("① 미니맵 삼각형이 몸 방향을 따라 돈다", body_ok,
-          "삼각형 %s° · 몸 yaw %s°" % (h1.get("body"), h1.get("bodyYaw")), case="C-43")
+    # 각만 재면 안 된다 — CanvasRenderer가 빠져 화면엔 없는데 각은 돌아서 통과했다(2026-09-23)
+    drawn = str(h1.get("drawn", "0")) == "1"
+    check("① 미니맵 삼각형이 그려지고, 몸 방향을 따라 돈다", body_ok and drawn,
+          "삼각형 %s° · 몸 yaw %s° · 그려짐 %s" % (h1.get("body"), h1.get("bodyYaw"), h1.get("drawn")), case="C-43")
 
     host.invoke("TestSetCameraAngles", _yaw=90.0, _pitch=30.0)
     time.sleep(0.6)

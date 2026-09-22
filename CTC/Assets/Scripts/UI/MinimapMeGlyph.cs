@@ -10,6 +10,7 @@ namespace CTC.Runtime.UI
     /// 스프라이트 없이 정점 색으로 그린다 — 예전의 「▲」 글자는 한 색이라 끝만 칠할 수가 없었다.
     /// 지형 위에서도 모양이 읽히게 어두운 외곽선 삼각형을 먼저 깐다. 회전은 <see cref="MinimapHud"/>가 준다.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public class MinimapMeGlyph : MaskableGraphic
     {
         // 외곽선 두께(px) — 7 px 끝 조각이 밝은 지형 위에서도 떠 보이게
