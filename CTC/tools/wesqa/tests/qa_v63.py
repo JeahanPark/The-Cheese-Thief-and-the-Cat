@@ -133,8 +133,20 @@ def main():
     wall_faded = "Wall_Shelf" in faded and "CTC/MapTriplanar q=3000 t=True" in faded
     check("③ 선반 너머에서 보면 선반 판벽(맵 셰이더)이 반투명해진다", wall_faded,
           "%s · 흐린 것: %s" % (staged, faded[:160]), case="B-38")
-    check("④ 같은 자리에서 선반 가구(URP Lit)도 반투명해진다",
-          "Universal Render Pipeline/Lit q=3000 t=True" in faded, faded[:160], case="B-38")
+    # 선반 앞에 가구가 놓였는지는 맵 옷(MapDresser)의 무작위 배치다 — 레이에 가구가 없으면 잴 것이 없다.
+    # 벽·바닥·플레이어가 아닌 무언가가 레이에 걸렸을 때만 그것도 흐려졌는지 본다(안 걸리면 기록을 남기고 건너뛴다).
+    rays = probe.split("toFeet:", 1)[-1]
+    # 플레이어 레이어(L9 — 내 몸·Model)는 페이더가 일부러 안 흐린다. 이름이 아니라 레이어로 뺀다.
+    props = [h.strip().split("(", 1)[0] for h in rays.replace("| toBody:", " ").split(") ")
+             if "(" in h and "(L9" not in h
+             and not h.strip().startswith(("Wall_", "Floor", "Boundary", "Player"))]
+    if props:
+        check("④ 같은 자리에서 선반 가구(URP Lit)도 반투명해진다",
+              "Universal Render Pipeline/Lit q=3000 t=True" in faded,
+              "레이의 가구 %s · 흐린 것 %s" % (props[:3], faded[:160]), case="B-38")
+    else:
+        skip("④ 같은 자리에서 선반 가구(URP Lit)도 반투명해진다",
+             "이번 판 배치엔 선반과 카메라 사이에 가구가 없다(레이: %s)" % rays[:120])
 
     # ---------- ⑤⑥⑦ 추격곡 판정 ----------
     host.invoke("TestSetBotSneak", _role="Cat", _on=False)
@@ -160,7 +172,12 @@ def main():
     host.invoke("TestTeleportAtRangeFrom", _role="Cat", _meters=40.0, _yawOffset=0.0, _botOnly=True)
     time.sleep(0.6)
     c_hold = chase(host)
-    time.sleep(3.5)
+    # 8m에서 나를 본 봇 고양이는 3초면 20m를 되달려온다(2026-09-27 실측 — 4.1초 뒤에도 추격 중).
+    # 유지 3초를 재려면 그동안 반경 밖에 붙잡아 둬야 한다 — 1초마다 다시 40m로 보낸다.
+    for _ in range(3):
+        time.sleep(1.0)
+        host.invoke("TestTeleportAtRangeFrom", _role="Cat", _meters=40.0, _yawOffset=0.0, _botOnly=True)
+    time.sleep(0.5)
     c_after = chase(host)
     check("⑦ 벗어나면 3초를 버틴 뒤 돌아온다",
           c_hold.get("chasing") == "True" and c_after.get("chasing") == "False",

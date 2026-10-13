@@ -156,7 +156,9 @@ namespace CTC.Editor
                 var stepSource = root.AddComponent<AudioSource>();
                 stepSource.loop = false;
                 stepSource.playOnAwake = false;
-                stepSource.volume = 0.6f;
+                // 1.0(2026-10-11) — 0.6이면 사용자 효과음 0.5와 곱해 배경음(실효 약 −32 LUFS)에 묻혔다.
+                // 쥐 발소리는 3m에서도 배경음보다 작았다(고양이의 주 단서인데). 크기의 나머지는 클립 쪽이 맡는다(gen_footsteps.py).
+                stepSource.volume = 1f;
                 stepSource.spatialBlend = 1f;
                 stepSource.rolloffMode = AudioRolloffMode.Linear;
                 stepSource.minDistance = 1.5f;

@@ -321,7 +321,8 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_heal_tick"),       // HealTick
                 LoadClip("Economy/sfx_shop_buy"),        // ShopBuy
                 LoadClip("Economy/sfx_shop_deny"),       // ShopDeny
-                LoadClip("UI/sfx_ui_click"),             // UiClick
+                // 클릭음은 Resources에 있다 — 효과음 허브가 없는 앞단 화면(메인·서버 목록·대기실)도 이 음원을 쓴다(2026-09-27)
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Resources/" + CTC.Runtime.Audio.SfxPlayer.UI_CLICK_RESOURCE + ".ogg"), // UiClick
                 LoadClip("UI/sfx_timer_warn"),           // TimerWarn
                 // 파밍 짤랑음과 구분되는 별도 음원 — 나무 쿵 + 짧은 동전 챙(생산 완료감).
                 // 고양이가 소리만 듣고 "쥐가 파밍 중"과 "창고가 돌고 있다"를 구별해야 한다.
@@ -341,14 +342,13 @@ namespace CTC.Editor
                 LoadClip("Economy/sfx_box_break"),       // BoxBreak
                 LoadClip("UI/sfx_cat_advance"),          // CatAdvance
                 LoadClip("Combat/sfx_cat_skill"),        // CatSkill
-                LoadClip("Economy/sfx_shop_buy"),        // JobPickup (임시 — 상점 구매음 재사용)
-                LoadClip("UI/sfx_cat_advance"),          // GangRise (임시 — 전직음 재사용)
+                LoadClip("Economy/sfx_job_pickup"),      // JobPickup — 직업권 줍기(2026-09-27 전용 음원)
+                LoadClip("UI/sfx_gang_rise"),            // GangRise — 깡패 등장(2026-09-27 전용 음원)
                 LoadClip("Economy/sfx_decoy_place"),     // WarehousePlace — 요새 설치음과 가른다(C-20)
-                // CatFrenzy — 전직 스킬음과 **번호를 가른다**(C-21). 음원은 아직 전용이 없어 전직음을 빌려 쓴다:
-                // 무료 플랜 라이선스 정리(사운드 전량 재생성) 때 ElevenLabs로 「성난 고양이 울부짖음」을 만들어 갈아 끼운다.
-                LoadClip("UI/sfx_cat_advance"),          // CatFrenzy (임시 음원)
+                // CatFrenzy — 전직 스킬음과 **번호도 음원도 가른다**(C-21). 성난 울부짖음(2026-09-27 전용 음원).
+                LoadClip("Combat/sfx_cat_frenzy"),       // CatFrenzy
                 LoadClip("Economy/sfx_shop_buy"),        // CatShopBuy — 음원은 ShopBuy와 같다(봇 청각용 번호)
-                LoadClip("Economy/sfx_fortress_place"),  // ShopShutter (임시 — 요새 설치음 재사용, 2026-09-19)
+                LoadClip("Economy/sfx_shop_shutter"),    // ShopShutter — 철문 쾅(2026-09-27 전용 음원 · 열릴 땐 작게 튼다)
             });
 
             var matchSfx = sfxGo.AddComponent<CTC.Runtime.Audio.MatchSfx>();

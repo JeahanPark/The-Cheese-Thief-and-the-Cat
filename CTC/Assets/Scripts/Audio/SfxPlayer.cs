@@ -54,7 +54,7 @@ namespace CTC.Runtime.Audio
         // 소리가 겹치던 두 자리를 가른다(2026-09-15, 감사 C-20·C-21) — 소리만 듣고 무엇이 일어났는지 알아야 한다.
         /// <summary>창고 설치 — 요새 설치음과 다른 「뽁」(옛 미끼 설치 음원).</summary>
         WarehousePlace = 37,
-        /// <summary>고양이 광분 — 전직 스킬음과 다른 성난 울부짖음(`tools/audio/synth_cat_frenzy.py`).</summary>
+        /// <summary>고양이 분노 발톱 — 전직 스킬음과 다른 성난 울부짖음(`sfx_cat_frenzy`, 2026-09-27).</summary>
         CatFrenzy = 38,
         /// <summary>
         /// 고양이의 구매음 — 음원은 <see cref="ShopBuy"/>와 같다. **번호만 가른다**: 봇 청각은 소리 종류로
@@ -62,7 +62,7 @@ namespace CTC.Runtime.Audio
         /// </summary>
         CatShopBuy = 39,
 
-        /// <summary>상점 철문(2026-09-19) — 닫힐 때 쾅, 열릴 때 작게. 음원은 요새 설치음을 임시로 쓴다(소리 전량 재제작 때 갈아 끼운다).</summary>
+        /// <summary>상점 철문(2026-09-19) — 닫힐 때 쾅, 열릴 때 작게. 전용 음원 `sfx_shop_shutter`(2026-09-27).</summary>
         ShopShutter = 40,
     }
 
@@ -100,6 +100,13 @@ namespace CTC.Runtime.Audio
 
         /// <summary>원샷 소리 껍데기를 담는 풀의 이름표 — 3D·2D가 같은 껍데기를 나눠 쓴다.</summary>
         private const string POOL_KEY = "sfx.oneshot";
+
+        /// <summary>
+        /// 클릭음의 Resources 경로(2026-09-27). 이 허브는 게임 씬에만 있어 **메인·서버 목록·대기실 버튼이 소리를 못 냈다** —
+        /// 허브가 없을 때 클릭음만은 여기서 직접 읽는다. 다른 소리는 앞단 화면에서 날 일이 없다.
+        /// </summary>
+        public const string UI_CLICK_RESOURCE = "Audio/sfx_ui_click";
+        private static AudioClip s_UiClickFallback;
 
         /// <summary>풀이 비었을 때만 불린다. AudioSource 하나만 얹은 빈 껍데기다.</summary>
         private static GameObject CreateVoice()
@@ -182,10 +189,18 @@ namespace CTC.Runtime.Audio
 
         private static AudioClip ClipOf(SfxId _id)
         {
-            if (s_Instance == null || s_Instance.m_Clips == null) return null;
-            int index = (int)_id;
-            if (index < 0 || index >= s_Instance.m_Clips.Length) return null;
-            return s_Instance.m_Clips[index];
+            AudioClip clip = null;
+            if (s_Instance != null && s_Instance.m_Clips != null)
+            {
+                int index = (int)_id;
+                if (index >= 0 && index < s_Instance.m_Clips.Length) clip = s_Instance.m_Clips[index];
+            }
+            if (clip == null && _id == SfxId.UiClick)
+            {
+                if (s_UiClickFallback == null) s_UiClickFallback = Resources.Load<AudioClip>(UI_CLICK_RESOURCE);
+                clip = s_UiClickFallback;
+            }
+            return clip;
         }
     }
 }

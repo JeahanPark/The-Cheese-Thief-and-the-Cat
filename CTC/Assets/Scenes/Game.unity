@@ -5519,12 +5519,12 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 7864b95d349095b41ae215744bbea736, type: 3}
   - {fileID: 8300000, guid: 5e0383338d60c0241a8877ba2165e00f, type: 3}
   - {fileID: 8300000, guid: 27c7b153806a835418ff3447136a4ac6, type: 3}
-  - {fileID: 8300000, guid: b131bf0781ff51940a67bb180a553b26, type: 3}
-  - {fileID: 8300000, guid: 5e0383338d60c0241a8877ba2165e00f, type: 3}
+  - {fileID: 8300000, guid: d52d59b08fe94911a9367e6c8ad8bc21, type: 3}
+  - {fileID: 8300000, guid: 3c49bcc59a45487dadd8258dc2c8eb35, type: 3}
   - {fileID: 8300000, guid: 4d6ddd0db5e1b884483c6dc950339c66, type: 3}
-  - {fileID: 8300000, guid: 5e0383338d60c0241a8877ba2165e00f, type: 3}
+  - {fileID: 8300000, guid: 477be7e6926147c693386f7ef78c9082, type: 3}
   - {fileID: 8300000, guid: b131bf0781ff51940a67bb180a553b26, type: 3}
-  - {fileID: 8300000, guid: d8d02f7b0f37b174c80483bf6b432fd7, type: 3}
+  - {fileID: 8300000, guid: 09e3f54309974cd38bc82f668586ed63, type: 3}
 --- !u!4 &597592095
 Transform:
   m_ObjectHideFlags: 0
@@ -9025,7 +9025,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
+  m_Resource: {fileID: 8300000, guid: dd14c30cddc749ecb9a5615ce0247637, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 0.35
   m_Pitch: 1
@@ -10604,7 +10604,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 22400762, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -0.0000076293945
+      value: -0.000015258789
       objectReference: {fileID: 0}
     - target: {fileID: 22426080, guid: 67117722a812a2e46ab8cb8eafbf5f5e, type: 3}
       propertyPath: m_AnchorMax.x
