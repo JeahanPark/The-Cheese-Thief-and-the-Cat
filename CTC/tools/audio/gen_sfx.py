@@ -26,6 +26,8 @@ SOUNDS = {
     "상자맞음":   ("hitting a wooden crate", 0.5, 0.30, "Economy/sfx_box_hit.ogg"),
     "상자부서짐": ("wooden crate breaking", 0.8, 0.8, "Economy/sfx_box_break.ogg"),   # 여는 게 아니라 HP 40을 때려 깬다(LootBox) — 'breaking open'은 길고 「열림」 쪽이었다
     "창고설치":   ("wooden box placed down", 0.6, 0.6, "Economy/sfx_decoy_place.ogg"),   # WarehousePlace가 이 파일을 쓴다
+    # 1차 'UI button click' → 'UI'가 전자음·휙 소리 쪽으로 끌었다(0.3~8초). 사운드 기획 D의 뜻은 「톡, 가벼운 클릭 0.15초」 — 그 내용만 적는다.
+    "버튼클릭":   ("soft light click", 0.3, 0.3, "../Resources/Audio/sfx_ui_click.ogg"),   # 모든 버튼 — Resources 한 벌(허브 없을 때 폴백도 같은 파일)
 }
 
 
@@ -38,6 +40,14 @@ def natural_shape(path):
     y = x[start:end].copy()
     fin = int(0.002 * SR); y[:fin] *= np.linspace(0, 1, fin)
     fout = min(int(0.01 * SR), len(y) // 4); y[-fout:] *= np.linspace(1, 0, fout)
+    return y * (10 ** (-1 / 20) / (np.abs(y).max() + 1e-12))
+
+
+def single_click(y, max_len=0.2):
+    """「click」은 누름·뗌 두 번(딸-깍)으로 나온다(2026-10-20 버튼클릭 6개 중 4개) — 첫 톡만 남기고 0.2초 안에서 끝낸다."""
+    y = fs.first_hit_only(y)[:int(max_len * SR)].copy()
+    fout = min(int(0.02 * SR), len(y) // 3)
+    y[-fout:] *= np.linspace(1, 0, fout)
     return y * (10 ** (-1 / 20) / (np.abs(y).max() + 1e-12))
 
 
@@ -56,6 +66,7 @@ def gen_natural(names, takes=4):
             if r.status_code != 200: print(name, t, r.status_code, r.text[:200]); continue
             p = os.path.join(RAW, f"{name}_n{t}.mp3"); open(p, "wb").write(r.content)
             y = natural_shape(p)
+            if name == "버튼클릭": y = single_click(y)
             fs.ffmpeg_encode_ogg(y, os.path.join(OUT, f"{name}_{t}.ogg"))
             print(f"{name}_{t} ({prompt}): {len(y)/SR:.2f}s")
 
