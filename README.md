@@ -163,14 +163,26 @@ CTC/
 ├── tools/blender/       애니메이션 클립 생성 · 측정
 ├── tools/audio/         사운드 생성 · 후처리
 └── docs/                설계 스펙 · 디자인 볼트
-art/blender/             Blender 작업 파일
+art/blender/             Blender 작업 파일 (팩 메시를 담아 저장소에는 없다)
 ```
 
 ## 8. 열어 보기
+
+> ⚠ **유료 아트 에셋은 저장소에 없다.** Unity Asset Store 라이선스가 공개 재배포를 금지해서 일부러 뺐다.
+> 그대로 열면 쥐·고양이 캐릭터와 맵 가구가 비거나 분홍색으로 보인다 — 코드 · 셰이더 · 직접 만든 메시 · 사운드 · 문서는 전부 들어 있다.
+> 게임이 실제로 도는 모습은 위의 플레이 영상과 스크린샷으로 볼 수 있다.
+>
+> | 빠진 에셋 | 제작사 | 넣을 자리 |
+> |---|---|---|
+> | Quirky Series — Ultimate Animals Pack | Omabuarts Studio | `CTC/Assets/Quirky Series/` |
+> | Poly Universal Pack | polyperfect | `CTC/Assets/polyperfect/` (`Tools/CTC/Dev/Poly Pack ①~④`가 선별 임포트) |
+> | Gridbox Prototype Materials | Ciathyza | `CTC/Assets/Thirdparty/Ciathyza/` |
+>
+> 팩에서 파생된 눈 메시(`Mesh_*_EyeSplit`)와 Blender 작업 파일(`art/blender/*.blend`)도 같은 이유로 뺐다. 팩을 넣은 뒤 `Tools/CTC/Dev/Bake Eye Split Meshes`가 다시 굽는다.
 
 1. Unity **6000.5.2f1**로 `CTC/`를 연다 — 패키지는 매니페스트대로 복원된다.
 2. `Tools/CTC/Setup Networking Scene`으로 씬 · 프리팹을 굽는다(코드로 생성한다).
 3. `Assets/Scenes/Intro.unity` 플레이 → 「방 만들기」 → 대기실에서 봇을 채우고 시작. 여러 명은 Multiplayer Play Mode로.
 4. 빌드: `Tools/CTC/Build Windows (배포용)` → `Builds/Windows`.
 
-서드파티 패키지 · 에셋의 라이선스는 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). 아트 에셋은 Unity Asset Store 라이선스라 **열람 목적으로만** 포함돼 있다.
+서드파티 패키지 · 에셋의 라이선스는 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Unity Asset Store 아트 에셋은 저장소에 포함하지 않는다.
