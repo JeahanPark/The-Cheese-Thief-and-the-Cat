@@ -12,3 +12,25 @@ desktop.ini
 # 파이썬 캐시 (blender 스크립트가 clips 모듈을 import할 때 생긴다)
 __pycache__/
 *.pyc
+
+비밀/
+
+# ── 외부 공개 금지 (2026-10-20) — 로컬에는 남기고 저장소에만 안 올린다 ──
+# 유료·스토어 에셋 원본 (Asset Store EULA: 재배포 금지)
+CTC/Assets/Quirky Series/
+CTC/Assets/Quirky Series.meta
+CTC/Assets/polyperfect/
+CTC/Assets/polyperfect.meta
+CTC/Assets/Thirdparty/Ciathyza/
+CTC/Assets/Thirdparty/Ciathyza.meta
+# 팩 메시 파생물 (원본 정점을 그대로 담는다)
+CTC/Assets/Models/Characters/Mesh_*_EyeSplit.asset
+CTC/Assets/Models/Characters/Mesh_*_EyeSplit.asset.meta
+art/blender/*.blend
+# 개인정보·내부 운영 문서
+CTC/docs/design-vault/스팀 출시 준비.md
+CTC/.claude/handoff-active.md
+CTC/.claude/settings.json
+# 유니티 크래시 복구 씬
+CTC/Assets/_Recovery/
+CTC/Assets/_Recovery.meta
